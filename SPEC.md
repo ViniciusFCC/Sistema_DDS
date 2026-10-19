@@ -54,12 +54,13 @@ Origem: `importado-claude-ai/saidas-conversas/`. A cópia é exata e o hash vai 
 | Destino | Arquivos (origem) |
 |---|---|
 | `python/` | `tire/tire_model_V2_4.py`, `tire/test_tire_model_V2_4.py`, `tire/test_tire_oracles_V2_4.py`, `tire/mutation_tire_V2_4.py`, `tire/build_workbook_V2_4.py`, `tire/test_workbook_V2_4.py`, `tire/layout_V2_4.json`, `tire/Hoosier_R25B_13x7_TTC_provisional.meta.json`, `kin/suspension_model_V2_1.py`, `kin/test_suspension_model_V2_1.py`, `kin/kinematics_model_V2_0.py`, `kin/test_kinematics_model_V2_1.py`, `kin/hardpoints_V2_0.py`, `kin/test_hardpoints_V2_1.py`, `kin/hardpoints_synthetic_V2.0.csv`, `kin/hardpoints_synthetic_V2.0.meta.json` |
+| `python/` (emenda de 2026-10-18) | `kin/suspension_model_V1_0.py`: dependência do `TC-SUS-V2-004`, que pula sem ele (divergência 01, opção A aprovada pelo usuário). Copiado num commit de cópia próprio, depois do commit 0 |
 | `python/` (fora do Git) | `tire/Hoosier_R25B_13x7_TTC_provisional.tir` |
 | `excel/` | `tire/FSAE_EV_Suspension_Fase1_V2_4.xlsx` (entregue), `kin/FSAE_EV_Suspension_Fase1_V2.1.xlsx` (insumo do build) |
 | `data/` | `kin/kinematics_sweep_synthetic_V2.0.csv`, `kin/placeholder-dependency-map-V2.1.csv`, `tire/tire_comparison_grid_V2_3.csv` |
 | `docs/` | `tire/Engineering_Decision_Register.md`, `tire/data-contract-V2_4-excel-python.md`, `kin/engineering-standard-V2.0-suspensao-fsae.md`, `kin/arquitetura-consolidada-V2.0-suspensao-fsae.md`, `kin/hardpoint-schema-V2.0.md`, `kin/registro-de-versoes-V1.0.md`, `kin/registro-de-versoes-V2.0.md`, `tire/registro-de-versoes-V2_2.md`, `tire/registro-de-versoes-V2_3.md`, `tire/registro-de-versoes-V2_4.md` |
 
-As versões anteriores (v0.1, V1.0, V2.0–V2.3) continuam só em `importado-claude-ai/` e no backup.
+As versões anteriores (v0.1, V1.0, V2.0–V2.3) continuam só em `importado-claude-ai/` e no backup. A única exceção é o `suspension_model_V1_0.py`, que um teste da V2.1 importa (emenda acima).
 
 ## 5. Requisitos
 

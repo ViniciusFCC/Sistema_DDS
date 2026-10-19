@@ -2,7 +2,9 @@
 
 - Data: 2026-10-18
 - Etapa: passo 5 da fase A (originais rodados antes da portabilidade, commit `16cd4f0`)
-- Situação: **ABERTA, aguardando decisão do usuário**. A fase A parou aqui (R5).
+- Situação: **RESOLVIDA pela opção A**, aprovada pelo usuário em 2026-10-18. O
+  arquivo foi copiado byte a byte num commit de cópia próprio, e o SPEC §4.1 foi emendado.
+  A confirmação do 42/42 está no log da reprodução (`verificacao-V2.4-local.md`).
 - Log completo: [verificacao-V2.4-antes-portabilidade.md](verificacao-V2.4-antes-portabilidade.md)
 
 ## O que divergiu
