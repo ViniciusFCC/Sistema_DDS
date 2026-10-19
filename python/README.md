@@ -16,8 +16,9 @@ a planilha gerada e quebra a igualdade com a V2.4 entregue (CA-07).
     uv run python -X utf8 python/build_workbook.py [saída.xlsx]   (padrão: build/)
 
 Os testes são scripts com `check()`, não pytest. O resumo de cada um é a linha
-final `N PASS, M FAIL, de T testes`. O `tests/test_workbook.py` não roda
-localmente (depende de LibreOffice e de `/mnt/skills`; SPEC D2).
+final `N PASS, M FAIL, de T testes`. O `tests/test_workbook.py` recalcula cópias da
+planilha pelo Excel (COM, `pywin32` no grupo de desenvolvimento) ou pelo LibreOffice
+(EDR-044).
 
 ## Arquivo `.tir` (fora do Git)
 
