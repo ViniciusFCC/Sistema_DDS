@@ -4,8 +4,8 @@ Gerado por `tools/rodar_testes.py`. Não edite à mão: rode de novo.
 
 ## Ambiente (CA-10)
 
-- Data: 2026-10-19T00:37:35
-- Commit: `441487d`
+- Data: 2026-10-19T00:46:03
+- Commit: `bb82ec5`
 - Sistema: Windows-11-10.0.26300-SP0
 - Python: 3.13.15 (C:\Users\vferr\Documents\Sistema_DDS\.venv\Scripts\python.exe)
 - numpy 2.5.4, scipy 1.18.1, openpyxl 3.1.5 (fixados no `uv.lock`)
@@ -83,7 +83,7 @@ DETECTADO      gamma SAE so s_g=+1
 <details><summary>build: stdout</summary>
 
 ```text
-salvo C:\Users\vferr\AppData\Local\Temp\dds_build_j_xnfzmx\FSAE_EV_Suspension_Fase1_V2_4.xlsx linhas 177 ref 1526.9250569300661 -1131.8643128749413 2.715269352685693
+salvo C:\Users\vferr\AppData\Local\Temp\dds_build_6vmfcbvk\FSAE_EV_Suspension_Fase1_V2_4.xlsx linhas 177 ref 1526.9250569300661 -1131.8643128749413 2.715269352685693
 ```
 
 </details>
