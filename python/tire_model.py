@@ -11,10 +11,11 @@ HIPÓTESES (rotuladas; nenhuma fonte primária foi consultada nesta etapa):
      (não há pacote disponível no ambiente). Verificação disponível: limites analíticos (test_tire_model_V2_2.py).
  H2  Pressão: dpi = 0 (IP = IP_NOM) e coeficientes PP* = 0 -> termos de pressão omitidos; o loader REJEITA
      o arquivo se IP != IP_NOM ou algum PP* != 0.
- H3  Sistema de eixos do arquivo DECLARADO pelo usuário: SAE (convenção Calspan/TTC; dados baixados do TTC).
-     Fonte secundária consultada: tese UNCC 2015 (dado bruto TTC: alpha>0 = curva à esquerda, Fy<0 e Mz<0 para alpha>0,
-     Fz negativo). NÃO confirmada pela documentação do TTC. convention_status = USER_ASSERTED.
- H3b Transformação SAE_CALSPAN -> ISO 8855 (pneu direito): alpha_file = -alpha_ISO; Fy_ISO = -Fy_file; Fx e kappa iguais;
+ H3  Sistema de eixos do arquivo: o .tir provisório é PAC2002 do Adams e os parâmetros dele valem no eixo W do TYDEX
+     (orientação ISO; help do Adams 2024.1, PAC2002, p. 7): declarado ISO_TYDEX (EDR-039 reaberto, 2026-10-19;
+     convention_status = CONFIRMED, pela documentação do formato). Até a V2.4 era declarado SAE_CALSPAN (usuário; tese UNCC 2015 como fonte secundária).
+     O modo SAE_CALSPAN continua disponível para dado bruto em SAE.
+ H3b Modo SAE_CALSPAN (alternativo) -> ISO 8855 (pneu direito): alpha_file = -alpha_ISO; Fy_ISO = -Fy_file; Fx e kappa iguais;
      camber: gamma_file = -gamma_proj (INFERÊNCIA: o empuxo de camber aponta para o lado da inclinação; o sinal de IA do TTC
      NÃO foi verificado; os termos de camber do arquivo dão Fy_file<0 para gamma_file>0). O .tir tem Fz positivo
      (o dado bruto TTC é negativo): o arquivo passou por processamento; não se sabe se outros sinais foram convertidos.
