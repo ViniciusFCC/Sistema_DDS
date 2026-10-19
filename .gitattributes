@@ -1,0 +1,3 @@
+# Sem conversão de fim de linha: as cópias do commit 0 precisam ficar byte a byte
+# iguais à origem (MANIFEST.sha256) em qualquer checkout.
+* -text
