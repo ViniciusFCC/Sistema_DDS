@@ -18,7 +18,9 @@ Foco declarado: completar a planilha (EDR-019).
 - Não há hardpoints reais do CAD (Fusion): toda a cinemática usa geometria sintética.
 
 ## Comandos
-- Ambiente: `uv sync` (Python 3.13; no Git Bash, `uv sync --system-certs`). Ele instala o
+- Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
+  `uv sync` ou `uv run`: o `uv run` reconstrói o projeto depois de uma troca de branch e,
+  sem isso, falha no certificado do Norton. O `uv sync` instala o
   projeto em modo editável, com `python/` no caminho de import. Nunca `python`/`python3`
   direto: `python3` aqui é o atalho da Microsoft Store.
 - Tudo de uma vez: `uv run python -X utf8 tools/rodar_testes.py` (log em
