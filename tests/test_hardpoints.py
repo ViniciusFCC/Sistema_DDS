@@ -1,5 +1,6 @@
 """Test Cases do hardpoints_V2_0.py (schema, leitura e validação) — V2.1: + TC-HP-101..104 (inversões isoladas, tolerância do solo, metadados, sensibilidade angular). python3 test_hardpoints_V2_1.py"""
 import os, csv, json, tempfile, copy
+_TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name  # tudo que o teste cria em temp fica aqui e é apagado no fim
 import numpy as np
 from hardpoints import (load_hardpoints, build_hardpoint_set, write_hardpoints, lotus_to_iso8855, HardpointError,
                              CSV_COLUMNS, REQUIRED_KEYS, PUSH_KEYS)
