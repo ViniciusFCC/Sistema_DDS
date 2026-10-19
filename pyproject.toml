@@ -1,0 +1,14 @@
+[project]
+name = "sistema-dds"
+version = "2.4.1"
+description = "Dimensionamento e dinâmica da suspensão do FSAE Elétrico da equipe Tupã (USP)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "numpy",
+    "scipy",
+    "openpyxl",
+]
+
+[tool.uv]
+# Scripts soltos em python/ e tools/, não um pacote instalável (SPEC E1).
+package = false
