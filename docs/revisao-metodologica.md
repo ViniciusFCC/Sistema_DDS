@@ -196,7 +196,7 @@ TTC) e o pacote do TTC Round 6 (R25B; o `.tir` de 12 psi é o provisório). Equa
 | MR = Δroda/Δmola (EDR, nome `MR [wheel/spring]`) | OptimumKinematics §7.3.3.7 (p. 89): "Wheel Displacement / Spring Displacement" | mantém |
 | Anti-dive pelo contact patch (freio no cubo); anti-squat pelo centro da roda (motor no chassi) (EDR-048) | OptimumKinematics §7.3.3.1-7.3.3.3 (p. 84-86): anti-dive com o ângulo a partir do contact patch; anti-squat com o torque aplicado no centro da roda; anti-lift traseiro pelo contact patch com freio fora do chassi e pelo centro da roda com freio dentro | mantém; reforça o escopo do EDR-033 (regeneração pelo motor no chassi reage pelo centro da roda) |
 | Scrub radius + com o eixo de esterço cortando o solo entre a linha de centro e o contact patch | OptimumKinematics §7.3.3.12 (p. 92) | mantém (pela expressão de `kinematics_model`, com `side` = +1 à esquerda) |
-| Sistema de eixos do `.tir`: SAE_CALSPAN (EDR-039) | Adams p. 7: "the parameters in the tire property file must always be valid for the TYDEX W-axis system (ISO oriented)". Avaliação do arquivo: Fy(α > 0) < 0 e Fy(γ = 2°, α = 0) = −160 N (+27 N com γ = 0); Pacejka App. 1 (p. 612) e OptimumT fig. 8.2: γ > 0 desloca Fy para baixo só no ISO | **não se mantém**: o arquivo é ISO (TYDEX W). A transformação certa é a identidade (`ISO_TYDEX`), sem o s_γ inferido. Proposta: reabrir o EDR-039 (decisão do usuário) |
+| Sistema de eixos do `.tir`: SAE_CALSPAN (EDR-039) | Adams p. 7: "the parameters in the tire property file must always be valid for the TYDEX W-axis system (ISO oriented)". Avaliação do arquivo: Fy(α > 0) < 0 e Fy(γ = 2°, α = 0) = −160 N (+27 N com γ = 0); Pacejka App. 1 (p. 612) e OptimumT fig. 8.2: γ > 0 desloca Fy para baixo só no ISO | **não se mantinha**: o arquivo é ISO (TYDEX W). Corrigido em 2026-10-19 (usuário): EDR-039 reaberto, dataset declarado `ISO_TYDEX` (identidade, sem o s_γ inferido); efeito medido no registro de versões V3.0 |
 | Espelhamento das rodas esquerdas (H4) | Adams p. 73-74: com TYRESIDE, o pneu do outro lado é espelhado em relação a α = 0 (troca o sinal de PEY3, PHY1, PHY2, PVY1, PVY2, RHX1, RBY3, RVY1, RVY2 e de termos de Mz/Mx) | mantém (espelhar α, γ e Fy em ISO equivale a trocar o sinal desses termos ímpares) |
 
 ### 7.2 Métodos
@@ -219,7 +219,7 @@ TTC) e o pacote do TTC Round 6 (R25B; o `.tir` de 12 psi é o provisório). Equa
 | Cap. 19 da Milliken contra SUS-405/408/413 | aberta |
 | Modelo de bicicleta e gradiente de subesterço | aberta (só se a planilha ganhar o bloco) |
 | Forma exata do Fy0 e dos fatores λ no PAC2002 | **resolvida** (7.2); resta a lacuna do `LKYG` |
-| Sinal do IA do TTC (EDR-039) | **respondida pelo Adams**: o arquivo é ISO; falta a decisão de trocar SAE_CALSPAN por ISO_TYDEX |
+| Sinal do IA do TTC (EDR-039) | **resolvida**: o arquivo é ISO (Adams p. 7); trocado para ISO_TYDEX em 2026-10-19 (EDR-039 revisto) |
 | Anti-lift com regeneração (EDR-033) | método confirmado pelo OptimumKinematics; faltam os dados de divisão de frenagem da equipe |
 | α* = tan α (EDR-040) | **resolvida para PAC2002**: α. A escolha do formato do pneu real (R60A) continua aberta |
 | Ressalvas: limiar de MR | sem fonte (nenhum dos documentos dá limiar); decisão da equipe |

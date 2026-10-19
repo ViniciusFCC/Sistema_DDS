@@ -60,8 +60,9 @@ Foco declarado: completar a planilha (EDR-019).
 - Anti-dive/anti-squat nunca reduzem ΔFz longitudinal (EDR-010).
 - SI no núcleo; unidade no nome do campo em JSON/CSV (`X_m: 0.450`). Conversão só na
   apresentação, no Excel.
-- `.tir` em SAE_CALSPAN, transformado para ISO na roda direita; rodas esquerdas
-  espelhadas antes (EDR-039, com condições).
+- `.tir` PAC2002 em ISO_TYDEX (eixo W do TYDEX, help do Adams p. 7; EDR-039 revisto em
+  2026-10-19): sem transformação na roda direita; rodas esquerdas espelhadas antes.
+  SAE_CALSPAN fica só para dado bruto em SAE. A V2.4 histórica usa SAE_CALSPAN.
 - Três estados independentes, nunca misturados: Lifecycle (OPEN…FROZEN, STALE),
   Validation (NOT_VALIDATED/PASS/WARNING/FAIL) e Record_Status do EDR.
   VERIFIED ≠ validado fisicamente. FAIL = "não validado", não "modelo errado".
