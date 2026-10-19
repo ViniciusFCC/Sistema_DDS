@@ -34,7 +34,7 @@ TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
     ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V3_0.md"),
-    ("cinemática", "tests/test_kinematics_model.py", 54, "registro-de-versoes-V3_0.md"),
+    ("cinemática", "tests/test_kinematics_model.py", 70, "registro-de-versoes-V3_0.md"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
@@ -45,7 +45,7 @@ RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
 PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de-versoes-V3_0.md"),
-             ("tests/test_workbook_suspensao.py", 14, "suspensão da V3.0 (14 com a 2ª rodada da revisão metodológica); registro-de-versoes-V3_0.md")]
+             ("tests/test_workbook_suspensao.py", 15, "suspensão da V3.0 (15 com a 2ª rodada da revisão metodológica); registro-de-versoes-V3_0.md")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:

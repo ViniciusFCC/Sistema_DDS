@@ -158,7 +158,7 @@ def alteracoes(ky_row: int) -> list[dict]:
     a.append(_a("10_TIRE", f"A{ky_row}", "Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)", "EDR-049"))
     for c in "BCDEF":
         a.append(_a("10_TIRE", f"{c}{ky_row}", None, "EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9"))
-    return a + _rodada2() + _feedback2() + _eixo_iso()
+    return a + _rodada2() + _feedback2() + _eixo_iso() + _direcao()
 
 
 # =====================================================================================================================
@@ -381,7 +381,7 @@ ORIGENS_FB2 = [   # mesmo formato de ORIGENS; processadas junto com elas na form
 
 
 def _todas_origens() -> list[tuple]:
-    return ORIGENS + ORIGENS_FB2
+    return ORIGENS + ORIGENS_FB2 + ORIGENS_DIR
 
 
 def _feedback2() -> list[dict]:
@@ -416,6 +416,74 @@ def _feedback2() -> list[dict]:
 
 
 LINHA_NA_TBD = LINHAS_ORIGENS.stop + 4   # 00_README: logo depois do item 6 do guia
+
+# Direção (cap. 19 da Milliken; Gillespie cap. 6 e 8; Seward 6.3): EDR-052, fichas SUS-414 e SUS-415 (usuário, 2026-10-19:
+# "crie as fichas, implemente os cálculos e metodologias de acordo com a literatura"). Bloco novo na 07_KINEMATICS.
+_REF52 = "EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19)"
+DIR_CABECALHOS = {71: "Direção — Ackermann (SUS-414) — entradas PLACEHOLDER até haver a medição ou a geometria do TX",
+                  77: "Direção — relação de direção pela cremalheira (SUS-601, Milliken p. 718)",
+                  81: "Direção — roll steer e gradiente de subesterço (SUS-415, Gillespie eq. 6-57)"}
+_ACK = f"{K}$B$72"
+DIR_LINHAS = [   # (linha, rótulo, valor ou fórmula, unidade, ID, origem ou None, fonte)
+    (72, "Ângulo da roda dianteira externa (δo)", 20.0, "°", "SUS-414", EST,
+     "Estimativa: carros de FSAE precisam de pouco mais de 20° de esterço na roda externa (Seward p. 162-163, Tab. 6.2). "
+     "Não é o batente do TX."),
+    (73, "Ângulo da roda dianteira interna (δi) no mesmo esterço", 20.0, "°", "SUS-414", ARB,
+     "Placeholder: igual a δo (direção paralela, 0 % Ackermann) até haver a medição do TX ou a geometria (Python: "
+     "kinematics_model.ackermann_from_kinematics)."),
+    (74, "δi para Ackermann exato", f"=DEGREES(ATAN(1/(1/TAN(RADIANS({_ACK}))-{V}$B$7/{V}$B$6)))", "°", "SUS-414", None,
+     "Calculada: cot δo − cot δi = t/L (Gillespie eq. 8-1 e 8-2, p. 277-278), com t = 05 B7 e L = 05 B6. Reproduz a Tab. 6.2 do Seward."),
+    (75, "% Ackermann", f"=({K}$B$73-{_ACK})/({K}$B$74-{_ACK})*100", "%", "SUS-414", None,
+     "Calculada: 100 % = Ackermann exato; 0 % = paralelo; < 0 = reverso (Milliken p. 714-716; Seward, glossário). A razão "
+     "entre os dois extremos é a forma adotada pelo projeto (EDR-052)."),
+    (76, "Raio da trajetória da roda dianteira externa", f"={V}$B$6/SIN(RADIANS({_ACK}))", "m", "SUS-414", None,
+     "Calculada: L / sin δo (Seward, Tab. 6.2)."),
+    (78, "Curso da cremalheira por volta do pinhão (c-factor)", 0.0508, "m/volta", "SUS-601", ARB,
+     "Placeholder: o exemplo de \"2-inch rack\" do Milliken p. 718; não é a cremalheira do TX."),
+    (79, "Comprimento do braço de direção (pino mestre à barra)", 0.10, "m", "SUS-601", ARB,
+     "Placeholder: valor do caso de teste TC-KIN-109 (e = 0,10 m); não é o braço do TX."),
+    (80, "Relação de direção estimada pela cremalheira", f"=360/DEGREES(ASIN({K}$B$78/{K}$B$79))", "-", "SUS-601", None,
+     "Calculada: SR ≈ 360 / asin(c/braço), Milliken p. 718 (o livro imprime asin(c/braço)/360, que é o inverso da razão "
+     "definida na p. 716; EDR-052). Vale com a barra quase perpendicular ao braço. Compare com 06_SUSPENSION B44."),
+    (82, "Roll steer dianteiro (ε_f)", 0.0, "°/°", "SUS-415", ARB,
+     "Placeholder: sem hardpoints reais. ε > 0 esterça para a direita numa rolagem para a direita (Gillespie p. 220). "
+     "Python: kinematics_model.roll_steer_coefficient (na geometria sintética, −0,125 °/°)."),
+    (83, "Roll steer traseiro (ε_r)", 0.0, "°/°", "SUS-415", ARB, "Placeholder: sem hardpoints reais (ver B82)."),
+    (84, "Gradiente de rolagem ∂φ/∂a_y", f"=IF(AND(ISNUMBER({L}$B$21),{E}$B$11<>0),DEGREES({L}$B$21)/{E}$B$11,\"N/A\")",
+     "°/g", "SUS-415", None,
+     "Calculada: φ (09_LOADS B21) / a_y em g (08 B11). O φ do modelo é linear em a_y (SUS-103), então a razão é o gradiente."),
+    (85, "Contribuição do roll steer ao gradiente de subesterço", f"=IF(ISNUMBER({K}$B$84),({K}$B$82-{K}$B$83)*{K}$B$84,\"N/A\")",
+     "°/g", "SUS-415", None, "Calculada: K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57); K > 0 = subesterço."),
+]
+ORIGENS_DIR = [("07_KINEMATICS", r, org, fonte) for r, _, _, _, _, org, fonte in DIR_LINHAS]
+
+
+def _direcao() -> list[dict]:
+    a = []
+    for r, txt in DIR_CABECALHOS.items():
+        a.append(_a("07_KINEMATICS", f"A{r}", txt, _REF52, ("07_KINEMATICS", 30, "A")))
+    for r, rot, val, un, sid, org, fonte in DIR_LINHAS:
+        st_b = ("07_KINEMATICS", 10, "B") if org is not None else ("05_VEHICLE", 23, "B")
+        a += [_a("07_KINEMATICS", f"A{r}", rot, _REF52, ("07_KINEMATICS", 10, "A")),
+              _a("07_KINEMATICS", f"B{r}", val, _REF52, st_b),
+              _a("07_KINEMATICS", f"C{r}", un, _REF52, ("07_KINEMATICS", 10, "C")),
+              _a("07_KINEMATICS", f"D{r}", sid, _REF52, ("07_KINEMATICS", 10, "D")),
+              _a("07_KINEMATICS", f"F{r}", fonte, _REF52, ("07_KINEMATICS", 10, "C"))]
+        if org is not None:
+            st = ("07_KINEMATICS", 10, "C")
+            a += [_a("07_KINEMATICS", f"E{r}", org, "EDR-035", st),
+                  _a("07_KINEMATICS", f"G{r}", ("COPIA", f"B{r}"), "EDR-035: valor da geração (oculto)", st),
+                  _a("07_KINEMATICS", f"H{r}", org, "EDR-035: origem da geração (oculto)", st)]
+    # IC lateral (entradas do anti-dive/anti-squat): a definição que gerou o IC tem de ficar dita na Fonte (EDR-053).
+    contrato = (" Ao preencher, diga na Fonte de que definição veio o IC: linha de força pelo trabalho virtual (Python, "
+                "kinematics_model.force_lines_vw; EDR-053) ou tela do OptimumKinematics (definição a confirmar). Na geometria "
+                "sintética as duas dão 38,6 % e cerca de 93 % de anti-dive.")
+    fontes = {10: "Placeholder geométrico para testar a fórmula; não é hardpoint real. Fase 2: REFERENCE do OptimumKinematics.",
+              11: _KIN, 12: _KIN, 13: _KIN}
+    a += [_a("07_KINEMATICS", f"F{r}", txt + contrato, "EDR-053 (conselho de 2026-10-19; usuário seguiu a recomendação)")
+          for r, txt in fontes.items()]
+    return a
+
 
 # EDR-039 reaberto (usuário, 2026-10-19): o .tir é PAC2002 do Adams, cujos parâmetros "must always be valid for the TYDEX
 # W-axis system (ISO oriented)" (Adams 2024.1, Using the PAC2002 Tire Model, p. 7). Sistema de eixos declarado = ISO_TYDEX.
@@ -526,6 +594,8 @@ def _feedback2_formatacao(wb, registro: list[dict]) -> None:
     """Parte da 2ª rodada da revisão metodológica que não é valor de célula: mesclagem do item 7 do guia, versão e changelog."""
     m = wb["00_README"]
     m.merge_cells(f"A{LINHA_NA_TBD}:E{LINHA_NA_TBD}")
+    for r in DIR_CABECALHOS:
+        wb["07_KINEMATICS"].merge_cells(f"A{r}:E{r}")
     marca = "EDR-035, EDR-050, EDR-051)"
     assert marca in m["A3"].value, "texto da versão em 00_README!A3 mudou"
     m["A3"].value = m["A3"].value.replace(marca, marca[:-1] + "; 2ª rodada da revisão metodológica: hipótese do CG não suspenso como "
@@ -537,7 +607,8 @@ def _feedback2_formatacao(wb, registro: list[dict]) -> None:
     c["B18"].value = ("V3.0, 2a rodada da revisao metodologica: razao h_ns / raio do pneu como entrada (05_VEHICLE B35/B36, Milliken p. 672); "
                       "05 B16/B17 = raio x razao; 07_KINEMATICS B14 (centro da roda traseira) = raio do pneu, sem passar pelo CG nao "
                       "suspenso; item 7 do guia (N/A e TBD); 14_DASHBOARD coluna E: pior origem das entradas de cada resultado, "
-                      "ao vivo (FB-03 fase 2); 10_TIRE: eixo do .tir = ISO_TYDEX (EDR-039 reaberto, help do Adams PAC2002).")
+                      "ao vivo (FB-03 fase 2); 10_TIRE: eixo do .tir = ISO_TYDEX (EDR-039 reaberto, help do Adams PAC2002); 07_KINEMATICS "
+                      "l.71-85: direcao (Ackermann, relacao pela cremalheira, roll steer; SUS-414, SUS-415, SUS-601; EDR-052).")
     c["C18"].value = ("Decisoes do usuario (2026-10-19). EDR-050 (estendido), EDR-035 (N/A e TBD). Registro celula a celula: "
                       "docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-013 estendido). NOT_VALIDATED fisicamente.")
     registro += [
