@@ -397,6 +397,17 @@ check("TC-KIN-118d: antissimetria AD(s) = -AD(-s) e AS(s) = -AS(-s)", abs(ad(0.0
 check("TC-KIN-118e: linear em FB_f/TF_r e em L/h; fração de força nula -> resultado nulo", abs(ad(-0.1, 0.3) * 2 - ad(-0.1, 0.6)) < 1e-12 and ad(-0.1, 0.0) == 0.0 and asq(0.1, 0.0) == 0.0)
 check("TC-KIN-118f: AD (frente) e AS (traseira) são espelhos: AD(s) = AS(-s) para frações iguais", abs(ad(0.05, 1.0) - asq(-0.05, 1.0)) < 1e-12)
 
+# ---------------- TC-KIN-119: ponto de reação do carro atual (EDR-048) ----------------
+import kinematics_model as _km
+_rp = _km.REACTION_POINT
+_kc = kinematic_centers(FL)
+_s_cp = force_line_slope(_kc["side"], _kc["contact_patch"][[0, 2]])
+_s_wc = force_line_slope(_kc["side"], _kc["wheel_center"][[0, 2]])
+check("TC-KIN-119: REACTION_POINT (freio outboard -> contact patch; motor no chassi -> centro da roda) e as duas linhas diferem",
+      _rp == {"anti_dive_front": "contact_patch", "anti_lift_rear": "contact_patch", "anti_squat_rear": "wheel_center"}
+      and len(full_sweep(FL, [0.0], reaction_point=_rp["anti_squat_rear"])) == 1 and abs(_s_cp - _s_wc) > 1e-3,
+      f"inclinação contact patch={_s_cp:.4f}, centro da roda={_s_wc:.4f}")
+
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s in results if s == "PASS")

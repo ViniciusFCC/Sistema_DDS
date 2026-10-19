@@ -89,7 +89,22 @@ def roll_center_model_check(lca_outer: Hardpoint, lca_inner: Hardpoint,
 
 # =====================================================================
 # SUS-406 — Instant Center (vista lateral) -> Anti-Dive / Anti-Squat
+# LEGADO (EDR-048): o método do ponto médio das buchas e a forma tan(phi) = Z_IC/|d| sem sinal NÃO
+# aparecem na literatura (Gillespie p. 249: IC na interseção projetada dos eixos dos braços; Milliken
+# p. 612-620) e dão %AD sem sentido em geometria realista (-680,7 contra 36,3; TC-KIN-114). Ficam só
+# para os testes de regressão. Use kinematic_centers + force_line_slope + anti_*_percent_signed, com o
+# ponto de reação de REACTION_POINT.
 # =====================================================================
+
+# Ponto de reação da linha de força lateral, por efeito (EDR-048; Milliken p. 618-619, Fig. 17.12, 17.13
+# e 17.15; Gillespie eq. 7-17 a 7-19). Configuração do carro informada pelo usuário em 2026-10-19:
+# freios dentro da roda, em volta do cubo (outboard, sem redução planetária) e motor no chassi, atrás,
+# com o torque de tração reagido pelo chassi.
+REACTION_POINT = {
+    "anti_dive_front": "contact_patch",   # freio outboard: torque reagido pela manga
+    "anti_lift_rear": "contact_patch",    # idem, na frenagem
+    "anti_squat_rear": "wheel_center",    # motor no chassi + semieixos: Milliken Fig. 17.15(b)
+}
 
 def side_view_inner_midpoint(bushing_front: Hardpoint, bushing_rear: Hardpoint) -> Hardpoint:
     """Passo 0 do SUS-406: ponto medio das buchas dianteira/traseira do braco,
@@ -131,7 +146,7 @@ def anti_dive_squat_model_check(lca_outer: Hardpoint, lca_bushing_front: Hardpoi
                                  uca_outer: Hardpoint, uca_bushing_front: Hardpoint, uca_bushing_rear: Hardpoint,
                                  contact_patch_x: float, force_fraction: float,
                                  wheelbase: float, cg_height: float) -> dict:
-    """SUS-406 + SUS-301/302 completo: IC lateral -> tan(phi) -> %AD ou %AS.
+    """LEGADO (EDR-048), não usar em cálculo novo. SUS-406 V1 + SUS-301/302 V1: IC lateral -> tan(phi) -> %AD ou %AS.
 
     force_fraction = FB_f (Anti-Dive, frenagem) ou TF_r (Anti-Squat, tracao).
     NUNCA usar para alterar a magnitude do load transfer longitudinal (SUS-102) -
@@ -551,7 +566,7 @@ def ic_methods_at_reference(corner: Corner):
 def full_sweep(corner: Corner, travels, steer=0.0, reaction_point="contact_patch"):
     """Varredura completa (uma linha por curso): métricas de pose + MR (se há mola) + IC/RC cinemáticos + inclinação
     da linha de força lateral. reaction_point: 'contact_patch' (freio/tração reagidos pela manga) ou 'wheel_center'
-    (reagidos pelo chassi, ex.: freio/motor inboard) — configuração real da equipe ainda em aberto (Standard, SUS-406)."""
+    (reagidos pelo chassi, ex.: freio/motor inboard). Para o carro atual, ver REACTION_POINT (EDR-048)."""
     if reaction_point not in ("contact_patch", "wheel_center"):
         raise ValueError("reaction_point deve ser 'contact_patch' ou 'wheel_center'")
     rows = []
