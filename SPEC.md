@@ -134,7 +134,7 @@ Todas as partes são sequenciais e pequenas. Cada uma depende do commit anterior
 
 - **[RESOLVIDO] A1.** Onde a equipe encontra a planilha vigente: GitHub Releases do repositório privado, com a planilha anexada a cada release. Por enquanto, a versão vigente também é entregue ao usuário na conversa (decisão do usuário, 2026-10-19).
 - **[RESOLVIDO] A2.** O número do EDR que revisa o EDR-017: EDR-043, autorizado pelo usuário em 2026-10-19.
-- **[ABERTO] A3.** `test_t09_reference_case.py` (pasta `plan/`) importa `suspension_model` da v0.1, e não da V2.1. Recomendação: fora da fase A; avaliar na fase B se ele deve ser portado para a V2.1.
+- **[RESOLVIDO] A3.** `test_t09_reference_case.py` (pasta `plan/`) importava `suspension_model` da v0.1. Decisão do usuário (2026-10-19): portado como regressão histórica em `tests/regressao/t09_referencia_historica.py`, rotulado como referência histórica (EDR-012), fora do `tools/rodar_testes.py` e das contagens de aprovação. Ele confere a forma sem pneu que a planilha do T09 usava (7 valores reproduzidos); a avaliação está em `docs/revisao-metodologica.md` §4.
 
 ## 11. Fase B (depois da `v2.4.1`, fora do mínimo)
 

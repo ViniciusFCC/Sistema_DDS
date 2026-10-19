@@ -4,7 +4,7 @@
 literatura (principalmente o Milliken) e autorizou todas as propostas da seção 5: elas
 estão **aplicadas** na V2.5 (EDR-045 a EDR-049; `docs/registro-de-versoes-V2_5.md`). As
 tabelas das seções 2 e 3 descrevem o estado **antes** da V2.5; a coluna "Resultado" vale
-para a V2.4. A decisão A3 (seção 4) continua aberta.
+para a V2.4. A decisão A3 (seção 4) foi tomada no mesmo dia: o caso T09 virou regressão histórica.
 
 **Script de apoio:** `tools/oraculos_literatura.py` (não altera nada; reproduz os exemplos
 numéricos dos livros e mede o efeito de cada divergência). Saída da última execução em
@@ -137,11 +137,11 @@ O que isso significa e o que não significa:
 - Com a V2.5 (pneu em série), o caso T09 deixa de bater por construção: a planilha
   histórica do T09 calculava sem o pneu.
 
-**Recomendação (não é decisão):** portar como **regressão histórica** em
-`tests/regressao/`, rotulada REFERÊNCIA HISTÓRICA T09 (EDR-012), sem entrar na contagem
-de aprovação do modelo atual, e com o próprio teste dizendo que confere a fórmula
-simplificada da equipe, não a da literatura. Alternativa: não portar e registrar o
-resultado acima no EDR. A decisão é do usuário.
+**Decisão do usuário (2026-10-19):** portar como **regressão histórica**, rotulada como
+referência histórica (EDR-012) e sem contar na aprovação do modelo. Feito em
+`tests/regressao/t09_referencia_historica.py`: o script roda o modelo atual na forma sem
+pneu (`k_tire = inf`), reproduz os 7 valores da planilha do T09 (erro máximo 0,014 %),
+mostra a forma da V2.5 só como informação e fica fora do `tools/rodar_testes.py`.
 
 ## 5. Propostas de correção (aplicadas na V2.5 em 2026-10-19)
 
