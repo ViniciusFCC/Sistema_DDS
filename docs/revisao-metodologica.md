@@ -179,3 +179,50 @@ entre IC cinemático e eixos de pivô (TC-011).
   escopo no EDR-033).
 - Definição α* = tan α (Pacejka eq. 4.E3) contra α (Seward; módulo atual): depende de como o
   OptimumTire ajustou o arquivo (EDR-040).
+
+## 7. 2ª rodada: conferência contra a documentação dos programas (2026-10-19)
+
+Documentos recebidos do usuário em 2026-10-19 (em `references/`, fora do Git; ver `references/INDEX.md`): help do
+OptimumKinematics (REFERENCE de cinemática, EDR-004), help do OptimumT 1.0.14, help do Adams 2024.1 "Using the PAC2002
+Tire Model" (o `.tir` provisório declara `PAC2002 2018`, `COMPATIBILITY: Adams Tire 2018`, feito pela Stackpole para o
+TTC) e o pacote do TTC Round 6 (R25B; o `.tir` de 12 psi é o provisório). Equações conferidas na imagem da página.
+
+### 7.1 Convenções
+
+| Convenção do projeto | Documento | Situação |
+|---|---|---|
+| Eixos ISO 8855 (X frente, Y esquerda, Z cima) | OptimumKinematics §5.1, fig. 15 (p. 31): X para a frente, Z para cima, Y para a esquerda pela figura (a tabela diz só "front or rear"); Adams: eixos C e W do TYDEX com orientação ISO (p. 6-7) | mantém |
+| Camber + = topo para fora; toe + = toe-out (EDR-002) | OptimumKinematics §7.3.3.5 e 7.3.3.6 (p. 88-89): mesmas definições | mantém |
+| MR = Δroda/Δmola (EDR, nome `MR [wheel/spring]`) | OptimumKinematics §7.3.3.7 (p. 89): "Wheel Displacement / Spring Displacement" | mantém |
+| Anti-dive pelo contact patch (freio no cubo); anti-squat pelo centro da roda (motor no chassi) (EDR-048) | OptimumKinematics §7.3.3.1-7.3.3.3 (p. 84-86): anti-dive com o ângulo a partir do contact patch; anti-squat com o torque aplicado no centro da roda; anti-lift traseiro pelo contact patch com freio fora do chassi e pelo centro da roda com freio dentro | mantém; reforça o escopo do EDR-033 (regeneração pelo motor no chassi reage pelo centro da roda) |
+| Scrub radius + com o eixo de esterço cortando o solo entre a linha de centro e o contact patch | OptimumKinematics §7.3.3.12 (p. 92) | mantém (pela expressão de `kinematics_model`, com `side` = +1 à esquerda) |
+| Sistema de eixos do `.tir`: SAE_CALSPAN (EDR-039) | Adams p. 7: "the parameters in the tire property file must always be valid for the TYDEX W-axis system (ISO oriented)". Avaliação do arquivo: Fy(α > 0) < 0 e Fy(γ = 2°, α = 0) = −160 N (+27 N com γ = 0); Pacejka App. 1 (p. 612) e OptimumT fig. 8.2: γ > 0 desloca Fy para baixo só no ISO | **não se mantém**: o arquivo é ISO (TYDEX W). A transformação certa é a identidade (`ISO_TYDEX`), sem o s_γ inferido. Proposta: reabrir o EDR-039 (decisão do usuário) |
+| Espelhamento das rodas esquerdas (H4) | Adams p. 73-74: com TYRESIDE, o pneu do outro lado é espelhado em relação a α = 0 (troca o sinal de PEY3, PHY1, PHY2, PVY1, PVY2, RHX1, RBY3, RVY1, RVY2 e de termos de Mz/Mx) | mantém (espelhar α, γ e Fy em ISO equivale a trocar o sinal desses termos ímpares) |
+
+### 7.2 Métodos
+
+| Método | Documento | Situação |
+|---|---|---|
+| Fy0 puro (SUS-501) | Adams eq. 30-44 (p. 30-31) | confere termo a termo, menos o fator λKyγ (`LKYG`) nos termos de camber de S_Hy e S_Vy, que o código não aplica. Com `LKYG = 1` no arquivo, o efeito é zero hoje |
+| Ky com um único λFz0 (EDR-049) | Adams eq. 38: K_y0 = p_Ky1·F_z0·sin[2·atan(F_z/(p_Ky2·F'_z0))]·λ_Fz0·λ_Ky, com F'_z0 = λ_Fz0·F_z0 | mantém (idêntico à forma do código) |
+| Fx0 puro e combinados (G_xα, G_yκ, S_Vyκ) | Adams eq. 18-29 e 80-99 (p. 27-28, 43-45) | conferem termo a termo |
+| α ou tan α (EDR-040) | Adams eq. 4 define α por tan α = V_sy/\|V_x\| e as equações usam α (eq. 32); OptimumT (p. 141) e Pacejka 2006 (eq. 4.E3) usam tan α em outras versões do modelo | mantém α para arquivos PAC2002 (forma do programa para o qual o `.tir` foi feito). A dúvida do EDR-040 sobre "como o OptimumTire ajustou" não se aplica a este arquivo (foi ajustado pela Stackpole, não no OptimumTire) |
+| Rigidez vertical K_T = `VERTICAL_STIFFNESS` (SUS-211, EDR-045) | Adams p. 10-14: `VERTICAL_STIFFNESS` só vale com QFZ1 = 0; com QFZ1 ≠ 0, C_z = q_Fz1·F_z0/R_0 | mantém: o arquivo tem QFZ1 = 29,7127 e QFZ2 = 0, e 29,7127 × 1054 / 0,2603 = 120 312 N/m, o mesmo valor. Modelo linear, como no Adams com QFZ2 = 0 |
+| IC frontal e lateral cinemáticos (SUS-412) | OptimumKinematics §7.3.3.13, 7.3.3.16 e 7.3.3.20 (p. 93-95): eixo instantâneo do conjunto não suspenso (pequeno deslocamento da roda, com a barra de direção); IC = interseção desse eixo com o plano vertical que passa pelos contact patches (transversal na vista frontal, longitudinal na lateral) | **diferente na construção**: o código projeta as velocidades de dois ball joints no plano da vista e cruza as normais. As duas coincidem quando o eixo instantâneo é perpendicular ao plano da vista; com caster, anti e esterço, não. Diferença não quantificada |
+| RC cinemático (SUS-412) | OptimumKinematics §6.10 e §7.3.3.23 (p. 62 e 97): RC = interseção dos planos (eixo instantâneo + contact patch) esquerdo e direito com o plano vertical central; difere do RC geométrico | mesma observação do IC: equivale ao do código só no caso plano |
+| Barra anti-rolagem como rigidez pronta | OptimumKinematics §7.3.3.7: MR da barra = ângulo de rolagem / deslocamento angular da barra | simplificação continua válida; com o OptimumKinematics, a rigidez da barra na roda pode sair da geometria |
+
+### 7.3 Pendências da 1ª rodada (seção 6), situação em 2026-10-19
+
+| Pendência | Situação |
+|---|---|
+| Cap. 19 da Milliken contra SUS-405/408/413 | aberta |
+| Modelo de bicicleta e gradiente de subesterço | aberta (só se a planilha ganhar o bloco) |
+| Forma exata do Fy0 e dos fatores λ no PAC2002 | **resolvida** (7.2); resta a lacuna do `LKYG` |
+| Sinal do IA do TTC (EDR-039) | **respondida pelo Adams**: o arquivo é ISO; falta a decisão de trocar SAE_CALSPAN por ISO_TYDEX |
+| Anti-lift com regeneração (EDR-033) | método confirmado pelo OptimumKinematics; faltam os dados de divisão de frenagem da equipe |
+| α* = tan α (EDR-040) | **resolvida para PAC2002**: α. A escolha do formato do pneu real (R60A) continua aberta |
+| Ressalvas: limiar de MR | sem fonte (nenhum dos documentos dá limiar); decisão da equipe |
+| Ressalvas: IC em 3D | definição da REFERENCE conhecida (7.2); falta implementar o método dela e medir a diferença |
+| Ressalvas: simplificações (RC fixo, superposição, barra pronta, aero, taxa geométrica do MR) | continuam aceitas; nenhum documento as contradiz |
+| K_T do pneu real, hardpoints do CAD, comparação com OptimumKinematics/OptimumTire | dependem de dados |
