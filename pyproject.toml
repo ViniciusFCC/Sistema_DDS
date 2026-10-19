@@ -23,3 +23,8 @@ dev-mode-dirs = ["python"]
 only-include = ["python"]
 sources = ["python"]
 exclude = ["*.md"]
+
+[dependency-groups]
+dev = [
+    "pywin32>=306 ; sys_platform == 'win32'",
+]

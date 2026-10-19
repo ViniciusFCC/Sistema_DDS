@@ -20,7 +20,7 @@ Transformar os artefatos V2.4 exportados do claude.ai num projeto local versiona
 | ID | Decisão |
 |---|---|
 | D1 | Versionamento híbrido: Git com tags para código e docs; a planilha entregue à equipe mantém a versão no nome. A renomeação para nomes estáveis acontece só na fase B, depois da reprodução, e exige um EDR novo que revise o EDR-017. |
-| D2 | O `test_workbook_V2_4.py` não roda localmente: depende de LibreOffice e de `/mnt/skills/public/xlsx/scripts/recalc.py` (linhas 10 e 28). Na fase A ele é registrado como **NÃO EXECUTÁVEL**. Na fase B, é substituído por um recálculo via pywin32/COM no Excel, com EDR próprio. |
+| D2 | O `test_workbook_V2_4.py` não roda localmente: depende de LibreOffice e de `/mnt/skills/public/xlsx/scripts/recalc.py` (linhas 10 e 28). Na fase A ele é registrado como **NÃO EXECUTÁVEL**. Na fase B, é substituído por um recálculo via pywin32/COM no Excel, com EDR próprio. *Feito pelo EDR-044 (Excel, com LibreOffice como alternativa): 19/19.* |
 | D3 | PDFs de livros e suas conversões `.md` ficam fora do Git. Entra só `references/INDEX.md`. |
 | D4 | Repositório GitHub **privado**. Fora do Git: `*.tir`, PDFs, `importado-claude-ai/`, `Sistema_DDS_CONTEXTO_COMPLETO.md`. Sem Git LFS. |
 | D5 | Ordem: backup → commit 0 (cópia fiel) → commit 1 (portabilidade) → reprodução → tag `v2.4.1` → push. A renomeação vem depois. |
@@ -141,7 +141,7 @@ Todas as partes são sequenciais e pequenas. Cada uma depende do commit anterior
 1. ~~EDR-043, que revisa o EDR-017~~: aprovado em 2026-10-19 e VERIFIED.
 2. ~~Commit de reestruturação e renomeação (`git mv` para `python/`, `tests/` e `data/`, com nomes estáveis e imports e caminhos ajustados). Testes de novo, com o mesmo resultado da fase A.~~ Feito no PR #1 (branch `refactor/nomes-estaveis`), com o mesmo resultado da fase A.
 3. ~~Versão gravada dentro da planilha (estrutura nova, precisa de aprovação) e o local de distribuição (A1).~~ Sem estrutura nova (decisão do usuário, 2026-10-19): a versão já fica em `00_README!A3`, e o `tools/rodar_testes.py` confere que ela é a mesma do nome do arquivo. Distribuição: A1.
-4. Recálculo via COM no Excel, substituindo o `recalc.py`, com EDR próprio. O 19/19 deve ser reproduzido, e uma divergência segue o §2.6.
+4. ~~Recálculo via COM no Excel, substituindo o `recalc.py`, com EDR próprio. O 19/19 deve ser reproduzido, e uma divergência segue o §2.6.~~ EDR-044: Excel via COM, com LibreOffice como alternativa; 19/19 reproduzido com os dois motores.
 
 ## 12. Ordem no fluxo global
 

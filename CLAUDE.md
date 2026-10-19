@@ -31,8 +31,9 @@ Foco declarado: completar a planilha (EDR-019).
   testes` com N igual ao esperado.
 - Esperado na V2.4: pneu 43, oráculos 5, suspensão 42, cinemática 53, hardpoints 35,
   mutação 23/23, planilha regenerada com 347 fórmulas e 0 diferença.
-  `tests/test_workbook.py` NÃO roda localmente (depende de LibreOffice e
-  de `/mnt/skills`); nunca o conte como aprovado.
+  `tests/test_workbook.py` 19/19: recalcula cópias pelo Excel via COM ou, sem Excel, pelo
+  LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois ele
+  sai NÃO EXECUTÁVEL, que nunca conta como aprovado.
 - Rode os testes afetados antes de dizer que uma tarefa terminou.
 
 ## Fontes de verdade
@@ -78,7 +79,7 @@ Foco declarado: completar a planilha (EDR-019).
 - Não versione `*.tir` (dados do TTC, termos não verificados), PDFs ou conversões de
   livros, nem `Sistema_DDS_CONTEXTO_COMPLETO.md`.
 - Não use xlwings/PyXLL/macros como ponte Excel–Python (EDR-008). Uso só em teste
-  exige EDR próprio.
+  exige EDR próprio (o recálculo de cópias no `test_workbook` via COM é o EDR-044).
 - Não recalcule nem salve a planilha entregue pelo LibreOffice (remove as aspas de abas
   iniciadas por dígito) e não a salve pelo Excel: gere sempre uma cópia.
 - Não leia o `Sistema_DDS_CONTEXTO_COMPLETO.md` inteiro (721 KB); busque nele.
