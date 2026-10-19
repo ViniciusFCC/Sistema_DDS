@@ -2,7 +2,7 @@
 Suspension & Vehicle Dynamics Model — FSAE EV
 Implementa as fichas do Engineering Standard V2.0 (SUS-000 a SUS-208, SUS-701/702).
 
-V2.5 (revisão metodológica contra Milliken, Gillespie e Seward; docs/revisao-metodologica.md):
+V3.0 (revisão metodológica contra Milliken, Gillespie e Seward; docs/revisao-metodologica.md):
   EDR-045 pneu em série na frequência (SUS-205, via ride rate SUS-212) e na rigidez de rolagem (SUS-206/207);
   EDR-046 termo gravitacional da rolagem em SUS-103; EDR-047 massa suspensa por eixo exata e CG suspenso em a_s.
   Os valores mudam em relação à V2.1 (intencional; a V1.0 congelada fica em tests/regressao/).
@@ -19,7 +19,7 @@ from dataclasses import dataclass, fields
 import math
 import warnings
 
-__version__ = "V2.5"
+__version__ = "V3.0"
 
 # HIPÓTESE (sem fonte no projeto): abaixo deste MR emite aviso. O Guide (D.2) pede o teste de fronteira "MR muito pequeno"
 # mas não define o limite. Revisar com dado real da equipe.

@@ -7,7 +7,7 @@ tomada pelo usuário em 2026-10-19: portar como regressão histórica, sem conta
 
 O que este script confere: que o modelo atual, configurado na forma SEM pneu em série
 (k_tire = inf), reproduz os números da planilha de cálculo detalhada do T09. Ou seja, confere
-a TRANSCRIÇÃO das fórmulas que a equipe usava, não a física. Desde a V2.5 (EDR-045) o projeto
+a TRANSCRIÇÃO das fórmulas que a equipe usava, não a física. Desde a V3.0 (EDR-045) o projeto
 segue a literatura e põe o pneu em série; a forma "com pneu" é mostrada só como informação.
 
 Uso: uv run python -X utf8 tests/regressao/t09_referencia_historica.py
@@ -65,7 +65,7 @@ for nome, decl in DECLARADO.items():
 print("\nSem dado histórico (não conferível): Fz estático, transferência longitudinal, transferência lateral.")
 print("Motivo: não há condição de operação (a_x, a_y) nem Fz medido do T09.")
 
-print("\nInformativo — o mesmo T09 pela forma da V2.5 (pneu em série, EDR-045), com o K_T do .tir")
+print("\nInformativo — o mesmo T09 pela forma da V3.0 (pneu em série, EDR-045), com o K_T do .tir")
 print("PROVISÓRIO (120312 N/m, não é o pneu do T09): os valores históricos deixam de bater por construção.")
 KT = 120312.0
 rs_f_t = roll_stiffness_axle(kw_f, track, karb_f, KT)

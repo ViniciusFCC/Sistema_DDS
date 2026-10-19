@@ -1002,11 +1002,11 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Alternatives:** (a) manter K_W (forma da V2.4, igual à planilha histórica do T09); (b) pôr o pneu em série, como a literatura.
 - **Decision:** (b). Novos IDs: SUS-211 (rigidez vertical do pneu, K_T, INPUT por eixo) e SUS-212 (ride rate, K_R = K_W·K_T/(K_W+K_T), CALCULATED). SUS-205 usa K_R; SUS-206/207 = (K_W·t²/2 + K_ARB) em série com K_T·t²/2 (barra referida à roda); o modo Design inverte as duas séries (K_W = K_R·K_T/(K_T − K_R); K_ARB pela inversa da série). Os IDs são SUS-211/212, e não SUS-209/210, porque o EDR-023 cita SUS-209 numa proposta ainda aberta.
 - **Rationale:** Milliken p. 588-592 e p. 680 ("tire deflection rates are included in the front and rear roll rate values"); Gillespie eq. 5-8/5-9; Seward eq. 4.1, 4.2, 4.4 e 4.5.
-- **Evidence:** `test_suspension_model.py` 54/54, com os exemplos publicados: Seward Ex. 4.1 (K_R 18,2 e 100 N/mm; f_s 2,05 e 4,8 Hz), Gillespie p. 154 (RR 127 lb/in; 1,14 Hz), Milliken p. 592 (K_W 476/254 lb/in; barra 19 904 lb·ft/rad). Planilha V2.5: `test_workbook_suspensao.py` 9/9 (Excel = Python).
+- **Evidence:** `test_suspension_model.py` 54/54, com os exemplos publicados: Seward Ex. 4.1 (K_R 18,2 e 100 N/mm; f_s 2,05 e 4,8 Hz), Gillespie p. 154 (RR 127 lb/in; 1,14 Hz), Milliken p. 592 (K_W 476/254 lb/in; barra 19 904 lb·ft/rad). Planilha V3.0: `test_workbook_suspensao.py` 9/9 (Excel = Python).
 - **Assumptions:** K_T é o `VERTICAL_STIFFNESS` do .tir TTC PROVISÓRIO (120 312 N/m, EDR-038), não o pneu do carro: a equipe ainda não tem o valor (usuário, 2026-10-19). Rigidez do pneu linear e igual nos dois lados do eixo.
 - **Consequences:** Com os valores da planilha, f_n cai cerca de 6 % e K_φ de 13 a 16 % (demonstrativo). A planilha histórica do T09 (caso A3) usava a forma sem pneu: o caso T09 deixa de bater por construção.
-- **Affected_Artifacts:** `python/suspension_model.py`; planilha V2.5 (06_SUSPENSION B22, B23, B32, B33 e l. 46-52; 11_DESIGN B8, B9, B20); Standard SUS-205/206/207/208/211/212.
-- **Affected_Tests:** TC-010, piloto, TC-SUS-V25-001..006; TC-WB25-002..007.
+- **Affected_Artifacts:** `python/suspension_model.py`; planilha V3.0 (06_SUSPENSION B22, B23, B32, B33 e l. 46-52; 11_DESIGN B8, B9, B20); Standard SUS-205/206/207/208/211/212.
+- **Affected_Tests:** TC-010, piloto, TC-SUS-V30-001..006; TC-WB30-002..007.
 - **Dependencies:** EDR-038 (dataset provisório); EDR-003.
 - **Approval_Conditions:** —
 - **Reopening_Criteria:** Rigidez vertical medida do pneu real; comparação com o OptimumKinematics ou medição de frequência discordante.
@@ -1022,11 +1022,11 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Alternatives:** (a) manter a forma simplificada; (b) fórmula completa da Milliken.
 - **Decision:** (b): φ = m_s·a_y·h2/(K_φF + K_φR − m_s·g·h2); ΔFz_F = [K_φF·φ + a_y·(m_s,F·z_F + m_uF·h_uF)]/t_F (análogo atrás), com h2 na vertical. Se m_s·g·h2 ≥ K_φF + K_φR, o Python bloqueia e a planilha devolve "N/A - instabilidade". TC-005 passa a t_F·ΔF_F + t_R·ΔF_R = m·a_y·h + m_s·g·h2·φ.
 - **Rationale:** Milliken p. 682-684 e §18.10 (p. 703); Gillespie eq. 6-31 a 6-34. A forma impressa de K_F' na p. 682 não reproduz o exemplo da p. 683; a forma sem essa correção reproduz exatamente e é a coerente com o equilíbrio do carro (ver a revisão).
-- **Evidence:** TC-SUS-V25-009 (590,81/483,39 contra 590,8/483,4 lb/g do livro) e TC-SUS-V25-010 (−1,99 °/g contra −2,0 °/g); TC-005 com a nova identidade (resíduo ~1e-13); TC-WB25-003, 006 e 008.
+- **Evidence:** TC-SUS-V30-009 (590,81/483,39 contra 590,8/483,4 lb/g do livro) e TC-SUS-V30-010 (−1,99 °/g contra −2,0 °/g); TC-005 com a nova identidade (resíduo ~1e-13); TC-WB30-003, 006 e 008.
 - **Assumptions:** Regime permanente, pequenos ângulos, RC fixo (EDR-009).
 - **Consequences:** Muda 09_LOADS B19-B21 e 13_VALIDATION B6. Efeito típico de +2 a +3 % na transferência elástica.
-- **Affected_Artifacts:** `suspension_model.lateral_dfz`; planilha V2.5; Standard SUS-103.
-- **Affected_Tests:** TC-005, TC-007, TC-008, TC-SUS-V2-004, TC-SUS-V25-009..011; TC-WB25-003/006/008.
+- **Affected_Artifacts:** `suspension_model.lateral_dfz`; planilha V3.0; Standard SUS-103.
+- **Affected_Tests:** TC-005, TC-007, TC-008, TC-SUS-V2-004, TC-SUS-V30-009..011; TC-WB30-003/006/008.
 - **Dependencies:** EDR-011, EDR-047.
 - **Approval_Conditions:** —
 - **Reopening_Criteria:** REFERENCE (OptimumKinematics ou medição) discordante.
@@ -1042,11 +1042,11 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Alternatives:** (a) manter a aproximação; (b) forma da fonte.
 - **Decision:** (b): m_s,F = m·b/L − m_uF, m_s,R = m·a/L − m_uR; a_s = L·m_s,R/m_s; z_s = z_F + (z_R − z_F)·a_s/L; parcela geométrica de SUS-103 = m_s,F·z_F na frente (análogo atrás).
 - **Rationale:** Milliken p. 601 (Tab. 16.3: W_SF = W_F − W_UF) e p. 602-603 (h_s, a_s); Seward eq. 5.14.
-- **Evidence:** TC-SUS-V25-007/008 (979,5/1163 lb; h_s 15,56 in; 45,7 %); TC-SUS-V25-009 (a_s 4,37 ft como no livro).
+- **Evidence:** TC-SUS-V30-007/008 (979,5/1163 lb; h_s 15,56 in; 45,7 %); TC-SUS-V30-009 (a_s 4,37 ft como no livro).
 - **Assumptions:** CG das massas não suspensas sobre o eixo (Seward Fig. 5.9).
 - **Consequences:** 05_VEHICLE l. 25-27 (novas); 06_SUSPENSION B28/B29; 09_LOADS B18-B20. Diferença de ~0,7 % na massa por canto com os valores da planilha.
-- **Affected_Artifacts:** `suspension_model` (sprung_mass_axle, sprung_cg_to_front, sprung_mass_per_corner, lateral_dfz); planilha V2.5; Standard SUS-006/009/103.
-- **Affected_Tests:** TC-SUS-V25-007..009; TC-WB25-002/005.
+- **Affected_Artifacts:** `suspension_model` (sprung_mass_axle, sprung_cg_to_front, sprung_mass_per_corner, lateral_dfz); planilha V3.0; Standard SUS-006/009/103.
+- **Affected_Tests:** TC-SUS-V30-007..009; TC-WB30-002/005.
 - **Dependencies:** EDR-011.
 - **Approval_Conditions:** —
 - **Reopening_Criteria:** Medição das massas não suspensas com CG fora do eixo.
@@ -1062,11 +1062,11 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Alternatives:** IC: V1, eixos de pivô ou cinemático (SUS-412). Reação: contact patch ou centro da roda.
 - **Decision:** IC lateral pelo solver cinemático (SUS-412), que reduz à construção clássica no caso plano; as funções V1 ficam só como legado de regressão. %AD/%AS com sinal (EDR-026): AD = FB_f·(−s)·L/h·100, AS = TF_r·s·L/h·100, s = dz/dx da linha ponto de reação → IC. Ponto de reação pela regra da Milliken (p. 618-619, Fig. 17.12, 17.13 e 17.15), com a configuração informada pelo usuário em 2026-10-19 (freio dentro da roda, em volta do cubo, sem planetária; motor no chassi, atrás): anti-dive dianteiro e anti-lift traseiro pelo **contact patch**; anti-squat traseiro pelo **centro da roda**. Na planilha, 07_KINEMATICS passa a pedir o Δx com sinal e a altura do centro da roda traseira.
 - **Rationale:** Milliken p. 612-620; Gillespie p. 249 (IC na interseção projetada dos eixos dos braços) e eq. 7-17 a 7-19 (tração independente: e − r). O IC cinemático e o dos eixos de pivô diferem pouco (36,3 × 38,0 %AD, sintético); a escolha entre os dois cabe à REFERENCE (TC-011).
-- **Evidence:** TC-KIN-110/111/114/118 (existentes) e TC-KIN-119 (novo); TC-WB25-002/009 (planilha com sinal; IC à frente dá pro-dive).
+- **Evidence:** TC-KIN-110/111/114/118 (existentes) e TC-KIN-119 (novo); TC-WB30-002/009 (planilha com sinal; IC à frente dá pro-dive).
 - **Assumptions:** Os valores de 07_KINEMATICS continuam PLACEHOLDER (sem hardpoints reais). A altura do centro da roda traseira usa SUS-011 até haver o CAD. A frenagem regenerativa pelo motor no chassi reage pelo chassi, então o anti-lift traseiro sob regeneração seria pelo centro da roda: o escopo fica no EDR-033 (sem decisão).
 - **Consequences:** 06_SUSPENSION B38-B41 e 07_KINEMATICS B11/B13/B14. O %AS placeholder muda bastante (a linha agora sai do centro da roda): é placeholder, não resultado.
-- **Affected_Artifacts:** `kinematics_model` (REACTION_POINT, docstrings de legado); planilha V2.5; Standard SUS-301/302/406.
-- **Affected_Tests:** TC-KIN-119; TC-WB25-002/005/009.
+- **Affected_Artifacts:** `kinematics_model` (REACTION_POINT, docstrings de legado); planilha V3.0; Standard SUS-301/302/406.
+- **Affected_Tests:** TC-KIN-119; TC-WB30-002/005/009.
 - **Dependencies:** EDR-026, EDR-033, EDR-010.
 - **Approval_Conditions:** Método geométrico continua NOT_VALIDATED até a comparação com OptimumKinematics/Lotus (TC-011/012).
 - **Reopening_Criteria:** Mudança na configuração de freio ou motor (por exemplo, motor no cubo); REFERENCE discordante.
@@ -1085,7 +1085,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Evidence:** test_tire_model 43/43 (transcrição independente atualizada); TC-TIRE-ORC-004 invertido (agora concorda com o MFeval e diverge do Racer); mutação 24/24 (novo mutante "LFZO extra em Ky"); test_workbook 19/19 com os L* perturbados.
 - **Assumptions:** —
 - **Consequences:** 10_TIRE, linha de Ky (B:F); `tire_model.pure_fy0`.
-- **Affected_Artifacts:** `tire_model.py`; planilha V2.5 (10_TIRE); EDR-042.
+- **Affected_Artifacts:** `tire_model.py`; planilha V3.0 (10_TIRE); EDR-042.
 - **Affected_Tests:** TC-TIRE-009, TC-TIRE-ORC-004, mutação.
 - **Dependencies:** EDR-042.
 - **Approval_Conditions:** —
@@ -1141,11 +1141,11 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-042 | SUS-501, SUS-502 | test_tire_oracles_V2_2.py; planilha V2.3; grade CSV. | TC-TIRE-ORC-001..005 |
 | EDR-043 | — | python/*.py; tests/; data/; tools/; pyproject.toml; CLAUDE.md. | Todos os da fase A (mesmo resultado) |
 | EDR-044 | SUS-501..503 | tests/test_workbook.py; tests/recalculo_planilha.py; pyproject.toml; tools/rodar_testes.py. | TC-WB24-001..007 |
-| EDR-045 | SUS-205..208, SUS-211, SUS-212 | suspension_model; planilha V2.5 (06, 11); Standard. | TC-010, TC-SUS-V25-001..006, TC-WB25 |
-| EDR-046 | SUS-103 | suspension_model; planilha V2.5 (09, 13); Standard. | TC-005, TC-SUS-V25-009..011, TC-WB25 |
-| EDR-047 | SUS-006, SUS-009, SUS-103 | suspension_model; planilha V2.5 (05, 06, 09); Standard. | TC-SUS-V25-007..009, TC-WB25 |
-| EDR-048 | SUS-301, SUS-302, SUS-406 | kinematics_model; planilha V2.5 (06, 07); Standard. | TC-KIN-119, TC-WB25-009 |
-| EDR-049 | SUS-501 | tire_model; planilha V2.5 (10_TIRE). | TC-TIRE-009, TC-TIRE-ORC-004, mutação |
+| EDR-045 | SUS-205..208, SUS-211, SUS-212 | suspension_model; planilha V3.0 (06, 11); Standard. | TC-010, TC-SUS-V30-001..006, TC-WB30 |
+| EDR-046 | SUS-103 | suspension_model; planilha V3.0 (09, 13); Standard. | TC-005, TC-SUS-V30-009..011, TC-WB30 |
+| EDR-047 | SUS-006, SUS-009, SUS-103 | suspension_model; planilha V3.0 (05, 06, 09); Standard. | TC-SUS-V30-007..009, TC-WB30 |
+| EDR-048 | SUS-301, SUS-302, SUS-406 | kinematics_model; planilha V3.0 (06, 07); Standard. | TC-KIN-119, TC-WB30-009 |
+| EDR-049 | SUS-501 | tire_model; planilha V3.0 (10_TIRE). | TC-TIRE-009, TC-TIRE-ORC-004, mutação |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 

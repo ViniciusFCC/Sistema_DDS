@@ -1,9 +1,9 @@
-# Revisão metodológica do Sistema_DDS contra a literatura
+# Revisão metodológica do Sistema_DDS contra a literatura — 1ª rodada (V3.0)
 
 **Situação:** primeira rodada concluída em 2026-10-19. No mesmo dia o usuário mandou seguir a
 literatura (principalmente o Milliken) e autorizou todas as propostas da seção 5: elas
-estão **aplicadas** na V2.5 (EDR-045 a EDR-049; `docs/registro-de-versoes-V2_5.md`). As
-tabelas das seções 2 e 3 descrevem o estado **antes** da V2.5; a coluna "Resultado" vale
+estão **aplicadas** na V3.0 (EDR-045 a EDR-049; `docs/registro-de-versoes-V3_0.md`). As
+tabelas das seções 2 e 3 descrevem o estado **antes** da V3.0; a coluna "Resultado" vale
 para a V2.4. A decisão A3 (seção 4) foi tomada no mesmo dia: o caso T09 virou regressão histórica.
 
 **Script de apoio:** `tools/oraculos_literatura.py` (não altera nada; reproduz os exemplos
@@ -132,18 +132,18 @@ O que isso significa e o que não significa:
   T09 (16 112 e 18 418 N/m). Pelo EDR-012 o T09 nunca é baseline. **Conferido:** na V2.4 os
   comentários dessas células citavam o T09 como fonte, mas não diziam que o valor é só
   demonstrativo. O usuário confirmou (2026-10-19) que são valores de referência e de teste
-  de formulação; na V2.5 eles ganharam o aviso DEMONSTRATIVO (06_SUSPENSION A2 e comentários
+  de formulação; na V3.0 eles ganharam o aviso DEMONSTRATIVO (06_SUSPENSION A2 e comentários
   de B4:B15).
-- Com a V2.5 (pneu em série), o caso T09 deixa de bater por construção: a planilha
+- Com a V3.0 (pneu em série), o caso T09 deixa de bater por construção: a planilha
   histórica do T09 calculava sem o pneu.
 
 **Decisão do usuário (2026-10-19):** portar como **regressão histórica**, rotulada como
 referência histórica (EDR-012) e sem contar na aprovação do modelo. Feito em
 `tests/regressao/t09_referencia_historica.py`: o script roda o modelo atual na forma sem
 pneu (`k_tire = inf`), reproduz os 7 valores da planilha do T09 (erro máximo 0,014 %),
-mostra a forma da V2.5 só como informação e fica fora do `tools/rodar_testes.py`.
+mostra a forma da V3.0 só como informação e fica fora do `tools/rodar_testes.py`.
 
-## 5. Propostas de correção (aplicadas na V2.5 em 2026-10-19)
+## 5. Propostas de correção (aplicadas na V3.0 em 2026-10-19)
 
 Autorizadas pelo usuário em 2026-10-19 e implementadas: P-01 e P-02 no EDR-045 (novos
 SUS-211 e SUS-212), P-03 no EDR-046, P-04 no EDR-047, P-05 e P-07 no EDR-048 (com a
@@ -151,7 +151,7 @@ configuração do carro: freio dentro da roda, em volta do cubo; motor no chassi
 P-06 no EDR-049. Nenhuma inventa valor: o único número novo é o K_T, que vem do .tir
 provisório (`VERTICAL_STIFFNESS = 120312 N/m`, EDR-038) e está rotulado PROVISÓRIO.
 Verificação: os modelos reproduzem os exemplos publicados (Milliken p. 592, 601-603 e
-683-684; Seward Ex. 4.1; Gillespie p. 154) e a planilha V2.5 reproduz os modelos
+683-684; Seward Ex. 4.1; Gillespie p. 154) e a planilha V3.0 reproduz os modelos
 (`tests/test_workbook_suspensao.py` 9/9, `tests/test_workbook.py` 19/19).
 
 | ID provisório | Mudança | Fontes | Efeito medido (demonstrativo) | O que exige |

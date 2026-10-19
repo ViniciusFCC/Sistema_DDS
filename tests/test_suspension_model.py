@@ -89,7 +89,7 @@ check("TC-004: sum(Fz) = W + Fz_aero", abs(total_fz - expected) < 1e-6,
       f"sum={total_fz:.4f} expected={expected:.4f}")
 
 # ---------------- TC-005 : conservação do momento lateral (Milliken) ----------------
-# V2.5 (EDR-046): o CG suspenso desloca h2·φ para fora com a rolagem; o equilíbrio do carro inteiro
+# V3.0 (EDR-046): o CG suspenso desloca h2·φ para fora com a rolagem; o equilíbrio do carro inteiro
 # passa a ser t_F·ΔF_F + t_R·ΔF_R = m·a_y·h_CG + m_s·g·h2·φ (Milliken p. 682-683; Gillespie eq. 6-31 a 6-34).
 ay_test = 1.2 * G
 lat2 = lateral_dfz(cfg, ay=ay_test)
@@ -175,28 +175,28 @@ check("Piloto Design Mode: ciclo fechado com pneu em série (Analysis -> Design 
       abs(Ks_design - Ks_m) < 1e-6, f"Ks original={Ks_m} Ks recalculado={Ks_design:.6f}")
 
 # =====================================================================
-# V2.5 — oráculos da literatura (EDR-045/046/047): exemplos numéricos publicados
+# V3.0 — oráculos da literatura (EDR-045/046/047): exemplos numéricos publicados
 # =====================================================================
 # Seward, Race Car Design, Exemplo 4.1 (p. 95-96): K_T = 200 N/mm, m_s = 110 kg.
 for kw_mm, kr_book, fs_book in ((20.0, 18.2, 2.05), (200.0, 100.0, 4.8)):
     kr = ride_rate(kw_mm * 1e3, 200e3)
     fs = natural_frequency(kr, 110.0)
-    check(f"TC-SUS-V25-001: Seward Ex. 4.1, K_W={kw_mm:.0f} N/mm: K_R={kr_book} N/mm e f_s={fs_book} Hz (arredondados no livro)",
+    check(f"TC-SUS-V30-001: Seward Ex. 4.1, K_W={kw_mm:.0f} N/mm: K_R={kr_book} N/mm e f_s={fs_book} Hz (arredondados no livro)",
           abs(kr / 1e3 - kr_book) < 0.05 and abs(fs - fs_book) < 0.005, f"K_R={kr/1e3:.3f} N/mm, f_s={fs:.4f} Hz")
 # Gillespie, eq. 5-8 (exemplo p. 154): K_s=143 lb/in, K_t=1198 lb/in -> RR=127 lb/in; f=1,14 Hz com 957 lb.
 rr = ride_rate(143.0, 1198.0)
 f_g = natural_frequency(rr * 386.0, 957.0)   # lb/in·(in/s²) / lb: mesma razão do livro (g = 386 in/s²)
-check("TC-SUS-V25-002: Gillespie eq. 5-8/5-9 (p. 154): RR=127 lb/in e f_nf=1,14 Hz", abs(rr - 127.0) < 1.0 and abs(f_g - 1.14) < 0.005,   # 143·1198/1341 = 127,75; o livro imprime 127
+check("TC-SUS-V30-002: Gillespie eq. 5-8/5-9 (p. 154): RR=127 lb/in e f_nf=1,14 Hz", abs(rr - 127.0) < 1.0 and abs(f_g - 1.14) < 0.005,   # 143·1198/1341 = 127,75; o livro imprime 127
       f"RR={rr:.2f} lb/in, f={f_g:.4f} Hz")
 # Milliken p. 591-592: K_W = K_R·K_T/(K_T − K_R): 384,4 -> 476 e 225,6 -> 254 lb/in (K_T = 2000).
 kwf, kwr = sm.wheel_rate_from_ride_rate(384.4, 2000.0), sm.wheel_rate_from_ride_rate(225.6, 2000.0)
-check("TC-SUS-V25-003: Milliken p. 592: K_WF=476 e K_WR=254 lb/in", abs(kwf - 476) < 0.5 and abs(kwr - 254) < 0.5, f"{kwf:.2f}, {kwr:.2f}")
+check("TC-SUS-V30-003: Milliken p. 592: K_WF=476 e K_WR=254 lb/in", abs(kwf - 476) < 0.5 and abs(kwr - 254) < 0.5, f"{kwf:.2f}, {kwr:.2f}")
 # Milliken p. 592: barra necessária 19.904 lb·ft/rad para K_φ total 70.000 (K_T 2000 lb/in, K_W 476 lb/in, t = 5 ft; ×12 in/ft).
 k_arb = sm.arb_required(70000.0, 12 * 476.0, 5.0, 12 * 2000.0)
-check("TC-SUS-V25-004: Milliken p. 592: K_φA = 19.904 lb·ft/rad (barra referida à roda, pneu em série)", abs(k_arb - 19904) < 1.0, f"{k_arb:.1f}")
+check("TC-SUS-V30-004: Milliken p. 592: K_φA = 19.904 lb·ft/rad (barra referida à roda, pneu em série)", abs(k_arb - 19904) < 1.0, f"{k_arb:.1f}")
 k_back = roll_stiffness_axle(12 * 476.0, 5.0, k_arb, 12 * 2000.0)
-check("TC-SUS-V25-005: roll_stiffness_axle ∘ arb_required = identidade (70.000 lb·ft/rad)", abs(k_back - 70000.0) < 1e-6, f"{k_back:.6f}")
-check("TC-SUS-V25-006: pneu rígido (K_T = inf) recupera K_W·t²/2 + K_ARB", abs(roll_stiffness_axle(16000.0, 1.25, 500.0, math.inf) - (16000 * 1.25 ** 2 / 2 + 500)) < 1e-9)
+check("TC-SUS-V30-005: roll_stiffness_axle ∘ arb_required = identidade (70.000 lb·ft/rad)", abs(k_back - 70000.0) < 1e-6, f"{k_back:.6f}")
+check("TC-SUS-V30-006: pneu rígido (K_T = inf) recupera K_W·t²/2 + K_ARB", abs(roll_stiffness_axle(16000.0, 1.25, 500.0, math.inf) - (16000 * 1.25 ** 2 / 2 + 500)) < 1e-9)
 # Milliken p. 601, Tab. 16.3: W_SF = W_F − W_UF = 1149,5 − 170 = 979,5 lb; W_SR = 1413 − 250 = 1163 lb.
 Wt, ell = 2562.5, 103.0
 b_ = 1149.5 * ell / Wt
@@ -204,9 +204,9 @@ cfg_t = baseline_config(mass_total=Wt, cg_height=15.0, wheelbase=ell, cg_to_fron
                         unsprung_mass_front=170.0, unsprung_mass_rear=250.0, unsprung_cg_height_front=11.25,
                         unsprung_cg_height_rear=12.75, track_front=65.58, track_rear=64.5)
 mx = sm.sprung_mass_axle(cfg_t)
-check("TC-SUS-V25-007: Milliken Tab. 16.3: massa suspensa por eixo 979,5 / 1163 (lb)", abs(mx["front"] - 979.5) < 1e-6 and abs(mx["rear"] - 1163.0) < 1e-6,
+check("TC-SUS-V30-007: Milliken Tab. 16.3: massa suspensa por eixo 979,5 / 1163 (lb)", abs(mx["front"] - 979.5) < 1e-6 and abs(mx["rear"] - 1163.0) < 1e-6,
       f"F={mx['front']:.4f} R={mx['rear']:.4f}")
-check("TC-SUS-V25-008: Milliken p. 602-603: h_s = 15,56 in e a_s = 45,7 % (fração dianteira da massa suspensa)",
+check("TC-SUS-V30-008: Milliken p. 602-603: h_s = 15,56 in e a_s = 45,7 % (fração dianteira da massa suspensa)",
       abs(sprung_cg_height(cfg_t) - 15.56) < 0.005 and abs(mx["front"] / sprung_mass_total(cfg_t) - 0.457) < 0.0005,
       f"h_s={sprung_cg_height(cfg_t):.4f} in, W_SF/W_S={mx['front'] / sprung_mass_total(cfg_t):.4f}")
 # Milliken p. 683 (fórmula completa, p. 682): ΔW_F/A_Y = 590,8 e ΔW_R/A_Y = 483,4 lb/g.
@@ -216,12 +216,12 @@ d683 = dict(mass_total=3500.0 / G, cg_height=1.5, wheelbase=9.5, cg_to_front=4.5
             unsprung_cg_height_front=1.0, unsprung_cg_height_rear=1.0, roll_center_front=0.25, roll_center_rear=0.625,
             roll_stiffness_front=67600.0, roll_stiffness_rear=36100.0)
 l683 = lateral_dfz(VehicleConfig(**d683), ay=G)
-check("TC-SUS-V25-009: Milliken p. 683: ΔW_F = 590,8 e ΔW_R = 483,4 lb/g (fórmula completa)",
+check("TC-SUS-V30-009: Milliken p. 683: ΔW_F = 590,8 e ΔW_R = 483,4 lb/g (fórmula completa)",
       abs(l683["front_axle"] - 590.8) < 0.1 and abs(l683["rear_axle"] - 483.4) < 0.1,
       f"F={l683['front_axle']:.2f} R={l683['rear_axle']:.2f} lb/g; a_s={l683['a_s']:.3f} ft (livro 4,37); h2={l683['h2']:.3f} ft (livro 1,16)")
-check("TC-SUS-V25-010: Milliken p. 684: sensibilidade de rolagem −2,0 °/g (φ para o lado de fora)",
+check("TC-SUS-V30-010: Milliken p. 684: sensibilidade de rolagem −2,0 °/g (φ para o lado de fora)",
       abs(abs(math.degrees(l683["roll_angle_rad"])) - 2.0) < 0.01, f"|φ|={abs(math.degrees(l683['roll_angle_rad'])):.4f} °/g")
-check("TC-SUS-V25-011: m_s·g·h2 >= K_φF+K_φR (instabilidade de rolagem) é bloqueado com mensagem",
+check("TC-SUS-V30-011: m_s·g·h2 >= K_φF+K_φR (instabilidade de rolagem) é bloqueado com mensagem",
       raises(lambda: lateral_dfz(baseline_config(roll_stiffness_front=100.0, roll_stiffness_rear=100.0), 5.0), needle="instabilidade"))
 
 
