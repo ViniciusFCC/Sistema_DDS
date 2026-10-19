@@ -271,7 +271,7 @@ try:
     check("TC-SUS-V21-005: ponta a ponta (MR geométrico do solver, geometria SINTÉTICA): correto -> MATCH; inverso -> INVERSION_SUSPECTED",
           cc(mr_geo, mr_geo, 1e-6)["status"] == "MATCH" and cc(1.0 / mr_geo, mr_geo, 1e-6)["status"] == "INVERSION_SUSPECTED", f"MR geométrico (sintético)={mr_geo:.4f}")
 except ImportError:
-    print("[SKIP] TC-SUS-V21-005: módulos de kinematics V2.0 não encontrados ao lado")
+    print("[SKIP] TC-SUS-V21-005: módulos kinematics_model/hardpoints não encontrados (rode após o uv sync)")
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")

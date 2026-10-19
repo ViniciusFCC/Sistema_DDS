@@ -4,6 +4,7 @@ Uso: python3 test_workbook_V2_2.py <FSAE_EV_Suspension_Fase1_V2_4.xlsx> <FSAE_EV
 Cada cenário altera uma CÓPIA, recalcula e lê; o arquivo entregue nunca é salvo pelo LibreOffice. Namespace TC-WB24-xxx.
 """
 import sys, os, shutil, subprocess, tempfile, json, math, random
+_TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name  # tudo que o teste cria em temp fica aqui e é apagado no fim
 import openpyxl
 import tire_model as t
 
