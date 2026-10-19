@@ -31,7 +31,7 @@
 
 ## 2. Índice
 
-Total: 43 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · SUPERSEDED: 1 · VERIFIED: 3
+Total: 43 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · SUPERSEDED: 1 · VERIFIED: 4
 
 | ID | Título | Status |
 |---|---|---|
@@ -77,7 +77,7 @@ Total: 43 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DEC
 | EDR-040 | Formato do dataset de pneu (PAC2002 x MF 5.2 x 6.1.2 x 6.2) e origem (OptimumTire 2) | AWAITING_DECISION |
 | EDR-041 | Entradas α/γ/κ demonstrativas e N/A como estado de saída sem dado | APPROVED_WITH_CONDITIONS |
 | EDR-042 | Verificação das equações do pneu contra fontes de terceiros; caminho até a fonte primária | VERIFIED |
-| EDR-043 | Versionamento por Git e nomes estáveis (substitui o EDR-017) | APPROVED |
+| EDR-043 | Versionamento por Git e nomes estáveis (substitui o EDR-017) | VERIFIED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -951,7 +951,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-043 — Versionamento por Git e nomes estáveis (substitui o EDR-017)
 
 - **Date:** 2026-10-19 (proposta em 2026-10-18)
-- **Status:** APPROVED
+- **Status:** VERIFIED (implementado no commit `d2e1d97`; testes com o mesmo resultado da fase A, em `docs/migracao/verificacao-EDR-043-nomes-estaveis.md`)
 - **Context:** O EDR-017 versiona pelo nome do arquivo (`tire_model_V2_4.py`, `test_suspension_model_V2_1.py`) e nunca sobrescreve os históricos. Com o projeto no Git (repositório privado ViniciusFCC/Sistema_DDS, tag `v2.4.1`), isso gera três problemas: (1) toda versão nova exige mudar os imports de todos os scripts que usam o módulo; (2) teste e módulo têm versões diferentes no nome (`test_kinematics_model_V2_1.py` testa `kinematics_model_V2_0.py`), como o próprio EDR-017 previa em Consequences; (3) o histórico passa a existir em dobro, no nome e no Git. A fase A da migração provou a reprodução com os nomes originais, o que torna a renomeação verificável.
 - **Question:** Como versionar código, testes, dados e planilha a partir da V2.4.1?
 - **Alternatives:** (a) manter o EDR-017 (versão no nome de tudo); (b) híbrido: Git com tags para código, testes, dados e docs, com nomes estáveis, e a planilha entregue mantendo a versão no nome; (c) Git para tudo, inclusive a planilha com nome estável.
