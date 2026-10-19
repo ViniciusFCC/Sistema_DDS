@@ -3,7 +3,7 @@ Teste de integração das abas de suspensão da planilha V3.0 (EDR-045 a EDR-048
 Recalcula CÓPIAS pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_planilha.py); a entregue nunca é salva.
 Uso: uv run python -X utf8 tests/test_workbook_suspensao.py [<V3_0.xlsx>]   (padrão: excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx)
 Namespace TC-WB30-xxx. "Passou" = Excel reproduz o suspension_model/kinematics_model (tol. 1e-9 relativa), não validação física.
-TC-WB30-010 a 012 (2ª rodada): origem de cada entrada, lista, cores e avisos (EDR-035).
+TC-WB30-010 a 013 (2ª rodada): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
 """
 import csv, math, os, random, shutil, sys, tempfile, warnings
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
@@ -38,6 +38,10 @@ ENTRADAS = {
     "ax": ("08_VEHICLE_STATE", "B4"), "ay": ("08_VEHICLE_STATE", "B5"), "DF": ("08_VEHICLE_STATE", "B8"), "bal": ("08_VEHICLE_STATE", "B9"),
     "fF": ("11_DESIGN", "B4"), "fR": ("11_DESIGN", "B5"), "lam": ("11_DESIGN", "B18"),
 }
+# EDR-050: estas entradas são calculadas na V3.0 a partir das parcelas abaixo; o teste lê o valor, mas só escreve as parcelas.
+DERIVADAS = {"m", "a", "b", "huF", "huR", "ay"}
+PARCELAS = {"m_med": ("05_VEHICLE", "B30"), "m_pil": ("05_VEHICLE", "B31"), "f": ("05_VEHICLE", "B32"),
+            "D_F": ("05_VEHICLE", "B33"), "D_R": ("05_VEHICLE", "B34"), "ay_g": ("08_VEHICLE_STATE", "B11")}
 SAIDAS = {   # nome -> (aba, célula)
     "msF": ("05_VEHICLE", "B25"), "msR": ("05_VEHICLE", "B26"), "a_s": ("05_VEHICLE", "B27"), "hs": ("05_VEHICLE", "B24"),
     "KwF": ("06_SUSPENSION", "B18"), "KwR": ("06_SUSPENSION", "B19"), "KphiF": ("06_SUSPENSION", "B22"), "KphiR": ("06_SUSPENSION", "B23"),
@@ -120,27 +124,40 @@ check("TC-WB30-003: 13_VALIDATION: TC-004, TC-005 (com termo gravitacional) e λ
 check("TC-WB30-004: K_T de 06_SUSPENSION é o VERTICAL_STIFFNESS do .tir provisório (120312 N/m) e está rotulado PROVISÓRIO",
       x0["KTF"] == x0["KTR"] == 120312.0 and "PROVISÓRIO" in str(wbv["06_SUSPENSION"]["A46"].value))
 
+# ---------- EDR-050: valores derivados como fórmula, com as parcelas como entrada ----------
 wbf = openpyxl.load_workbook(V30)
-DERIV = {("07_KINEMATICS", "B14"): ()}   # células calculadas entre as linhas de entrada: Fonte sem lista
+DERIV = {("05_VEHICLE", "B4"): ("$B$30", "$B$31"), ("05_VEHICLE", "B9"): ("$B$6", "$B$32"), ("05_VEHICLE", "B10"): ("$B$6", "$B$32"),
+         ("05_VEHICLE", "B16"): ("$B$33",), ("05_VEHICLE", "B17"): ("$B$34",), ("08_VEHICLE_STATE", "B5"): ("$B$11",)}
+eh_formula = all(str(wbf[a][c].value).startswith("=") and all(r in wbf[a][c].value for r in refs) for (a, c), refs in DERIV.items())
+v5, v8 = wbv["05_VEHICLE"], wbv["08_VEHICLE_STATE"]
+esperado = {"B4": 316.5, "B9": 1.594 * (1 - 0.4843), "B10": 1.594 * 0.4843, "B16": 0.254, "B17": 0.254}
+dif = max([abs(v5[k].value - e_) for k, e_ in esperado.items()] + [abs(v8["B5"].value - 11.772)])
+parcelas = [v5["B30"].value, v5["B31"].value, v5["B32"].value, v5["B33"].value, v5["B34"].value, v8["B11"].value]
+check("TC-WB30-013: B4, B9, B10, B16, B17 (05) e B5 (08) são fórmula das parcelas e reproduzem os valores digitados antes "
+      "(a e b só diferem pelo arredondamento antigo, < 1e-5 m)",
+      eh_formula and dif < 1e-12 and parcelas == [248.5, 68, 0.4843, 20, 20, 1.2]
+      and abs(v5["B9"].value - 0.82203) < 1e-5 and abs(v5["B10"].value - 0.77197) < 1e-5, f"dif={dif:.1e}; parcelas={parcelas}")
 
 # ---------- perturbações aleatórias de todas as entradas ----------
 rnd = random.Random(20261019)
 pior_all, ruins_all = 0.0, []
+p0 = {k: wbv[a][c].value for k, (a, c) in PARCELAS.items()}
 for s in range(3):
     x = {k: (v_ * rnd.uniform(0.85, 1.15) if isinstance(v_, (int, float)) else v_) for k, v_ in x0.items()}
-    x["b"] = x["L"] - x["a"]                     # SUS-006: a + b = L
-    x["ay"] = x0["ay"] * rnd.choice((-1, 1)) * rnd.uniform(0.3, 1.1); x["ax"] = x0["ax"] * rnd.uniform(-1, 1)
+    p = {k: v_ * rnd.uniform(0.85, 1.15) for k, v_ in p0.items()}   # a + b = L vem da fórmula (EDR-050)
+    p["ay_g"] = p0["ay_g"] * rnd.choice((-1, 1)) * rnd.uniform(0.3, 1.1); x["ax"] = x0["ax"] * rnd.uniform(-1, 1)
     x["bal"] = min(max(x["bal"], 0.0), 1.0); x["lam"] = min(max(x["lam"], 0.3), 0.7)
-    mods = {ENTRADAS[k]: x[k] for k in x if ENTRADAS[k] != ("07_KINEMATICS", "B14")}
+    mods = {ENTRADAS[k]: x[k] for k in x if k not in DERIVADAS and ENTRADAS[k] != ("07_KINEMATICS", "B14")}
+    mods.update({PARCELAS[k]: v_ for k, v_ in p.items()})
     info, wbv = scenario(mods)
     x["huR"] = wbv["05_VEHICLE"]["B17"].value
     p_, r_ = comparar(wbv, ler_entradas(wbv))
     pior_all = max(pior_all, p_); ruins_all += r_ + ([("erros", info["total_errors"])] if info["total_errors"] else [])
-check("TC-WB30-005: 3 cenários com TODAS as entradas perturbadas (±15 %, a_y com os dois sinais): Excel == Python",
+check("TC-WB30-005: 3 cenários com TODAS as entradas perturbadas (±15 %, a_y com os dois sinais; derivadas pelas parcelas): Excel == Python",
       pior_all < 1e-9 and not ruins_all, f"pior dif={pior_all:.2e}; {ruins_all}")
 
 # ---------- casos-limite ----------
-info, wbv = scenario({("08_VEHICLE_STATE", "B5"): 0.0})
+info, wbv = scenario({("08_VEHICLE_STATE", "B11"): 0.0})   # a_y em g (EDR-050)
 l = wbv["09_LOADS"]
 check("TC-WB30-006: a_y = 0 -> φ = 0 e ΔFz lateral = 0 nos dois eixos", l["B21"].value == 0 and l["B19"].value == 0 and l["B20"].value == 0)
 info, wbv = scenario({("06_SUSPENSION", "B47"): 1e15, ("06_SUSPENSION", "B48"): 1e15})

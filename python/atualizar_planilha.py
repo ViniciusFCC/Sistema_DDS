@@ -1,5 +1,5 @@
 """Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049) e 2ª rodada
-(feedback da equipe: origem de cada entrada, guia de preenchimento; EDR-035, EDR-051).
+(feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051).
 
 Uso:
     uv run python -X utf8 python/atualizar_planilha.py [ORIGEM_V2_4.xlsx] [SAIDA_V3_0.xlsx] [--registro ARQ.md]
@@ -184,22 +184,28 @@ _CARGA = "Caso de carga sem fonte registrada. "
 # Fonte: comentários das células na V2.4/V3.0 (migrados para a coluna F) e mapa da auditoria V2.1
 # (data/placeholder-dependency-map-V2.1.csv). O RC (06 B14/B15) é T09/E03 por confirmação do usuário (2026-10-19).
 ORIGENS = [
-    ("05_VEHICLE", 4, EST, "Adesivo SAE Brasil 2026: 248,5 kg medidos sem piloto + 68 kg de piloto de referência (padrão FSAE, "
-                           "não medido). A célula mistura as duas origens: vale a pior."),
+    ("05_VEHICLE", 4, None, "Calculada (EDR-050): massa medida sem piloto (B30) + massa do piloto (B31)."),
     ("05_VEHICLE", 5, TX, "E05, Key Parameters (315 mm). Medida a partir do plano do solo (SUS-000), não da origem do CAD."),
     ("05_VEHICLE", 6, TX, "E05, Key Parameters (1594 mm). Diverge do E03 (1550 mm, chassi anterior)."),
     ("05_VEHICLE", 7, TX, "E05, Key Parameters (1277 mm)."),
     ("05_VEHICLE", 8, TX, "E05, Key Parameters (1271 mm)."),
-    ("05_VEHICLE", 9, TX, "Derivado da distribuição medida no adesivo do TX/E05 (48,43 % no eixo dianteiro, com piloto) × wheelbase; "
-                          "coerente com a massa total, que inclui o piloto."),
-    ("05_VEHICLE", 10, TX, "Derivado da distribuição medida no adesivo do TX/E05 (51,57 % no eixo traseiro, com piloto) × wheelbase."),
+    ("05_VEHICLE", 9, None, "Calculada (EDR-050): L·(1 − f), com f = fração de peso no eixo dianteiro (B32)."),
+    ("05_VEHICLE", 10, None, "Calculada (EDR-050): L·f, com f = fração de peso no eixo dianteiro (B32)."),
     ("05_VEHICLE", 14, ARB, "Não disponível para o TX/E05: a pesagem em plataforma mede a carga total no solo e não separa massa "
                             "suspensa de não suspensa (confirmado pela equipe). Valor arbitrário: não usar para decisão de projeto."),
     ("05_VEHICLE", 15, ARB, "Não disponível para o TX/E05 (mesma razão do SUS-007). Valor arbitrário: não usar para decisão de projeto."),
-    ("05_VEHICLE", 16, EST, "Estimativa pelo raio do pneu 20.0-13 do E03 (diâmetro 20,0 in / 2 = 0,254 m); não é medição da equipe."),
-    ("05_VEHICLE", 17, EST, "Estimativa pelo raio do pneu 20.0-13 do E03 (mesmo pneu na frente e atrás); não é medição da equipe."),
+    ("05_VEHICLE", 16, None, "Calculada (EDR-050): diâmetro do pneu (B33) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura "
+                             "do CG não suspenso; não é medição da equipe."),
+    ("05_VEHICLE", 17, None, "Calculada (EDR-050): diâmetro do pneu (B34) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura "
+                             "do CG não suspenso; não é medição da equipe."),
     ("05_VEHICLE", 20, CONF, "SUS-000: coordenada Z do solo no sistema de coordenadas da equipe. As alturas desta planilha já são "
                              "medidas a partir do solo (ficha SUS-000 do Engineering Standard). A origem do valor −0,05 m não está registrada."),
+    ("05_VEHICLE", 30, TX, "Adesivo SAE Brasil 2026: medição real, sem piloto (248,5 kg)."),
+    ("05_VEHICLE", 31, EST, "Piloto de referência (68 kg, padrão FSAE); não é a massa medida do piloto."),
+    ("05_VEHICLE", 32, TX, "Distribuição medida no adesivo do TX/E05: 48,43 % no eixo dianteiro, com piloto (coerente com a massa total, "
+                           "que inclui o piloto)."),
+    ("05_VEHICLE", 33, T09, "Pneu 20.0-13 do E03 (diâmetro 20,0 in)."),
+    ("05_VEHICLE", 34, T09, "Pneu 20.0-13 do E03 (mesmo pneu na frente e atrás)."),
     ("06_SUSPENSION", 4, T09, _T09 + "Calculado a partir da planilha detalhada do T09: ride rate dianteiro 16 112,23 N/m (que é o wheel "
                                      "rate) × MR² (MR = 1,76). Corrige o valor anterior, do spec sheet resumido, que arredondava F e R como iguais."),
     ("06_SUSPENSION", 5, T09, _T09 + "Calculado a partir da planilha detalhada do T09: ride rate traseiro 18 418,2 N/m × MR² (MR = 1,76)."),
@@ -230,9 +236,10 @@ ORIGENS = [
     ("07_KINEMATICS", 32, ARB, "Placeholder geométrico; não é a medição do curso instalado (ver B31)."),
     ("08_VEHICLE_STATE", 4, EST, _CARGA + "ISO 8855: a_x + = aceleração para frente (transfere carga para o eixo traseiro); "
                                           "negativo = frenagem."),
-    ("08_VEHICLE_STATE", 5, EST, _CARGA + "Curva à esquerda de 1,2 g. ISO 8855: a_y + = para a esquerda (o lado direito ganha carga)."),
+    ("08_VEHICLE_STATE", 5, None, "Calculada (EDR-050): a_y em g (B11) × 9,81. ISO 8855: a_y + = para a esquerda (o lado direito ganha carga)."),
     ("08_VEHICLE_STATE", 8, EST, _CARGA + "Aero constante por Setup (SUS-701, EDR-013)."),
     ("08_VEHICLE_STATE", 9, EST, _CARGA + "Fração dianteira da downforce (SUS-702, EDR-013)."),
+    ("08_VEHICLE_STATE", 11, EST, _CARGA + "Curva à esquerda de 1,2 g."),
     ("11_DESIGN", 4, ARB, "Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-001)."),
     ("11_DESIGN", 5, ARB, "Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-002)."),
     ("11_DESIGN", 18, ARB, "Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-003)."),
@@ -260,6 +267,33 @@ def _rodada2() -> list[dict]:
     a = []
     ref35, ref50 = "EDR-035 (feedback da equipe, 2026-10-14)", "EDR-050 (feedback da equipe, 2026-10-14)"
     inp = lambda aba, r: (aba, r, "B")                     # estilo de uma entrada existente
+    # ---- FB-05 / EDR-050: parcelas externas viram entrada; a célula vira a conta ----
+    a.append(_a("05_VEHICLE", "A29", "Entradas de onde saem B4, B9/B10 e B16/B17 (EDR-050: valor que sai de conta não é digitado)",
+                ref50, ("05_VEHICLE", 22, "A")))
+    for r, rot, val, un, sid in (
+        (30, "Massa medida sem piloto", 248.5, "kg", "SUS-001"),
+        (31, "Massa do piloto", 68, "kg", "SUS-001"),
+        (32, "Fração de peso no eixo dianteiro (f)", 0.4843, "-", "SUS-006"),
+        (33, "Diâmetro do pneu dianteiro", 20.0, "in", "SUS-010"),
+        (34, "Diâmetro do pneu traseiro", 20.0, "in", "SUS-011"),
+    ):
+        a += [_a("05_VEHICLE", f"A{r}", rot, ref50, ("05_VEHICLE", 14, "A")),
+              _a("05_VEHICLE", f"B{r}", val, ref50 + "; valor: comentário da V2.4 (ver coluna F)", inp("05_VEHICLE", 14)),
+              _a("05_VEHICLE", f"C{r}", un, ref50, ("05_VEHICLE", 14, "C")),
+              _a("05_VEHICLE", f"D{r}", sid, ref50, ("05_VEHICLE", 14, "D"))]
+    calc = ("05_VEHICLE", 23, "B")
+    a += [
+        _a("05_VEHICLE", "B4", f"={V}$B$30+{V}$B$31", ref50, calc),
+        _a("05_VEHICLE", "B9", f"={V}$B$6*(1-{V}$B$32)", ref50, calc),
+        _a("05_VEHICLE", "B10", f"={V}$B$6*{V}$B$32", ref50, calc),
+        _a("05_VEHICLE", "B16", f"={V}$B$33*0.0254/2", ref50, calc),
+        _a("05_VEHICLE", "B17", f"={V}$B$34*0.0254/2", ref50, calc),
+        _a("08_VEHICLE_STATE", "A11", "Aceleração lateral em g (entrada de a_y)", ref50, ("08_VEHICLE_STATE", 5, "A")),
+        _a("08_VEHICLE_STATE", "B11", 1.2, ref50 + "; valor: 11,772 m/s² / 9,81", inp("08_VEHICLE_STATE", 5)),
+        _a("08_VEHICLE_STATE", "C11", "g", ref50, ("08_VEHICLE_STATE", 5, "C")),
+        _a("08_VEHICLE_STATE", "D11", "-", ref50, ("08_VEHICLE_STATE", 5, "D")),
+        _a("08_VEHICLE_STATE", "B5", f"={E}$B$11*{G_MS2}", ref50, ("05_VEHICLE", 23, "B")),
+    ]
     # ---- FB-03 / EDR-035: origem (E), fonte (F) e, ocultos, valor e origem da geração (G, H) ----
     for aba in ABAS_ORIGEM:
         a += [_a(aba, "E2", "Origem do valor (lista)", ref35, (aba, 3, "A")),
@@ -291,7 +325,7 @@ def _rodada2() -> list[dict]:
     h, t = ("00_README", 22, "A"), ("00_README", 23, "A")
     r0 = LINHA_COMO_PREENCHER
     guia = [
-        (r0, "Como preencher esta planilha (EDR-035, EDR-051)", h),
+        (r0, "Como preencher esta planilha (EDR-035, EDR-050, EDR-051)", h),
         (r0 + 1, "1. Edite só as entradas (fonte azul; verde-teal e laranja quando houver o dado real) das abas 05, 06, 07, 08, "
                  "10 (casos de carga) e 11 (metas). Célula com fundo cinza é calculada: não edite.", t),
         (r0 + 2, "2. Cada entrada tem ao lado a Origem (coluna E; na 10_TIRE, coluna I) e a Fonte (coluna F; na 10_TIRE, J). "
@@ -310,12 +344,14 @@ def _rodada2() -> list[dict]:
     resto = [
         "3. Avisos: Origem com fundo vermelho-alaranjado = o valor mudou e a Origem continuou a mesma (revise a Origem). "
         "Fonte com fundo vermelho = a Origem diz \"Dado do TX\" e falta a Fonte.",
-        "4. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima "
+        "4. Valor que sai de conta não é digitado (EDR-050): digite as parcelas, não o resultado. Exemplo: massa total = massa "
+        "medida + piloto (05_VEHICLE B30 e B31).",
+        "5. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima "
         "geração (EDR-051). Depois do fechamento, ela passa a ser o arquivo da equipe.",
-        "5. Convenções de sinais e eixos: seção acima. Decisões e fichas: pasta docs/ do repositório "
+        "6. Convenções de sinais e eixos: seção acima. Decisões e fichas: pasta docs/ do repositório "
         "(Engineering_Decision_Register.md e Engineering Standard).",
     ]
-    a += [_a("00_README", f"A{fim + i}", txt, "FB-06/EDR-035/051", t) for i, txt in enumerate(resto)]
+    a += [_a("00_README", f"A{fim + i}", txt, "FB-06/EDR-035/050/051", t) for i, txt in enumerate(resto)]
     return a
 
 
@@ -472,7 +508,8 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
     # Versão e changelog.
     m = wb["00_README"]
     m["A3"].value = m["A3"].value.replace("EDR-045 a EDR-049)", "EDR-045 a EDR-049; 2ª rodada, feedback da equipe: origem de cada "
-                                                               "entrada, guia de preenchimento; EDR-035, EDR-051)")
+                                                               "entrada, valores derivados como fórmula, guia de preenchimento; "
+                                                               "EDR-035, EDR-050, EDR-051)")
     # Texto corrido em A:E mesclado, como o resto da 00_README; a tabela de origens tem o significado em B:D.
     for r in list(range(LINHA_COMO_PREENCHER, LINHAS_ORIGENS.start - 1)) + list(range(LINHAS_ORIGENS.stop, LINHAS_ORIGENS.stop + 4)):
         m.merge_cells(f"A{r}:E{r}")
@@ -487,9 +524,10 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
         c[f"{col}17"]._style = copy.copy(c[f"{col}15"]._style)
     c["A17"].value = "2026-10"
     c["B17"].value = ("V3.0, 2a rodada (feedback da equipe): coluna Origem (lista) e Fonte em cada entrada (05, 06, 07, 08, 11; 10_TIRE I/J), "
-                      "com cores e aviso de origem desatualizada; fundo amarelo retirado e legenda corrigida; guia 'Como preencher' na 00_README.")
-    c["C17"].value = ("Feedback da equipe (2026-10-14) e decisoes do usuario (2026-10-19). EDR-025 (A), EDR-035, EDR-051. Registro celula "
-                      "a celula: docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-010..012). NOT_VALIDATED fisicamente.")
+                      "com cores e aviso de origem desatualizada; fundo amarelo retirado e legenda corrigida; valores derivados como formula "
+                      "(05_VEHICLE B4, B9, B10, B16, B17; 08 B5; entradas novas 05 B30:B34 e 08 B11); guia 'Como preencher' na 00_README.")
+    c["C17"].value = ("Feedback da equipe (2026-10-14) e decisoes do usuario (2026-10-19). EDR-025 (A), EDR-035, EDR-050, EDR-051. Registro celula "
+                      "a celula: docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-010..013). NOT_VALIDATED fisicamente.")
     reg("15_CHANGELOG", "A17:C17", None, "(linha V3.0, 2ª rodada)", "EDR-035/050/051")
 
 
