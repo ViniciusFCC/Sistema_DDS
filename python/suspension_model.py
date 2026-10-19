@@ -7,7 +7,7 @@ V3.0 (revisão metodológica contra Milliken, Gillespie e Seward; docs/revisao-m
   EDR-046 termo gravitacional da rolagem em SUS-103; EDR-047 massa suspensa por eixo exata e CG suspenso em a_s.
   Os valores mudam em relação à V2.1 (intencional; a V1.0 congelada fica em tests/regressao/).
 V2.1: cross-check de MR [wheel/spring] contra MR geométrico/de referência (mr_crosscheck). O comportamento do limiar
-absoluto MR_WARN_THRESHOLD NÃO foi alterado (decisão pendente, EDR-027).
+absoluto MR_WARN_THRESHOLD fica desligado por padrão (EDR-027, opção A, 2026-10-19).
 V2.0: validação de entradas (bloqueios do Guide, Apêndice D.2) e aviso de plausibilidade para Fz<0 (SUS-104; Guide D.4).
 Os valores de retorno das funções para entradas válidas são idênticos aos da V1.0 (verificado em test_suspension_model_V2_0.py).
 
@@ -21,9 +21,10 @@ import warnings
 
 __version__ = "V3.0"
 
-# HIPÓTESE (sem fonte no projeto): abaixo deste MR emite aviso. O Guide (D.2) pede o teste de fronteira "MR muito pequeno"
-# mas não define o limite. Revisar com dado real da equipe.
-MR_WARN_THRESHOLD = 0.2
+# EDR-027, opção A (usuário, 2026-10-19): sem limiar absoluto por padrão. Nenhuma fonte (livros, help do OptimumKinematics,
+# Adams) dá um limite de MR, e o 0,2 antigo não pega o erro que importa (MR invertido: K_w erra MR^4; 1/1,76 = 0,568
+# passa). A proteção é mr_crosscheck contra o MR geométrico. Quem quiser um aviso define o valor explicitamente.
+MR_WARN_THRESHOLD = None
 
 
 class FzLiftoffWarning(UserWarning):
@@ -31,7 +32,7 @@ class FzLiftoffWarning(UserWarning):
 
 
 class SmallMotionRatioWarning(UserWarning):
-    """MR abaixo de MR_WARN_THRESHOLD: wheel rate muito sensível ao MR (K_w = K_s/MR^2)."""
+    """MR abaixo de MR_WARN_THRESHOLD, se definido (padrão: desligado, EDR-027 opção A)."""
 
 
 def _req(cond, msg):
@@ -239,9 +240,9 @@ def wheel_rate(k_spring: float, mr_wheel_spring: float) -> float:
     """SUS-202, Analysis Mode. MR = wheel/spring."""
     _req(k_spring > 0, "SUS-203/202 k_spring deve ser > 0 (rigidez de mola não positiva é bloqueada).")
     _req(mr_wheel_spring > 0, "SUS-201 MR [wheel/spring] deve ser > 0.")
-    if mr_wheel_spring < MR_WARN_THRESHOLD:
+    if MR_WARN_THRESHOLD is not None and mr_wheel_spring < MR_WARN_THRESHOLD:
         warnings.warn(SmallMotionRatioWarning(
-            f"MR={mr_wheel_spring} < {MR_WARN_THRESHOLD} (limite hipotético): K_w = K_s/MR^2 fica muito sensível. "
+            f"MR={mr_wheel_spring} < {MR_WARN_THRESHOLD} (limite definido pelo usuário, sem fonte): K_w = K_s/MR^2 fica muito sensível. "
             "Confirme o MR (convenção wheel/spring, não a inversa)."), stacklevel=2)
     return k_spring / mr_wheel_spring ** 2
 
