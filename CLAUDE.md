@@ -10,7 +10,8 @@ Foco declarado: completar a planilha (EDR-019).
   em andamento (`SPEC.md` §11): o EDR-043 trocou a versão no nome dos `.py` pela tag
   do Git.
 - Layout (EDR-043): módulos em `python/` com nomes estáveis; testes em `tests/`
-  (`tests/regressao/` guarda a V1.0 congelada); dados em `data/` (os hardpoints mantêm
+  (`tests/regressao/` guarda a V1.0 congelada e a referência histórica do T09, que não
+  conta na aprovação); dados em `data/` (os hardpoints mantêm
   o `_V2.0`, versão do schema; os outros dados mantêm o sufixo de origem). A planilha em
   `excel/` mantém a versão no nome. Docstrings e textos de células em `build_workbook.py`
   ainda citam os nomes `_V2_x` de propósito: não os "corrija" (quebra o CA-07).
