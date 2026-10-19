@@ -15,6 +15,7 @@ para mudança de fórmula. Referências: docs/revisao-metodologica.md.
 """
 import argparse
 import copy
+import re
 from pathlib import Path
 
 import openpyxl
@@ -415,6 +416,53 @@ def _feedback2() -> list[dict]:
 
 
 LINHA_NA_TBD = LINHAS_ORIGENS.stop + 4   # 00_README: logo depois do item 6 do guia
+# FB-03, fase 2 (aprovada pelo usuário em 2026-10-19): pior origem ao vivo nos resultados principais do 14_DASHBOARD.
+DASH_RESULTADOS = (7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 33, 34, 35, 36, 37)
+DASH_CABECALHOS = (5,)             # linha vazia acima da 1ª seção (as linhas de seção são mescladas A:E)
+
+
+def _formula_pior_origem(celulas: list[tuple[str, str]]) -> str:
+    """Maior índice na lista 'Origens' entre as células de origem; origem vazia ou fora da lista conta como '? A confirmar'.
+
+    A lista 'Origens' (00_README) está na ordem inversa da pior origem (raizes.PIOR_PRIMEIRO), então pior = maior índice.
+    """
+    n = len(ORIGENS_LISTA)
+    termos = [f"IFERROR(MATCH('{aba}'!${re.sub(r'[0-9]', '', c)}${re.sub(r'[A-Z]', '', c)},{NOME_LISTA},0),{n})"
+              for aba, c in celulas]
+    return f"=INDEX({NOME_LISTA},MAX({','.join(termos)}))"
+
+
+def _feedback2_pior_origem(wb, registro: list[dict]) -> None:
+    """Coluna E do 14_DASHBOARD: pior origem das entradas de cada resultado, calculada ao vivo pela coluna Origem.
+
+    As células de origem de cada resultado saem do grafo de fórmulas na geração (python/raizes.py); a fórmula lê os
+    rótulos ao vivo, mas a lista de células é a da geração (TC-WB30-014 confere que ela cobre todas as raízes).
+    """
+    from openpyxl.formatting.rule import FormulaRule
+    from openpyxl.styles import PatternFill
+    from raizes import PIOR_PRIMEIRO, Grafo
+    assert tuple(reversed(PIOR_PRIMEIRO)) == ORIGENS_LISTA, "ordem da lista 'Origens' deixou de ser a inversa da pior origem"
+    ref = "FB-03 fase 2 / EDR-035 (usuário, 2026-10-19)"
+    d = wb["14_DASHBOARD"]
+    g = Grafo(wb)
+    for r in DASH_CABECALHOS:
+        d[f"E{r}"]._style = copy.copy(d["A6"]._style)
+        d[f"E{r}"].value = "Coluna E: pior origem das entradas (ao vivo)"
+        registro.append({"aba": "14_DASHBOARD", "cel": f"E{r}", "antes": None, "novo": d[f"E{r}"].value, "ref": ref})
+    for r in DASH_RESULTADOS:
+        celulas = g.celulas_origem(("14_DASHBOARD", f"B{r}"))
+        if not celulas:
+            raise RuntimeError(f"14_DASHBOARD B{r}: nenhuma raiz com coluna Origem")
+        d[f"E{r}"]._style = copy.copy(d[f"D{r}"]._style)
+        d[f"E{r}"].value = _formula_pior_origem(celulas)
+        registro.append({"aba": "14_DASHBOARD", "cel": f"E{r}", "antes": None, "novo": d[f"E{r}"].value, "ref": ref})
+    d.column_dimensions["E"].width = 30
+    faixa = f"E{DASH_RESULTADOS[0]}:E{DASH_RESULTADOS[-1]}"
+    for simb, cor in COR_ORIGEM.items():
+        d.conditional_formatting.add(faixa, FormulaRule(formula=[f'LEFT($E{DASH_RESULTADOS[0]},1)="{simb}"'],
+                                                        fill=PatternFill("solid", start_color=cor, end_color=cor)))
+    registro.append({"aba": "14_DASHBOARD", "cel": f"{faixa} (formatação)", "antes": None, "novo": "cores por origem",
+                     "ref": ref})
 
 
 def _feedback2_formatacao(wb, registro: list[dict]) -> None:
@@ -431,7 +479,8 @@ def _feedback2_formatacao(wb, registro: list[dict]) -> None:
     c["A18"].value = "2026-10"
     c["B18"].value = ("V3.0, 2a rodada de feedback: razao h_ns / raio do pneu como entrada (05_VEHICLE B35/B36, Milliken p. 672); "
                       "05 B16/B17 = raio x razao; 07_KINEMATICS B14 (centro da roda traseira) = raio do pneu, sem passar pelo CG nao "
-                      "suspenso; item 7 do guia (N/A e TBD).")
+                      "suspenso; item 7 do guia (N/A e TBD); 14_DASHBOARD coluna E: pior origem das entradas de cada resultado, "
+                      "ao vivo (FB-03 fase 2).")
     c["C18"].value = ("Decisoes do usuario (2026-10-19). EDR-050 (estendido), EDR-035 (N/A e TBD). Registro celula a celula: "
                       "docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-013 estendido). NOT_VALIDATED fisicamente.")
     registro += [
@@ -512,6 +561,7 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
 
     _rodada2_formatacao(wb, registro)
     _feedback2_formatacao(wb, registro)
+    _feedback2_pior_origem(wb, registro)
     wb.calculation.fullCalcOnLoad = True
     out.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out)
