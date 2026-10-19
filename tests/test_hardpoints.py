@@ -1,11 +1,11 @@
 """Test Cases do hardpoints_V2_0.py (schema, leitura e validação) — V2.1: + TC-HP-101..104 (inversões isoladas, tolerância do solo, metadados, sensibilidade angular). python3 test_hardpoints_V2_1.py"""
 import os, csv, json, tempfile, copy
 import numpy as np
-from hardpoints_V2_0 import (load_hardpoints, build_hardpoint_set, write_hardpoints, lotus_to_iso8855, HardpointError,
+from hardpoints import (load_hardpoints, build_hardpoint_set, write_hardpoints, lotus_to_iso8855, HardpointError,
                              CSV_COLUMNS, REQUIRED_KEYS, PUSH_KEYS)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CSVP, METAP = os.path.join(HERE, "hardpoints_synthetic_V2.0.csv"), os.path.join(HERE, "hardpoints_synthetic_V2.0.meta.json")
+CSVP, METAP = os.path.join(HERE, "..", "data", "hardpoints_synthetic_V2.0.csv"), os.path.join(HERE, "..", "data", "hardpoints_synthetic_V2.0.meta.json")
 results = []
 
 
@@ -128,7 +128,7 @@ check("TC-HP-102b: 1,0 mm (limite exato) aceito; 1,2 mm rejeitado — CARACTERIZ
 
 m2 = dict(meta); m2["source_coordinate_system"] = "UNKNOWN"
 check("TC-HP-103a: CARACTERIZAÇÃO (GAP-HP-002) — convenção de origem declarada 'UNKNOWN' no meta é aceita silenciosamente (campo ignorado)", not fails(rows, m2))
-from hardpoints_V2_0 import META_REQUIRED
+from hardpoints import META_REQUIRED
 check("TC-HP-103b: CARACTERIZAÇÃO (GAP-HP-002) — META_REQUIRED não inclui convenção de origem, transformação aplicada, ferramenta/versão de origem nem estado de conhecimento",
       not any(k in META_REQUIRED for k in ("source_coordinate_system", "transform_applied", "source_tool", "source_tool_version", "convention_status")))
 
@@ -155,7 +155,7 @@ dmin = np.sqrt(2) * 1e-4 / np.radians(0.05)
 check("TC-HP-104c: d_min = √2·σ_coord/σ_γ,alvo reproduz o σ_γ alvo (exemplo ARITMÉTICO σ=0,1 mm, alvo 0,05°; não é critério do Tupã)",
       abs(mc_sigma(dmin, 1e-4) / 0.05 - 1) < 0.03, f"d_min={dmin:.4f} m")
 # arredondamento do CSV: 6 vs 9 casas na geometria sintética
-from hardpoints_V2_0 import load_hardpoints
+from hardpoints import load_hardpoints
 hsx = load_hardpoints(CSVP, METAP).corner_points("FL")
 def cam(wc, sp):
     a = sp - wc; return np.degrees(np.arcsin(-a[2] / np.linalg.norm(a)))
