@@ -2,6 +2,10 @@
 Suspension & Vehicle Dynamics Model — FSAE EV
 Implementa as fichas do Engineering Standard V2.0 (SUS-000 a SUS-208, SUS-701/702).
 
+V2.5 (revisão metodológica contra Milliken, Gillespie e Seward; docs/revisao-metodologica.md):
+  EDR-045 pneu em série na frequência (SUS-205, via ride rate SUS-212) e na rigidez de rolagem (SUS-206/207);
+  EDR-046 termo gravitacional da rolagem em SUS-103; EDR-047 massa suspensa por eixo exata e CG suspenso em a_s.
+  Os valores mudam em relação à V2.1 (intencional; a V1.0 congelada fica em tests/regressao/).
 V2.1: cross-check de MR [wheel/spring] contra MR geométrico/de referência (mr_crosscheck). O comportamento do limiar
 absoluto MR_WARN_THRESHOLD NÃO foi alterado (decisão pendente, EDR-027).
 V2.0: validação de entradas (bloqueios do Guide, Apêndice D.2) e aviso de plausibilidade para Fz<0 (SUS-104; Guide D.4).
@@ -15,7 +19,7 @@ from dataclasses import dataclass, fields
 import math
 import warnings
 
-__version__ = "V2.1"
+__version__ = "V2.5"
 
 # HIPÓTESE (sem fonte no projeto): abaixo deste MR emite aviso. O Guide (D.2) pede o teste de fronteira "MR muito pequeno"
 # mas não define o limite. Revisar com dado real da equipe.
@@ -82,6 +86,10 @@ class VehicleConfig:
         hs = (self.mass_total * self.cg_height - self.unsprung_mass_front * self.unsprung_cg_height_front
               - self.unsprung_mass_rear * self.unsprung_cg_height_rear) / ms
         _req(hs > 0, f"SUS-012 h_s={hs:.4f} m <= 0: inconsistência entre SUS-002, 007, 008, 010 e 011 (CG suspenso abaixo do solo).")
+        msF = self.mass_total * self.cg_to_rear / self.wheelbase - self.unsprung_mass_front
+        msR = self.mass_total * self.cg_to_front / self.wheelbase - self.unsprung_mass_rear
+        _req(msF > 0 and msR > 0, f"SUS-009 massa suspensa por eixo <= 0 (F={msF:.2f} kg, R={msR:.2f} kg): "
+                                  "a massa não suspensa de um eixo passa do peso estático desse eixo.")
 
 
 # ---------- SUS-009 / SUS-012 : massa suspensa e altura do CG suspenso ----------
@@ -91,15 +99,24 @@ def sprung_mass_total(cfg: VehicleConfig) -> float:
     return cfg.mass_total - cfg.unsprung_mass_front - cfg.unsprung_mass_rear
 
 
-def sprung_mass_per_corner(cfg: VehicleConfig) -> dict:
-    """SUS-009: distribuição por canto (aproxima a posição longitudinal do CG
-    suspenso pela do CG total — hipótese documentada em SUS-006)."""
-    ms = sprung_mass_total(cfg)
+def sprung_mass_axle(cfg: VehicleConfig) -> dict:
+    """SUS-009 por eixo (EDR-047): m_s,F = m·b/L − m_uF; m_s,R = m·a/L − m_uR
+    (Milliken p. 601, Tab. 16.3; Seward eq. 5.14). Hipótese: CG não suspenso sobre o eixo."""
     L = cfg.wheelbase
-    ms_front = ms * (cfg.cg_to_rear / L)   # b/L
-    ms_rear = ms * (cfg.cg_to_front / L)   # a/L
-    return {"FL": ms_front / 2, "FR": ms_front / 2,
-            "RL": ms_rear / 2, "RR": ms_rear / 2}
+    return {"front": cfg.mass_total * cfg.cg_to_rear / L - cfg.unsprung_mass_front,
+            "rear": cfg.mass_total * cfg.cg_to_front / L - cfg.unsprung_mass_rear}
+
+
+def sprung_cg_to_front(cfg: VehicleConfig) -> float:
+    """a_s: distância do CG suspenso ao eixo dianteiro, a_s = L·m_s,R/m_s (Milliken p. 603)."""
+    return cfg.wheelbase * sprung_mass_axle(cfg)["rear"] / sprung_mass_total(cfg)
+
+
+def sprung_mass_per_corner(cfg: VehicleConfig) -> dict:
+    """SUS-009: massa suspensa por canto = massa suspensa do eixo / 2 (simetria lateral)."""
+    m = sprung_mass_axle(cfg)
+    return {"FL": m["front"] / 2, "FR": m["front"] / 2,
+            "RL": m["rear"] / 2, "RR": m["rear"] / 2}
 
 
 def sprung_cg_height(cfg: VehicleConfig) -> float:
@@ -134,26 +151,38 @@ def longitudinal_dfz(cfg: VehicleConfig, ax: float) -> dict:
 # ---------- SUS-103 : modelo de duas molas de Milliken ----------
 
 def lateral_dfz(cfg: VehicleConfig, ay: float) -> dict:
-    """ay > 0 = aceleração para a esquerda (ISO 8855) -> lado direito ganha carga."""
-    a, b, L = cfg.cg_to_front, cfg.cg_to_rear, cfg.wheelbase
+    """SUS-103, Milliken p. 680-683 (fórmula completa) e p. 604; Seward eq. 5.16-5.21; Gillespie eq. 6-31 a 6-34.
+    ay > 0 = aceleração para a esquerda (ISO 8855) -> lado direito ganha carga.
+    Três massas (suspensa + não suspensas por eixo). O CG suspenso fica em a_s (EDR-047) e o
+    deslocamento lateral dele com a rolagem entra pelo termo gravitacional m_s·g·h2 (EDR-046):
+        φ = m_s·a_y·h2 / (K_φF + K_φR − m_s·g·h2)
+        ΔFz_F = [K_φF·φ + a_y·(m_s,F·z_F + m_uF·h_uF)] / t_F   (análogo atrás)
+    h2 = h_s − z_s na vertical (exemplo da Milliken p. 683 e Seward p. 133). φ positivo = rola para
+    a direita (rotação + em X, ISO), o lado de fora numa curva à esquerda."""
+    L = cfg.wheelbase
     tF, tR = cfg.track_front, cfg.track_rear
     zF, zR = cfg.roll_center_front, cfg.roll_center_rear
     ms = sprung_mass_total(cfg)
     hs = sprung_cg_height(cfg)
+    m_ax = sprung_mass_axle(cfg)
+    a_s = sprung_cg_to_front(cfg)
 
     KphiF, KphiR = cfg.roll_stiffness_front, cfg.roll_stiffness_rear
     lambda_f = KphiF / (KphiF + KphiR)
     lambda_r = KphiR / (KphiF + KphiR)
 
-    zs = (b / L) * zF + (a / L) * zR
+    zs = zF + (zR - zF) * a_s / L
+    h2 = hs - zs
+    den = KphiF + KphiR - ms * G * h2
+    _req(den > 0, f"SUS-103 instabilidade de rolagem: m_s·g·h2 = {ms * G * h2:.1f} N·m/rad >= K_φF+K_φR = "
+                  f"{KphiF + KphiR:.1f} N·m/rad (Milliken p. 682). Aumente a rigidez de rolagem ou revise h_s/RC.")
+    phi = ms * ay * h2 / den
 
-    dFzF = (ay / tF) * (lambda_f * ms * (hs - zs) + (b / L) * ms * zF
-                        + cfg.unsprung_mass_front * cfg.unsprung_cg_height_front)
-    dFzR = (ay / tR) * (lambda_r * ms * (hs - zs) + (a / L) * ms * zR
-                        + cfg.unsprung_mass_rear * cfg.unsprung_cg_height_rear)
+    dFzF = (KphiF * phi + ay * (m_ax["front"] * zF + cfg.unsprung_mass_front * cfg.unsprung_cg_height_front)) / tF
+    dFzR = (KphiR * phi + ay * (m_ax["rear"] * zR + cfg.unsprung_mass_rear * cfg.unsprung_cg_height_rear)) / tR
 
     return {"front_axle": dFzF, "rear_axle": dFzR,
-            "lambda_f": lambda_f, "lambda_r": lambda_r, "z_s": zs}
+            "lambda_f": lambda_f, "lambda_r": lambda_r, "z_s": zs, "a_s": a_s, "h2": h2, "roll_angle_rad": phi}
 
 
 # ---------- SUS-701 / SUS-702 : aero ----------
@@ -224,24 +253,69 @@ def spring_rate_from_wheel_rate(k_wheel: float, mr_wheel_spring: float) -> float
     return k_wheel * mr_wheel_spring ** 2
 
 
+# ---------- SUS-212 : ride rate (mola na roda em série com o pneu, EDR-045) ----------
+
+def _serie(k1: float, k2: float) -> float:
+    """Duas molas em série: k1·k2/(k1+k2). k2 = inf devolve k1 (pneu rígido)."""
+    return k1 if math.isinf(k2) else k1 * k2 / (k1 + k2)
+
+
+def ride_rate(k_wheel: float, k_tire: float) -> float:
+    """SUS-212: K_R = K_W·K_T/(K_W+K_T) (Milliken p. 591; Gillespie eq. 5-8; Seward eq. 4.1).
+    k_tire = SUS-211 (rigidez vertical do pneu); math.inf só para isolar a mola em teste."""
+    _req(k_wheel > 0, "SUS-202 k_wheel deve ser > 0.")
+    _req(k_tire > 0, "SUS-211 k_tire (rigidez vertical do pneu) deve ser > 0.")
+    return _serie(k_wheel, k_tire)
+
+
+def wheel_rate_from_ride_rate(k_ride: float, k_tire: float) -> float:
+    """SUS-212 reverso: K_W = K_R·K_T/(K_T − K_R) (Milliken p. 591; Seward eq. 4.4). Exige K_T > K_R."""
+    _req(k_ride > 0 and k_tire > 0, "SUS-212/211 k_ride e k_tire devem ser > 0.")
+    if math.isinf(k_tire):
+        return k_ride
+    _req(k_tire > k_ride, f"SUS-212 ride rate {k_ride:.1f} N/m >= rigidez do pneu {k_tire:.1f} N/m: "
+                          "nenhuma mola consegue (a ride rate nunca passa da rigidez do pneu).")
+    return k_ride * k_tire / (k_tire - k_ride)
+
+
 # ---------- SUS-205 : frequência natural ----------
 
-def natural_frequency(k_wheel: float, m_sprung_corner: float) -> float:
-    _req(k_wheel > 0 and m_sprung_corner > 0, "SUS-205 k_wheel e m_sprung_corner devem ser > 0.")
-    return (1 / (2 * math.pi)) * math.sqrt(k_wheel / m_sprung_corner)
+def natural_frequency(k_ride: float, m_sprung_corner: float) -> float:
+    """SUS-205: f = √(K_R/m)/2π com a RIDE RATE (SUS-212), não o wheel rate (EDR-045;
+    Gillespie eq. 5-9; Seward eq. 4.2; Milliken p. 588). A função em si é a de 1 GDL."""
+    _req(k_ride > 0 and m_sprung_corner > 0, "SUS-205 k_ride e m_sprung_corner devem ser > 0.")
+    return (1 / (2 * math.pi)) * math.sqrt(k_ride / m_sprung_corner)
 
 
-def wheel_rate_from_target_frequency(f_target: float, m_sprung_corner: float) -> float:
-    """SUS-205, Design Mode (reverso)."""
+def wheel_rate_from_target_frequency(f_target: float, m_sprung_corner: float, k_tire: float) -> float:
+    """SUS-205, Design Mode (reverso): K_R = (2πf)²·m e K_W = K_R·K_T/(K_T − K_R) (EDR-045)."""
     _req(f_target > 0 and m_sprung_corner > 0, "SUS-205 f_target e m_sprung_corner devem ser > 0.")
-    return (2 * math.pi * f_target) ** 2 * m_sprung_corner
+    return wheel_rate_from_ride_rate((2 * math.pi * f_target) ** 2 * m_sprung_corner, k_tire)
 
 
 # ---------- SUS-206 / SUS-207 : rigidez de rolagem por eixo ----------
 
-def roll_stiffness_axle(k_wheel: float, track: float, k_arb: float = 0.0) -> float:
+def roll_stiffness_axle(k_wheel: float, track: float, k_arb: float, k_tire: float) -> float:
+    """SUS-206/207 (EDR-045): (K_W·t²/2 + K_ARB) em série com o par de pneus (K_T·t²/2).
+    Milliken p. 589-592 (barra referida à roda, depois o pneu em série) e p. 680 (as rigidezes
+    de rolagem da transferência de carga incluem a deflexão do pneu); Seward eq. 4.5."""
     _req(k_wheel > 0 and track > 0 and k_arb >= 0, "SUS-206/207 k_wheel e track devem ser > 0 e k_arb >= 0.")
-    return (k_wheel * track ** 2) / 2 + k_arb
+    _req(k_tire > 0, "SUS-211 k_tire deve ser > 0.")
+    k_susp = (k_wheel * track ** 2) / 2 + k_arb
+    return _serie(k_susp, k_tire * track ** 2 / 2)
+
+
+def arb_required(k_phi_axle_required: float, k_wheel: float, track: float, k_tire: float) -> float:
+    """SUS-208 Design (EDR-045): K_ARB que leva o eixo à rigidez total pedida, com o pneu em série.
+    K_susp = K_req·K_φT/(K_φT − K_req); K_ARB = K_susp − K_W·t²/2 (pode sair negativo: a mola sozinha já passa)."""
+    _req(k_phi_axle_required > 0 and k_wheel > 0 and track > 0 and k_tire > 0, "SUS-208 entradas devem ser > 0.")
+    k_phi_t = math.inf if math.isinf(k_tire) else k_tire * track ** 2 / 2
+    if not math.isinf(k_phi_t):
+        _req(k_phi_t > k_phi_axle_required, "SUS-208 rigidez pedida >= rigidez de rolagem do par de pneus: inalcançável.")
+        k_susp = k_phi_axle_required * k_phi_t / (k_phi_t - k_phi_axle_required)
+    else:
+        k_susp = k_phi_axle_required
+    return k_susp - k_wheel * track ** 2 / 2
 
 
 # ---------- SUS-208 : distribuição de rigidez de rolagem ----------

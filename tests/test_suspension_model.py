@@ -11,11 +11,20 @@ from suspension_model import (
     combined_fz_corner, sprung_mass_total, sprung_cg_height, G,
     wheel_rate, spring_rate_from_wheel_rate, natural_frequency,
     wheel_rate_from_target_frequency, roll_stiffness_axle,
-    roll_stiffness_distribution,
+    roll_stiffness_distribution, ride_rate,
 )
+import suspension_model as sm
 
 TOL = 1e-6
 results = []
+
+
+def raises(fn, exc=ValueError, needle=None):
+    try:
+        fn()
+        return False
+    except exc as e:
+        return needle is None or needle in str(e)
 
 
 def check(name, condition, detail=""):
@@ -80,12 +89,14 @@ check("TC-004: sum(Fz) = W + Fz_aero", abs(total_fz - expected) < 1e-6,
       f"sum={total_fz:.4f} expected={expected:.4f}")
 
 # ---------------- TC-005 : conservação do momento lateral (Milliken) ----------------
+# V2.5 (EDR-046): o CG suspenso desloca h2·φ para fora com a rolagem; o equilíbrio do carro inteiro
+# passa a ser t_F·ΔF_F + t_R·ΔF_R = m·a_y·h_CG + m_s·g·h2·φ (Milliken p. 682-683; Gillespie eq. 6-31 a 6-34).
 ay_test = 1.2 * G
 lat2 = lateral_dfz(cfg, ay=ay_test)
 lhs = cfg.track_front * lat2["front_axle"] + cfg.track_rear * lat2["rear_axle"]
-rhs = cfg.mass_total * ay_test * cfg.cg_height
-check("TC-005: t_F*dFzF + t_R*dFzR = m*ay*h_CG", abs(lhs - rhs) < 1e-6,
-      f"lhs={lhs:.4f} rhs={rhs:.4f} (dFzF={lat2['front_axle']:.2f}N, dFzR={lat2['rear_axle']:.2f}N)")
+rhs = cfg.mass_total * ay_test * cfg.cg_height + sprung_mass_total(cfg) * G * lat2["h2"] * lat2["roll_angle_rad"]
+check("TC-005: t_F*dFzF + t_R*dFzR = m*ay*h_CG + m_s*g*h2*phi", abs(lhs - rhs) < 1e-6,
+      f"lhs={lhs:.4f} rhs={rhs:.4f} (dFzF={lat2['front_axle']:.2f}N, dFzR={lat2['rear_axle']:.2f}N, phi={math.degrees(lat2['roll_angle_rad']):.3f}°)")
 
 # ---------------- TC-006 : distribuição de rigidez de rolagem ----------------
 total_kphi = cfg.roll_stiffness_front + cfg.roll_stiffness_rear
@@ -106,9 +117,9 @@ cfg_rc0 = baseline_config(roll_center_front=0.0, roll_center_rear=0.0)
 lat_rc0 = lateral_dfz(cfg_rc0, ay=ay_test)
 ms = sprung_mass_total(cfg_rc0)
 hs = sprung_cg_height(cfg_rc0)
-lam = roll_stiffness_distribution(cfg_rc0.roll_stiffness_front, cfg_rc0.roll_stiffness_rear)
-expected_F_elastic_only = (ay_test / cfg_rc0.track_front) * (lam["lambda_f"] * ms * hs
-                                                              + cfg_rc0.unsprung_mass_front * cfg_rc0.unsprung_cg_height_front)
+KF0, KR0 = cfg_rc0.roll_stiffness_front, cfg_rc0.roll_stiffness_rear
+phi0 = ms * ay_test * hs / (KF0 + KR0 - ms * G * hs)          # z_s = 0 => h2 = h_s
+expected_F_elastic_only = (KF0 * phi0 + ay_test * cfg_rc0.unsprung_mass_front * cfg_rc0.unsprung_cg_height_front) / cfg_rc0.track_front
 check("TC-007: z_F=z_R=0 -> parcela geométrica desaparece",
       abs(lat_rc0["front_axle"] - expected_F_elastic_only) < TOL,
       f"calc={lat_rc0['front_axle']:.4f} esperado={expected_F_elastic_only:.4f}")
@@ -119,11 +130,10 @@ lat_no_unsprung = lateral_dfz(cfg_no_unsprung, ay=ay_test)
 ms2 = sprung_mass_total(cfg_no_unsprung)
 hs2 = sprung_cg_height(cfg_no_unsprung)
 a, b, L = cfg_no_unsprung.cg_to_front, cfg_no_unsprung.cg_to_rear, cfg_no_unsprung.wheelbase
-zs2 = (b / L) * cfg_no_unsprung.roll_center_front + (a / L) * cfg_no_unsprung.roll_center_rear
-lam2 = roll_stiffness_distribution(cfg_no_unsprung.roll_stiffness_front, cfg_no_unsprung.roll_stiffness_rear)
-expected_F_no_unsprung = (ay_test / cfg_no_unsprung.track_front) * (
-    lam2["lambda_f"] * ms2 * (hs2 - zs2) + (b / L) * ms2 * cfg_no_unsprung.roll_center_front
-)
+zs2 = (b / L) * cfg_no_unsprung.roll_center_front + (a / L) * cfg_no_unsprung.roll_center_rear   # sem m_u, a_s = a
+KF2, KR2 = cfg_no_unsprung.roll_stiffness_front, cfg_no_unsprung.roll_stiffness_rear
+phi2 = ms2 * ay_test * (hs2 - zs2) / (KF2 + KR2 - ms2 * G * (hs2 - zs2))
+expected_F_no_unsprung = (KF2 * phi2 + ay_test * (b / L) * ms2 * cfg_no_unsprung.roll_center_front) / cfg_no_unsprung.track_front
 check("TC-008: massa não-suspensa=0 -> parcela correspondente desaparece",
       abs(lat_no_unsprung["front_axle"] - expected_F_no_unsprung) < TOL,
       f"calc={lat_no_unsprung['front_axle']:.4f} esperado={expected_F_no_unsprung:.4f}")
@@ -136,9 +146,10 @@ check("TC-009: MR=1 -> Kw=Ks", abs(kw_test - ks_test) < TOL, f"Kw={kw_test}")
 # ---------------- TC-010 : cálculo inverso de frequência ----------------
 f_target = 2.5  # Hz
 m_corner = 30.0  # kg
-kw_from_target = wheel_rate_from_target_frequency(f_target, m_corner)
-f_check = natural_frequency(kw_from_target, m_corner)
-check("TC-010: cálculo inverso retorna exatamente f_target", abs(f_check - f_target) < 1e-9,
+k_tire_test = 120000.0  # N/m (valor de teste)
+kw_from_target = wheel_rate_from_target_frequency(f_target, m_corner, k_tire_test)
+f_check = natural_frequency(ride_rate(kw_from_target, k_tire_test), m_corner)
+check("TC-010: cálculo inverso (com pneu em série) retorna exatamente f_target", abs(f_check - f_target) < 1e-9,
       f"f_target={f_target} f_check={f_check:.9f}")
 
 # ---------------- Piloto end-to-end: MR -> Wheel Rate -> Natural Frequency ----------------
@@ -149,34 +160,75 @@ ms_pilot = 50.0     # kg
 
 Ks_m = Ks_mm * 1000.0  # N/m
 Kw = wheel_rate(Ks_m, MR)
-fn = natural_frequency(Kw, ms_pilot)
+fn = natural_frequency(ride_rate(Kw, math.inf), ms_pilot)   # pneu rígido: isola a mola, como no piloto manual
 print(f"MR={MR}, Ks={Ks_mm} N/mm, ms={ms_pilot} kg")
 print(f"Kw calculado = {Kw:.4f} N/m ({Kw/1000:.4f} N/mm)")
 print(f"fn calculado = {fn:.4f} Hz  (esperado ~8.90 Hz)")
-check("Piloto: fn bate com o valor verificado manualmente na especificação",
+check("Piloto: fn (pneu rígido) bate com o valor verificado manualmente na especificação",
       abs(fn - 8.90) < 0.01, f"fn={fn:.4f}")
 
 # Design Mode: inverte a partir de uma frequência-alvo
-f_target_pilot = fn  # deve fechar o ciclo exatamente
-Kw_design = wheel_rate_from_target_frequency(f_target_pilot, ms_pilot)
+fn_t = natural_frequency(ride_rate(Kw, k_tire_test), ms_pilot)
+Kw_design = wheel_rate_from_target_frequency(fn_t, ms_pilot, k_tire_test)
 Ks_design = spring_rate_from_wheel_rate(Kw_design, MR)
-check("Piloto Design Mode: ciclo fechado (Analysis -> Design -> mesmo Ks)",
+check("Piloto Design Mode: ciclo fechado com pneu em série (Analysis -> Design -> mesmo Ks)",
       abs(Ks_design - Ks_m) < 1e-6, f"Ks original={Ks_m} Ks recalculado={Ks_design:.6f}")
+
+# =====================================================================
+# V2.5 — oráculos da literatura (EDR-045/046/047): exemplos numéricos publicados
+# =====================================================================
+# Seward, Race Car Design, Exemplo 4.1 (p. 95-96): K_T = 200 N/mm, m_s = 110 kg.
+for kw_mm, kr_book, fs_book in ((20.0, 18.2, 2.05), (200.0, 100.0, 4.8)):
+    kr = ride_rate(kw_mm * 1e3, 200e3)
+    fs = natural_frequency(kr, 110.0)
+    check(f"TC-SUS-V25-001: Seward Ex. 4.1, K_W={kw_mm:.0f} N/mm: K_R={kr_book} N/mm e f_s={fs_book} Hz (arredondados no livro)",
+          abs(kr / 1e3 - kr_book) < 0.05 and abs(fs - fs_book) < 0.005, f"K_R={kr/1e3:.3f} N/mm, f_s={fs:.4f} Hz")
+# Gillespie, eq. 5-8 (exemplo p. 154): K_s=143 lb/in, K_t=1198 lb/in -> RR=127 lb/in; f=1,14 Hz com 957 lb.
+rr = ride_rate(143.0, 1198.0)
+f_g = natural_frequency(rr * 386.0, 957.0)   # lb/in·(in/s²) / lb: mesma razão do livro (g = 386 in/s²)
+check("TC-SUS-V25-002: Gillespie eq. 5-8/5-9 (p. 154): RR=127 lb/in e f_nf=1,14 Hz", abs(rr - 127.0) < 1.0 and abs(f_g - 1.14) < 0.005,   # 143·1198/1341 = 127,75; o livro imprime 127
+      f"RR={rr:.2f} lb/in, f={f_g:.4f} Hz")
+# Milliken p. 591-592: K_W = K_R·K_T/(K_T − K_R): 384,4 -> 476 e 225,6 -> 254 lb/in (K_T = 2000).
+kwf, kwr = sm.wheel_rate_from_ride_rate(384.4, 2000.0), sm.wheel_rate_from_ride_rate(225.6, 2000.0)
+check("TC-SUS-V25-003: Milliken p. 592: K_WF=476 e K_WR=254 lb/in", abs(kwf - 476) < 0.5 and abs(kwr - 254) < 0.5, f"{kwf:.2f}, {kwr:.2f}")
+# Milliken p. 592: barra necessária 19.904 lb·ft/rad para K_φ total 70.000 (K_T 2000 lb/in, K_W 476 lb/in, t = 5 ft; ×12 in/ft).
+k_arb = sm.arb_required(70000.0, 12 * 476.0, 5.0, 12 * 2000.0)
+check("TC-SUS-V25-004: Milliken p. 592: K_φA = 19.904 lb·ft/rad (barra referida à roda, pneu em série)", abs(k_arb - 19904) < 1.0, f"{k_arb:.1f}")
+k_back = roll_stiffness_axle(12 * 476.0, 5.0, k_arb, 12 * 2000.0)
+check("TC-SUS-V25-005: roll_stiffness_axle ∘ arb_required = identidade (70.000 lb·ft/rad)", abs(k_back - 70000.0) < 1e-6, f"{k_back:.6f}")
+check("TC-SUS-V25-006: pneu rígido (K_T = inf) recupera K_W·t²/2 + K_ARB", abs(roll_stiffness_axle(16000.0, 1.25, 500.0, math.inf) - (16000 * 1.25 ** 2 / 2 + 500)) < 1e-9)
+# Milliken p. 601, Tab. 16.3: W_SF = W_F − W_UF = 1149,5 − 170 = 979,5 lb; W_SR = 1413 − 250 = 1163 lb.
+Wt, ell = 2562.5, 103.0
+b_ = 1149.5 * ell / Wt
+cfg_t = baseline_config(mass_total=Wt, cg_height=15.0, wheelbase=ell, cg_to_front=ell - b_, cg_to_rear=b_,
+                        unsprung_mass_front=170.0, unsprung_mass_rear=250.0, unsprung_cg_height_front=11.25,
+                        unsprung_cg_height_rear=12.75, track_front=65.58, track_rear=64.5)
+mx = sm.sprung_mass_axle(cfg_t)
+check("TC-SUS-V25-007: Milliken Tab. 16.3: massa suspensa por eixo 979,5 / 1163 (lb)", abs(mx["front"] - 979.5) < 1e-6 and abs(mx["rear"] - 1163.0) < 1e-6,
+      f"F={mx['front']:.4f} R={mx['rear']:.4f}")
+check("TC-SUS-V25-008: Milliken p. 602-603: h_s = 15,56 in e a_s = 45,7 % (fração dianteira da massa suspensa)",
+      abs(sprung_cg_height(cfg_t) - 15.56) < 0.005 and abs(mx["front"] / sprung_mass_total(cfg_t) - 0.457) < 0.0005,
+      f"h_s={sprung_cg_height(cfg_t):.4f} in, W_SF/W_S={mx['front'] / sprung_mass_total(cfg_t):.4f}")
+# Milliken p. 683 (fórmula completa, p. 682): ΔW_F/A_Y = 590,8 e ΔW_R/A_Y = 483,4 lb/g.
+# Unidades do livro: massa em lb/g (m = W/G) e a_y = G, então m·a_y = W em lb e m_s·G·h2 = W_s·h2 em lb·ft.
+d683 = dict(mass_total=3500.0 / G, cg_height=1.5, wheelbase=9.5, cg_to_front=4.56, cg_to_rear=4.94,
+            track_front=5.0, track_rear=5.0, unsprung_mass_front=200.0 / G, unsprung_mass_rear=300.0 / G,
+            unsprung_cg_height_front=1.0, unsprung_cg_height_rear=1.0, roll_center_front=0.25, roll_center_rear=0.625,
+            roll_stiffness_front=67600.0, roll_stiffness_rear=36100.0)
+l683 = lateral_dfz(VehicleConfig(**d683), ay=G)
+check("TC-SUS-V25-009: Milliken p. 683: ΔW_F = 590,8 e ΔW_R = 483,4 lb/g (fórmula completa)",
+      abs(l683["front_axle"] - 590.8) < 0.1 and abs(l683["rear_axle"] - 483.4) < 0.1,
+      f"F={l683['front_axle']:.2f} R={l683['rear_axle']:.2f} lb/g; a_s={l683['a_s']:.3f} ft (livro 4,37); h2={l683['h2']:.3f} ft (livro 1,16)")
+check("TC-SUS-V25-010: Milliken p. 684: sensibilidade de rolagem −2,0 °/g (φ para o lado de fora)",
+      abs(abs(math.degrees(l683["roll_angle_rad"])) - 2.0) < 0.01, f"|φ|={abs(math.degrees(l683['roll_angle_rad'])):.4f} °/g")
+check("TC-SUS-V25-011: m_s·g·h2 >= K_φF+K_φR (instabilidade de rolagem) é bloqueado com mensagem",
+      raises(lambda: lateral_dfz(baseline_config(roll_stiffness_front=100.0, roll_stiffness_rear=100.0), 5.0), needle="instabilidade"))
 
 
 # =====================================================================
 # V2.0 — validação de entradas (Guide D.2) e aviso de Fz<0 (SUS-104, Guide D.4)
 # =====================================================================
 import warnings
-import suspension_model as sm
-
-
-def raises(fn, exc=ValueError, needle=None):
-    try:
-        fn()
-        return False
-    except exc as e:
-        return needle is None or needle in str(e)
 
 
 check("TC-SUS-V2-001a: massa zero bloqueada (SUS-001)", raises(lambda: baseline_config(mass_total=0.0), needle="mass_total deve ser > 0"))
@@ -234,11 +286,13 @@ if v1 is not None:
                 unsprung_cg_height_front=0.230, unsprung_cg_height_rear=0.230, roll_center_front=0.030,
                 roll_center_rear=0.050, roll_stiffness_front=20826.4, roll_stiffness_rear=26450.0)
     c1, c2 = v1.VehicleConfig(**base), sm.VehicleConfig(**base)
-    dev = 0.0
+    dev, dev_lat = 0.0, 0.0
     for ax_, ay_ in [(0, 0), (-5, 0), (3, 4), (-3, 8), (0, 11)]:
         a, b = v1.combined_fz_corner(c1, ax_, ay_, 300.0, 0.4), sm.combined_fz_corner(c2, ax_, ay_, 300.0, 0.4)
-        dev = max(dev, max(abs(a[k] - b[k]) for k in a))
-    check("TC-SUS-V2-004: regressão — Fz combinado idêntico ao da V1.0 para entradas válidas", dev == 0.0, f"dif máx={dev:.1e}")
+        (dev_lat := max(dev_lat, max(abs(a[k] - b[k]) for k in a))) if ay_ else None
+        dev = dev if ay_ else max(dev, max(abs(a[k] - b[k]) for k in a))
+    check("TC-SUS-V2-004: regressão — sem a_y, Fz combinado idêntico ao da V1.0; com a_y, difere (EDR-046/047, intencional)",
+          dev == 0.0 and dev_lat > 1.0, f"dif máx sem a_y={dev:.1e}; com a_y={dev_lat:.2f} N")
 else:
     print("[SKIP] TC-SUS-V2-004: suspension_model_V1_0.py não encontrado em tests/regressao/")
 
