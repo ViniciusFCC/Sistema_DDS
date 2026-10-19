@@ -1,8 +1,10 @@
 # Revisão metodológica do Sistema_DDS contra a literatura
 
-**Situação:** primeira rodada concluída em 2026-10-19 (sessão noturna, com carta branca do
-usuário para a revisão). Nenhuma fórmula da planilha, equação dos modelos ou ID foi
-alterado. As correções estão como **propostas** (seção 5), à espera da decisão do usuário.
+**Situação:** primeira rodada concluída em 2026-10-19. No mesmo dia o usuário mandou seguir a
+literatura (principalmente o Milliken) e autorizou todas as propostas da seção 5: elas
+estão **aplicadas** na V2.5 (EDR-045 a EDR-049; `docs/registro-de-versoes-V2_5.md`). As
+tabelas das seções 2 e 3 descrevem o estado **antes** da V2.5; a coluna "Resultado" vale
+para a V2.4. A decisão A3 (seção 4) continua aberta.
 
 **Script de apoio:** `tools/oraculos_literatura.py` (não altera nada; reproduz os exemplos
 numéricos dos livros e mede o efeito de cada divergência). Saída da última execução em
@@ -127,8 +129,13 @@ O que isso significa e o que não significa:
   contradiz**, e vai falhar assim que P-01/P-02 forem aprovadas.
 - Observação: os valores de entrada da planilha V2.4 (K_s 49 909 e 57 052 N/m com MR
   1,76; K_ARB 5 012 e 10,78 N·m/rad) reproduzem exatamente os wheel rates e as barras do
-  T09 (16 112 e 18 418 N/m). Pelo EDR-012 o T09 nunca é baseline; vale conferir se esses
-  valores estão rotulados como demonstrativos na planilha.
+  T09 (16 112 e 18 418 N/m). Pelo EDR-012 o T09 nunca é baseline. **Conferido:** na V2.4 os
+  comentários dessas células citavam o T09 como fonte, mas não diziam que o valor é só
+  demonstrativo. O usuário confirmou (2026-10-19) que são valores de referência e de teste
+  de formulação; na V2.5 eles ganharam o aviso DEMONSTRATIVO (06_SUSPENSION A2 e comentários
+  de B4:B15).
+- Com a V2.5 (pneu em série), o caso T09 deixa de bater por construção: a planilha
+  histórica do T09 calculava sem o pneu.
 
 **Recomendação (não é decisão):** portar como **regressão histórica** em
 `tests/regressao/`, rotulada REFERÊNCIA HISTÓRICA T09 (EDR-012), sem entrar na contagem
@@ -136,12 +143,16 @@ de aprovação do modelo atual, e com o próprio teste dizendo que confere a fó
 simplificada da equipe, não a da literatura. Alternativa: não portar e registrar o
 resultado acima no EDR. A decisão é do usuário.
 
-## 5. Propostas de correção (aguardam decisão; nada aplicado)
+## 5. Propostas de correção (aplicadas na V2.5 em 2026-10-19)
 
-Cada proposta vira um EDR em AWAITING_DECISION **depois** que o usuário autorizar o
-número (o próximo livre seria o EDR-045). Nenhuma inventa valor: o único número novo é o
-K_T, que vem do .tir provisório (`VERTICAL_STIFFNESS = 120312 N/m`, EDR-038) e teria de
-ser rotulado PROVISÓRIO.
+Autorizadas pelo usuário em 2026-10-19 e implementadas: P-01 e P-02 no EDR-045 (novos
+SUS-211 e SUS-212), P-03 no EDR-046, P-04 no EDR-047, P-05 e P-07 no EDR-048 (com a
+configuração do carro: freio dentro da roda, em volta do cubo; motor no chassi, atrás) e
+P-06 no EDR-049. Nenhuma inventa valor: o único número novo é o K_T, que vem do .tir
+provisório (`VERTICAL_STIFFNESS = 120312 N/m`, EDR-038) e está rotulado PROVISÓRIO.
+Verificação: os modelos reproduzem os exemplos publicados (Milliken p. 592, 601-603 e
+683-684; Seward Ex. 4.1; Gillespie p. 154) e a planilha V2.5 reproduz os modelos
+(`tests/test_workbook_suspensao.py` 9/9, `tests/test_workbook.py` 19/19).
 
 | ID provisório | Mudança | Fontes | Efeito medido (demonstrativo) | O que exige |
 |---|---|---|---|---|
@@ -153,9 +164,9 @@ ser rotulado PROVISÓRIO.
 | P-06 | Ky: um único λFz0 (forma MFeval/[SEW]/[PAC]) | [SEW] 5.9; [PAC] 4.E25 | zero com LFZO = 1 | muda `tire_model.py` e 10_TIRE (fórmula de Ky); ajustar TC-TIRE-ORC (o oráculo Racer passa a divergir quando LFZO ≠ 1) |
 | P-07 | SUS-301/302: fixar `reaction_point` pela regra da fonte | [MIL] p. 618-619; [GIL] 7-17 a 7-19 | - | dado do carro: posição dos freios (cubo ou chassi) e do motor/redução (no cubo ou no chassi). Sem esse dado, fica a confirmar |
 
-Ordem sugerida, se aprovadas: P-01 + P-02 juntas (mesma entrada K_T, mesma justificativa),
-depois P-04, depois P-03 (que muda a identidade de teste TC-005), e P-06 por último
-(efeito nulo hoje). P-05 e P-07 dependem da REFERENCE e de dados do carro.
+O que continua dependendo de dado ou de REFERENCE: a rigidez vertical do pneu real
+(SUS-211), os ICs e a altura do centro da roda em 07_KINEMATICS (placeholders) e a escolha
+entre IC cinemático e eixos de pivô (TC-011).
 
 ## 6. O que fica para a próxima rodada
 
@@ -164,3 +175,7 @@ depois P-04, depois P-03 (que muda a identidade de teste TC-005), e P-06 por úl
   a planilha ganhar esse bloco.
 - Documentação TNO/Adams do PAC2002 (forma exata do Fy0 e dos fatores λ).
 - Documentação do TTC sobre o sinal do IA (EDR-039).
+- Anti-lift traseiro sob frenagem regenerativa (motor no chassi: linha pelo centro da roda;
+  escopo no EDR-033).
+- Definição α* = tan α (Pacejka eq. 4.E3) contra α (Seward; módulo atual): depende de como o
+  OptimumTire ajustou o arquivo (EDR-040).

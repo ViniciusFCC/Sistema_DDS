@@ -14,6 +14,12 @@ a planilha gerada e quebra a igualdade com a V2.4 entregue (CA-07).
 
     uv run python -X utf8 tests/<script>.py
     uv run python -X utf8 python/build_workbook.py [saída.xlsx]   (padrão: build/)
+    uv run python -X utf8 python/atualizar_planilha.py [V2_4.xlsx] [V2_5.xlsx] [--registro arq.md]
+
+A planilha vigente é a V2.5: o `build_workbook` gera a V2.4 e o `atualizar_planilha`
+aplica sobre ela as mudanças da revisão metodológica (EDR-045 a EDR-049), uma célula de
+cada vez, listadas em `alteracoes()` com a fonte. Nenhum dos dois recalcula ou salva a
+planilha pelo Excel ou pelo LibreOffice.
 
 Os testes são scripts com `check()`, não pytest. O resumo de cada um é a linha
 final `N PASS, M FAIL, de T testes`. O `tests/test_workbook.py` recalcula cópias da
