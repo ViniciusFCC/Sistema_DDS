@@ -4,8 +4,8 @@ Recalcula CÓPIAS pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_plani
 Uso: uv run python -X utf8 tests/test_workbook_suspensao.py [<V3_0.xlsx>]   (padrão: excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx)
 Namespace TC-WB30-xxx. "Passou" = Excel reproduz o suspension_model/kinematics_model (tol. 1e-9 relativa), não validação física.
 TC-WB30-010 a 013 (1ª rodada de feedback): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
-TC-WB30-013 estendido na 2ª rodada de feedback: razão h_ns / raio como entrada (05 B35/B36) e 07 B14 separado do CG não suspenso.
-TC-WB30-014 (2ª rodada de feedback, ID autorizado pelo usuário em 2026-10-19): pior origem ao vivo no 14_DASHBOARD (FB-03 fase 2).
+TC-WB30-013 estendido na 2ª rodada da revisão metodológica: razão h_ns / raio como entrada (05 B35/B36) e 07 B14 separado do CG não suspenso.
+TC-WB30-014 (2ª rodada da revisão metodológica, ID autorizado pelo usuário em 2026-10-19): pior origem ao vivo no 14_DASHBOARD (FB-03 fase 2).
 """
 import csv, math, os, random, shutil, sys, tempfile, warnings
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
@@ -45,7 +45,7 @@ ENTRADAS = {
 DERIVADAS = {"m", "a", "b", "huF", "huR", "ay", "zWR"}
 PARCELAS = {"m_med": ("05_VEHICLE", "B30"), "m_pil": ("05_VEHICLE", "B31"), "f": ("05_VEHICLE", "B32"),
             "D_F": ("05_VEHICLE", "B33"), "D_R": ("05_VEHICLE", "B34"), "ay_g": ("08_VEHICLE_STATE", "B11"),
-            "rF": ("05_VEHICLE", "B35"), "rR": ("05_VEHICLE", "B36")}   # razão h_ns / raio (2ª rodada de feedback)
+            "rF": ("05_VEHICLE", "B35"), "rR": ("05_VEHICLE", "B36")}   # razão h_ns / raio (2ª rodada da revisão metodológica)
 SAIDAS = {   # nome -> (aba, célula)
     "msF": ("05_VEHICLE", "B25"), "msR": ("05_VEHICLE", "B26"), "a_s": ("05_VEHICLE", "B27"), "hs": ("05_VEHICLE", "B24"),
     "KwF": ("06_SUSPENSION", "B18"), "KwR": ("06_SUSPENSION", "B19"), "KphiF": ("06_SUSPENSION", "B22"), "KphiR": ("06_SUSPENSION", "B23"),
@@ -134,7 +134,7 @@ DERIV = {("05_VEHICLE", "B4"): ("$B$30", "$B$31"), ("05_VEHICLE", "B9"): ("$B$6"
          ("05_VEHICLE", "B16"): ("$B$33", "$B$35"), ("05_VEHICLE", "B17"): ("$B$34", "$B$36"), ("08_VEHICLE_STATE", "B5"): ("$B$11",),
          ("07_KINEMATICS", "B14"): ("'05_VEHICLE'!$B$34",)}
 eh_formula = all(str(wbf[a][c].value).startswith("=") and all(r in wbf[a][c].value for r in refs) for (a, c), refs in DERIV.items())
-eh_formula = eh_formula and "$B$17" not in wbf["07_KINEMATICS"]["B14"].value   # centro da roda ≠ CG não suspenso (2ª rodada)
+eh_formula = eh_formula and "$B$17" not in wbf["07_KINEMATICS"]["B14"].value   # centro da roda ≠ CG não suspenso (2ª rodada da revisão metodológica)
 v5, v8 = wbv["05_VEHICLE"], wbv["08_VEHICLE_STATE"]
 esperado = {"B4": 316.5, "B9": 1.594 * (1 - 0.4843), "B10": 1.594 * 0.4843, "B16": 0.254, "B17": 0.254}
 dif = max([abs(v5[k].value - e_) for k, e_ in esperado.items()] + [abs(v8["B5"].value - 11.772)]
@@ -266,7 +266,7 @@ check("TC-WB30-012: cores e avisos da Origem (E) e da Fonte (F) nas 5 abas, G/H 
       regras_ok and ocultas_ok and copia_ok and z == [True, False, False, False, True, False] and info["total_errors"] == 0,
       f"regras={regras_ok}; ocultas={ocultas_ok}; G/H={copia_ok}; avaliação={z}")
 
-# ---------- FB-03 fase 2: pior origem ao vivo no 14_DASHBOARD (2ª rodada de feedback) ----------
+# ---------- FB-03 fase 2: pior origem ao vivo no 14_DASHBOARD (2ª rodada da revisão metodológica) ----------
 import raizes
 PIOR = [CONF, ARB, EST, TTC, T09, TX]          # ordem aprovada pelo usuário (2026-10-19), escrita aqui de novo de propósito
 LINHAS_DASH = (7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 33, 34, 35, 36, 37)
