@@ -221,10 +221,10 @@ check("TC-SUS-V2-003d: Fz == 0 é fronteira válida (sem aviso); Fz<0 gera regis
 tot = sum(fz_lift.values())
 check("TC-SUS-V2-003e: conservação ΣFz = W continua valendo mesmo com Fz<0 (superposição linear)", abs(tot - cfg.mass_total * G) < 1e-6, f"ΣFz={tot:.4f}")
 
-# Regressão contra a V1.0 (se o arquivo estiver ao lado): mesmos valores para entradas válidas
+# Regressão contra a V1.0 (se o arquivo estiver em tests/regressao/): mesmos valores para entradas válidas
 try:
     import importlib, os, sys
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "regressao"))  # EDR-043: V1.0 congelada
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "regressao"))  # EDR-043: V1.0 congelada, no fim da busca
     v1 = importlib.import_module("suspension_model_V1_0")
 except ImportError:
     v1 = None
@@ -240,7 +240,7 @@ if v1 is not None:
         dev = max(dev, max(abs(a[k] - b[k]) for k in a))
     check("TC-SUS-V2-004: regressão — Fz combinado idêntico ao da V1.0 para entradas válidas", dev == 0.0, f"dif máx={dev:.1e}")
 else:
-    print("[SKIP] TC-SUS-V2-004: suspension_model_V1_0.py não encontrado ao lado")
+    print("[SKIP] TC-SUS-V2-004: suspension_model_V1_0.py não encontrado em tests/regressao/")
 
 
 # =====================================================================
