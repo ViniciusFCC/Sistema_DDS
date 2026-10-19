@@ -1,4 +1,4 @@
-"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049) e 2ª rodada
+"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049) e 1ª rodada de feedback
 (feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051).
 
 Uso:
@@ -160,7 +160,7 @@ def alteracoes(ky_row: int) -> list[dict]:
 
 
 # =====================================================================================================================
-# 2ª rodada da V3.0 (feedback da equipe, 2026-10-14; decisões do usuário em 2026-10-19): EDR-035, EDR-050, EDR-051.
+# 1ª rodada de feedback da V3.0 (feedback da equipe, 2026-10-14; decisões do usuário em 2026-10-19): EDR-035, EDR-050, EDR-051.
 # =====================================================================================================================
 # Rótulos da coluna "Origem" (EDR-035). O símbolo dá a leitura em P&B; a ordem é a da lista suspensa.
 TX, T09, TTC, EST, ARB, CONF = ("● Dado do TX", "◐ Dado do T09", "◐ Provisório (.tir TTC)", "○ Estimativa",
@@ -437,7 +437,7 @@ COR_ORIGEM = {"●": "00CCE3F0", "◐": "00FAE2B3", "○": "00F0D7E5", "?": "00E
 
 
 def _rodada2_formatacao(wb, registro: list[dict]) -> None:
-    """Parte da 2ª rodada que não é valor de célula: fundo amarelo, comentários migrados, lista, cores e avisos (EDR-035)."""
+    """Parte da 1ª rodada de feedback que não é valor de célula: fundo amarelo, comentários migrados, lista, cores e avisos (EDR-035)."""
     from openpyxl.formatting.rule import FormulaRule
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.workbook.defined_name import DefinedName
@@ -510,7 +510,7 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
     # Versão e changelog.
     m = wb["00_README"]
     assert "EDR-045 a EDR-049)" in m["A3"].value, "texto da versão em 00_README!A3 mudou"
-    m["A3"].value = m["A3"].value.replace("EDR-045 a EDR-049)", "EDR-045 a EDR-049; 2ª rodada, feedback da equipe: origem de cada "
+    m["A3"].value = m["A3"].value.replace("EDR-045 a EDR-049)", "EDR-045 a EDR-049; 1ª rodada de feedback (da equipe): origem de cada "
                                                                "entrada, valores derivados como fórmula, guia de preenchimento; "
                                                                "EDR-035, EDR-050, EDR-051)")
     # Texto corrido em A:E mesclado, como o resto da 00_README; a tabela de origens tem o significado em B:D.
@@ -520,18 +520,18 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
         m.merge_cells(f"B{r}:D{r}")
         m[f"B{r}"].alignment = m[f"E{r}"].alignment = quebra
         m.row_dimensions[r].height = 30
-    reg("00_README", "A3", "Versão do workbook: V3.0 ...", "(acrescenta a 2ª rodada)", "EDR-035/050/051")
+    reg("00_README", "A3", "Versão do workbook: V3.0 ...", "(acrescenta a 1ª rodada de feedback)", "EDR-035/050/051")
     reg("00_README", f"A{LINHA_COMO_PREENCHER}:E{LINHAS_ORIGENS.stop + 3} (mesclagem)", None, "A:E nas linhas de texto; B:D na tabela de origens", "FB-06")
     c = wb["15_CHANGELOG"]
     for col in "ABCDE":
         c[f"{col}17"]._style = copy.copy(c[f"{col}15"]._style)
     c["A17"].value = "2026-10"
-    c["B17"].value = ("V3.0, 2a rodada (feedback da equipe): coluna Origem (lista) e Fonte em cada entrada (05, 06, 07, 08, 11; 10_TIRE I/J), "
+    c["B17"].value = ("V3.0, 1a rodada de feedback (da equipe): coluna Origem (lista) e Fonte em cada entrada (05, 06, 07, 08, 11; 10_TIRE I/J), "
                       "com cores e aviso de origem desatualizada; fundo amarelo retirado e legenda corrigida; valores derivados como formula "
                       "(05_VEHICLE B4, B9, B10, B16, B17; 08 B5; entradas novas 05 B30:B34 e 08 B11); guia 'Como preencher' na 00_README.")
     c["C17"].value = ("Feedback da equipe (2026-10-14) e decisoes do usuario (2026-10-19). EDR-025 (A), EDR-035, EDR-050, EDR-051. Registro celula "
                       "a celula: docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-010..013). NOT_VALIDATED fisicamente.")
-    reg("15_CHANGELOG", "A17:C17", None, "(linha V3.0, 2ª rodada)", "EDR-035/050/051")
+    reg("15_CHANGELOG", "A17:C17", None, "(linha V3.0, 1ª rodada de feedback)", "EDR-035/050/051")
 
 
 def escrever_registro(registro: list[dict], caminho: Path) -> None:

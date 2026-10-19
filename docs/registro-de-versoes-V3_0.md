@@ -6,7 +6,8 @@ principalmente o Milliken, e autorizou todas as propostas da revisão
 
 **Numeração (usuário, 2026-10-19):** o trabalho que começou com a revisão metodológica é a
 **V3.0**, e não V2.5. A V3.0 fica em desenvolvimento até terminar a implementação das
-correções vindas de feedback; esta é a primeira rodada (revisão metodológica). Os nomes
+correções vindas de feedback. A revisão metodológica abriu a V3.0; as rodadas de feedback contam à parte
+(usuário, 2026-10-19): a 1ª rodada de feedback é a da equipe, seção abaixo. Os nomes
 "V2.5" que aparecem nos títulos dos PRs #5 e #6 e nas mensagens de commit anteriores a esta
 troca se referem a esta mesma versão.
 
@@ -31,7 +32,7 @@ troca se referem a esta mesma versão.
 - Pneu 43/43, oráculos 5/5, suspensão 54/54, cinemática 54/54, hardpoints 35/35, mutação 24/24.
 - Planilha: V2.4 regenerada com 347 fórmulas e 0 diferença; V3.0 regenerada com 356 fórmulas e 0 diferença.
 - `test_workbook` 19/19 (V3.0, pneu) e `test_workbook_suspensao` 9/9 (V3.0, suspensão), pelo Excel via COM.
-- 2ª rodada (2026-10-19): suíte inteira PASS; V3.0 regenerada com 362 fórmulas e 0 diferença; `test_workbook_suspensao` 13/13 (TC-WB30-010 a 013 novos) pelo Excel via COM e pelo LibreOffice (`DDS_RECALC=libreoffice`); `test_workbook` 19/19.
+- 1ª rodada de feedback (2026-10-19): suíte inteira PASS; V3.0 regenerada com 362 fórmulas e 0 diferença; `test_workbook_suspensao` 13/13 (TC-WB30-010 a 013 novos) pelo Excel via COM e pelo LibreOffice (`DDS_RECALC=libreoffice`); `test_workbook` 19/19.
 - Exemplos publicados reproduzidos pelo modelo: Milliken p. 683 (590,8/483,4 lb/g e −2,0 °/g), p. 592 (barra 19 904 lb·ft/rad; K_W 476/254 lb/in), Tab. 16.3 e p. 602-603 (massas e h_s); Seward Ex. 4.1; Gillespie p. 154.
 
 ## Efeito nos valores da planilha (recalculada pelo Excel; entradas DEMONSTRATIVAS)
@@ -61,7 +62,7 @@ PROVISÓRIO: nada desta tabela é resultado do carro.
 3. Continua tudo NOT_VALIDATED fisicamente: a referência é o OptimumKinematics/OptimumTire e medição (EDR-004).
 4. Frenagem regenerativa (motor no chassi) e anti-lift traseiro: escopo no EDR-033, sem decisão.
 
-## 2ª rodada: feedback da equipe (recebido em 2026-10-14; decisões em 2026-10-19)
+## 1ª rodada de feedback: feedback da equipe (recebido em 2026-10-14; decisões em 2026-10-19)
 
 Feedback de quem vai preencher a planilha, sobre a versão que a equipe recebeu. Cada item foi conferido na própria V3.0
 (as 124 constantes numéricas, a legenda e os 49 comentários). Decisões: EDR-025 (opção A), EDR-035 (parte de proveniência),
@@ -82,9 +83,9 @@ arquivo vivo da equipe; como o CA-07 trata esse arquivo fica para aprovação no
 
 **Efeito numérico:** só o arredondamento antigo de a e b (a digitado 0,82203 m; a conta dá 0,8220258 m). Pelo modelo,
 Fz por canto muda no máximo 0,005 N e a massa suspensa por canto dianteira passa de 69,14006 para 69,14048 kg. Nenhuma
-outra fórmula existente mudou: a 2ª rodada acrescenta 6 fórmulas (356 → 362).
+outra fórmula existente mudou: a 1ª rodada de feedback acrescenta 6 fórmulas (356 → 362).
 
-**Limites da 2ª rodada:**
+**Limites da 1ª rodada de feedback:**
 1. O aviso de origem desatualizada só percebe valor mudado com a origem igual; não impede que alguém marque "Dado do TX" num valor estimado. A regra "Dado do TX sem fonte" só reduz esse risco.
 2. Lista suspensa e cores conferidas no Excel desktop (COM: a lista `=Origens` e as cores exibidas batem). Não conferidas no Excel web, no LibreOffice nem no Google Sheets. Colar valores por cima de uma célula pode contornar a lista (comportamento do Excel; não testado aqui).
 3. Na 10_TIRE (casos de carga e coeficientes) há lista e cores, mas não os avisos de origem desatualizada e de fonte faltando (cinco valores por linha); o guia diz isso.
@@ -537,6 +538,6 @@ outra fórmula existente mudou: a 2ª rodada acrescenta 6 fórmulas (356 → 362
 | 08_VEHICLE_STATE | E3:F11 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 11_DESIGN | E3:F21 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 10_TIRE | I20:J176 (formatação) | (vazia) | lista 'Origens' em I; cores por origem | EDR-035 |
-| 00_README | A3 | Versão do workbook: V3.0 ... | (acrescenta a 2ª rodada) | EDR-035/050/051 |
+| 00_README | A3 | Versão do workbook: V3.0 ... | (acrescenta a 1ª rodada de feedback) | EDR-035/050/051 |
 | 00_README | A39:E52 (mesclagem) | (vazia) | A:E nas linhas de texto; B:D na tabela de origens | FB-06 |
-| 15_CHANGELOG | A17:C17 | (vazia) | (linha V3.0, 2ª rodada) | EDR-035/050/051 |
+| 15_CHANGELOG | A17:C17 | (vazia) | (linha V3.0, 1ª rodada de feedback) | EDR-035/050/051 |
