@@ -59,7 +59,7 @@ Total: 44 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DEC
 | EDR-022 | Valores de teste e demonstrativos sem rastreabilidade obrigatória | APPROVED |
 | EDR-023 | D1 — Identificadores SUS-407 a SUS-413 | AWAITING_DECISION |
 | EDR-024 | D2 — Schema de hardpoints V2.0 | AWAITING_DECISION |
-| EDR-025 | D3 / Decisão A — Tratamento de placeholders na planilha | APPROVED |
+| EDR-025 | D3 / Decisão A — Tratamento de placeholders na planilha | VERIFIED |
 | EDR-026 | D4 — Convenção de sinal de AD/AS (positivo = anti; negativo = pro; zero = sem efeito líquido) | APPROVED_WITH_CONDITIONS |
 | EDR-027 | D4-MR / D6 / Decisão B — Limiar absoluto de MR e cross-check | AWAITING_DECISION |
 | EDR-028 | D5 — IC lateral: funcionalidade exploratória | APPROVED_WITH_CONDITIONS |
@@ -84,7 +84,7 @@ Total: 44 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DEC
 | EDR-047 | Massa suspensa por eixo exata e CG suspenso em a_s | VERIFIED |
 | EDR-048 | Anti-dive/anti-squat: IC lateral pelo movimento, forma com sinal e ponto de reação do carro | VERIFIED |
 | EDR-049 | Ky com um único λFz0 | VERIFIED |
-| EDR-050 | Valor derivado entra como fórmula, não digitado | APPROVED |
+| EDR-050 | Valor derivado entra como fórmula, não digitado | VERIFIED |
 | EDR-051 | Fonte de verdade da planilha: gerada durante o desenvolvimento, viva depois de fechada a V3.0 | APPROVED_WITH_CONDITIONS |
 
 ## 3. Decisões que dependem do usuário (agora)
@@ -598,13 +598,13 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-025 — D3 / Decisão A — Tratamento de placeholders na planilha
 
 - **Date:** 2026-10-10 (decisão em 2026-10-19)
-- **Status:** APPROVED
+- **Status:** VERIFIED
 - **Context:** Planilha mostra números dependentes de dados não reais.
 - **Question:** Opção A (marcar, manter fórmulas) ou B (proteger só células terminais)?
 - **Alternatives:** A: proveniência visível + fórmulas intactas. B: guardar terminais com IF(origem válida; cálculo; 'N/A'). B': B com sensibilidade quantificada por saída.
 - **Decision:** **A** (usuário, 2026-10-19, 2ª rodada da V3.0): proveniência visível em cada entrada, fórmulas intactas; nenhuma fórmula terminal ganha IF de proteção. A forma da proveniência está no EDR-035. Histórico: a recomendação preliminar do prompt era B com proteção seletiva; a do assistente, B' (ver Evidence). B e B' ficam rejeitadas por ora: escondem números que a equipe usa para comparar e mudam fórmulas terminais.
 - **Rationale:** Mapa auditável confirma 45/84 fórmulas dependentes de dado que não é do veículo.
-- **Evidence:** placeholder-dependency-map-V2.1.csv: 45 fórmulas com raiz T1 (placeholder, arbitrário, estimativa ou alvo demonstrativo); 23 só com T2 (dado de outro veículo/hipótese/caso de carga sem proveniência); 16 só com T3. Das 45: 22 intermediárias, 17 terminais e 6 verificações de identidade/espelhos (TC-004/005 e λ). REQ-004 (13_VALIDATION B21/B22; dashboard B23/B24) retorna PASS a partir dos placeholders de curso 60/65 mm (07_KINEMATICS B31/B32). Anti-dive/squat (06_SUSPENSION B40/B41) dependem totalmente de placeholders. Sensibilidade (Python com os valores da planilha): trocar a massa não-suspensa arbitrária (15/18 kg) por 0 ou 2× altera Fz em ≤ 2,3 N (0,2%) e a frequência natural em 5,4% a 6,4%. Proteger o Fz por mera ascendência esconderia um dado quase insensível; a frequência é sensível. Proveniência existe nos 35 comentários de célula (não é legível por máquina nem visível sem passar o mouse).
+- **Evidence:** Implementação da opção A na V3.0 (2ª rodada): TC-WB30-010 a 012 PASS, pelo Excel via COM e pelo LibreOffice; nenhuma fórmula terminal alterada (CA-07). Auditoria anterior: placeholder-dependency-map-V2.1.csv: 45 fórmulas com raiz T1 (placeholder, arbitrário, estimativa ou alvo demonstrativo); 23 só com T2 (dado de outro veículo/hipótese/caso de carga sem proveniência); 16 só com T3. Das 45: 22 intermediárias, 17 terminais e 6 verificações de identidade/espelhos (TC-004/005 e λ). REQ-004 (13_VALIDATION B21/B22; dashboard B23/B24) retorna PASS a partir dos placeholders de curso 60/65 mm (07_KINEMATICS B31/B32). Anti-dive/squat (06_SUSPENSION B40/B41) dependem totalmente de placeholders. Sensibilidade (Python com os valores da planilha): trocar a massa não-suspensa arbitrária (15/18 kg) por 0 ou 2× altera Fz em ≤ 2,3 N (0,2%) e a frequência natural em 5,4% a 6,4%. Proteger o Fz por mera ascendência esconderia um dado quase insensível; a frequência é sensível. Proveniência existe nos 35 comentários de célula (não é legível por máquina nem visível sem passar o mouse).
 - **Assumptions:** Classificação T1/T2/T3 baseada em comentários e preenchimentos; as massas não-suspensas são ARBITRÁRIAS segundo o comentário de 05_VEHICLE B14/B15.
 - **Consequences:** B exige alterar fórmulas terminais (lista a registrar por célula: aba, célula, fórmula anterior/nova, dependências, justificativa, teste). Verificações de identidade (TC-004/005) permanecem intactas.
 - **Affected_Artifacts:** planilha 06, 09, 11, 13, 14; testes de planilha.
@@ -804,7 +804,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Alternatives:** Nova dimensão 'estado do dado'; usar metadados existentes.
 - **Decision:** **Proveniência (aprovada pelo usuário em 2026-10-19):** pelo metadado Provenance da arquitetura §3, sem estado novo, visível em cada linha de entrada da planilha: coluna E "Origem" (lista suspensa) e coluna F "Fonte" (texto); na 10_TIRE, colunas H e I. Rótulos (usuário, 2026-10-19: "Hipótese" e "Estimativa" se fundem; "Dado do T09" no lugar de "Outro carro"), com símbolo para leitura em P&B e por daltônicos: `● Dado do TX` (medido ou documento do TX/E05; tier T3 da auditoria V2.1), `◐ Dado do T09` (T09/E03; T2), `◐ Provisório (.tir TTC)` (T2), `○ Estimativa` (inclui hipótese de modelo e caso de carga sem fonte; T1 = a pior das categorias fundidas), `○ Arbitrário / demonstrativo` (arbitrário, placeholder, alvo demonstrativo; T1), `? A confirmar` (sem origem registrada; nunca preenchido por inferência). A cor da origem fica só na coluna E (formatação condicional), separada do código de papel da célula (fonte azul = entrada etc.); o fundo amarelo "hipótese-chave" sai da planilha (usuário, 2026-10-19). Aviso sem macro: o gerador grava em colunas ocultas G/H o valor e a origem com que gerou cada linha; a formatação condicional marca "valor mudou e a origem não" e "Dado do TX sem fonte". Resultado com selo estático de pior origem não é usado (fica velho em silêncio); pior origem viva nos resultados principais fica para uma fase 2, com aprovação. **N/A e TBD:** continua a proposta original, sem decisão: N/A = não aplicável/não calculável na configuração atual; TBD = dado, requisito ou decisão pendente (equivale a Lifecycle OPEN para parâmetros).
 - **Rationale:** O comentário de célula só aparece ao passar o mouse e não sai na impressão (EDR-025). Uma coluna de origem ao lado do valor resolve o pedido "abrir a planilha e já estar lá" e é editável sem Python. O vocabulário curto é para quem preenche; o mapeamento para as categorias da auditoria V2.1 mantém a rastreabilidade. Conselho de quatro lentes (2026-10-19; veredito na conversa): o modo de falha dominante é o rótulo que fica velho quando o valor muda, daí o aviso.
-- **Evidence:** N/A e TBD já existiam na V1.0 (8 N/A, 10 TBD, ex.: 03_TARGETS); na V2.0 há 34 N/A, dos quais 26 foram adicionados pelo assistente no bloco de resultados do solver. CORRIGE afirmação anterior de que seriam prática estabelecida em 34 células.
+- **Evidence:** Parte de proveniência implementada e verificada: TC-WB30-010 (toda entrada com Origem e Fonte; origens iguais às categorias da auditoria V2.1), 011 (lista `Origens`, sem fundo amarelo, legenda), 012 (cores e avisos; semântica avaliada pelo motor de recálculo); conferência no Excel por COM (lista `=Origens` e cores exibidas). Histórico: N/A e TBD já existiam na V1.0 (8 N/A, 10 TBD, ex.: 03_TARGETS); na V2.0 há 34 N/A, dos quais 26 foram adicionados pelo assistente no bloco de resultados do solver. CORRIGE afirmação anterior de que seriam prática estabelecida em 34 células.
 - **Assumptions:** —
 - **Consequences:** Usados em campos do Geometry Brief e de 07_KINEMATICS.
 - **Affected_Artifacts:** Standard; Data Contract; planilha.
@@ -1098,13 +1098,13 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-050 — Valor derivado entra como fórmula, não digitado (05_VEHICLE, 08_VEHICLE_STATE)
 
 - **Date:** 2026-10-19
-- **Status:** APPROVED
+- **Status:** VERIFIED
 - **Context:** Feedback da equipe (2026-10-14), 2ª rodada da V3.0: alguns números calculados estavam digitados na célula, não como fórmula. Inventário das 124 constantes numéricas da V3.0: 05_VEHICLE B4 (316,5 = 248,5 kg medidos + 68 kg de piloto), B9/B10 (a, b = L × 51,57 % e L × 48,43 %, digitados arredondados), B16/B17 (0,254 = diâmetro 20,0 in / 2) e 08_VEHICLE_STATE B5 (11,772 = 1,2 g × 9,81).
 - **Question:** Como tratar valor que é resultado de conta?
 - **Alternatives:** (a) manter digitado com a conta no comentário; (b) fórmula.
 - **Decision:** (b), com a regra do usuário (2026-10-19): se todas as parcelas já estão na planilha, a célula referencia as células e mostra só o resultado da conta; se há parcela externa (medição, documento, referência), a parcela externa vira entrada própria, com origem (EDR-035), e a célula vira a conta. Aplicado: 05_VEHICLE B30 (massa medida sem piloto), B31 (massa do piloto), B32 (fração de peso no eixo dianteiro), B33/B34 (diâmetro do pneu) como entradas novas; B4 = B30 + B31; B9 = L·(1 − f); B10 = L·f; B16/B17 = diâmetro·0,0254/2 (conversão de polegada só na planilha); 08_VEHICLE_STATE B11 (a_y em g) e B5 = B11·9,81 (mesmo g das fórmulas existentes). Ficam de propósito como valor: as molas de 06_SUSPENSION B4/B5 (no carro real são entrada de catálogo; a conta sobre o T09 fica registrada na Fonte), 13_VALIDATION B37:B39 (referência externa do Python) e o caso VERIF da 10_TIRE (caso fixo de teste).
 - **Rationale:** Valor digitado esconde a conta e as parcelas, e cada parcela tem origem diferente (a massa mistura medida e referência). Nenhum caso do inventário tinha todas as parcelas dentro da planilha.
-- **Evidence:** TC-WB30-013 (as cinco células são fórmula e reproduzem os valores anteriores; a e b diferem do digitado em 4,2 µm, o arredondamento antigo); TC-WB30-002/005 (Excel = Python com as entradas novas).
+- **Evidence:** `tools/rodar_testes.py` inteiro PASS (2026-10-19), CA-07 da V3.0 com 362 fórmulas e 0 diferença; TC-WB30-013 (as cinco células são fórmula e reproduzem os valores anteriores; a e b diferem do digitado em 4,2 µm, o arredondamento antigo); TC-WB30-002/005 (Excel = Python com as entradas novas).
 - **Assumptions:** g = 9,81 m/s², o mesmo valor literal das fórmulas existentes (09_LOADS, 13_VALIDATION).
 - **Consequences:** +6 fórmulas na V3.0 (356 → 362). Resultados mudam só pelo arredondamento de a e b (ordem de 1e-5 relativo).
 - **Affected_Artifacts:** `python/atualizar_planilha.py`; planilha V3.0 (05_VEHICLE l. 4, 9, 10, 16, 17, 29-34; 08_VEHICLE_STATE l. 5 e 11); `tests/test_workbook_suspensao.py`; `tools/comparar_planilhas.py`.

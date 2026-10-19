@@ -34,8 +34,8 @@ Foco declarado: completar a planilha (EDR-019).
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
 - Esperado na V3.0: pneu 43, oráculos 5, suspensão 54, cinemática 54, hardpoints 35,
-  mutação 24/24; V2.4 regenerada com 347 fórmulas e V3.0 com 356, as duas com 0 diferença.
-  `tests/test_workbook.py` 19/19 (pneu) e `tests/test_workbook_suspensao.py` 9/9 (suspensão),
+  mutação 24/24; V2.4 regenerada com 347 fórmulas e V3.0 com 362 (356 + 6 da 2ª rodada, EDR-050), as duas com 0 diferença.
+  `tests/test_workbook.py` 19/19 (pneu) e `tests/test_workbook_suspensao.py` 13/13 (suspensão),
   ambos na V3.0: recalculam cópias pelo Excel via COM ou, sem Excel, pelo
   LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois eles
   saem NÃO EXECUTÁVEL, que nunca conta como aprovado.

@@ -31,6 +31,7 @@ troca se referem a esta mesma versão.
 - Pneu 43/43, oráculos 5/5, suspensão 54/54, cinemática 54/54, hardpoints 35/35, mutação 24/24.
 - Planilha: V2.4 regenerada com 347 fórmulas e 0 diferença; V3.0 regenerada com 356 fórmulas e 0 diferença.
 - `test_workbook` 19/19 (V3.0, pneu) e `test_workbook_suspensao` 9/9 (V3.0, suspensão), pelo Excel via COM.
+- 2ª rodada (2026-10-19): suíte inteira PASS; V3.0 regenerada com 362 fórmulas e 0 diferença; `test_workbook_suspensao` 13/13 (TC-WB30-010 a 013 novos) pelo Excel via COM e pelo LibreOffice (`DDS_RECALC=libreoffice`); `test_workbook` 19/19.
 - Exemplos publicados reproduzidos pelo modelo: Milliken p. 683 (590,8/483,4 lb/g e −2,0 °/g), p. 592 (barra 19 904 lb·ft/rad; K_W 476/254 lb/in), Tab. 16.3 e p. 602-603 (massas e h_s); Seward Ex. 4.1; Gillespie p. 154.
 
 ## Efeito nos valores da planilha (recalculada pelo Excel; entradas DEMONSTRATIVAS)
@@ -59,6 +60,36 @@ PROVISÓRIO: nada desta tabela é resultado do carro.
 2. Os ICs de 07_KINEMATICS e a altura do centro da roda traseira (B14 = SUS-011) são placeholders: o anti-squat negativo da tabela não diz nada sobre o carro.
 3. Continua tudo NOT_VALIDATED fisicamente: a referência é o OptimumKinematics/OptimumTire e medição (EDR-004).
 4. Frenagem regenerativa (motor no chassi) e anti-lift traseiro: escopo no EDR-033, sem decisão.
+
+## 2ª rodada: feedback da equipe (recebido em 2026-10-14; decisões em 2026-10-19)
+
+Feedback de quem vai preencher a planilha, sobre a versão que a equipe recebeu. Cada item foi conferido na própria V3.0
+(as 124 constantes numéricas, a legenda e os 49 comentários). Decisões: EDR-025 (opção A), EDR-035 (parte de proveniência),
+EDR-050 e EDR-051; testes novos TC-WB30-010 a 013 (IDs autorizados pelo usuário em 2026-10-19).
+
+| Item | Feedback (resumo) | Classe | Evidência na planilha | Decisão | Implementação e teste |
+|---|---|---|---|---|---|
+| FB-01 | A convenção adotada dá para entender bem | confirmação | — | sem ação | — |
+| FB-02 | As cores podem melhorar; o amarelo aparece escrito em azul | apresentação | `00_README!A20` ("■ Amarelo") em fonte azul e sem fundo; as amostras A18/A19 também sem o fundo que descrevem; 22 células com fundo amarelo e fonte azul (já assim na V2.4) | legenda com o estilo real das células; o fundo amarelo "hipótese-chave" sai da planilha e fica o código de papel da V2.4 (azul, verde-teal, laranja, cinza) (usuário, 2026-10-19) | 00_README A16:B20; fundo removido das 22 células (lista abaixo). TC-WB30-011 |
+| FB-03 | Separar o que é certo do que é estimado, com a fonte (projeto passado ou não) | apresentação / proveniência | origem só nos comentários (aparecem ao passar o mouse); entradas sem comentário (06 B37, 08 inteira, metas da 11) | coluna Origem com lista de 6 rótulos e símbolo, coluna Fonte visível, cor só na Origem, aviso de origem desatualizada; sem estado novo (EDR-035; EDR-025 = A). Rótulos ajustados pelo usuário: "Hipótese" e "Estimativa" fundidos; "Dado do T09" no lugar de "Outro carro". Desenho discutido por um conselho de quatro lentes | colunas E/F (G/H ocultas) em 05, 06, 07, 08, 11; I/J na 10_TIRE; nome definido `Origens`; formatação condicional; comentários migrados para a Fonte. TC-WB30-010, 011, 012 |
+| FB-04 | Mostrar o que está bom e o que está ruim, "como falaram do projeto passado" | escopo novo, ambíguo | — | **PENDING_CONFIRMATION** (usuário, 2026-10-19: "deixe pendente por enquanto"). Leituras possíveis: parecer de cada resultado contra uma meta (as metas da 03_TARGETS estão TBD) ou aba com o retorno que o projeto passado recebeu | não implementado |
+| FB-05 | Números calculados que estão digitados, e não como fórmula | rastreabilidade de entrada / fórmula | 05 B4 (248,5 + 68), B9/B10 (L × fração medida, digitados arredondados), B16/B17 (20,0 in / 2), 08 B5 (1,2 g × 9,81) | regra do usuário: com todas as parcelas na planilha, a célula referencia as células; com parcela externa, a parcela vira entrada e a célula vira a conta (EDR-050). Molas, referências do Python (13_VALIDATION B37:B39) e caso VERIF da 10_TIRE ficam como valor, de propósito | 05 B30:B34 e 08 B11 (entradas novas); 05 B4, B9, B10, B16, B17 e 08 B5 (fórmulas). TC-WB30-013; TC-WB30-002/005/006 adaptados |
+| FB-06 | O que está no PDF deveria estar na planilha | apresentação | nenhuma orientação de preenchimento na planilha | guia "Como preencher" na 00_README | 00_README A39:E52 |
+
+**Fonte de verdade (EDR-051, decisão do usuário):** enquanto a V3.0 estiver em desenvolvimento, a planilha entregue é
+saída do `atualizar_planilha.py` e não é preenchida pela equipe (aviso no item 5 do guia). Ao fechar a V3.0, ela vira o
+arquivo vivo da equipe; como o CA-07 trata esse arquivo fica para aprovação no fechamento.
+
+**Efeito numérico:** só o arredondamento antigo de a e b (a digitado 0,82203 m; a conta dá 0,8220258 m). Pelo modelo,
+Fz por canto muda no máximo 0,005 N e a massa suspensa por canto dianteira passa de 69,14006 para 69,14048 kg. Nenhuma
+outra fórmula existente mudou: a 2ª rodada acrescenta 6 fórmulas (356 → 362).
+
+**Limites da 2ª rodada:**
+1. O aviso de origem desatualizada só percebe valor mudado com a origem igual; não impede que alguém marque "Dado do TX" num valor estimado. A regra "Dado do TX sem fonte" só reduz esse risco.
+2. Lista suspensa e cores conferidas no Excel desktop (COM: a lista `=Origens` e as cores exibidas batem). Não conferidas no Excel web, no LibreOffice nem no Google Sheets. Colar valores por cima de uma célula pode contornar a lista (comportamento do Excel; não testado aqui).
+3. "○ Estimativa" e "○ Arbitrário / demonstrativo" têm o mesmo símbolo e a mesma cor (as duas são tier T1, "não é dado do veículo"); o rótulo distingue.
+4. Fase 2 do FB-03 (pior origem calculada ao vivo nos resultados principais do dashboard) não foi feita: cria fórmulas novas e precisa de aprovação.
+5. A 07_KINEMATICS continua inteira placeholder (aviso já existente em A3/A4 e em B69 "Hardpoints reais carregados: NÃO"); os hardpoints ficam em `data/`, fora da coluna de origem.
 
 ## Alterações célula a célula (gerado por `python/atualizar_planilha.py --registro`)
 
@@ -154,6 +185,282 @@ PROVISÓRIO: nada desta tabela é resultado do carro.
 | 10_TIRE | D56 | `=IF(D$26<>"OK","N/A",$B$144*($B$97*$B$86)*SIN(2*ATAN(D$22/($B$145*$B$97*$B$86)))*(1-$B$146*ABS(D$55))*$B$97*$B$108)` | `=IF(D$26<>"OK","N/A",$B$144*($B$97*$B$86)*SIN(2*ATAN(D$22/($B$145*$B$97*$B$86)))*(1-$B$146*ABS(D$55))*$B$108)` | EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9 |
 | 10_TIRE | E56 | `=IF(E$26<>"OK","N/A",$B$144*($B$97*$B$86)*SIN(2*ATAN(E$22/($B$145*$B$97*$B$86)))*(1-$B$146*ABS(E$55))*$B$97*$B$108)` | `=IF(E$26<>"OK","N/A",$B$144*($B$97*$B$86)*SIN(2*ATAN(E$22/($B$145*$B$97*$B$86)))*(1-$B$146*ABS(E$55))*$B$108)` | EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9 |
 | 10_TIRE | F56 | `=IF(F$26<>"OK","N/A",$B$144*($B$97*$B$86)*SIN(2*ATAN(F$22/($B$145*$B$97*$B$86)))*(1-$B$146*ABS(F$55))*$B$97*$B$108)` | `=IF(F$26<>"OK","N/A",$B$144*($B$97*$B$86)*SIN(2*ATAN(F$22/($B$145*$B$97*$B$86)))*(1-$B$146*ABS(F$55))*$B$108)` | EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9 |
+| 05_VEHICLE | A29 | (vazia) | Entradas de onde saem B4, B9/B10 e B16/B17 (EDR-050: valor que sai de conta não é digitado) | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | A30 | (vazia) | Massa medida sem piloto | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B30 | (vazia) | 248.5 | EDR-050 (feedback da equipe, 2026-10-14); valor: comentário da V2.4 (ver coluna F) |
+| 05_VEHICLE | C30 | (vazia) | kg | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | D30 | (vazia) | SUS-001 | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | A31 | (vazia) | Massa do piloto | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B31 | (vazia) | 68 | EDR-050 (feedback da equipe, 2026-10-14); valor: comentário da V2.4 (ver coluna F) |
+| 05_VEHICLE | C31 | (vazia) | kg | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | D31 | (vazia) | SUS-001 | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | A32 | (vazia) | Fração de peso no eixo dianteiro (f) | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B32 | (vazia) | 0.4843 | EDR-050 (feedback da equipe, 2026-10-14); valor: comentário da V2.4 (ver coluna F) |
+| 05_VEHICLE | C32 | (vazia) | - | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | D32 | (vazia) | SUS-006 | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | A33 | (vazia) | Diâmetro do pneu dianteiro | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B33 | (vazia) | 20.0 | EDR-050 (feedback da equipe, 2026-10-14); valor: comentário da V2.4 (ver coluna F) |
+| 05_VEHICLE | C33 | (vazia) | in | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | D33 | (vazia) | SUS-010 | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | A34 | (vazia) | Diâmetro do pneu traseiro | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B34 | (vazia) | 20.0 | EDR-050 (feedback da equipe, 2026-10-14); valor: comentário da V2.4 (ver coluna F) |
+| 05_VEHICLE | C34 | (vazia) | in | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | D34 | (vazia) | SUS-011 | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B4 | 316.5 | `='05_VEHICLE'!$B$30+'05_VEHICLE'!$B$31` | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B9 | 0.82203 | `='05_VEHICLE'!$B$6*(1-'05_VEHICLE'!$B$32)` | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B10 | 0.77197 | `='05_VEHICLE'!$B$6*'05_VEHICLE'!$B$32` | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B16 | 0.254 | `='05_VEHICLE'!$B$33*0.0254/2` | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | B17 | 0.254 | `='05_VEHICLE'!$B$34*0.0254/2` | EDR-050 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | A11 | (vazia) | Aceleração lateral em g (entrada de a_y) | EDR-050 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | B11 | (vazia) | 1.2 | EDR-050 (feedback da equipe, 2026-10-14); valor: 11,772 m/s² / 9,81 |
+| 08_VEHICLE_STATE | C11 | (vazia) | g | EDR-050 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | D11 | (vazia) | - | EDR-050 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | B5 | 11.772 | `='08_VEHICLE_STATE'!$B$11*9.81` | EDR-050 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | E2 | (vazia) | Origem do valor (lista) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F2 | (vazia) | Fonte / observação | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | E2 | (vazia) | Origem do valor (lista) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F2 | (vazia) | Fonte / observação | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | E2 | (vazia) | Origem do valor (lista) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F2 | (vazia) | Fonte / observação | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | E2 | (vazia) | Origem do valor (lista) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | F2 | (vazia) | Fonte / observação | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | E2 | (vazia) | Origem do valor (lista) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | F2 | (vazia) | Fonte / observação | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F4 | (vazia) | Calculada (EDR-050): massa medida sem piloto (B30) + massa do piloto (B31). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | E5 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F5 | (vazia) | E05, Key Parameters (315 mm). Medida a partir do plano do solo (SUS-000), não da origem do CAD. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G5 | (vazia) | 0.315 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H5 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E6 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F6 | (vazia) | E05, Key Parameters (1594 mm). Diverge do E03 (1550 mm, chassi anterior). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G6 | (vazia) | 1.594 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H6 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E7 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F7 | (vazia) | E05, Key Parameters (1277 mm). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G7 | (vazia) | 1.277 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H7 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E8 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F8 | (vazia) | E05, Key Parameters (1271 mm). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G8 | (vazia) | 1.271 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H8 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | F9 | (vazia) | Calculada (EDR-050): L·(1 − f), com f = fração de peso no eixo dianteiro (B32). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F10 | (vazia) | Calculada (EDR-050): L·f, com f = fração de peso no eixo dianteiro (B32). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | E14 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F14 | (vazia) | Não disponível para o TX/E05: a pesagem em plataforma mede a carga total no solo e não separa massa suspensa de não suspensa (confirmado pela equipe). Valor arbitrário: não usar para decisão de projeto. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G14 | (vazia) | 15 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H14 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E15 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F15 | (vazia) | Não disponível para o TX/E05 (mesma razão do SUS-007). Valor arbitrário: não usar para decisão de projeto. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G15 | (vazia) | 18 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H15 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | F16 | (vazia) | Calculada (EDR-050): diâmetro do pneu (B33) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura do CG não suspenso; não é medição da equipe. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F17 | (vazia) | Calculada (EDR-050): diâmetro do pneu (B34) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura do CG não suspenso; não é medição da equipe. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | E20 | (vazia) | ? A confirmar | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F20 | (vazia) | SUS-000: coordenada Z do solo no sistema de coordenadas da equipe. As alturas desta planilha já são medidas a partir do solo (ficha SUS-000 do Engineering Standard). A origem do valor −0,05 m não está registrada. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G20 | (vazia) | -0.05 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H20 | (vazia) | ? A confirmar | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E30 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F30 | (vazia) | Adesivo SAE Brasil 2026: medição real, sem piloto (248,5 kg). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G30 | (vazia) | 248.5 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H30 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E31 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F31 | (vazia) | Piloto de referência (68 kg, padrão FSAE); não é a massa medida do piloto. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G31 | (vazia) | 68 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H31 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E32 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F32 | (vazia) | Distribuição medida no adesivo do TX/E05: 48,43 % no eixo dianteiro, com piloto (coerente com a massa total, que inclui o piloto). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G32 | (vazia) | 0.4843 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H32 | (vazia) | ● Dado do TX | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E33 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F33 | (vazia) | Pneu 20.0-13 do E03 (diâmetro 20,0 in). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G33 | (vazia) | 20.0 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H33 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | E34 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | F34 | (vazia) | Pneu 20.0-13 do E03 (mesmo pneu na frente e atrás). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 05_VEHICLE | G34 | (vazia) | 20.0 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H34 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E4 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F4 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. Calculado a partir da planilha detalhada do T09: ride rate dianteiro 16 112,23 N/m (que é o wheel rate) × MR² (MR = 1,76). Corrige o valor anterior, do spec sheet resumido, que arredondava F e R como iguais. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G4 | (vazia) | 49909.24 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H4 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E5 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F5 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. Calculado a partir da planilha detalhada do T09: ride rate traseiro 18 418,2 N/m × MR² (MR = 1,76). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G5 | (vazia) | 57052.22 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H5 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E6 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F6 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. E03 (1,76:1). Convenção wheel/spring assumida (igual à do projeto); o E03 não diz a direção. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G6 | (vazia) | 1.76 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H6 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E7 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F7 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. E03 (1,76:1, igual à dianteira). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G7 | (vazia) | 1.76 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H7 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E10 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F10 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. Planilha detalhada do T09 (AntiRoll Bar Rate dianteiro), valor direto. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G10 | (vazia) | 5012.32 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H10 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E11 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F11 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. Planilha detalhada do T09 (AntiRoll Bar Rate traseiro, ≈ 0, coerente com 'sem ARB'). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G11 | (vazia) | 10.78 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H11 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E14 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F14 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. Planilha detalhada do T09 (0,0675 m), mais precisa que o spec sheet do E03 (60 mm, arredondado). Provisório até a Fase 2 (OptimumKinematics). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G14 | (vazia) | 0.0675 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H14 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E15 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F15 | (vazia) | Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas (usuário, 2026-10-19); não é o TX/E05. E03 (110 mm, roll center estático acima do solo). Provisório até a Fase 2 (OptimumKinematics). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G15 | (vazia) | 0.11 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H15 | (vazia) | ◐ Dado do T09 | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E36 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F36 | (vazia) | Placeholder: fração da força de frenagem no eixo dianteiro (brake bias). Substituir pelo balanço de freio real do Setup. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G36 | (vazia) | 0.6 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H36 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E37 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F37 | (vazia) | Hipótese congelada da V1: TF_r = 1 (tração só traseira). Revisitar se a equipe mudar para AWD. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G37 | (vazia) | 1 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H37 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E44 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F44 | (vazia) | Placeholder: razão entre o ângulo do volante e o ângulo médio das rodas dianteiras. Substituir pela medição da cremalheira ou pela geometria do rack. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G44 | (vazia) | 4.5 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H44 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E47 | (vazia) | ◐ Provisório (.tir TTC) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F47 | (vazia) | VERTICAL_STIFFNESS do .tir TTC provisório (Hoosier R25B; EDR-038, EDR-045). Não é o pneu do carro nem medição da equipe: substituir pela rigidez vertical do pneu real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G47 | (vazia) | 120312.0 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H47 | (vazia) | ◐ Provisório (.tir TTC) | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | E48 | (vazia) | ◐ Provisório (.tir TTC) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | F48 | (vazia) | VERTICAL_STIFFNESS do .tir TTC provisório (Hoosier R25B; EDR-038, EDR-045). Não é o pneu do carro nem medição da equipe: substituir pela rigidez vertical do pneu real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 06_SUSPENSION | G48 | (vazia) | 120312.0 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 06_SUSPENSION | H48 | (vazia) | ◐ Provisório (.tir TTC) | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E10 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F10 | (vazia) | Placeholder geométrico para testar a fórmula; não é hardpoint real. Fase 2: REFERENCE do OptimumKinematics. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G10 | (vazia) | 0.2 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H10 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E11 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F11 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G11 | (vazia) | -2.5 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H11 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E12 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F12 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G12 | (vazia) | 0.25 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H12 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E13 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F13 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G13 | (vazia) | 2 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H13 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | F14 | (vazia) | Calculada: = SUS-011 (05_VEHICLE B17). Placeholder: substituir pela altura do centro da roda do CAD. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | E17 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F17 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G17 | (vazia) | 1.5 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H17 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E18 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F18 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G18 | (vazia) | 0.15 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H18 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E19 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F19 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G19 | (vazia) | 1.8 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H19 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E20 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F20 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G20 | (vazia) | 0.2 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H20 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E23 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F23 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G23 | (vazia) | -0.6 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H23 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E24 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F24 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G24 | (vazia) | -0.5 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H24 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E27 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F27 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G27 | (vazia) | 0.05 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H27 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E28 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F28 | (vazia) | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G28 | (vazia) | 0.05 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H28 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E31 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F31 | (vazia) | Placeholder geométrico; não é a medição do curso instalado. Substituir pelo curso real (bump + rebound) com o piloto sentado, conforme V.3.1.1. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G31 | (vazia) | 60 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H31 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | E32 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | F32 | (vazia) | Placeholder geométrico; não é a medição do curso instalado (ver B31). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 07_KINEMATICS | G32 | (vazia) | 65 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 07_KINEMATICS | H32 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | E4 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | F4 | (vazia) | Caso de carga sem fonte registrada. ISO 8855: a_x + = aceleração para frente (transfere carga para o eixo traseiro); negativo = frenagem. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | G4 | (vazia) | -5 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | H4 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | F5 | (vazia) | Calculada (EDR-050): a_y em g (B11) × 9,81. ISO 8855: a_y + = para a esquerda (o lado direito ganha carga). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | E8 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | F8 | (vazia) | Caso de carga sem fonte registrada. Aero constante por Setup (SUS-701, EDR-013). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | G8 | (vazia) | 400 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | H8 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | E9 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | F9 | (vazia) | Caso de carga sem fonte registrada. Fração dianteira da downforce (SUS-702, EDR-013). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | G9 | (vazia) | 0.45 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | H9 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | E11 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | F11 | (vazia) | Caso de carga sem fonte registrada. Curva à esquerda de 1,2 g. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | G11 | (vazia) | 1.2 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 08_VEHICLE_STATE | H11 | (vazia) | ○ Estimativa | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 11_DESIGN | E4 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | F4 | (vazia) | Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-001). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | G4 | (vazia) | 2.5 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 11_DESIGN | H4 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 11_DESIGN | E5 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | F5 | (vazia) | Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-002). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | G5 | (vazia) | 2.7 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 11_DESIGN | H5 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 11_DESIGN | E18 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | F18 | (vazia) | Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-003). | EDR-035 (feedback da equipe, 2026-10-14) |
+| 11_DESIGN | G18 | (vazia) | 0.55 | EDR-035 (feedback da equipe, 2026-10-14): valor da geração (oculto; aviso de desatualização) |
+| 11_DESIGN | H18 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14): origem da geração (oculto; aviso de desatualização) |
+| 10_TIRE | I20 | (vazia) | Origem do valor (lista) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | J20 | (vazia) | Fonte / observação | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | I23 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | J23 | (vazia) | Demonstrativos (EDR-022): α, γ e κ não vêm de cálculo do carro (não há modelo de slip). Valores arbitrários coerentes em sinal com 08_VEHICLE_STATE (curva à esquerda, frenagem). Substituir por casos de carga da equipe. VERIF (F): caso fixo de teste. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | I24 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | J24 | (vazia) | Camber de entrada manual (EDR-036 sem decisão: ainda não há ID para camber estático). Convenção do projeto: + = topo para fora, nos dois lados. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | I25 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | J25 | (vazia) | Demonstrativo (EDR-022), como α e γ. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | I84 | (vazia) | ◐ Provisório (.tir TTC) | EDR-035 (feedback da equipe, 2026-10-14) |
+| 10_TIRE | J84 | (vazia) | Todos os coeficientes da tabela abaixo (B86:B175) foram transcritos do .tir provisório (ver os metadados acima). REFERENCE por natureza (DR-011), mas o dataset é provisório. Mudou o dataset: mudar o Tire REV (01_SETUP) e reexecutar 13_VALIDATION; os resultados antigos viram STALE. | EDR-035 (feedback da equipe, 2026-10-14) |
+| 00_README | A16 | ■ Azul | ■ Azul | FB-02; estilo = 05_VEHICLE B14 |
+| 00_README | A17 | ■ Verde-teal | ■ Verde-teal | FB-02; estilo = 05_VEHICLE B6 |
+| 00_README | A18 | ■ Laranja + fundo | ■ Laranja + fundo | FB-02; estilo = 06_SUSPENSION B14 |
+| 00_README | A19 | ■ Preto + fundo cinza | ■ Preto + fundo cinza | FB-02; estilo = 05_VEHICLE B23 |
+| 00_README | A20 | ■ Amarelo | Origem do valor | FB-02/EDR-035 |
+| 00_README | B20 | Hipótese-chave / célula de atenção | Não é cor da célula: fica na coluna E de cada entrada (● ◐ ○ ?). Ver "Como preencher", abaixo. | FB-02/EDR-035 |
+| 00_README | A39 | (vazia) | Como preencher esta planilha (EDR-035, EDR-050, EDR-051) | FB-06/EDR-035 |
+| 00_README | A40 | (vazia) | 1. Edite só as entradas (fonte azul; verde-teal e laranja quando houver o dado real) das abas 05, 06, 07, 08, 10 (casos de carga) e 11 (metas). Célula com fundo cinza é calculada: não edite. | FB-06/EDR-035 |
+| 00_README | A41 | (vazia) | 2. Cada entrada tem ao lado a Origem (coluna E; na 10_TIRE, coluna I) e a Fonte (coluna F; na 10_TIRE, J). Ao trocar um valor, escolha a Origem na lista e escreva na Fonte de onde veio o número. Origens possíveis: | FB-06/EDR-035 |
+| 00_README | A42 | (vazia) | Origem | FB-06/EDR-035 |
+| 00_README | B42 | (vazia) | Significado | FB-06/EDR-035 |
+| 00_README | E42 | (vazia) | Categorias da auditoria V2.1 (data/placeholder-dependency-map-V2.1.csv) | FB-06/EDR-035 |
+| 00_README | A43 | (vazia) | ● Dado do TX | FB-06/EDR-035; nome definido 'Origens' |
+| 00_README | B43 | (vazia) | Medido no carro atual ou tirado de documento do TX/E05 (ex.: Key Parameters). | FB-06/EDR-035 |
+| 00_README | E43 | (vazia) | T3_FONTE_TX_REGISTRADA (T3) | FB-06/EDR-035 |
+| 00_README | A44 | (vazia) | ◐ Dado do T09 | FB-06/EDR-035; nome definido 'Origens' |
+| 00_README | B44 | (vazia) | Valor do carro anterior (T09/E03): serve para testar as fórmulas, não é o TX. | FB-06/EDR-035 |
+| 00_README | E44 | (vazia) | REAL_OUTRO_VEICULO_T09/E03 (T2) | FB-06/EDR-035 |
+| 00_README | A45 | (vazia) | ◐ Provisório (.tir TTC) | FB-06/EDR-035; nome definido 'Origens' |
+| 00_README | B45 | (vazia) | Vem do arquivo de pneu provisório do TTC; não é o pneu do carro. | FB-06/EDR-035 |
+| 00_README | E45 | (vazia) | REAL_OUTRO_VEICULO_PROVISORIO (T2) | FB-06/EDR-035 |
+| 00_README | A46 | (vazia) | ○ Estimativa | FB-06/EDR-035; nome definido 'Origens' |
+| 00_README | B46 | (vazia) | Estimado ou suposto: inclui hipótese de modelo e caso de carga sem fonte. | FB-06/EDR-035 |
+| 00_README | E46 | (vazia) | ESTIMATIVA_NAO_MEDIDA (T1), HIPOTESE_CONGELADA_V1 e CASO_DE_CARGA_SEM_PROVENIENCIA (T2); vale a pior, T1 | FB-06/EDR-035 |
+| 00_README | A47 | (vazia) | ○ Arbitrário / demonstrativo | FB-06/EDR-035; nome definido 'Origens' |
+| 00_README | B47 | (vazia) | Placeholder, valor arbitrário ou meta de exemplo: não usar para decisão de projeto. | FB-06/EDR-035 |
+| 00_README | E47 | (vazia) | ARBITRARIO, PLACEHOLDER, ALVO_DEMONSTRATIVO (T1) | FB-06/EDR-035 |
+| 00_README | A48 | (vazia) | ? A confirmar | FB-06/EDR-035; nome definido 'Origens' |
+| 00_README | B48 | (vazia) | A origem do valor não está registrada. | FB-06/EDR-035 |
+| 00_README | E48 | (vazia) | sem classificação | FB-06/EDR-035 |
+| 00_README | A49 | (vazia) | 3. Avisos: Origem com fundo vermelho-alaranjado = o valor mudou e a Origem continuou a mesma (revise a Origem). Fonte com fundo vermelho = a Origem diz "Dado do TX" e falta a Fonte. | FB-06/EDR-035/050/051 |
+| 00_README | A50 | (vazia) | 4. Valor que sai de conta não é digitado (EDR-050): digite as parcelas, não o resultado. Exemplo: massa total = massa medida + piloto (05_VEHICLE B30 e B31). | FB-06/EDR-035/050/051 |
+| 00_README | A51 | (vazia) | 5. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima geração (EDR-051). Depois do fechamento, ela passa a ser o arquivo da equipe. | FB-06/EDR-035/050/051 |
+| 00_README | A52 | (vazia) | 6. Convenções de sinais e eixos: seção acima. Decisões e fichas: pasta docs/ do repositório (Engineering_Decision_Register.md e Engineering Standard). | FB-06/EDR-035/050/051 |
 | 06_SUSPENSION | B4 (comentário) | Back-calculado da planilha detalhada T09 ('Ride Rate' front=16112.23 N/m, confirmado ser exatamente o Wheel Rate) x MR=1.76. CORRIGE valor anterior (baseado no spec sheet resumido, que arredondava F/R como iguais). | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' front=16112.23 N/m, confirmado ser exatamente o Wheel Rate) x MR=1.76. CORRIGE valor anterior (baseado no spec sheet resumido, que arredondava F/R como iguais). | EDR-012/022 |
 | 06_SUSPENSION | B5 (comentário) | Back-calculado da planilha detalhada T09 ('Ride Rate' rear=18418.2 N/m) x MR=1.76. | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' rear=18418.2 N/m) x MR=1.76. | EDR-012/022 |
 | 06_SUSPENSION | B6 (comentário) | Fonte: E03 (1.76:1). Assumido como convencao wheel/spring (igual a nossa) - E03 nao especifica a direcao explicitamente. | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: E03 (1.76:1). Assumido como convencao wheel/spring (igual a nossa) - E03 nao especifica a direcao explicitamente. | EDR-012/022 |
@@ -165,3 +472,68 @@ PROVISÓRIO: nada desta tabela é resultado do carro.
 | 10_TIRE | B16 | (texto V2.4) | (texto V3.0) | EDR-042/049 |
 | 00_README | A3 | Versão do workbook: V2.4 ... | Versão do workbook: V3.0 ... | EDR-043 |
 | 15_CHANGELOG | A16:C16 | (vazia) | (linha V3.0) | EDR-043 |
+| 05_VEHICLE | B20 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 06_SUSPENSION | B36 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 06_SUSPENSION | B44 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | F22 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | B23 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | C23 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | D23 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | E23 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | F23 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | B24 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | C24 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | D24 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | E24 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | F24 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | B25 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | C25 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | D25 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | E25 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 10_TIRE | F25 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 11_DESIGN | B4 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 11_DESIGN | B5 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 11_DESIGN | B18 (estilo) | fundo amarelo (hipótese-chave) | sem fundo | FB-02 (usuário, 2026-10-19) |
+| 05_VEHICLE | B4 (comentário) | Fonte: adesivo SAE Brasil 2026 - medicao real (248.5 kg sem piloto) + 68 kg de piloto (referencia padrao FSAE, nao medida). | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B5 (comentário) | Fonte: E05 (315mm, Key Parameters). Medida a partir do plano do solo (SUS-000), nao da origem do CAD. | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B6 (comentário) | Fonte: E05 (1594mm, Key Parameters). Diverge do E03 (1550mm, chassi anterior). | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B7 (comentário) | Fonte: E05 (1277mm, Key Parameters). | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B8 (comentário) | Fonte: E05 (1271mm, Key Parameters). | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B9 (comentário) | Derivado da distribuicao real medida no adesivo TX/E05 (48.43% dianteira, COM piloto) x wheelbase - consistente com mass_total (que inclui piloto). | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B10 (comentário) | Derivado da distribuicao real medida no adesivo TX/E05 (51.57% traseira, COM piloto) x wheelbase. | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B14 (comentário) | NAO DISPONIVEL para o TX/E05 (confirmado pela equipe: pesagem em plataforma mede carga total no solo, nao separa massa suspensa/nao-suspensa). Valor abaixo e ARBITRARIO - nao usar para decisao de projeto. | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B15 (comentário) | NAO DISPONIVEL para o TX/E05 (mesma razao do SUS-007). Valor abaixo e ARBITRARIO - nao usar para decisao de projeto. | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B16 (comentário) | Estimativa pelo raio do pneu 20.0-13 (E03, diametro 20.0in/2=0.254m). NAO e medicao real da equipe. | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B17 (comentário) | Estimativa pelo raio do pneu 20.0-13 (E03, mesmo pneu dianteiro/traseiro). NAO e medicao real da equipe. | (removido; texto na coluna Fonte) | EDR-035 |
+| 05_VEHICLE | B20 (comentário) | SUS-000: coordenada Z do solo no sistema de coordenadas da equipe. Todas as alturas desta planilha já assumem conversão feita (medidas a partir do solo). Ver Engineering Standard, ficha SUS-000. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B4 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' front=16112.23 N/m, confirmado ser exatamente o Wheel Rate) x MR=1.76. CORRIGE valor anterior (baseado no spec sheet resumido, que arredondava F/R como iguais). | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B5 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' rear=18418.2 N/m) x MR=1.76. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B6 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: E03 (1.76:1). Assumido como convencao wheel/spring (igual a nossa) - E03 nao especifica a direcao explicitamente. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B7 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: E03 (1.76:1, mesmo valor da dianteira). | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B10 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: planilha detalhada T09 (AntiRoll Bar Rate front). Valor direto, ja nao e mais back-calculado - resolve a inconsistencia identificada anteriormente. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B11 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: planilha detalhada T09 (AntiRoll Bar Rate rear, ~0, consistente com 'sem ARB' declarado). Inconsistencia anterior estava no Wheel Rate do spec sheet resumido, ja corrigida em SUS-203. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B14 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: planilha detalhada T09 (0.0675m) - mais precisa que o spec sheet resumido do E03 (60mm, arredondado). PROVISORIO ate Fase 2 (OptimumKinematics). | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B15 (comentário) | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: E03 (110mm, Roll center height above ground static). PROVISORIO ate Fase 2 (OptimumKinematics). | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B36 (comentário) | PLACEHOLDER: fracao da forca de frenagem no eixo dianteiro (brake bias). Substituir pelo balanco de freio real do Setup. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B37 (comentário) | TF_r = 1 para RWD (hipotese congelada da V1). Revisitar se a equipe migrar para AWD. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B44 (comentário) | PLACEHOLDER: razao entre angulo do volante e angulo medio das rodas dianteiras. Substituir por medicao real da cremalheira ou geometria do rack. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B47 (comentário) | PROVISÓRIO (EDR-045): VERTICAL_STIFFNESS do .tir TTC provisório (Hoosier R25B, EDR-038). Não é o pneu do carro nem medição da equipe: substituir pela rigidez vertical do pneu real. Milliken p. 591, Gillespie eq. 5-8 e Seward eq. 4.1 põem o pneu em série com a mola. | (removido; texto na coluna Fonte) | EDR-035 |
+| 06_SUSPENSION | B48 (comentário) | PROVISÓRIO (EDR-045): VERTICAL_STIFFNESS do .tir TTC provisório (Hoosier R25B, EDR-038). Não é o pneu do carro nem medição da equipe: substituir pela rigidez vertical do pneu real. Milliken p. 591, Gillespie eq. 5-8 e Seward eq. 4.1 põem o pneu em série com a mola. | (removido; texto na coluna Fonte) | EDR-035 |
+| 07_KINEMATICS | B10 (comentário) | PLACEHOLDER geometrico para teste de formula - NAO e hardpoint real. Fase 2: REFERENCE do OptimumKinematics. | (removido; texto na coluna Fonte) | EDR-035 |
+| 07_KINEMATICS | B14 (comentário) | PLACEHOLDER: usa a altura do CG não suspenso traseiro (SUS-011), que a ficha aproxima pela altura do centro da roda. Substituir pela altura do centro da roda do CAD. | (removido; texto na coluna Fonte) | EDR-035 |
+| 07_KINEMATICS | B31 (comentário) | PLACEHOLDER geometrico - NAO e medicao real do curso instalado. Substituir pelo curso real (bump+rebound) com piloto sentado, conforme V.3.1.1. | (removido; texto na coluna Fonte) | EDR-035 |
+| 08_VEHICLE_STATE | B4 (comentário) | ISO 8855: a_x positivo = aceleração para frente (transfere carga para o eixo traseiro). Negativo = frenagem. | (removido; texto na coluna Fonte) | EDR-035 |
+| 08_VEHICLE_STATE | B5 (comentário) | ISO 8855: a_y positivo = para a esquerda (lado direito do carro ganha carga). | (removido; texto na coluna Fonte) | EDR-035 |
+| 10_TIRE | B23 (comentário) | DEMONSTRATIVOS (EDR-022): α, γ e κ não vêm de nenhum cálculo do carro (não há modelo de slip na V2). Valores arbitrários coerentes em sinal com 08_VEHICLE_STATE (curva à esquerda, frenagem). Substitua por casos de carga definidos pela equipe. | (removido; texto na coluna Fonte) | EDR-035 |
+| 10_TIRE | B24 (comentário) | Camber de entrada manual (EDR-036 sem decisão: ainda não há ID para camber estático). Convenção do projeto: + = topo para fora, nos dois lados. | (removido; texto na coluna Fonte) | EDR-035 |
+| 10_TIRE | B86 (comentário) | Todos os coeficientes desta tabela: transcritos do .tir provisório (ver B-metadados). REFERENCE por natureza (DR-011), mas o DATASET é PROVISÓRIO. Mudou o dataset => mudar Tire REV (01_SETUP) e reexecutar 13_VALIDATION; resultados antigos viram STALE (Guia, H.3). | (removido; texto na coluna Fonte) | EDR-035 |
+| (pasta) | nome definido Origens | (vazia) | '00_README'!$A$43:$A$48 | EDR-035 |
+| 05_VEHICLE | E3:F34 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
+| 06_SUSPENSION | E3:F52 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
+| 07_KINEMATICS | E3:F69 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
+| 08_VEHICLE_STATE | E3:F11 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
+| 11_DESIGN | E3:F21 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
+| 10_TIRE | I20:J176 (formatação) | (vazia) | lista 'Origens' em I; cores por origem | EDR-035 |
+| 00_README | A3 | Versão do workbook: V3.0 ... | (acrescenta a 2ª rodada) | EDR-035/050/051 |
+| 00_README | A39:E52 (mesclagem) | (vazia) | A:E nas linhas de texto; B:D na tabela de origens | FB-06 |
+| 15_CHANGELOG | A17:C17 | (vazia) | (linha V3.0, 2ª rodada) | EDR-035/050/051 |
