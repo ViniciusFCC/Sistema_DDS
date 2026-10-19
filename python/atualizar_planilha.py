@@ -158,7 +158,7 @@ def alteracoes(ky_row: int) -> list[dict]:
     a.append(_a("10_TIRE", f"A{ky_row}", "Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)", "EDR-049"))
     for c in "BCDEF":
         a.append(_a("10_TIRE", f"{c}{ky_row}", None, "EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9"))
-    return a + _rodada2() + _feedback2()
+    return a + _rodada2() + _feedback2() + _eixo_iso()
 
 
 # =====================================================================================================================
@@ -416,6 +416,36 @@ def _feedback2() -> list[dict]:
 
 
 LINHA_NA_TBD = LINHAS_ORIGENS.stop + 4   # 00_README: logo depois do item 6 do guia
+
+# EDR-039 reaberto (usuário, 2026-10-19): o .tir é PAC2002 do Adams, cujos parâmetros "must always be valid for the TYDEX
+# W-axis system (ISO oriented)" (Adams 2024.1, Using the PAC2002 Tire Model, p. 7). Sistema de eixos declarado = ISO_TYDEX.
+EIXO_TIR = "ISO_TYDEX"
+TIR_PROVISORIO = AQUI.parent / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
+_REF39 = "EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7"
+
+
+def _eixo_iso() -> list[dict]:
+    """10_TIRE declara ISO_TYDEX; referências do Python do caso VERIF recalculadas no mesmo eixo; textos que diziam SAE."""
+    import math
+    import tire_model as tm
+    ds = tm.load_dataset(TIR_PROVISORIO, source_axis_system=EIXO_TIR)
+    fx, fy, _ = tm.wheel_forces(ds, "FR", 700.0, math.radians(3), math.radians(1.5), 0.05)   # caso VERIF (build_workbook)
+    mu = tm.mu_effective(fx, fy, 700.0)
+    return [
+        _a("10_TIRE", "B11", EIXO_TIR, _REF39, comentario=(
+            "Palavra-chave lida pelas fórmulas. ISO_TYDEX: identidade (o .tir PAC2002 vale no eixo W do TYDEX, orientação ISO: "
+            "help do Adams 2024.1, PAC2002, p. 7). SAE_CALSPAN: α_arquivo = −α_ISO; Fy_ISO = −Fy_arquivo; γ_arquivo = −γ_projeto, "
+            "para dado bruto em SAE. Qualquer outro texto => dataset INVÁLIDO. Ver tire_model.AXIS_TRANSFORMS e EDR-039.")),
+        _a("10_TIRE", "B10", "CONFIRMED — .tir PAC2002 em TYDEX W (ISO), help do Adams p. 7", _REF39, comentario=(
+            "V3.0 (EDR-039 reaberto, 2026-10-19): o arquivo declara TIRE_VERSION PAC2002 2018 e compatibilidade com Adams Tire; o "
+            "help do Adams diz que os parâmetros do arquivo valem sempre no eixo W do TYDEX (orientação ISO). Confere com a "
+            "avaliação do arquivo: Fy < 0 para α > 0 e Fy < 0 para γ > 0 (Pacejka, App. 1, p. 612: só no ISO o camber positivo "
+            "desloca Fy para baixo). Até a V2.4 o arquivo era declarado SAE_CALSPAN, com o sinal do camber inferido.")),
+        _a("13_VALIDATION", "B37", fx, _REF39 + "; tire_model.wheel_forces(ISO_TYDEX, FR, 700 N, 3°, 1,5°, 0,05)"),
+        _a("13_VALIDATION", "B38", fy, _REF39 + "; idem"),
+        _a("13_VALIDATION", "B39", mu, _REF39 + "; idem"),
+        _a("14_DASHBOARD", "B38", "ISO (TYDEX W, help do Adams PAC2002); EDR-039", _REF39),
+    ]
 # FB-03, fase 2 (aprovada pelo usuário em 2026-10-19): pior origem ao vivo nos resultados principais do 14_DASHBOARD.
 DASH_RESULTADOS = (7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 33, 34, 35, 36, 37)
 DASH_CABECALHOS = (5,)             # linha vazia acima da 1ª seção (as linhas de seção são mescladas A:E)
@@ -465,6 +495,33 @@ def _feedback2_pior_origem(wb, registro: list[dict]) -> None:
                      "ref": ref})
 
 
+def _eixo_iso_textos(wb, registro: list[dict]) -> None:
+    """Textos e comentários que diziam SAE (EDR-039 reaberto); nenhum valor nem fórmula muda aqui."""
+    def troca(aba, cel, velho, novo_txt):
+        c = wb[aba][cel]
+        assert velho in c.value, f"{aba}!{cel}: texto esperado não encontrado"
+        antes = c.value
+        c.value = c.value.replace(velho, novo_txt)
+        registro.append({"aba": aba, "cel": cel, "antes": antes, "novo": c.value, "ref": _REF39})
+    troca("00_README", "A37", "arquivo em SAE (TTC, declarado) transformado para ISO, sinal de camber não confirmado",
+          "arquivo em ISO (eixo W do TYDEX, como manda o help do Adams para o PAC2002; EDR-039)")
+    troca("04_DECISION_REGISTER", "E17",
+          "Sistema de eixos do arquivo = SAE (Calspan/TTC), DECLARADO pelo usuario (dados baixados do TTC), transformado para ISO "
+          "(alpha_arq=-alpha, Fy_ISO=-Fy_arq; camber: empuxo para o lado da inclinacao, INFERIDO: IA do TTC nao verificado).",
+          "Sistema de eixos do arquivo = ISO (eixo W do TYDEX): o .tir e PAC2002 do Adams, cujos parametros valem sempre no "
+          "TYDEX W (help do Adams 2024.1, p. 7; EDR-039 reaberto na V3.0). Ate a V2.4 era declarado SAE (Calspan/TTC), com o "
+          "sinal do camber inferido.")
+    c = wb["10_TIRE"]["B21"]
+    antes = c.comment.text if c.comment else None
+    texto = ("Dataset é de pneu Right (TYRESIDE). Rodas L usam espelhamento (H4; equivale ao espelhamento do Adams em relação "
+             "a α = 0, help p. 73-74): α_R=−α e Fy_L=−Fy_R; o camber do projeto (+ = topo para fora) vale nos dois lados. "
+             "Depois, transformação de eixos do arquivo (ISO_TYDEX = identidade). VERIF = pneu direito, caso fixo de verificação "
+             "contra Python.")
+    cm = Comment(texto, AUTOR); cm.width, cm.height = 340, 130
+    c.comment = cm
+    registro.append({"aba": "10_TIRE", "cel": "B21 (comentário)", "antes": antes, "novo": texto, "ref": _REF39})
+
+
 def _feedback2_formatacao(wb, registro: list[dict]) -> None:
     """Parte da 2ª rodada da revisão metodológica que não é valor de célula: mesclagem do item 7 do guia, versão e changelog."""
     m = wb["00_README"]
@@ -480,7 +537,7 @@ def _feedback2_formatacao(wb, registro: list[dict]) -> None:
     c["B18"].value = ("V3.0, 2a rodada da revisao metodologica: razao h_ns / raio do pneu como entrada (05_VEHICLE B35/B36, Milliken p. 672); "
                       "05 B16/B17 = raio x razao; 07_KINEMATICS B14 (centro da roda traseira) = raio do pneu, sem passar pelo CG nao "
                       "suspenso; item 7 do guia (N/A e TBD); 14_DASHBOARD coluna E: pior origem das entradas de cada resultado, "
-                      "ao vivo (FB-03 fase 2).")
+                      "ao vivo (FB-03 fase 2); 10_TIRE: eixo do .tir = ISO_TYDEX (EDR-039 reaberto, help do Adams PAC2002).")
     c["C18"].value = ("Decisoes do usuario (2026-10-19). EDR-050 (estendido), EDR-035 (N/A e TBD). Registro celula a celula: "
                       "docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-013 estendido). NOT_VALIDATED fisicamente.")
     registro += [
@@ -562,6 +619,7 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
     _rodada2_formatacao(wb, registro)
     _feedback2_formatacao(wb, registro)
     _feedback2_pior_origem(wb, registro)
+    _eixo_iso_textos(wb, registro)
     wb.calculation.fullCalcOnLoad = True
     out.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out)
