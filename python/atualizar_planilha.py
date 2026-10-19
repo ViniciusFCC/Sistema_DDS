@@ -1,9 +1,9 @@
-"""Gera a planilha V2.5 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049).
+"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049).
 
 Uso:
-    uv run python -X utf8 python/atualizar_planilha.py [ORIGEM_V2_4.xlsx] [SAIDA_V2_5.xlsx] [--registro ARQ.md]
+    uv run python -X utf8 python/atualizar_planilha.py [ORIGEM_V2_4.xlsx] [SAIDA_V3_0.xlsx] [--registro ARQ.md]
 
-Padrão: origem excel/FSAE_EV_Suspension_Fase1_V2_4.xlsx, saída build/FSAE_EV_Suspension_Fase1_V2_5.xlsx
+Padrão: origem excel/FSAE_EV_Suspension_Fase1_V2_4.xlsx, saída build/FSAE_EV_Suspension_Fase1_V3_0.xlsx
 (nunca por cima da entregue). Lê a origem e grava uma cópia nova pelo openpyxl; nenhuma planilha é
 recalculada nem salva pelo Excel ou pelo LibreOffice.
 
@@ -26,7 +26,7 @@ E = "'08_VEHICLE_STATE'!"
 L = "'09_LOADS'!"
 D = "'11_DESIGN'!"
 T = "'10_TIRE'!"
-AUTOR = "Sistema_DDS V2.5"
+AUTOR = "Sistema_DDS V3.0"
 
 # Rigidez vertical do pneu: único valor com fonte no projeto é o do .tir TTC provisório (EDR-038).
 K_T_PROVISORIO = 120312.0   # N/m, VERTICAL_STIFFNESS de data/Hoosier_R25B_13x7_TTC_provisional.tir
@@ -40,7 +40,7 @@ def _a(aba, cel, novo, ref, estilo=None, comentario=None):
 
 
 def alteracoes(ky_row: int) -> list[dict]:
-    """Lista completa das células alteradas ou criadas na V2.5. ky_row = linha de Ky em 10_TIRE (layout)."""
+    """Lista completa das células alteradas ou criadas na V3.0. ky_row = linha de Ky em 10_TIRE (layout)."""
     a = []
     # ---------------- 05_VEHICLE: massa suspensa por eixo e a_s (EDR-047; Milliken p. 601-603) ----------------
     for r, rot, f, un in (
@@ -202,27 +202,27 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
         c.comment = cm
         registro.append({"aba": "06_SUSPENSION", "cel": f"{cel} (comentário)", "antes": antes, "novo": texto, "ref": "EDR-012/022"})
     m = wb["00_README"]
-    m["A3"].value = ("Versão do workbook: V2.5 (revisão metodológica contra Milliken/Gillespie/Seward/Pacejka: pneu em série, "
+    m["A3"].value = ("Versão do workbook: V3.0 (em desenvolvimento até concluir as correções de feedback; revisão metodológica contra Milliken/Gillespie/Seward/Pacejka: pneu em série, "
                      "termo gravitacional da rolagem, massa suspensa por eixo, anti com sinal, Ky com um λFz0; EDR-045 a EDR-049) "
                      "| Status: DRAFT — cross-check, ainda NÃO REFERENCE-validated")
     tire = wb["10_TIRE"]
     tire[f"B{rows['m_eqv']}"].value = ("Fy0 confere com Seward eq. 5.5-5.13 (PAC'96/2002); combinado (Gxα, Gyκ, SVyκ) com Pacejka 2006 eq. 4.E50-4.E67; "
                                         "Ky com um único λFz0 (EDR-049). Reproduz o MFeval MF5.2. NÃO validado contra medição nem OptimumTire")
-    registro.append({"aba": "10_TIRE", "cel": f"B{rows['m_eqv']}", "antes": "(texto V2.4)", "novo": "(texto V2.5)", "ref": "EDR-042/049"})
-    registro.append({"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V2.4 ...", "novo": "Versão do workbook: V2.5 ...", "ref": "EDR-043"})
+    registro.append({"aba": "10_TIRE", "cel": f"B{rows['m_eqv']}", "antes": "(texto V2.4)", "novo": "(texto V3.0)", "ref": "EDR-042/049"})
+    registro.append({"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V2.4 ...", "novo": "Versão do workbook: V3.0 ...", "ref": "EDR-043"})
 
     c = wb["15_CHANGELOG"]
     for col in "ABCDE":
         c[f"{col}16"]._style = copy.copy(c[f"{col}15"]._style)
     c["A16"].value = "2026-10"
-    c["B16"].value = ("V2.5: revisao metodologica contra Milliken (RCVD), Gillespie, Seward e Pacejka. Pneu em serie na frequencia natural e na rigidez de rolagem "
+    c["B16"].value = ("V3.0: revisao metodologica contra Milliken (RCVD), Gillespie, Seward e Pacejka. Pneu em serie na frequencia natural e na rigidez de rolagem "
                       "(K_T provisorio do .tir; 06_SUSPENSION l.46-52, B22/B23, B32/B33; 11_DESIGN B8/B9/B20); SUS-103 com termo gravitacional e CG suspenso em a_s "
                       "(09_LOADS B18-B21; 13_VALIDATION B6); massa suspensa por eixo (05_VEHICLE l.25-27; 06 B28/B29); anti-dive/anti-squat com sinal e ponto de reacao "
                       "do carro (freio no cubo, motor no chassi; 06 B39-B41, 07 B11/B13/B14); Ky com um lambda_Fz0 (10_TIRE).")
     c["C16"].value = ("Pedido do usuario (2026-10-19): seguir a literatura, principalmente o Milliken. EDR-045 a EDR-049. Registro celula a celula: "
-                      "docs/registro-de-versoes-V2_5.md. Validation: suspensao 54/54 (inclui exemplos da Milliken p. 683, p. 592, Tab. 16.3, Seward 4.1, Gillespie 5-8), "
+                      "docs/registro-de-versoes-V3_0.md. Validation: suspensao 54/54 (inclui exemplos da Milliken p. 683, p. 592, Tab. 16.3, Seward 4.1, Gillespie 5-8), "
                       "Excel x Python (test_workbook e test_workbook_suspensao). NOT_VALIDATED fisicamente. Autor: nao registrado.")
-    registro.append({"aba": "15_CHANGELOG", "cel": "A16:C16", "antes": None, "novo": "(linha V2.5)", "ref": "EDR-043"})
+    registro.append({"aba": "15_CHANGELOG", "cel": "A16:C16", "antes": None, "novo": "(linha V3.0)", "ref": "EDR-043"})
 
     wb.calculation.fullCalcOnLoad = True
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -247,7 +247,7 @@ def main() -> None:
     import json
     ap = argparse.ArgumentParser()
     ap.add_argument("src", nargs="?", default=str(AQUI.parent / "excel" / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"))
-    ap.add_argument("out", nargs="?", default=str(AQUI.parent / "build" / "FSAE_EV_Suspension_Fase1_V2_5.xlsx"))
+    ap.add_argument("out", nargs="?", default=str(AQUI.parent / "build" / "FSAE_EV_Suspension_Fase1_V3_0.xlsx"))
     ap.add_argument("--layout", default=str(AQUI.parent / "data" / "layout_V2_4.json"))
     ap.add_argument("--registro", default=None)
     a = ap.parse_args()

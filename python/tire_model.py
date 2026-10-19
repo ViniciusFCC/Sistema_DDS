@@ -27,7 +27,7 @@ import math
 import re
 from dataclasses import dataclass, field
 
-__version__ = "V2.5"
+__version__ = "V3.0"
 EPS = 1e-6
 
 
