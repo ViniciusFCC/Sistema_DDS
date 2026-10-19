@@ -20,6 +20,9 @@ RAIZ = Path(__file__).resolve().parent.parent
 ENTREGUE_XLSX = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"
 ENTREGUE_JSON = RAIZ / "data" / "layout_V2_4.json"
 FORMULAS_ESPERADAS = 347  # SPEC CA-07
+# V2.5 (EDR-045 a EDR-049): gerada da V2.4 por python/atualizar_planilha.py; 9 fórmulas novas.
+ENTREGUE_XLSX_V25 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2_5.xlsx"
+FORMULAS_ESPERADAS_V25 = 356
 
 
 def _formula(v) -> str | None:
@@ -42,9 +45,10 @@ def celulas(caminho: Path) -> tuple[list[str], dict[tuple[str, str], object]]:
     return wb.sheetnames, out
 
 
-def comparar_xlsx(gerada: Path) -> tuple[bool, list[str]]:
+def comparar_xlsx(gerada: Path, entregue: Path = ENTREGUE_XLSX,
+                  esperadas: int = FORMULAS_ESPERADAS) -> tuple[bool, list[str]]:
     rel = []
-    abas_e, ent = celulas(ENTREGUE_XLSX)
+    abas_e, ent = celulas(entregue)
     abas_g, ger = celulas(gerada)
     ok = True
     if abas_e != abas_g:
@@ -52,8 +56,8 @@ def comparar_xlsx(gerada: Path) -> tuple[bool, list[str]]:
         ok = False
     n_form_e = sum(1 for v in ent.values() if _formula(v) is not None)
     n_form_g = sum(1 for v in ger.values() if _formula(v) is not None)
-    rel.append(f"fórmulas: entregue {n_form_e} | gerada {n_form_g} | esperado {FORMULAS_ESPERADAS}")
-    if n_form_e != FORMULAS_ESPERADAS or n_form_g != FORMULAS_ESPERADAS:
+    rel.append(f"fórmulas: entregue {n_form_e} | gerada {n_form_g} | esperado {esperadas}")
+    if n_form_e != esperadas or n_form_g != esperadas:
         rel.append("FAIL: número de fórmulas diferente do esperado")
         ok = False
     difs = []

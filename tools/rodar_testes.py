@@ -33,18 +33,19 @@ import openpyxl  # noqa: E402
 TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
-    ("suspensão", "tests/test_suspension_model.py", 42, "HANDOFF §6.2"),
-    ("cinemática", "tests/test_kinematics_model.py", 53, "HANDOFF §6.2"),
+    ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V2_5.md"),
+    ("cinemática", "tests/test_kinematics_model.py", 54, "registro-de-versoes-V2_5.md"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
 ]
-MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints"]
-MUTACAO = ("tests/mutation_tire.py", 23)
+MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
+MUTACAO = ("tests/mutation_tire.py", 24)
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 10)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
-PLANILHA = ("tests/test_workbook.py", 19, "registro-de-versoes-V2_4.md:17 (19/19 no sandbox)")
+PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V2.5; registro-de-versoes-V2_5.md"),
+             ("tests/test_workbook_suspensao.py", 9, "suspensão da V2.5; registro-de-versoes-V2_5.md")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
@@ -114,7 +115,7 @@ def git(*args: str) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--saida", type=Path, default=RAIZ / "build" / "verificacao-ultima.md")
-    ap.add_argument("--titulo", default="Verificação da V2.4 nesta máquina")
+    ap.add_argument("--titulo", default="Verificação da V2.5 nesta máquina")
     a = ap.parse_args()
 
     md: list[str] = []
@@ -204,9 +205,19 @@ def main() -> None:
         else:
             ok7, r7 = False, ["CA-07 FAIL: build não gerou a planilha"]
             ok8, r8 = False, ["CA-08 FAIL: build não gerou o layout"]
+        # V2.5 = V2.4 regenerada + python/atualizar_planilha.py (EDR-045 a EDR-049)
+        out25 = Path(tmp) / "FSAE_EV_Suspension_Fase1_V2_5.xlsx"
+        r25 = rodar(["python/atualizar_planilha.py", str(out), str(out25), "--layout", str(lay)]) if out.exists() else None
+        md.append(f"- V2.5: `python/atualizar_planilha.py <tmp>/V2_4.xlsx <tmp>/V2_5.xlsx`, código {r25.returncode if r25 else 'não rodou'}")
+        if r25 is not None and r25.returncode == 0 and out25.exists():
+            ok7b, r7b = comparar_planilhas.comparar_xlsx(out25, comparar_planilhas.ENTREGUE_XLSX_V25,
+                                                         comparar_planilhas.FORMULAS_ESPERADAS_V25)
+        else:
+            ok7b, r7b = False, ["CA-07 FAIL: atualizar_planilha não gerou a V2.5"] + ([cauda(r25.stderr)] if r25 else [])
     resumo.append(("CA-07", "planilha vs V2.4 entregue", "PASS" if ok7 else "FAIL"))
     resumo.append(("CA-08", "layout vs entregue", "PASS" if ok8 else "FAIL"))
-    md += ["```text", *r7, *r8, "```", ""]
+    resumo.append(("CA-07", "planilha vs V2.5 entregue", "PASS" if ok7b else "FAIL"))
+    md += ["```text", *r7, *r8, "--- V2.5 ---", *r7b, "```", ""]
 
     # --- Versão gravada na planilha (fase B, passo 3) ---
     ok_ver, linhas_ver = versao_planilhas()
@@ -216,25 +227,25 @@ def main() -> None:
            *linhas_ver, ""]
 
     # --- Teste da planilha, Excel x Python (CA-09, EDR-044) ---
-    script, esperado, fonte = PLANILHA
-    r = rodar([script])
-    linhas = r.stdout.splitlines()
-    motor = next((l for l in linhas if l.startswith(("MOTOR:", "NÃO EXECUTÁVEL:"))), "MOTOR: (não informado)")
-    resumos = [m for m in map(RE_RESUMO.match, linhas) if m]
-    if r.returncode == 3 and motor.startswith("NÃO EXECUTÁVEL"):
-        st, obtido = "NÃO EXECUTÁVEL", "não rodou"
-    elif resumos:
-        n_pass, n_fail, total = map(int, resumos[-1].groups())
-        obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
-        st = "PASS" if n_fail == 0 and n_pass == total == esperado and r.returncode == 0 else "FAIL"
-    else:
-        st, obtido = "FAIL", "sem linha de resumo"
-    resumo.append(("CA-09", "planilha Excel x Python", st))
-    md += ["## Teste da planilha (CA-09)", "",
-           f"- `{script}`: esperado {esperado} ({fonte}); obtido {obtido}; código {r.returncode}: **{st}**",
-           f"- {motor}", ""]
-    md += bloco(f"{script}: testes FAIL", "\n".join(l for l in linhas if l.startswith("[FAIL]")))
-    md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+    md += ["## Teste da planilha (CA-09)", ""]
+    for script, esperado, fonte in PLANILHAS:
+        r = rodar([script])
+        linhas = r.stdout.splitlines()
+        motor = next((l for l in linhas if l.startswith(("MOTOR:", "NÃO EXECUTÁVEL:"))), "MOTOR: (não informado)")
+        resumos = [m for m in map(RE_RESUMO.match, linhas) if m]
+        if r.returncode == 3 and motor.startswith("NÃO EXECUTÁVEL"):
+            st, obtido = "NÃO EXECUTÁVEL", "não rodou"
+        elif resumos:
+            n_pass, n_fail, total = map(int, resumos[-1].groups())
+            obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
+            st = "PASS" if n_fail == 0 and n_pass == total == esperado and r.returncode == 0 else "FAIL"
+        else:
+            st, obtido = "FAIL", "sem linha de resumo"
+        resumo.append(("CA-09", f"planilha Excel x Python ({Path(script).stem})", st))
+        md += [f"- `{script}`: esperado {esperado} ({fonte}); obtido {obtido}; código {r.returncode}: **{st}**",
+               f"- {motor}", ""]
+        md += bloco(f"{script}: testes FAIL", "\n".join(l for l in linhas if l.startswith("[FAIL]")))
+        md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
 
     md[md.index("## Testes (CA-05)"):md.index("## Testes (CA-05)")] = [
         "## Resumo", "", "| CA | Item | Status |", "|---|---|---|",
