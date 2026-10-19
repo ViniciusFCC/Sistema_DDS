@@ -408,6 +408,103 @@ check("TC-KIN-119: REACTION_POINT (freio outboard -> contact patch; motor no cha
       and len(full_sweep(FL, [0.0], reaction_point=_rp["anti_squat_rear"])) == 1 and abs(_s_cp - _s_wc) > 1e-3,
       f"inclinação contact patch={_s_cp:.4f}, centro da roda={_s_wc:.4f}")
 
+# =====================================================================
+# 2ª rodada da revisão metodológica (2026-10-19): linha de força pelo trabalho virtual (EDR-053) e direção (EDR-052)
+# =====================================================================
+import math
+import kinematics_model as km
+
+# ---- TC-KIN-120: linha de força pelo trabalho virtual (definição primária, EDR-053) ----
+fpl = km.force_lines_vw(Cpl)
+kpl = kinematic_centers(Cpl)
+cp_pl = kpl["contact_patch"]
+same = (abs(fpl["rc_height_m"] - roll_center_height_kinematic(Cpl)) < 1e-9
+        and abs(fpl["side_slope_cp"] - force_line_slope(kpl["side"], cp_pl[[0, 2]])) < 1e-9
+        and abs(fpl["side_slope_wc"] - force_line_slope(kpl["side"], kpl["wheel_center"][[0, 2]])) < 1e-9)
+check("TC-KIN-120a: mecanismo plano — RC e inclinações laterais (contact patch e centro da roda) pelo trabalho virtual == método dos ball joints",
+      same, f"RC={fpl['rc_height_m']*1e3:.4f} mm")
+s0_, w_, vel_ = km._twist(FL)
+cp_, vcp_ = FL.pt(s0_, "CONTACT_PATCH"), vel_("CONTACT_PATCH")
+rig = max(np.linalg.norm(vel_(k) - (vcp_ + np.cross(w_, FL.pt(s0_, k) - cp_))) for k in ("LCA_OUT", "UCA_OUT", "TIE_OUT", "WHEEL_CENTER", "SPINDLE_PT"))
+fFL = km.force_lines_vw(FL)
+# IC frontal no plano X = X_cp: as normais às velocidades de dois pontos desse plano (corpo rígido) cruzam no IC devolvido
+P1, P2 = cp_ + np.array([0, 0.05, 0.10]), cp_ + np.array([0, -0.04, 0.25])
+v1, v2 = vcp_ + np.cross(w_, P1 - cp_), vcp_ + np.cross(w_, P2 - cp_)
+icp = km._ic_from_velocities(P1[[1, 2]], v1[[1, 2]], P2[[1, 2]], v2[[1, 2]])["point"]
+check("TC-KIN-120b: corpo rígido — v(P) = v_cp + ω×(P−cp) nos 5 pontos da manga, e o IC frontal no plano X = X_cp não depende dos pontos usados",
+      rig < 1e-6 and np.linalg.norm(icp - fFL["ic_front"]) < 1e-6, f"resíduo rígido={rig:.1e}; |ΔIC|={np.linalg.norm(icp - fFL['ic_front']):.1e} m")
+lit = km.reference_literal_centers(FL)
+check("TC-KIN-120c: CARACTERIZAÇÃO (sintético FL) — RC: trabalho virtual 17,7 mm, ball joints 14,8 mm, leitura literal do help −142,6 mm; passo −0,47 m/rad",
+      abs(fFL["rc_height_m"] - 0.01769) < 1e-4 and abs(roll_center_height_kinematic(FL) - 0.01479) < 1e-4
+      and abs(lit["rc_height_m"] + 0.1426) < 1e-3 and abs(lit["pitch_m_per_rad"] + 0.4724) < 1e-3,
+      f"vw={fFL['rc_height_m']*1e3:.2f} atual={roll_center_height_kinematic(FL)*1e3:.2f} literal={lit['rc_height_m']*1e3:.1f} mm; passo={lit['pitch_m_per_rad']:.4f}")
+
+# ---- TC-KIN-121: spindle length (Milliken 19.1, Fig. 19.1), caso analítico ----
+m_pl = Cpl.metrics(Cpl.solve(0.0))
+sl_ref = 0.62 - (0.56 + (0.23 - 0.16) / (0.33 - 0.16) * (0.53 - 0.56))
+check("TC-KIN-121: spindle length = distância horizontal do pino mestre ao centro da roda, na altura do centro (plano analítico; + = roda para fora)",
+      abs(m_pl["spindle_length_m"] - sl_ref) < 1e-12, f"{m_pl['spindle_length_m']*1e3:.4f} mm (esperado {sl_ref*1e3:.4f})")
+
+# ---- TC-KIN-122: Ackermann exato (Gillespie eq. 8-1/8-2) contra a Tab. 6.2 do Seward (bitola 1200 mm, entre-eixos 1600 mm) ----
+seward = {10: 11.5, 15: 18.5, 20: 26.6, 25: 35.6}           # δo -> δi (texto p. 162 para 10°; tabela para os demais)
+raio = {5: 18.4, 20: 4.7, 25: 3.8}
+ok_s = all(abs(km.ackermann_inner_ideal_deg(o, 1.6, 1.2) - i) < 0.06 for o, i in seward.items())
+ok_r = all(abs(km.turn_radius_outer_m(o, 1.6) - r) < 0.06 for o, r in raio.items())
+check("TC-KIN-122a: δi de Ackermann (cot δo − cot δi = t/L) e raio externo L/sin δo reproduzem a Tab. 6.2 do Seward (arredondada a 0,1)",
+      ok_s and ok_r, str({o: round(km.ackermann_inner_ideal_deg(o, 1.6, 1.2), 2) for o in seward}))
+ai = km.ackermann_inner_ideal_deg(12, 1.55, 1.2)
+check("TC-KIN-122b: % Ackermann: δi = ideal -> 100; δi = δo (paralelo) -> 0; δi < δo (reverso) -> negativo",
+      abs(km.ackermann_percent(ai, 12, 1.55, 1.2) - 100) < 1e-9 and abs(km.ackermann_percent(12, 12, 1.55, 1.2)) < 1e-12
+      and km.ackermann_percent(11, 12, 1.55, 1.2) < 0)
+
+# ---- TC-KIN-123: Ackermann da geometria (sintético FL/FR) ----
+tr_ = float(FL.p0["CONTACT_PATCH"][1] - FR.p0["CONTACT_PATCH"][1])
+akR, akL = km.ackermann_from_kinematics(FL, FR, 0.01, 1.55, tr_), km.ackermann_from_kinematics(FL, FR, -0.01, 1.55, tr_)
+check("TC-KIN-123: Ackermann da geometria: curva para a direita e para a esquerda dão o mesmo % (geometria simétrica); roda interna esterça mais",
+      akR["turn"] == "direita" and akL["turn"] == "esquerda" and abs(akR["ackermann_percent"] - akL["ackermann_percent"]) < 1e-6
+      and akR["delta_inner_deg"] > akR["delta_outer_deg"], f"%Ack={akR['ackermann_percent']:.2f} (SINTÉTICO)")
+
+# ---- TC-KIN-124: relação de direção ----
+check("TC-KIN-124a: SR total (média das duas rodas, SAE J670 9.4.6) == SR por roda na geometria simétrica, no centro",
+      abs(km.steering_ratio_overall(FL, FR, 0.06) - steering_ratio(FL, 0.06)) < 1e-6)
+sr_grad = 360.0 * 0.10 / (0.001 * math.degrees(1.0))        # gradiente no centro do caso analítico do TC-KIN-109 (e = 0,10 m)
+check("TC-KIN-124b: aproximação do Milliken p. 718, SR = 360/asin(c/braço): tende ao gradiente no centro quando c -> 0 (c = 1 mm, braço = 0,10 m)",
+      abs(km.steering_ratio_rack_approx(0.001, 0.10) / sr_grad - 1) < 1e-4, f"{km.steering_ratio_rack_approx(0.001, 0.10):.2f} vs {sr_grad:.2f}")
+
+# ---- TC-KIN-125: ride steer (Milliken 19.4) ----
+rs_pl = km.ride_steer(Cpl, TR)
+check("TC-KIN-125a: mecanismo plano com barra compatível: ride steer nulo (inclinação e curvatura)",
+      abs(rs_pl["slope_deg_per_mm"]) < 1e-8 and abs(rs_pl["quad_deg_per_mm2"]) < 1e-10)
+rs_fl = km.ride_steer(FL, TR)
+toe_fd = (sweep(FL, [1e-4])[0][1]["toe_deg"] - sweep(FL, [-1e-4])[0][1]["toe_deg"]) / 0.2
+check("TC-KIN-125b: sintético: inclinação do ride steer no curso zero == diferença central do toe (°/mm)",
+      abs(rs_fl["slope_deg_per_mm"] - toe_fd) < 1e-6, f"{rs_fl['slope_deg_per_mm']:.5f} °/mm (SINTÉTICO)")
+
+# ---- TC-KIN-126: roll steer (Gillespie p. 220, eq. 6-57) ----
+eps_f = km.roll_steer_coefficient(FL, FR, tr_)
+b_rad = math.radians(rs_fl["slope_deg_per_mm"] * 1e3)        # rad de toe por m de curso
+check("TC-KIN-126a: eixo simétrico e linear: ε = b·t/2 (b = toe-out por curso); toe-in em bump -> ε < 0 (rolagem esterça para dentro da curva)",
+      abs(eps_f - b_rad * tr_ / 2) < 1e-4 * abs(eps_f) and eps_f < 0, f"ε={eps_f:.5f} °/°")
+check("TC-KIN-126b: K_roll steer = (ε_f − ε_r)·∂φ/∂a_y: linear; ε_f > ε_r -> subesterço (K > 0)",
+      km.roll_steer_understeer_deg_per_g(0.1, 0.0, 2.0) > 0 and abs(km.roll_steer_understeer_deg_per_g(0.1, 0.05, 2.0) - 0.1) < 1e-12
+      and km.roll_steer_understeer_deg_per_g(0.0, 0.1, 2.0) < 0)
+
+# ---- TC-KIN-127: efeitos do esterço (Milliken 19.1) ----
+eL, eR = km.steer_effects(FL, -10.0), km.steer_effects(FR, -10.0)  # curva para a direita: FL externa, FR interna
+check("TC-KIN-127a: caster positivo (sintético): roda externa ganha camber negativo e a interna positivo; elevação diferente nos dois lados (peso diagonal)",
+      eL["yaw_deg"] < 0 and eR["yaw_deg"] < 0 and eL["dcamber_deg"] < 0 and eR["dcamber_deg"] > 0 and abs(eL["lift_m"] - eR["lift_m"]) > 1e-4,
+      f"Δγ ext={eL['dcamber_deg']:.3f}° int={eR['dcamber_deg']:.3f}°; elevação ext={eL['lift_m']*1e3:.2f} int={eR['lift_m']*1e3:.2f} mm")
+lift_p, lift_n = km.steer_effects(Cpl, 10.0)["lift_m"], km.steer_effects(Cpl, -10.0)["lift_m"]
+check("TC-KIN-127b: só KPI e spindle length (caster zero, plano analítico): o carro sobe para os dois lados de esterço",
+      Cpl.metrics(Cpl.solve(0.0))["caster_deg"] == 0.0 and lift_p > 0 and lift_n > 0 and abs(lift_p - lift_n) < 1e-12,
+      f"{lift_p*1e3:.3f} / {lift_n*1e3:.3f} mm")
+
+# ---- TC-KIN-128: diagnóstico da leitura literal no mecanismo plano ----
+lit_pl = km.reference_literal_centers(Cpl)
+check("TC-KIN-128: mecanismo plano: passo nulo e a leitura literal (eixo × plano) coincide com o trabalho virtual no RC",
+      abs(lit_pl["pitch_m_per_rad"]) < 1e-8 and abs(lit_pl["rc_height_m"] - fpl["rc_height_m"]) < 1e-8,
+      f"passo={lit_pl['pitch_m_per_rad']:.1e}")
+
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s in results if s == "PASS")
