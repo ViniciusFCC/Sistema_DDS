@@ -4,6 +4,7 @@ Dataset: .tir TTC PROVISÓRIO (não necessariamente o pneu real). Verificação 
 NÃO há comparação com implementação independente nem com OptimumTire (não disponíveis) -> Validation = NOT_VALIDATED.
 """
 import math, os, tempfile, shutil
+_TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name  # tudo que o teste cria em temp fica aqui e é apagado no fim
 import tire_model as t
 
 HERE = os.path.dirname(os.path.abspath(__file__))

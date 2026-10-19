@@ -5,6 +5,7 @@ Parte 2: TC-KIN-101.. (solver 3D V2.0). Verificações independentes usam scipy 
 Toda geometria aqui é SINTÉTICA ou de fixture analítica — nenhuma representa o carro.
 """
 import os, csv, tempfile
+_TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name  # tudo que o teste cria em temp fica aqui e é apagado no fim
 import numpy as np
 from scipy.optimize import brentq, least_squares
 
