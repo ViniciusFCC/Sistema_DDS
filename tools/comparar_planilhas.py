@@ -22,7 +22,7 @@ ENTREGUE_JSON = RAIZ / "data" / "layout_V2_4.json"
 FORMULAS_ESPERADAS = 347  # SPEC CA-07
 # V3.0 (EDR-045 a EDR-049): gerada da V2.4 por python/atualizar_planilha.py; 9 fórmulas novas.
 ENTREGUE_XLSX_V30 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V3_0.xlsx"
-FORMULAS_ESPERADAS_V30 = 381  # 356 + 6 da 1ª rodada de feedback (EDR-050) + 19 da 2ª rodada da revisão metodológica (pior origem no 14_DASHBOARD)
+FORMULAS_ESPERADAS_V30 = 387  # 356 + 6 da 1ª rodada de feedback (EDR-050) + 19 (pior origem no 14_DASHBOARD) e 6 (direção, EDR-052) da 2ª rodada da revisão metodológica
 
 
 def _formula(v) -> str | None:

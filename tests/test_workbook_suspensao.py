@@ -6,6 +6,7 @@ Namespace TC-WB30-xxx. "Passou" = Excel reproduz o suspension_model/kinematics_m
 TC-WB30-010 a 013 (1ª rodada de feedback): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
 TC-WB30-013 estendido na 2ª rodada da revisão metodológica: razão h_ns / raio como entrada (05 B35/B36) e 07 B14 separado do CG não suspenso.
 TC-WB30-014 (2ª rodada da revisão metodológica, ID autorizado pelo usuário em 2026-10-19): pior origem ao vivo no 14_DASHBOARD (FB-03 fase 2).
+TC-WB30-015: bloco de direção da 07_KINEMATICS (SUS-414, SUS-415, SUS-601; EDR-052) contra o kinematics_model.
 """
 import csv, math, os, random, shutil, sys, tempfile, warnings
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
@@ -294,6 +295,45 @@ check("TC-WB30-014: 14_DASHBOARD E (19 resultados) = pior origem das entradas, a
       not cobertura and base_dash == esperado_dash and info["total_errors"] == 0 and info2["total_errors"] == 0
       and v2 == {7: CONF, 13: CONF, 14: TX, 22: CONF, 23: TX},
       f"cobertura={cobertura[:3]}; base≠={[(r, base_dash[r], esperado_dash[r]) for r in LINHAS_DASH if base_dash[r] != esperado_dash[r]]}; ao vivo={v2}")
+
+# ---------- direção (SUS-414, SUS-415, SUS-601; EDR-052): Excel == kinematics_model ----------
+def direcao_py(wv):
+    k, v5 = wv["07_KINEMATICS"], wv["05_VEHICLE"]
+    L_, t_ = v5["B6"].value, v5["B7"].value
+    do, di = k["B72"].value, k["B73"].value
+    phi, ayg = wv["09_LOADS"]["B21"].value, wv["08_VEHICLE_STATE"]["B11"].value
+    grad = math.degrees(phi) / ayg if isinstance(phi, (int, float)) and ayg != 0 else "N/A"
+    return {"B74": km.ackermann_inner_ideal_deg(do, L_, t_), "B75": km.ackermann_percent(di, do, L_, t_),
+            "B76": km.turn_radius_outer_m(do, L_), "B80": km.steering_ratio_rack_approx(k["B78"].value, k["B79"].value),
+            "B84": grad, "B85": km.roll_steer_understeer_deg_per_g(k["B82"].value, k["B83"].value, grad) if grad != "N/A" else "N/A"}
+
+
+def dif_dir(wv):
+    ref, k = direcao_py(wv), wv["07_KINEMATICS"]
+    pior, ruins = 0.0, []
+    for c, pv in ref.items():
+        ev = k[c].value
+        if pv == "N/A" or ev == "N/A":
+            if pv != ev:
+                ruins.append((c, ev, pv))
+            continue
+        pior = max(pior, abs(ev - pv) / max(1.0, abs(pv)))
+    return pior, ruins
+
+
+info, wb_d0 = scenario({})
+p0d, r0d = dif_dir(wb_d0)
+info1, wb_d1 = scenario({("07_KINEMATICS", "B72"): 15.0, ("07_KINEMATICS", "B73"): 16.2, ("07_KINEMATICS", "B78"): 0.0476,
+                         ("07_KINEMATICS", "B79"): 0.085, ("07_KINEMATICS", "B82"): 0.12, ("07_KINEMATICS", "B83"): 0.03})
+p1d, r1d = dif_dir(wb_d1)
+info2, wb_d2 = scenario({("08_VEHICLE_STATE", "B11"): 0.0})
+form_ok = all(str(wbf["07_KINEMATICS"][c].value).startswith("=") for c in ("B74", "B75", "B76", "B80", "B84", "B85"))
+check("TC-WB30-015: direção na 07_KINEMATICS (Ackermann, % Ackermann, raio, SR pela cremalheira, gradiente de rolagem, roll steer) "
+      "== kinematics_model na base e com entradas trocadas; a_y = 0 -> N/A; base paralela = 0 % Ackermann",
+      form_ok and p0d < 1e-9 and p1d < 1e-9 and not r0d and not r1d and wb_d2["07_KINEMATICS"]["B84"].value == "N/A"
+      and wb_d2["07_KINEMATICS"]["B85"].value == "N/A" and abs(wb_d0["07_KINEMATICS"]["B75"].value) < 1e-12
+      and info["total_errors"] == info1["total_errors"] == info2["total_errors"] == 0,
+      f"pior dif base={p0d:.1e}, trocada={p1d:.1e}; {r0d + r1d}")
 
 print("\n--- Resumo ---"); p = sum(1 for _, s in results if s == "PASS"); f = len(results) - p
 print(f"{p} PASS, {f} FAIL, de {len(results)} testes")
