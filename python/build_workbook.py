@@ -4,7 +4,7 @@ from pathlib import Path
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.comments import Comment
-import tire_model_V2_4 as t
+import tire_model as t
 
 # Portabilidade (commit 1, SPEC R3): os caminhos fixos do sandbox viraram argumentos
 # com padrão relativo a este script. A saída padrão fica em build/, nunca sobre a entregue.
@@ -12,7 +12,7 @@ HERE = Path(__file__).resolve().parent
 _ap = argparse.ArgumentParser()
 _ap.add_argument("out", nargs="?", default=str(HERE.parent / "build" / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"))
 _ap.add_argument("--src", default=str(HERE.parent / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"))
-_ap.add_argument("--tir", default=str(HERE / "Hoosier_R25B_13x7_TTC_provisional.tir"))
+_ap.add_argument("--tir", default=str(HERE.parent / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"))
 _ap.add_argument("--layout", default=None, help="padrão: layout_V2_4.json na pasta de OUT")
 _args = _ap.parse_args()
 SRC = _args.src

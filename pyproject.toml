@@ -9,6 +9,14 @@ dependencies = [
     "openpyxl",
 ]
 
-[tool.uv]
-# Scripts soltos em python/ e tools/, não um pacote instalável (SPEC E1).
-package = false
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# EDR-043: o `uv sync` instala o projeto em modo editável e põe python/ no caminho
+# de import, para que os testes em tests/ achem os módulos sem mexer no sys.path.
+[tool.hatch.build]
+dev-mode-dirs = ["python"]
+
+[tool.hatch.build.targets.wheel]
+only-include = ["python"]

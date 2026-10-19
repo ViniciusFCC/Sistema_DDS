@@ -1,9 +1,10 @@
-"""CA-05, CA-06, CA-07, CA-08, CA-09 e CA-10: roda os scripts de python/ e grava o log.
+"""CA-05, CA-06, CA-07, CA-08, CA-09 e CA-10: roda os testes e o build e grava o log.
 
 Uso:
     uv run python -X utf8 tools/rodar_testes.py [--saida LOG.md] [--titulo TEXTO]
 
-Cada script roda com `sys.executable -X utf8` e cwd=python/. PYTHONUTF8=1 vai
+Cada script roda com `sys.executable -X utf8` e cwd na raiz (os scripts acham
+dados pelo próprio caminho; layout do EDR-043). PYTHONUTF8=1 vai
 no ambiente para que os subprocessos da mutação também usem UTF-8 (R4, sem
 editar o código). "Passou" = a última linha "N PASS, M FAIL, de T testes" com
 M = 0, N = T = esperado e código de saída 0. A planilha é gerada numa pasta
@@ -21,23 +22,22 @@ from importlib.metadata import version
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-PY = RAIZ / "python"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comparar_planilhas  # noqa: E402
 
 # Contagens esperadas e fonte (SPEC §6)
 TESTES = [
-    ("pneu", "test_tire_model_V2_4.py", 43, "registro-de-versoes-V2_4.md:16"),
-    ("oráculos", "test_tire_oracles_V2_4.py", 5, "registro-de-versoes-V2_4.md:16"),
-    ("suspensão", "test_suspension_model_V2_1.py", 42, "HANDOFF §6.2"),
-    ("cinemática", "test_kinematics_model_V2_1.py", 53, "HANDOFF §6.2"),
-    ("hardpoints", "test_hardpoints_V2_1.py", 35, "HANDOFF §6.2"),
+    ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
+    ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
+    ("suspensão", "tests/test_suspension_model.py", 42, "HANDOFF §6.2"),
+    ("cinemática", "tests/test_kinematics_model.py", 53, "HANDOFF §6.2"),
+    ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
 ]
-MUTACAO = ("mutation_tire_V2_4.py", 23)
+MUTACAO = ("tests/mutation_tire.py", 23)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 NAO_EXECUTAVEL = (
-    "test_workbook_V2_4.py",
+    "tests/test_workbook.py",
     "depende de LibreOffice e de `/mnt/skills/public/xlsx/scripts/recalc.py` "
     "(linhas 10 e 28, chamado com `python3`), que não existem nesta máquina (SPEC D2). "
     "Na fase A ele nunca conta como aprovado (R6). Resultado registrado no sandbox: 19/19 "
@@ -48,7 +48,7 @@ NAO_EXECUTAVEL = (
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
     env = dict(os.environ, PYTHONUTF8="1")
     return subprocess.run(
-        [sys.executable, "-X", "utf8", *args], cwd=PY, env=env, capture_output=True,
+        [sys.executable, "-X", "utf8", *args], cwd=RAIZ, env=env, capture_output=True,
         text=True, encoding="utf-8", errors="replace", timeout=timeout,
     )
 
@@ -89,7 +89,7 @@ def main() -> None:
         f"- Sistema: {platform.platform()}",
         f"- Python: {platform.python_version()} ({sys.executable})",
         f"- numpy {version('numpy')}, scipy {version('scipy')}, openpyxl {version('openpyxl')} (fixados no `uv.lock`)",
-        "- Execução: `sys.executable -X utf8 <script>`, cwd=`python/`, `PYTHONUTF8=1`",
+        "- Execução: `sys.executable -X utf8 <script>`, cwd=raiz do repositório, `PYTHONUTF8=1`",
         "",
         "## Testes (CA-05)", "",
         "| Conjunto | Script | Esperado | Obtido | Código | Status | Fonte do esperado |",
@@ -139,8 +139,8 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="dds_build_") as tmp:
         out = Path(tmp) / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"
         lay = Path(tmp) / "layout_V2_4.json"
-        r = rodar(["build_workbook_V2_4.py", str(out), "--layout", str(lay)])
-        md.append(f"- Build: `build_workbook_V2_4.py <tmp>/FSAE_EV_Suspension_Fase1_V2_4.xlsx --layout <tmp>/layout_V2_4.json`, código {r.returncode}")
+        r = rodar(["python/build_workbook.py", str(out), "--layout", str(lay)])
+        md.append(f"- Build: `python/build_workbook.py <tmp>/FSAE_EV_Suspension_Fase1_V2_4.xlsx --layout <tmp>/layout_V2_4.json`, código {r.returncode}")
         md += [""] + bloco("build: stdout", cauda(r.stdout)) + bloco("build: stderr (final)", cauda(r.stderr))
         if r.returncode == 0 and out.exists() and lay.exists():
             ok7, r7 = comparar_planilhas.comparar_xlsx(out)

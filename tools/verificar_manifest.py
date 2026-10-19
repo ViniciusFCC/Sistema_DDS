@@ -6,13 +6,16 @@ Uso:
 
 Formato do MANIFEST.sha256 (uma linha por arquivo, separador de dois espaços):
     <sha256>  <destino relativo à raiz>  <origem relativa à raiz>
-Verificação: o hash do destino e o da origem batem com o registrado. O .tir está
-no manifesto mesmo fora do Git; se ele faltar (clone novo), a linha é SKIP.
+Verificação: o hash da origem e o da cópia batem com o registrado. A cópia é
+conferida no blob do commit que adicionou o arquivo, porque depois dele os
+arquivos podem ter sido editados (EDR) ou renomeados (EDR-043). O .tir está no manifesto mesmo fora do Git; ele é procurado pelo nome em
+python/ e data/, e se faltar (clone novo), a linha é SKIP.
 Só lê importado-claude-ai/; nunca escreve nela.
 """
 import argparse
 import hashlib
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -60,6 +63,22 @@ def sha256_arquivo(caminho: Path) -> str:
     return h.hexdigest()
 
 
+def bytes_destino(destino: str) -> tuple[bytes | None, str]:
+    """Conteúdo da cópia: o blob do commit que adicionou o arquivo (edições posteriores,
+    como a do EDR, não contam) ou, para o que está fora do Git, o arquivo achado pelo nome."""
+    git = lambda *a: subprocess.run(["git", *a], cwd=RAIZ, capture_output=True)
+    commits = git("log", "--diff-filter=A", "--format=%H", "--", destino).stdout.decode().split()
+    if commits:
+        blob = git("show", f"{commits[-1]}:{destino}")
+        if blob.returncode == 0:
+            return blob.stdout, f"git {commits[-1][:7]}"
+    for pasta in ("python", "data"):
+        alt = RAIZ / pasta / Path(destino).name
+        if alt.exists():
+            return alt.read_bytes(), f"{pasta}/ (fora do Git)"
+    return None, "ausente"
+
+
 def pares() -> list[tuple[str, str]]:
     out = []
     for destino, arquivos in INVENTARIO.items():
@@ -92,7 +111,6 @@ def verificar() -> bool:
         h, destino, origem = linha.split("  ")
         registrados[destino] = origem
         o = RAIZ / origem
-        d = RAIZ / destino
         if not o.exists():
             print(f"FAIL: origem ausente: {origem}")
             ok = False
@@ -100,11 +118,12 @@ def verificar() -> bool:
         if sha256_arquivo(o) != h:
             print(f"FAIL: hash da origem difere: {origem}")
             ok = False
-        if not d.exists():
+        conteudo, onde = bytes_destino(destino)
+        if conteudo is None:
             print(f"SKIP: destino ausente (fora do Git?): {destino}")
             n_skip += 1
             continue
-        if sha256_arquivo(d) != h:
+        if hashlib.sha256(conteudo).hexdigest() != h:
             print(f"FAIL: hash do destino difere: {destino}")
             ok = False
         else:
