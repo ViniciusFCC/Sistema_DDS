@@ -4,8 +4,8 @@ Gerado por `tools/rodar_testes.py`. Não edite à mão: rode de novo.
 
 ## Ambiente (CA-10)
 
-- Data: 2026-10-19T01:27:22
-- Commit: `6561f49`
+- Data: 2026-10-19T01:49:21
+- Commit: `ddf1a03`
 - Sistema: Windows-11-10.0.26300-SP0
 - Python: 3.13.15 (C:\Users\vferr\Documents\Sistema_DDS\.venv\Scripts\python.exe)
 - numpy 2.5.4, scipy 1.18.1, openpyxl 3.1.5 (fixados no `uv.lock`)
@@ -86,7 +86,7 @@ DETECTADO      gamma SAE so s_g=+1
 <details><summary>build: stdout</summary>
 
 ```text
-salvo C:\Users\vferr\AppData\Local\Temp\dds_build_1140u6ub\FSAE_EV_Suspension_Fase1_V2_4.xlsx linhas 177 ref 1526.9250569300661 -1131.8643128749413 2.715269352685693
+salvo C:\Users\vferr\AppData\Local\Temp\dds_build_zg5_4_98\FSAE_EV_Suspension_Fase1_V2_4.xlsx linhas 177 ref 1526.9250569300661 -1131.8643128749413 2.715269352685693
 ```
 
 </details>
@@ -109,5 +109,5 @@ A versão escrita em `00_README!A3` precisa ser a mesma do nome do arquivo.
 ## Teste da planilha (CA-09)
 
 - `tests/test_workbook.py`: esperado 19 (registro-de-versoes-V2_4.md:17 (19/19 no sandbox)); obtido 19 PASS, 0 FAIL, de 19; código 0: **PASS**
-- MOTOR: excel (Excel 16.0 via COM)
+- MOTOR: excel (Excel 16.0 via COM, PID 45112)
 
