@@ -93,7 +93,7 @@ Milliken (framework) → **OptimumKinematics** (cinemática) → **OptimumTire**
 | Transferência lateral | Modelo de **duas molas de Milliken**: elástica (rigidez de rolagem), geométrica (RC) e não-suspensa | EDR-011 |
 | Aero | Downforce e balanço **fixos por setup**, sem mapa aerodinâmico | EDR-013 |
 | Unidades | **SI puro no núcleo de cálculo.** Conversão (mm, N/mm, °, km/h) só na apresentação, no Excel | arq. §4 |
-| Pneu (arquivo) | `.tir` TTC em **SAE_CALSPAN**, convertido para ISO na roda direita: α_arq = −α_ISO; Fy_ISO = −Fy_arq; γ_arq = −γ_proj; Fx e κ iguais. Rodas esquerdas espelhadas antes da transformação | EDR-039 (com condições) |
+| Pneu (arquivo) | `.tir` PAC2002 em **ISO_TYDEX** (eixo W do TYDEX, help do Adams p. 7): sem transformação na roda direita. Rodas esquerdas espelhadas antes. Até a V2.4: SAE_CALSPAN (α_arq = −α_ISO; Fy_ISO = −Fy_arq; γ_arq = −γ_proj) | EDR-039 (revisto em 2026-10-19) |
 
 ---
 
@@ -168,7 +168,7 @@ Cada ficha segue o template da arquitetura §14: ID, Parameter, Domain, Definiti
 - **10_TIRE (V2.2 a V2.4):**
   - Calcula Fx e Fy (puros e combinados) e o μ_eff por canto, a partir de um `.tir` PAC2002/MF 5.2 (nível 2, sem ajuste próprio).
   - Dá N/A fora da faixa do dataset ou com Fz ≤ 0, e um dataset inválido bloqueia tudo.
-  - O sistema de eixos do arquivo é declarado (`SAE_CALSPAN`).
+  - O sistema de eixos do arquivo é declarado (`SAE_CALSPAN` até a V2.4; `ISO_TYDEX` na V3.0, EDR-039 revisto).
 - **Placeholders (mapa `placeholder-dependency-map-V2.1.csv`):** 45 das 84 fórmulas dependem de dado que não é do veículo (T1: placeholder, estimativa ou alvo demonstrativo). Mais 23 dependem só de T2 (outro veículo, hipótese) e 16 só de T3 (fonte do TX registrada).
 - **Verificação:** Excel == Python com diferença relativa de ~4e-15 (testes de planilha). **O arquivo entregue não passa pelo recálculo do LibreOffice**, que remove as aspas de abas iniciadas por dígito. Por isso foi salvo com `fullCalcOnLoad`.
 
@@ -241,7 +241,7 @@ Totais na V2.4: **42** registros. APPROVED 19 · APPROVED_WITH_CONDITIONS 5 · A
 | EDR-032 | Geometry Brief como artefato separado (sem aba nova) | Aba nova na planilha | Marcado como IMPLEMENTED, mas **o arquivo não foi encontrado** (ver seção 11) |
 | EDR-037 | `10_TIRE` com nível 2 (Fx, Fy, μ_eff por canto; N/A fora da faixa) | Estrutura vazia; lookup nível 1 | IMPLEMENTED. Validation = NOT_VALIDATED |
 | EDR-038 | `.tir` TTC Hoosier R25B como dado **provisório** (T-REV-A) | Não incluir; incluir sem rótulo | Trocar o dataset exige nova T-REV, e os resultados antigos viram STALE |
-| EDR-039 | `.tir` em SAE_CALSPAN, transformado para ISO; espelhamento à esquerda | Só documentar; exigir documento antes | Com condições: **o sinal do camber é inferência** (maior risco aberto). Confirmar IA e SA no documento do TTC ou comparar a grade no OptimumTire 2/Adams antes de FROZEN |
+| EDR-039 | `.tir` em ISO_TYDEX (revisto em 2026-10-19 pelo help do Adams; até a V2.4, SAE_CALSPAN); espelhamento à esquerda | Só documentar; exigir documento antes | VERIFIED: o sistema de eixos vem da documentação do formato (Adams p. 7), não mais de inferência. Falta comparar a grade com o OptimumTire 2/Adams antes de FROZEN |
 | EDR-041 | α, γ, κ demonstrativos (destacados); N/A quando falta entrada | Tudo N/A | Com condições: os μ_eff do dashboard são demonstrativos |
 | EDR-042 | Equações do pneu verificadas contra dois oráculos de terceiros | Esperar o livro | VERIFIED. **Fonte primária (Pacejka; TNO/Adams) não consultada.** Divergências entre os oráculos (LFZO em Ky, LGAX/LGAY) só aparecem com L* ≠ 1; o módulo segue o Racer |
 
