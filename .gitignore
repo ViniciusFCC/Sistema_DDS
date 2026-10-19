@@ -19,3 +19,6 @@ __pycache__/
 .env
 CLAUDE.local.md
 .claude/settings.local.json
+
+# --- Saída do build_workbook_V2_4.py (padrão) ---
+build/
