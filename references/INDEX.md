@@ -30,3 +30,4 @@ conferidas na imagem da página (`docs/revisao-metodologica.md`).
 
 Texto dos dois helps extraído com `pypdf` (camada de texto do PDF), com `<!-- pdf:N -->` no início de cada página;
 figuras e equações conferidas na imagem da página.
+| Adams 2024.1 Online Help, *Using the PAC2002 Tire Model* (Hexagon) | `references/pdf/Adams_2024_1_PAC2002_help.pdf`; texto em `references/md/adams-pac2002-help/livro.md` | 112 p., impresso do help HTML em 2026-10-19. Eixos (p. 6-8), definições de escorregamento (p. 9), rigidez vertical (p. 10-14), Fx/Fy puros (p. 27-31), combinados (p. 43-45), lado esquerdo/direito (p. 73-74). Equações são imagens: conferir na página |
