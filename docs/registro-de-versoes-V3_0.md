@@ -94,6 +94,34 @@ outra fórmula existente mudou: a 1ª rodada de feedback acrescenta 6 fórmulas 
 6. Fase 2 do FB-03 (pior origem calculada ao vivo nos resultados principais do dashboard) não foi feita: cria fórmulas novas e precisa de aprovação.
 7. A 07_KINEMATICS continua inteira placeholder (aviso já existente em A3/A4 e em B69 "Hardpoints reais carregados: NÃO"); os hardpoints ficam em `data/`, fora da coluna de origem.
 
+## 2ª rodada de feedback (decisões do usuário em 2026-10-19)
+
+Pendências herdadas da 1ª rodada de feedback e ressalvas da revisão metodológica. O usuário escolheu a ordem de trabalho
+("siga a ordem mais lógica"); esta seção registra o que já foi decidido e implementado. O resto continua listado no fim.
+
+| Item | Pendência | Decisão (usuário, 2026-10-19) | Implementação e teste |
+|---|---|---|---|
+| 1 (FB-04) | "Mostrar o que está bom e o que está ruim" | Continua **PENDING_CONFIRMATION**. A equipe não tem o retorno do projeto passado (talvez o obtenha). Direção indicada pelo usuário: formatação condicional na cor da fonte dos resultados calculados, marcando os que estão perto da meta e os que contribuem para ela. Depende de metas com fonte na 03_TARGETS (hoje TBD); nenhum limite é inventado | não implementado |
+| 4 | 05 B16/B17: a hipótese "CG não suspenso ≈ raio do pneu" só aparecia na Fonte | "Vamos seguir a metodologia estabelecida" (EDR-050): a hipótese vira entrada. Aprovada a tabela: B35/B36 novas, B16, B17 e 07 B14 (usuário: "Aprovo os dois"). Achado na investigação: 07 B14 (centro da roda traseira, anti-squat) apontava para 05 B17 (CG não suspenso), duas grandezas na mesma célula; a 07 B14 passa a usar o raio direto | 05 B35/B36 (razão h_ns/raio = 1, ○ Estimativa; Milliken p. 672, conferida na imagem); B16 = B33·0,0254/2·B35; B17 = B34·0,0254/2·B36; 07 B14 = B34·0,0254/2. EDR-050 estendido; Standard SUS-010/011. TC-WB30-013 estendido (razão 0,8/0,9 move B16/B17 e não move 07 B14) e TC-WB30-005 com a razão perturbada |
+| 5 | EDR-035, N/A e TBD sem decisão | Aprovadas as definições (usuário: "Aprovo os dois"): N/A = não se aplica ou não dá para calcular na configuração atual; TBD = dado, meta, requisito ou decisão pendente (Lifecycle OPEN). Sem estado novo | item 7 do guia "Como preencher" (00_README A53); EDR-035; nota no Standard. Auditoria dos usos: todos coerentes, menos 01_SETUP B10 "N/A (Fase 2)", que pelo significado é TBD (como a Geometry REV em 07 B68). Troca **proposta, não aplicada** |
+
+**Efeito numérico:** nenhum. A razão é 1, então B16, B17 e 07 B14 mantêm 0,254 m; o número de fórmulas continua 362
+(três trocam de fórmula, B35/B36 são valores).
+
+**Resultados de código (2026-10-19, `tools/rodar_testes.py`):** suíte inteira PASS; V3.0 regenerada com 362 fórmulas e
+0 diferença; `test_workbook_suspensao` 13/13 e `test_workbook` 19/19 pelo Excel via COM. Não rodado pelo LibreOffice nesta rodada.
+
+**Documentos recebidos (2026-10-19), guardados em `references/` (fora do Git):** help do OptimumKinematics (101 p.; mesma
+contagem e estrutura do help oficial publicado, versão 2.0.2 de 2019-05-20; não comparado página a página); help do OptimumT
+1.0.14 (2011; é o publicado no site da OptimumG, mas o programa atual é o OptimumTire 2, sem documentação equivalente
+recebida); pacote do fórum do TTC, Round 6, Hoosier R25B 20.5x7-13 em aro de 7 in, quatro `.tir` PAC2002 (8, 10, 12 e 14 psi).
+O `.tir` de 12 psi tem todos os coeficientes iguais aos do `data/Hoosier_R25B_13x7_TTC_provisional.tir`: a origem do
+arquivo provisório fica confirmada em primeira mão. A equipe usa o R60A, não o R25B: o pneu do carro continua sem arquivo.
+
+**Limites da 2ª rodada (até aqui):**
+1. A razão h_ns / raio e a altura do centro da roda usam o raio sem carga (diâmetro / 2). O Milliken usa o raio carregado; a diferença é a deflexão estática do pneu (Fz / K_T), não modelada.
+2. O mapa de raízes (`data/placeholder-dependency-map-V2.1.csv`) ainda é o da V2.1 e não tem B35/B36 nem as fórmulas da V3.0; refazê-lo é o próximo passo (fase 2 do FB-03).
+
 ## Alterações célula a célula (gerado por `python/atualizar_planilha.py --registro`)
 
 | Aba | Célula | Antes | Depois | Fonte / EDR |
@@ -465,6 +493,29 @@ outra fórmula existente mudou: a 1ª rodada de feedback acrescenta 6 fórmulas 
 | 00_README | A50 | (vazia) | 4. Valor que sai de conta não é digitado (EDR-050): digite as parcelas, não o resultado. Exemplo: massa total = massa medida + piloto (05_VEHICLE B30 e B31). | FB-06/EDR-035/050/051 |
 | 00_README | A51 | (vazia) | 5. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima geração (EDR-051). Depois do fechamento, ela passa a ser o arquivo da equipe. | FB-06/EDR-035/050/051 |
 | 00_README | A52 | (vazia) | 6. Convenções de sinais e eixos: seção acima. Decisões e fichas: pasta docs/ do repositório (Engineering_Decision_Register.md e Engineering Standard). | FB-06/EDR-035/050/051 |
+| 05_VEHICLE | A35 | (vazia) | Razão h_ns / raio do pneu dianteiro | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | B35 | (vazia) | 1.0 | EDR-050 (2ª rodada de feedback, usuário 2026-10-19); Milliken p. 672 |
+| 05_VEHICLE | C35 | (vazia) | - | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | D35 | (vazia) | SUS-010 | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | A36 | (vazia) | Razão h_ns / raio do pneu traseiro | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | B36 | (vazia) | 1.0 | EDR-050 (2ª rodada de feedback, usuário 2026-10-19); Milliken p. 672 |
+| 05_VEHICLE | C36 | (vazia) | - | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | D36 | (vazia) | SUS-011 | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | B16 | `='05_VEHICLE'!$B$33*0.0254/2` | `='05_VEHICLE'!$B$33*0.0254/2*'05_VEHICLE'!$B$35` | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | B17 | `='05_VEHICLE'!$B$34*0.0254/2` | `='05_VEHICLE'!$B$34*0.0254/2*'05_VEHICLE'!$B$36` | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 07_KINEMATICS | B14 | `='05_VEHICLE'!$B$17` | `='05_VEHICLE'!$B$34*0.0254/2` | EDR-050 (2ª rodada de feedback, usuário 2026-10-19): centro da roda separado do CG não suspenso (EDR-048) |
+| 05_VEHICLE | E35 | (vazia) | ○ Estimativa | EDR-035 |
+| 05_VEHICLE | G35 | (vazia) | 1.0 | EDR-035: valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H35 | (vazia) | ○ Estimativa | EDR-035: origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | F35 | (vazia) | Estimativa: Milliken p. 672 (cap. 18, altura do CG suspenso) toma a altura do centro da roda como "boa primeira aproximação" da altura do CG não suspenso e usa o raio carregado (R_LF, R_LR); razão 1 = essa aproximação. Aqui o raio é o sem carga (diâmetro / 2), sem a deflexão estática do pneu. Trocar pela medição do conjunto não suspenso quando houver. | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | E36 | (vazia) | ○ Estimativa | EDR-035 |
+| 05_VEHICLE | G36 | (vazia) | 1.0 | EDR-035: valor da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | H36 | (vazia) | ○ Estimativa | EDR-035: origem da geração (oculto; aviso de desatualização) |
+| 05_VEHICLE | F36 | (vazia) | Estimativa: Milliken p. 672 (cap. 18, altura do CG suspenso) toma a altura do centro da roda como "boa primeira aproximação" da altura do CG não suspenso e usa o raio carregado (R_LF, R_LR); razão 1 = essa aproximação. Aqui o raio é o sem carga (diâmetro / 2), sem a deflexão estática do pneu. Trocar pela medição do conjunto não suspenso quando houver. | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | F16 | Calculada (EDR-050): diâmetro do pneu (B33) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura do CG não suspenso; não é medição da equipe. | Calculada (EDR-050): raio do pneu (B33 × 0,0254 / 2) × razão h_ns / raio (B35). Estimativa: a hipótese está na razão (B35), não é medição da equipe. | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 05_VEHICLE | F17 | Calculada (EDR-050): diâmetro do pneu (B34) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura do CG não suspenso; não é medição da equipe. | Calculada (EDR-050): raio do pneu (B34 × 0,0254 / 2) × razão h_ns / raio (B36). Estimativa: a hipótese está na razão (B36), não é medição da equipe. | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 07_KINEMATICS | F14 | Calculada: = SUS-011 (05_VEHICLE B17). Placeholder: substituir pela altura do centro da roda do CAD. | Calculada: raio sem carga do pneu traseiro (05_VEHICLE B34 × 0,0254 / 2), sem a deflexão estática. Placeholder: substituir pela altura do centro da roda do CAD. | EDR-050 (2ª rodada de feedback, usuário 2026-10-19) |
+| 00_README | A53 | (vazia) | 7. N/A = não se aplica, ou não dá para calcular na configuração atual (falta dado, valor fora da faixa do pneu, instabilidade): a célula nunca mostra número inventado. TBD = falta um dado, uma meta ou uma decisão (equivale a OPEN). "? A confirmar" (coluna Origem) é outra coisa: há valor, mas a origem dele não está registrada. | EDR-035 (N/A e TBD; usuário, 2026-10-19) |
 | 06_SUSPENSION | B4 (comentário) | Back-calculado da planilha detalhada T09 ('Ride Rate' front=16112.23 N/m, confirmado ser exatamente o Wheel Rate) x MR=1.76. CORRIGE valor anterior (baseado no spec sheet resumido, que arredondava F/R como iguais). | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' front=16112.23 N/m, confirmado ser exatamente o Wheel Rate) x MR=1.76. CORRIGE valor anterior (baseado no spec sheet resumido, que arredondava F/R como iguais). | EDR-012/022 |
 | 06_SUSPENSION | B5 (comentário) | Back-calculado da planilha detalhada T09 ('Ride Rate' rear=18418.2 N/m) x MR=1.76. | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' rear=18418.2 N/m) x MR=1.76. | EDR-012/022 |
 | 06_SUSPENSION | B6 (comentário) | Fonte: E03 (1.76:1). Assumido como convencao wheel/spring (igual a nossa) - E03 nao especifica a direcao explicitamente. | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: E03 (1.76:1). Assumido como convencao wheel/spring (igual a nossa) - E03 nao especifica a direcao explicitamente. | EDR-012/022 |
@@ -532,7 +583,7 @@ outra fórmula existente mudou: a 1ª rodada de feedback acrescenta 6 fórmulas 
 | 10_TIRE | B24 (comentário) | Camber de entrada manual (EDR-036 sem decisão: ainda não há ID para camber estático). Convenção do projeto: + = topo para fora, nos dois lados. | (removido; texto na coluna Fonte) | EDR-035 |
 | 10_TIRE | B86 (comentário) | Todos os coeficientes desta tabela: transcritos do .tir provisório (ver B-metadados). REFERENCE por natureza (DR-011), mas o DATASET é PROVISÓRIO. Mudou o dataset => mudar Tire REV (01_SETUP) e reexecutar 13_VALIDATION; resultados antigos viram STALE (Guia, H.3). | (removido; texto na coluna Fonte) | EDR-035 |
 | (pasta) | nome definido Origens | (vazia) | '00_README'!$A$43:$A$48 | EDR-035 |
-| 05_VEHICLE | E3:F34 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
+| 05_VEHICLE | E3:F36 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 06_SUSPENSION | E3:F52 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 07_KINEMATICS | E3:F69 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 08_VEHICLE_STATE | E3:F11 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
@@ -541,3 +592,6 @@ outra fórmula existente mudou: a 1ª rodada de feedback acrescenta 6 fórmulas 
 | 00_README | A3 | Versão do workbook: V3.0 ... | (acrescenta a 1ª rodada de feedback) | EDR-035/050/051 |
 | 00_README | A39:E52 (mesclagem) | (vazia) | A:E nas linhas de texto; B:D na tabela de origens | FB-06 |
 | 15_CHANGELOG | A17:C17 | (vazia) | (linha V3.0, 1ª rodada de feedback) | EDR-035/050/051 |
+| 00_README | A53:E53 (mesclagem) | (vazia) | A:E | EDR-035 |
+| 00_README | A3 | Versão do workbook: V3.0 ... | (acrescenta a 2ª rodada de feedback) | EDR-035/050 |
+| 15_CHANGELOG | A18:C18 | (vazia) | (linha V3.0, 2ª rodada de feedback) | EDR-035/050 |

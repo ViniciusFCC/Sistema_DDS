@@ -19,3 +19,14 @@ Conversão: docling com OCR (EasyOCR, GPU) e reconhecimento de fórmulas, uma ve
 livro. Cada página do `.md` começa com `<!-- pdf:N lado:E|D|- seq:K -->` (folha do PDF
 e metade esquerda/direita). O OCR serve para busca; equações citadas na revisão foram
 conferidas na imagem da página (`docs/revisao-metodologica.md`).
+
+## Documentos de software e dados de pneu (recebidos do usuário em 2026-10-19)
+
+| Arquivo | Onde está | Observação |
+|---|---|---|
+| OptimumKinematics, *Help File* (OptimumG) | `references/pdf/Kinematics_Help_File.pdf`; texto em `references/md/optimum-kinematics-help/livro.md` | 101 p., criado em 2019-06. Mesma contagem e estrutura do help oficial publicado (versão 2.0.2, 2019-05-20, `downloads.optimumg.com`); não comparado página a página. PDF com texto: página PDF = página impressa. É a REFERENCE de cinemática (EDR-004) |
+| OptimumT, *Help File*, versão 1.0.14 (OptimumG) | `references/pdf/Tire_Help_File.pdf`; texto em `references/md/optimum-tire-help/livro.md` | 148 p., 2011. É o help publicado no site da OptimumG, mas é do OptimumT 1.x; o programa atual é o OptimumTire 2. Sistemas de coordenadas na seção 8.2 (p. 134-136); modelos Pacejka na 8.7 (p. 141-142) |
+| TTC Round 6, Hoosier R25B 20.5x7-13 em aro de 7 in | `references/ttc/` (zip e `.tir` extraídos) | Quatro `.tir` PAC2002, USE_MODE 4, Stackpole para o TTC (2020): 8, 10, 12 e 14 psi. O de 12 psi tem os mesmos coeficientes de `data/Hoosier_R25B_13x7_TTC_provisional.tir`. Termos de uso do TTC não verificados: não versionar. A equipe usa o R60A, não o R25B |
+
+Texto dos dois helps extraído com `pypdf` (camada de texto do PDF), com `<!-- pdf:N -->` no início de cada página;
+figuras e equações conferidas na imagem da página.
