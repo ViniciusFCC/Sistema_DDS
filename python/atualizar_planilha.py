@@ -1,6 +1,6 @@
 """Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049), 1ª rodada de feedback
 (feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051)
-e 2ª rodada de feedback (hipótese do CG não suspenso como entrada, centro da roda separado, N/A e TBD no guia; EDR-050, EDR-035).
+e 2ª rodada da revisão metodológica (hipótese do CG não suspenso como entrada, centro da roda separado, N/A e TBD no guia; EDR-050, EDR-035).
 
 Uso:
     uv run python -X utf8 python/atualizar_planilha.py [ORIGEM_V2_4.xlsx] [SAIDA_V3_0.xlsx] [--registro ARQ.md]
@@ -360,7 +360,7 @@ def _rodada2() -> list[dict]:
 
 
 # =====================================================================================================================
-# 2ª rodada de feedback da V3.0 (decisões do usuário em 2026-10-19): EDR-050 estendido.
+# 2ª rodada da revisão metodológica da V3.0 (decisões do usuário em 2026-10-19): EDR-050 estendido.
 # =====================================================================================================================
 # A hipótese "CG não suspenso na altura do centro da roda" vira entrada (razão h_ns / raio), e a altura do centro da roda
 # traseira (07 B14, ponto de reação do anti-squat) deixa de passar pelo CG não suspenso: são grandezas diferentes que a V3.0
@@ -386,7 +386,7 @@ def _todas_origens() -> list[tuple]:
 
 def _feedback2() -> list[dict]:
     a = []
-    ref = "EDR-050 (2ª rodada de feedback, usuário 2026-10-19)"
+    ref = "EDR-050 (2ª rodada da revisão metodológica, usuário 2026-10-19)"
     for r, rot, sid in ((35, "Razão h_ns / raio do pneu dianteiro", "SUS-010"), (36, "Razão h_ns / raio do pneu traseiro", "SUS-011")):
         a += [_a("05_VEHICLE", f"A{r}", rot, ref, ("05_VEHICLE", 14, "A")),
               _a("05_VEHICLE", f"B{r}", 1.0, ref + "; Milliken p. 672", ("05_VEHICLE", 14, "B")),
@@ -466,18 +466,18 @@ def _feedback2_pior_origem(wb, registro: list[dict]) -> None:
 
 
 def _feedback2_formatacao(wb, registro: list[dict]) -> None:
-    """Parte da 2ª rodada de feedback que não é valor de célula: mesclagem do item 7 do guia, versão e changelog."""
+    """Parte da 2ª rodada da revisão metodológica que não é valor de célula: mesclagem do item 7 do guia, versão e changelog."""
     m = wb["00_README"]
     m.merge_cells(f"A{LINHA_NA_TBD}:E{LINHA_NA_TBD}")
     marca = "EDR-035, EDR-050, EDR-051)"
     assert marca in m["A3"].value, "texto da versão em 00_README!A3 mudou"
-    m["A3"].value = m["A3"].value.replace(marca, marca[:-1] + "; 2ª rodada de feedback: hipótese do CG não suspenso como "
+    m["A3"].value = m["A3"].value.replace(marca, marca[:-1] + "; 2ª rodada da revisão metodológica: hipótese do CG não suspenso como "
                                           "entrada, centro da roda separado, significado de N/A e TBD)")
     c = wb["15_CHANGELOG"]
     for col in "ABCDE":
         c[f"{col}18"]._style = copy.copy(c[f"{col}15"]._style)
     c["A18"].value = "2026-10"
-    c["B18"].value = ("V3.0, 2a rodada de feedback: razao h_ns / raio do pneu como entrada (05_VEHICLE B35/B36, Milliken p. 672); "
+    c["B18"].value = ("V3.0, 2a rodada da revisao metodologica: razao h_ns / raio do pneu como entrada (05_VEHICLE B35/B36, Milliken p. 672); "
                       "05 B16/B17 = raio x razao; 07_KINEMATICS B14 (centro da roda traseira) = raio do pneu, sem passar pelo CG nao "
                       "suspenso; item 7 do guia (N/A e TBD); 14_DASHBOARD coluna E: pior origem das entradas de cada resultado, "
                       "ao vivo (FB-03 fase 2).")
@@ -485,9 +485,9 @@ def _feedback2_formatacao(wb, registro: list[dict]) -> None:
                       "docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-013 estendido). NOT_VALIDATED fisicamente.")
     registro += [
         {"aba": "00_README", "cel": f"A{LINHA_NA_TBD}:E{LINHA_NA_TBD} (mesclagem)", "antes": None, "novo": "A:E", "ref": "EDR-035"},
-        {"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V3.0 ...", "novo": "(acrescenta a 2ª rodada de feedback)",
+        {"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V3.0 ...", "novo": "(acrescenta a 2ª rodada da revisão metodológica)",
          "ref": "EDR-035/050"},
-        {"aba": "15_CHANGELOG", "cel": "A18:C18", "antes": None, "novo": "(linha V3.0, 2ª rodada de feedback)", "ref": "EDR-035/050"},
+        {"aba": "15_CHANGELOG", "cel": "A18:C18", "antes": None, "novo": "(linha V3.0, 2ª rodada da revisão metodológica)", "ref": "EDR-035/050"},
     ]
 
 

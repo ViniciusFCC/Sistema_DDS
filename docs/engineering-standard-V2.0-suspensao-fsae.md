@@ -2,7 +2,7 @@
 
 **Atualização V3.0 (2026-10-19):** revisão metodológica contra Milliken, Gillespie, Seward e Pacejka (`docs/revisao-metodologica.md`; EDR-045 a EDR-049). Fichas alteradas: SUS-009, 103, 205, 206, 207, 208, 301, 302, 406 e 501; novas: SUS-211 e SUS-212. Onde uma ficha abaixo diz o contrário, vale a forma V3.0.
 
-**Atualização V3.0, 2ª rodada de feedback (2026-10-19):** SUS-010 e SUS-011 ganham a forma da planilha (razão h_u / raio como entrada, EDR-050). Textos de célula N/A e TBD (EDR-035, aprovados): **N/A** = não se aplica, ou não dá para calcular na configuração atual (sem número inventado); **TBD** = dado, meta, requisito ou decisão pendente (Lifecycle OPEN). Não são estados novos.
+**Atualização V3.0, 2ª rodada da revisão metodológica (2026-10-19):** SUS-010 e SUS-011 ganham a forma da planilha (razão h_u / raio como entrada, EDR-050). Textos de célula N/A e TBD (EDR-035, aprovados): **N/A** = não se aplica, ou não dá para calcular na configuração atual (sem número inventado); **TBD** = dado, meta, requisito ou decisão pendente (Lifecycle OPEN). Não são estados novos.
 
 **Versão:** V2.0 (2026-10-09). Base: `engineering-standard-V1.0`. Alterações desta versão: Bloco E.2 (SUS-407 a SUS-413, solver cinemático 3D), notas de achados em SUS-406/SUS-301/SUS-302, log de validação V2.0. Ver `registro-de-versoes-V2.0.md`.
 **Numeração de Test Cases (decisão do usuário, 2026-10-09):** canônica = a da arquitetura (seção 17.7), deste Standard e do Python (`TC-001` a `TC-012`); os casos de kinematics usam o namespace próprio `TC-KIN-xxx`. A numeração do Guide (Apêndice D) diverge e deve ser alinhada a esta.
@@ -373,7 +373,7 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 | Domain | Vehicle (Bloco A) |
 | Definition | Altura do CG da massa não-suspensa dianteira (`h_uF`) acima do solo. Aproximação usual: próxima da altura do centro da roda, ajustada pela massa de manga de eixo/freio/parcela de braços. |
 | Equation | `h_uF` = estimado por componente ou aproximado pela altura do centro da roda dianteira |
-| Planilha V3.0 (2ª rodada de feedback, EDR-050) | `= B33·0,0254/2 · B35` (05_VEHICLE): raio sem carga do pneu × razão h_u / raio (B35, entrada, ○ Estimativa, 1,0). Milliken p. 672: a altura do centro da roda é "boa primeira aproximação" (o livro usa o raio carregado). A altura do centro da roda em si não sai desta ficha (07_KINEMATICS B14 usa o raio direto). |
+| Planilha V3.0 (2ª rodada da revisão metodológica, EDR-050) | `= B33·0,0254/2 · B35` (05_VEHICLE): raio sem carga do pneu × razão h_u / raio (B35, entrada, ○ Estimativa, 1,0). Milliken p. 672: a altura do centro da roda é "boa primeira aproximação" (o livro usa o raio carregado). A altura do centro da roda em si não sai desta ficha (07_KINEMATICS B14 usa o raio direto). |
 | Units | m internamente; mm na interface |
 | Sign Convention | Medido a partir do solo (`SUS-000`), não da origem do CAD |
 | Assumptions | Mesma convenção de partição de braços de suspensão definida em `SUS-007` |
@@ -391,7 +391,7 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 | Domain | Vehicle (Bloco A) |
 | Definition | Altura do CG da massa não-suspensa traseira (`h_uR`) acima do solo. Aproximação usual: próxima da altura do centro da roda, ajustada pela massa de manga de eixo/freio/parcela de braços (e, se aplicável, componentes de trem de força próximos ao cubo). |
 | Equation | `h_uR` = estimado por componente ou aproximado pela altura do centro da roda traseira |
-| Planilha V3.0 (2ª rodada de feedback, EDR-050) | `= B34·0,0254/2 · B36` (05_VEHICLE): raio sem carga do pneu × razão h_u / raio (B36, entrada, ○ Estimativa, 1,0). Milliken p. 672: a altura do centro da roda é "boa primeira aproximação" (o livro usa o raio carregado). A altura do centro da roda em si não sai desta ficha (07_KINEMATICS B14 usa o raio direto). |
+| Planilha V3.0 (2ª rodada da revisão metodológica, EDR-050) | `= B34·0,0254/2 · B36` (05_VEHICLE): raio sem carga do pneu × razão h_u / raio (B36, entrada, ○ Estimativa, 1,0). Milliken p. 672: a altura do centro da roda é "boa primeira aproximação" (o livro usa o raio carregado). A altura do centro da roda em si não sai desta ficha (07_KINEMATICS B14 usa o raio direto). |
 | Variables | `h_uR` [m] |
 | Units | m internamente; mm na interface |
 | Sign Convention | Medido a partir do solo (`SUS-000`), não da origem do CAD |
