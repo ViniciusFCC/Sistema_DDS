@@ -1,5 +1,6 @@
-"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049) e 1ª rodada de feedback
-(feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051).
+"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049), 1ª rodada de feedback
+(feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051)
+e 2ª rodada de feedback (hipótese do CG não suspenso como entrada, centro da roda separado, N/A e TBD no guia; EDR-050, EDR-035).
 
 Uso:
     uv run python -X utf8 python/atualizar_planilha.py [ORIGEM_V2_4.xlsx] [SAIDA_V3_0.xlsx] [--registro ARQ.md]
@@ -156,7 +157,7 @@ def alteracoes(ky_row: int) -> list[dict]:
     a.append(_a("10_TIRE", f"A{ky_row}", "Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)", "EDR-049"))
     for c in "BCDEF":
         a.append(_a("10_TIRE", f"{c}{ky_row}", None, "EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9"))
-    return a + _rodada2()
+    return a + _rodada2() + _feedback2()
 
 
 # =====================================================================================================================
@@ -357,6 +358,88 @@ def _rodada2() -> list[dict]:
     return a
 
 
+# =====================================================================================================================
+# 2ª rodada de feedback da V3.0 (decisões do usuário em 2026-10-19): EDR-050 estendido.
+# =====================================================================================================================
+# A hipótese "CG não suspenso na altura do centro da roda" vira entrada (razão h_ns / raio), e a altura do centro da roda
+# traseira (07 B14, ponto de reação do anti-squat) deixa de passar pelo CG não suspenso: são grandezas diferentes que a V3.0
+# fazia coincidir na mesma célula (05 B17).
+_RAZAO_HNS = ("Estimativa: Milliken p. 672 (cap. 18, altura do CG suspenso) toma a altura do centro da roda como \"boa primeira "
+              "aproximação\" da altura do CG não suspenso e usa o raio carregado (R_LF, R_LR); razão 1 = essa aproximação. Aqui o "
+              "raio é o sem carga (diâmetro / 2), sem a deflexão estática do pneu. Trocar pela medição do conjunto não suspenso quando houver.")
+ORIGENS_FB2 = [   # mesmo formato de ORIGENS; processadas junto com elas na formatação (lista, cores, avisos)
+    ("05_VEHICLE", 35, EST, _RAZAO_HNS),
+    ("05_VEHICLE", 36, EST, _RAZAO_HNS),
+    ("05_VEHICLE", 16, None, "Calculada (EDR-050): raio do pneu (B33 × 0,0254 / 2) × razão h_ns / raio (B35). Estimativa: a hipótese "
+                             "está na razão (B35), não é medição da equipe."),
+    ("05_VEHICLE", 17, None, "Calculada (EDR-050): raio do pneu (B34 × 0,0254 / 2) × razão h_ns / raio (B36). Estimativa: a hipótese "
+                             "está na razão (B36), não é medição da equipe."),
+    ("07_KINEMATICS", 14, None, "Calculada: raio sem carga do pneu traseiro (05_VEHICLE B34 × 0,0254 / 2), sem a deflexão estática. "
+                                "Placeholder: substituir pela altura do centro da roda do CAD."),
+]
+
+
+def _todas_origens() -> list[tuple]:
+    return ORIGENS + ORIGENS_FB2
+
+
+def _feedback2() -> list[dict]:
+    a = []
+    ref = "EDR-050 (2ª rodada de feedback, usuário 2026-10-19)"
+    for r, rot, sid in ((35, "Razão h_ns / raio do pneu dianteiro", "SUS-010"), (36, "Razão h_ns / raio do pneu traseiro", "SUS-011")):
+        a += [_a("05_VEHICLE", f"A{r}", rot, ref, ("05_VEHICLE", 14, "A")),
+              _a("05_VEHICLE", f"B{r}", 1.0, ref + "; Milliken p. 672", ("05_VEHICLE", 14, "B")),
+              _a("05_VEHICLE", f"C{r}", "-", ref, ("05_VEHICLE", 14, "C")),
+              _a("05_VEHICLE", f"D{r}", sid, ref, ("05_VEHICLE", 14, "D"))]
+    calc = ("05_VEHICLE", 23, "B")
+    a += [_a("05_VEHICLE", "B16", f"={V}$B$33*0.0254/2*{V}$B$35", ref, calc),
+          _a("05_VEHICLE", "B17", f"={V}$B$34*0.0254/2*{V}$B$36", ref, calc),
+          _a("07_KINEMATICS", "B14", f"={V}$B$34*0.0254/2", ref + ": centro da roda separado do CG não suspenso (EDR-048)",
+             ("07_KINEMATICS", 12, "B"))]
+    for aba, r, org, fonte in ORIGENS_FB2:
+        st = (aba, r, "C")
+        if org is not None:
+            a += [_a(aba, f"E{r}", org, "EDR-035", st),
+                  _a(aba, f"G{r}", ("COPIA", f"B{r}"), "EDR-035: valor da geração (oculto; aviso de desatualização)", st),
+                  _a(aba, f"H{r}", org, "EDR-035: origem da geração (oculto; aviso de desatualização)", st)]
+        a.append(_a(aba, f"F{r}", fonte, ref, st))
+    # Item 7 do guia: significado de N/A e TBD (EDR-035, parte de N/A e TBD aprovada pelo usuário em 2026-10-19).
+    a.append(_a("00_README", f"A{LINHA_NA_TBD}",
+                "7. N/A = não se aplica, ou não dá para calcular na configuração atual (falta dado, valor fora da faixa do pneu, "
+                "instabilidade): a célula nunca mostra número inventado. TBD = falta um dado, uma meta ou uma decisão (equivale a "
+                "OPEN). \"? A confirmar\" (coluna Origem) é outra coisa: há valor, mas a origem dele não está registrada.",
+                "EDR-035 (N/A e TBD; usuário, 2026-10-19)", ("00_README", 23, "A")))
+    return a
+
+
+LINHA_NA_TBD = LINHAS_ORIGENS.stop + 4   # 00_README: logo depois do item 6 do guia
+
+
+def _feedback2_formatacao(wb, registro: list[dict]) -> None:
+    """Parte da 2ª rodada de feedback que não é valor de célula: mesclagem do item 7 do guia, versão e changelog."""
+    m = wb["00_README"]
+    m.merge_cells(f"A{LINHA_NA_TBD}:E{LINHA_NA_TBD}")
+    marca = "EDR-035, EDR-050, EDR-051)"
+    assert marca in m["A3"].value, "texto da versão em 00_README!A3 mudou"
+    m["A3"].value = m["A3"].value.replace(marca, marca[:-1] + "; 2ª rodada de feedback: hipótese do CG não suspenso como "
+                                          "entrada, centro da roda separado, significado de N/A e TBD)")
+    c = wb["15_CHANGELOG"]
+    for col in "ABCDE":
+        c[f"{col}18"]._style = copy.copy(c[f"{col}15"]._style)
+    c["A18"].value = "2026-10"
+    c["B18"].value = ("V3.0, 2a rodada de feedback: razao h_ns / raio do pneu como entrada (05_VEHICLE B35/B36, Milliken p. 672); "
+                      "05 B16/B17 = raio x razao; 07_KINEMATICS B14 (centro da roda traseira) = raio do pneu, sem passar pelo CG nao "
+                      "suspenso; item 7 do guia (N/A e TBD).")
+    c["C18"].value = ("Decisoes do usuario (2026-10-19). EDR-050 (estendido), EDR-035 (N/A e TBD). Registro celula a celula: "
+                      "docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-013 estendido). NOT_VALIDATED fisicamente.")
+    registro += [
+        {"aba": "00_README", "cel": f"A{LINHA_NA_TBD}:E{LINHA_NA_TBD} (mesclagem)", "antes": None, "novo": "A:E", "ref": "EDR-035"},
+        {"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V3.0 ...", "novo": "(acrescenta a 2ª rodada de feedback)",
+         "ref": "EDR-035/050"},
+        {"aba": "15_CHANGELOG", "cel": "A18:C18", "antes": None, "novo": "(linha V3.0, 2ª rodada de feedback)", "ref": "EDR-035/050"},
+    ]
+
+
 def _ky_formula(antiga: str, lfzo: str, lky: str) -> str:
     """Remove o segundo λFz0 ('*LFZO*LKY' -> '*LKY') sem tocar no resto da fórmula."""
     alvo = f"*{lfzo}*{lky})"
@@ -426,6 +509,7 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
     registro.append({"aba": "15_CHANGELOG", "cel": "A16:C16", "antes": None, "novo": "(linha V3.0)", "ref": "EDR-043"})
 
     _rodada2_formatacao(wb, registro)
+    _feedback2_formatacao(wb, registro)
     wb.calculation.fullCalcOnLoad = True
     out.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out)
@@ -454,7 +538,7 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
                     c.fill = PatternFill(fill_type=None)
                     reg(ws.title, f"{c.coordinate} (estilo)", "fundo amarelo (hipótese-chave)", "sem fundo", "FB-02 (usuário, 2026-10-19)")
     # FB-03: o texto dos comentários das entradas passou para a coluna Fonte; o comentário sai para não haver duas cópias.
-    migrados = [(aba, f"B{r}") for aba, r, _, _ in ORIGENS] + [("10_TIRE", "B23"), ("10_TIRE", "B24"), ("10_TIRE", "B86")]
+    migrados = [(aba, f"B{r}") for aba, r, _, _ in _todas_origens()] + [("10_TIRE", "B23"), ("10_TIRE", "B24"), ("10_TIRE", "B86")]
     for aba, cel in migrados:
         c = wb[aba][cel]
         if c.comment is not None:
@@ -481,8 +565,8 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
 
     for aba in ABAS_ORIGEM:
         ws = wb[aba]
-        linhas = [r for a_, r, org, _ in ORIGENS if a_ == aba and org is not None]
-        todas = [r for a_, r, _, _ in ORIGENS if a_ == aba]
+        linhas = [r for a_, r, org, _ in _todas_origens() if a_ == aba and org is not None]
+        todas = [r for a_, r, _, _ in _todas_origens() if a_ == aba]
         r0, r1 = 3, max(ws.max_row, max(todas))
         ws.column_dimensions["E"].width, ws.column_dimensions["F"].width = 30, 80
         ws.column_dimensions["G"].hidden = ws.column_dimensions["H"].hidden = True
