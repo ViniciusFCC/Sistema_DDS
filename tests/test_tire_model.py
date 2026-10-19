@@ -4,10 +4,10 @@ Dataset: .tir TTC PROVISÓRIO (não necessariamente o pneu real). Verificação 
 NÃO há comparação com implementação independente nem com OptimumTire (não disponíveis) -> Validation = NOT_VALIDATED.
 """
 import math, os, tempfile, shutil
-import tire_model_V2_4 as t
+import tire_model as t
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TIR = os.path.join(HERE, "Hoosier_R25B_13x7_TTC_provisional.tir")
+TIR = os.path.join(HERE, "..", "data", "Hoosier_R25B_13x7_TTC_provisional.tir")
 LD = lambda path, ax="SAE_CALSPAN": t.load_dataset(path, source_axis_system=ax)
 results = []
 

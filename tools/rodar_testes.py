@@ -1,9 +1,13 @@
-"""CA-05, CA-06, CA-07, CA-08, CA-09 e CA-10: roda os scripts de python/ e grava o log.
+"""CA-05, CA-06, CA-07, CA-08, CA-09 e CA-10: roda os testes e o build e grava o log.
 
 Uso:
     uv run python -X utf8 tools/rodar_testes.py [--saida LOG.md] [--titulo TEXTO]
 
-Cada script roda com `sys.executable -X utf8` e cwd=python/. PYTHONUTF8=1 vai
+Sem --saida, o log vai para build/verificacao-ultima.md (fora do Git). Os logs de
+evidência em docs/migracao/ só são gravados quando pedidos com --saida.
+
+Cada script roda com `sys.executable -X utf8` e cwd na raiz (os scripts acham
+dados pelo próprio caminho; layout do EDR-043). PYTHONUTF8=1 vai
 no ambiente para que os subprocessos da mutação também usem UTF-8 (R4, sem
 editar o código). "Passou" = a última linha "N PASS, M FAIL, de T testes" com
 M = 0, N = T = esperado e código de saída 0. A planilha é gerada numa pasta
@@ -21,36 +25,53 @@ from importlib.metadata import version
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-PY = RAIZ / "python"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comparar_planilhas  # noqa: E402
 
 # Contagens esperadas e fonte (SPEC §6)
 TESTES = [
-    ("pneu", "test_tire_model_V2_4.py", 43, "registro-de-versoes-V2_4.md:16"),
-    ("oráculos", "test_tire_oracles_V2_4.py", 5, "registro-de-versoes-V2_4.md:16"),
-    ("suspensão", "test_suspension_model_V2_1.py", 42, "HANDOFF §6.2"),
-    ("cinemática", "test_kinematics_model_V2_1.py", 53, "HANDOFF §6.2"),
-    ("hardpoints", "test_hardpoints_V2_1.py", 35, "HANDOFF §6.2"),
+    ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
+    ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
+    ("suspensão", "tests/test_suspension_model.py", 42, "HANDOFF §6.2"),
+    ("cinemática", "tests/test_kinematics_model.py", 53, "HANDOFF §6.2"),
+    ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
 ]
-MUTACAO = ("mutation_tire_V2_4.py", 23)
+MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints"]
+MUTACAO = ("tests/mutation_tire.py", 23)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 NAO_EXECUTAVEL = (
-    "test_workbook_V2_4.py",
+    "tests/test_workbook.py",
     "depende de LibreOffice e de `/mnt/skills/public/xlsx/scripts/recalc.py` "
     "(linhas 10 e 28, chamado com `python3`), que não existem nesta máquina (SPEC D2). "
-    "Na fase A ele nunca conta como aprovado (R6). Resultado registrado no sandbox: 19/19 "
+    "Ele nunca conta como aprovado (R6). Resultado registrado no sandbox: 19/19 "
     "(registro-de-versoes-V2_4.md:17), não reproduzido aqui.",
 )
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
     env = dict(os.environ, PYTHONUTF8="1")
-    return subprocess.run(
-        [sys.executable, "-X", "utf8", *args], cwd=PY, env=env, capture_output=True,
-        text=True, encoding="utf-8", errors="replace", timeout=timeout,
-    )
+    cmd = [sys.executable, "-X", "utf8", *args]
+    try:
+        return subprocess.run(
+            cmd, cwd=RAIZ, env=env, capture_output=True,
+            text=True, encoding="utf-8", errors="replace", timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as e:
+        saida = e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+        return subprocess.CompletedProcess(cmd, 124, saida, f"TIMEOUT depois de {timeout} s")
+
+
+def origens_modulos() -> tuple[bool, list[str]]:
+    """De onde os testes importam os módulos (CA-10). Os testes os acham pelo projeto
+    instalado pelo uv (EDR-043); se o .pth apontar para outra cópia do repositório,
+    eles rodariam outro código. Exige que todos venham de RAIZ/python."""
+    codigo = f"import {', '.join(MODULOS)}\n" + "".join(f"print({m}.__file__)\n" for m in MODULOS)
+    r = rodar(["-c", codigo])
+    origens = r.stdout.splitlines()
+    dentro = [Path(o).resolve().is_relative_to(RAIZ / "python") for o in origens]
+    ok = r.returncode == 0 and len(origens) == len(MODULOS) and all(dentro)
+    return ok, origens or [f"falhou: {cauda(r.stderr, 3)}"]
 
 
 def cauda(texto: str, n: int = 15) -> str:
@@ -66,12 +87,12 @@ def bloco(titulo: str, texto: str) -> list[str]:
 
 def git(*args: str) -> str:
     r = subprocess.run(["git", *args], cwd=RAIZ, capture_output=True, text=True)
-    return r.stdout.strip() or r.stderr.strip()
+    return r.stdout.strip() if r.returncode == 0 else f"indisponível ({r.stderr.strip()})"
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--saida", type=Path, default=RAIZ / "docs" / "migracao" / "verificacao-V2.4-local.md")
+    ap.add_argument("--saida", type=Path, default=RAIZ / "build" / "verificacao-ultima.md")
     ap.add_argument("--titulo", default="Verificação da V2.4 nesta máquina")
     a = ap.parse_args()
 
@@ -80,6 +101,8 @@ def main() -> None:
 
     commit = git("rev-parse", "--short", "HEAD")
     sujo = git("status", "--porcelain", "--untracked-files=no")
+    ok_mod, origens = origens_modulos()
+    resumo.append(("CA-10", "módulos importados de python/", "PASS" if ok_mod else "FAIL"))
     md += [
         f"# {a.titulo}", "",
         "Gerado por `tools/rodar_testes.py`. Não edite à mão: rode de novo.", "",
@@ -89,7 +112,8 @@ def main() -> None:
         f"- Sistema: {platform.platform()}",
         f"- Python: {platform.python_version()} ({sys.executable})",
         f"- numpy {version('numpy')}, scipy {version('scipy')}, openpyxl {version('openpyxl')} (fixados no `uv.lock`)",
-        "- Execução: `sys.executable -X utf8 <script>`, cwd=`python/`, `PYTHONUTF8=1`",
+        "- Execução: `sys.executable -X utf8 <script>`, cwd=raiz do repositório, `PYTHONUTF8=1`",
+        f"- Módulos importados de ({'PASS' if ok_mod else 'FAIL'}): " + ", ".join(f"`{o}`" for o in origens),
         "",
         "## Testes (CA-05)", "",
         "| Conjunto | Script | Esperado | Obtido | Código | Status | Fonte do esperado |",
@@ -109,7 +133,9 @@ def main() -> None:
         resumo.append(("CA-05", nome, status))
         md.append(f"| {nome} | `{script}` | {esperado} | {obtido} | {r.returncode} | **{status}** | {fonte} |")
         falhas = "\n".join(l for l in r.stdout.splitlines() if l.startswith("[FAIL]"))
+        pulados = "\n".join(l for l in r.stdout.splitlines() if l.startswith("[SKIP]"))
         detalhes += bloco(f"{script}: testes FAIL", falhas)
+        detalhes += bloco(f"{script}: testes SKIP (não contados)", pulados)
         detalhes += bloco(f"{script}: stderr (final)", cauda(r.stderr))
     md += [""] + detalhes
 
@@ -139,8 +165,8 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="dds_build_") as tmp:
         out = Path(tmp) / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"
         lay = Path(tmp) / "layout_V2_4.json"
-        r = rodar(["build_workbook_V2_4.py", str(out), "--layout", str(lay)])
-        md.append(f"- Build: `build_workbook_V2_4.py <tmp>/FSAE_EV_Suspension_Fase1_V2_4.xlsx --layout <tmp>/layout_V2_4.json`, código {r.returncode}")
+        r = rodar(["python/build_workbook.py", str(out), "--layout", str(lay)])
+        md.append(f"- Build: `python/build_workbook.py <tmp>/FSAE_EV_Suspension_Fase1_V2_4.xlsx --layout <tmp>/layout_V2_4.json`, código {r.returncode}")
         md += [""] + bloco("build: stdout", cauda(r.stdout)) + bloco("build: stderr (final)", cauda(r.stderr))
         if r.returncode == 0 and out.exists() and lay.exists():
             ok7, r7 = comparar_planilhas.comparar_xlsx(out)

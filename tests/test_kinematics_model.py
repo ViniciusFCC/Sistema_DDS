@@ -8,7 +8,7 @@ import os, csv, tempfile
 import numpy as np
 from scipy.optimize import brentq, least_squares
 
-from kinematics_model_V2_0 import (
+from kinematics_model import (
     Hardpoint, instant_center_front_view, roll_center_height, roll_center_model_check,
     side_view_inner_midpoint, instant_center_side_view, tan_phi_from_ic, anti_dive_squat_model_check,
     line_intersection,
@@ -16,7 +16,7 @@ from kinematics_model_V2_0 import (
     roll_center_height_kinematic, axle_roll_center, force_line_slope, anti_dive_percent_signed,
     anti_squat_percent_signed, ic_methods_at_reference, full_sweep, write_sweep_csv, _rot_vec,
 )
-from hardpoints_V2_0 import load_hardpoints, build_hardpoint_set, HardpointSet
+from hardpoints import load_hardpoints, build_hardpoint_set, HardpointSet
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 results = []
@@ -109,8 +109,8 @@ def parallelogram():
                   WHEEL_CENTER=(0.0, 0.65, 0.24), SPINDLE_PT=(0.0, 0.75, 0.24), CONTACT_PATCH=(0.0, 0.65, 0.0))
 
 
-synth_hs = load_hardpoints(os.path.join(HERE, "hardpoints_synthetic_V2.0.csv"),
-                           os.path.join(HERE, "hardpoints_synthetic_V2.0.meta.json"))
+synth_hs = load_hardpoints(os.path.join(HERE, "..", "data", "hardpoints_synthetic_V2.0.csv"),
+                           os.path.join(HERE, "..", "data", "hardpoints_synthetic_V2.0.meta.json"))
 FL = Corner(synth_hs, "FL")
 FR = Corner(synth_hs, "FR")
 TR = [-0.040, -0.030, -0.020, -0.010, 0.0, 0.010, 0.020, 0.030, 0.040]

@@ -5,7 +5,7 @@ Cada cenário altera uma CÓPIA, recalcula e lê; o arquivo entregue nunca é sa
 """
 import sys, os, shutil, subprocess, tempfile, json, math, random
 import openpyxl
-import tire_model_V2_4 as t
+import tire_model as t
 
 RECALC_DIR = "/mnt/skills/public/xlsx"
 V22, V21, LAY, TIR = sys.argv[1:5]

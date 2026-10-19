@@ -6,7 +6,7 @@ Uso:
 CA-07: mesmas abas, na mesma ordem; em cada célula, o texto da fórmula é
 idêntico, e nas células sem fórmula o valor é igual. A V2.4 entregue deve ter
 347 fórmulas. Todas as diferenças são listadas (o esperado é nenhuma).
-CA-08: o JSON regenerado é igual ao entregue (python/layout_V2_4.json).
+CA-08: o JSON regenerado é igual ao entregue (data/layout_V2_4.json).
 Só lê os arquivos; nunca salva nenhuma planilha.
 """
 import json
@@ -18,7 +18,7 @@ from openpyxl.worksheet.formula import ArrayFormula
 
 RAIZ = Path(__file__).resolve().parent.parent
 ENTREGUE_XLSX = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"
-ENTREGUE_JSON = RAIZ / "python" / "layout_V2_4.json"
+ENTREGUE_JSON = RAIZ / "data" / "layout_V2_4.json"
 FORMULAS_ESPERADAS = 347  # SPEC CA-07
 
 
