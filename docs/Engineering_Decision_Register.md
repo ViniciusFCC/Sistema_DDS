@@ -61,7 +61,7 @@ Total: 51 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DEC
 | EDR-024 | D2 — Schema de hardpoints V2.0 | AWAITING_DECISION |
 | EDR-025 | D3 / Decisão A — Tratamento de placeholders na planilha | VERIFIED |
 | EDR-026 | D4 — Convenção de sinal de AD/AS (positivo = anti; negativo = pro; zero = sem efeito líquido) | APPROVED_WITH_CONDITIONS |
-| EDR-027 | D4-MR / D6 / Decisão B — Limiar absoluto de MR e cross-check | AWAITING_DECISION |
+| EDR-027 | D4-MR / D6 / Decisão B — Limiar absoluto de MR e cross-check | VERIFIED |
 | EDR-028 | D5 — IC lateral: funcionalidade exploratória | APPROVED_WITH_CONDITIONS |
 | EDR-029 | D8 — Roll Center: funcionalidade exploratória e procedimento de validação | APPROVED_WITH_CONDITIONS |
 | EDR-030 | D7 — Camber/toe estáticos: referência x calculado; sem distância mínima universal | APPROVED_WITH_CONDITIONS |
@@ -86,6 +86,8 @@ Total: 51 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DEC
 | EDR-049 | Ky com um único λFz0 | VERIFIED |
 | EDR-050 | Valor derivado entra como fórmula, não digitado | VERIFIED |
 | EDR-051 | Fonte de verdade da planilha: gerada durante o desenvolvimento, viva depois de fechada a V3.0 | APPROVED_WITH_CONDITIONS |
+| EDR-052 | Direção pela literatura: Ackermann, relação de direção, ride steer, roll steer e efeitos do pino mestre (SUS-414 a 416) | VERIFIED |
+| EDR-053 | Linha de força pelo trabalho virtual como definição primária do IC/RC no MODEL (SUS-412) | VERIFIED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -93,7 +95,6 @@ Total: 51 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DEC
 - **EDR-023** (AWAITING_DECISION): D1 — Identificadores SUS-407 a SUS-413
 - **EDR-024** (AWAITING_DECISION): D2 — Schema de hardpoints V2.0
 - **EDR-025** (AWAITING_DECISION): D3 / Decisão A — Tratamento de placeholders na planilha
-- **EDR-027** (AWAITING_DECISION): D4-MR / D6 / Decisão B — Limiar absoluto de MR e cross-check
 - **EDR-033** (AWAITING_DECISION): Escopo de AD/AS e anti-lift (frenagem regenerativa)
 - **EDR-034** (AWAITING_DECISION): Critérios de promoção DRAFT/CHECKED/FROZEN/STALE
 - **EDR-035** (AWAITING_DECISION): Semântica de N/A e TBD (e proveniência de dados)
@@ -637,16 +638,16 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 
 ### EDR-027 — D4-MR / D6 / Decisão B — Limiar absoluto de MR e cross-check
 
-- **Date:** 2026-10-10
-- **Status:** AWAITING_DECISION
+- **Date:** 2026-10-10 (decisão em 2026-10-19)
+- **Status:** VERIFIED
 - **Context:** Limiar 0,2 emite SmallMotionRatioWarning em wheel_rate().
 - **Question:** Opção A (desligar por padrão) ou B (manter 0,2 provisório)?
 - **Alternatives:** A: default None + cross-check. B: manter 0,2 configurável + cross-check.
-- **Decision:** PARCIAL. Decidido pelo usuário: NÃO oficializar 0,2 como limite de engenharia. Pendente: valor padrão (A ou B). Recomendação preliminar do prompt: A, com aviso claro de ausência de referência.
+- **Decision:** **A** (usuário, 2026-10-19: "Seguirei sua recomendação", depois da recomendação A na 2ª rodada da revisão metodológica): `MR_WARN_THRESHOLD = None` por padrão; erro para MR ≤ 0 continua; a proteção contra MR invertido é o `mr_crosscheck` contra o MR geométrico (SUS-409/OptimumKinematics). Quem quiser um aviso define o valor explicitamente. Histórico: decidido antes não oficializar 0,2 como limite de engenharia.
 - **Rationale:** O limiar não detecta a inversão relevante.
 - **Evidence:** TC-SUS-V21-004: com MR=1,76 e inverso 0,568 nenhum aviso é emitido; K_w erra 9,6× (=1,76^4). Cross-check implementado e testado (mr_crosscheck; TC-SUS-V21-001..005): sem referência → NOT_EXECUTED; sem tolerância → TOLERANCE_NOT_SET (sem tolerância padrão); inversão → INVERSION_SUSPECTED só como suspeita; MR≈1 → não distingue.
 - **Assumptions:** A tolerância de comparação depende de incerteza real dos hardpoints, diferenças de definição e ponto de operação: NÃO definida.
-- **Consequences:** Comportamento do limiar NÃO foi alterado nesta rodada (aguarda a decisão).
+- **Consequences:** 2026-10-19: aviso desligado por padrão (`python/suspension_model.py`); TC-SUS-V2-002 passa a verificar que não há aviso por padrão e que o aviso funciona com limite explícito. Nenhuma fonte consultada (Milliken, Gillespie, Seward, Pacejka, help do OptimumKinematics, help do Adams) dá um limiar de MR.
 - **Affected_Artifacts:** suspension_model_V2_1.py; Standard; Data Contract.
 - **Affected_Tests:** TC-SUS-V2-002, TC-SUS-V21-001..005
 - **Dependencies:** EDR-003
@@ -863,7 +864,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Question:** Como tratar o dataset?
 - **Alternatives:** Não incluir; incluir sem rótulo.
 - **Decision:** Incluído, rotulado PROVISÓRIO (T-REV-A) em 10_TIRE, 01_SETUP, dashboard e README. Metadados e hash do arquivo limpo em Hoosier_R25B_13x7_TTC_provisional.meta.json.
-- **Rationale:** Declarado pelo usuário; EDR-022.
+- **Rationale:** Declarado pelo usuário; EDR-022. **Nota de 2026-10-19 (usuário):** não existem dados do TTC para o R60A, o pneu da equipe; o R25B (TTC Round 6, 12 psi, o mesmo arquivo) é o substituto mais próximo e continua PROVISÓRIO até haver outra fonte (ensaio da equipe ou do fabricante).
 - **Evidence:** O arquivo chegou colado de chat (prefixos '[data] autor:' removidos; valores não alterados; o hash registrado é do arquivo limpo, não do original recebido). Proveniência declarada no cabeçalho do .tir (Stackpole, cliente TTC, 2020-10-13); não verificada.
 - **Assumptions:** Os valores colados estão íntegros (nenhum campo omitido além dos grupos não importados).
 - **Consequences:** Trocar o dataset exige nova Tire REV e reexecução de 13_VALIDATION (resultados antigos STALE).
@@ -1135,6 +1136,46 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-008, EDR-035, EDR-043, EDR-044.
 - **Source_Conversation_or_Document:** Usuário, 2026-10-19 (escolha "Planilha viva ao fim").
 
+### EDR-052 — Direção pela literatura: Ackermann, relação de direção, ride steer, roll steer e efeitos do pino mestre
+
+- **Date:** 2026-10-19
+- **Status:** VERIFIED
+- **Context:** Pendência da 1ª rodada da revisão metodológica (§6): cap. 19 da Milliken contra SUS-405/408/413. O usuário (2026-10-19): não há dados; o Ackermann não foi dimensionado no projeto passado; "crie as fichas, implemente os cálculos e metodologias de acordo com a literatura".
+- **Question:** Que grandezas de direção o projeto calcula e com que equações?
+- **Alternatives:** (a) só conferir as fichas existentes; (b) criar fichas e cálculos para o que a literatura define.
+- **Decision:** (b). Fichas novas SUS-414 (Ackermann), SUS-415 (roll steer) e SUS-416 (efeitos do esterço pelo pino mestre); revisão de SUS-408 (ride steer), SUS-410 (spindle length; convenções conferidas), SUS-413 e SUS-601 (razão total e aproximação pela cremalheira). Equações: Ackermann exato `cot δo − cot δi = t/L` (Gillespie eq. 8-1/8-2); % Ackermann = (δi − δo)/(δi,Ack − δo)·100 (forma do projeto entre os extremos que a literatura define: 100 % exato, 0 % paralelo, < 0 reverso); raio externo L/sin δo (Seward); razão total = gradiente do volante sobre o ângulo médio das rodas (SAE J670 9.4.6); SR ≈ 360/asin(c/braço) (Milliken p. 718, com errata: o livro imprime o inverso); ride steer pela inclinação e pela curvatura do toe (Milliken 19.4); roll steer ε e K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57, conferida na imagem); camber e elevação pela rotação em torno do pino mestre (Milliken 19.1). Planilha: bloco novo na 07_KINEMATICS (l. 71-85) com 6 fórmulas novas; entradas placeholder com origem. Python: `kinematics_model` (ackermann_*, steering_ratio_overall, steering_ratio_rack_approx, ride_steer, roll_steer_*, steer_effects; spindle_length nas métricas).
+- **Rationale:** São as grandezas de direção que os três livros definem; a planilha não tinha nenhuma.
+- **Evidence:** TC-KIN-121 a 127 (spindle analítico; Tab. 6.2 do Seward reproduzida; limite c → 0 da aproximação do Milliken igual ao gradiente; ride steer nulo no plano; ε = b·t/2; sinais de caster como na Milliken p. 712-713); TC-WB30-015 (planilha == Python, base e entradas trocadas, a_y = 0 → N/A); suíte inteira PASS. Sintético: Ackermann da geometria ≈ 4,8 %; ε_f = −0,125 °/°.
+- **Assumptions:** Cinemática pura, sem compliance (a Milliken p. 715 e 724-726 avisa que ela pode dominar). Bitola no lugar do afastamento dos pinos mestres no Ackermann. Entradas da planilha são placeholder.
+- **Consequences:** 381 → 387 fórmulas na V3.0; cinemática 54 → 70 testes; test_workbook_suspensao 14 → 15.
+- **Affected_Artifacts:** `kinematics_model`; planilha V3.0 (07_KINEMATICS l. 71-85); Standard; arquitetura (tabela de IDs).
+- **Affected_Tests:** TC-KIN-121..127, TC-WB30-015.
+- **Dependencies:** EDR-004, EDR-035.
+- **Approval_Conditions:** —
+- **Reopening_Criteria:** Hardpoints reais (ε, ride steer e Ackermann da geometria do TX) ou medição de esterço.
+- **Related_Decisions:** EDR-036 (camber/toe estáticos), EDR-053.
+- **Source_Conversation_or_Document:** Usuário, 2026-10-19; Milliken cap. 19 (p. 709-727); Gillespie cap. 6 (p. 196, 220) e cap. 8 (p. 277-293); Seward 6.3 (p. 161-163).
+
+### EDR-053 — Linha de força pelo trabalho virtual como definição primária do IC/RC no MODEL
+
+- **Date:** 2026-10-19
+- **Status:** VERIFIED
+- **Context:** O IC/RC do código (normais às velocidades projetadas dos dois ball joints) difere do que o help do OptimumKinematics (REFERENCE, EDR-004) descreve (eixo instantâneo ∩ plano vertical pelos contact patches). O usuário pediu o conselho e disse que seguiria a recomendação.
+- **Question:** Que definição de IC/RC o MODEL usa?
+- **Alternatives:** (a) manter o método atual; (b) adotar a leitura literal do help; (c) linha de força pelo trabalho virtual, com as outras como diagnóstico.
+- **Decision:** (c), recomendação do conselho de 4 lentes (veredito na conversa; ranking de Borda: a resposta do especialista em cinemática e a do cético, que convergiam nisso, ficaram empatadas em 1º sem o voto próprio). Primária: linha pelo ponto de reação, perpendicular à velocidade dele (SAE J670: RC é onde força lateral não produz rolagem; Gillespie, Apêndice A). Contact patch para o anti-dive e o RC; centro da roda para o anti-squat (EDR-048). IC exibido = centro instantâneo no plano do ponto de reação, único nesse plano. Legado: método dos ball joints, V1 e pivot_axes, só como diagnóstico. Diagnóstico da REFERENCE: leitura literal do help, com o passo do helicoide. Comparação com o OptimumKinematics, quando houver: primeiro curvas que não dependem da definição de IC (variação de bitola, deslocamento longitudinal do contact patch e do centro da roda com o curso); depois digitar a geometria sintética no programa (passo grande, caso discriminante) para identificar a definição dele; comparar ângulo da linha e altura do RC, nunca a coordenada do IC. Planilha: nenhuma fórmula muda; a Fonte das entradas de IC (07_KINEMATICS B10:B13) passa a pedir a definição que gerou o valor.
+- **Rationale:** Nem o método dos ball joints (depende do par de pontos: RC de −98,6 a +36,0 mm conforme o par, no sintético) nem a leitura literal (ignora o passo: RC −142,6 mm, ~93 % AD) dão a força nos braços que a planilha usa. A primária se reduz à construção clássica no caso plano.
+- **Evidence:** TC-KIN-120a (plano: primária == ball joints), 120b (corpo rígido e IC no plano independente dos pontos), 120c (sintético FL: RC 17,7 × 14,8 × −142,6 mm; passo −0,47 m/rad), 128 (plano: passo nulo e leitura literal == primária). AD sintético: 38,6 % (primária) × 36,3 % (legado).
+- **Assumptions:** Quase-estático, pequeno deslocamento, corpo rígido, cremalheira fixa, pneu rígido no contact patch. O que o OptimumKinematics calcula com o passo é desconhecido (o help não diz).
+- **Consequences:** Novas funções e colunas no `kinematics_model` (`force_lines_vw`, `axle_roll_center_vw`, `instant_screw_axis`, `reference_literal_centers`; `rc_height_vw_m`, `side_force_line_slope_vw`). Hoje não muda número da planilha (ICs placeholder). Riscos registrados: contact patch fixo na manga fora da pose estática; plano J670 pelos centros das rodas × pelos contact patches; sem canto traseiro sintético para o anti-squat; acesso ao OptimumKinematics não confirmado.
+- **Affected_Artifacts:** `kinematics_model`; Standard SUS-412; planilha V3.0 (07_KINEMATICS F10:F13, texto).
+- **Affected_Tests:** TC-KIN-120a-c, 128.
+- **Dependencies:** EDR-004, EDR-026, EDR-048.
+- **Approval_Conditions:** A REFERENCE continua sendo o padrão de comparação; se o OptimumKinematics se mostrar com outra definição, a diferença vai para "hipóteses" (ordem de investigação), não para ajuste.
+- **Reopening_Criteria:** Saídas do OptimumKinematics para a geometria sintética ou para os hardpoints reais.
+- **Related_Decisions:** EDR-004, EDR-028, EDR-048, EDR-052.
+- **Source_Conversation_or_Document:** Conselho de 2026-10-19 (Pragmático, Cético, Arquiteto, especialista em cinemática; revisão anônima); help do OptimumKinematics §6.10, 7.3.3.13-23; Gillespie Apêndice A (J670); Milliken p. 612-620.
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1190,6 +1231,8 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-049 | SUS-501 | tire_model; planilha V3.0 (10_TIRE). | TC-TIRE-009, TC-TIRE-ORC-004, mutação |
 | EDR-050 | SUS-001, SUS-006, SUS-010, SUS-011, SUS-406 | planilha V3.0 (05, 07, 08); atualizar_planilha. | TC-WB30-005, TC-WB30-013, CA-07 |
 | EDR-051 | — | planilha V3.0 (00_README); CA-07 no fechamento. | CA-07 |
+| EDR-052 | SUS-408, SUS-410, SUS-413, SUS-414, SUS-415, SUS-416, SUS-601 | kinematics_model; planilha V3.0 (07 l. 71-85); Standard. | TC-KIN-121..127, TC-WB30-015 |
+| EDR-053 | SUS-301, SUS-302, SUS-412 | kinematics_model; Standard; planilha V3.0 (07 F10:F13). | TC-KIN-120, TC-KIN-128 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
