@@ -38,6 +38,7 @@ TESTES = [
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints"]
 MUTACAO = ("tests/mutation_tire.py", 23)
+AUTOTESTE = ("tools/test_comparar_planilhas.py", 10)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 NAO_EXECUTAVEL = (
@@ -162,6 +163,15 @@ def main() -> None:
 
     # --- Build e comparação (CA-07, CA-08) ---
     md += ["## Planilha regenerada (CA-07, CA-08)", ""]
+    # Antes de confiar no comparador, ele precisa acusar alterações conhecidas.
+    r = rodar([AUTOTESTE[0]])
+    resumos = [m for m in map(RE_RESUMO.match, r.stdout.splitlines()) if m]
+    n_pass, n_fail, total = map(int, resumos[-1].groups()) if resumos else (0, -1, -1)
+    ok_cmp = n_fail == 0 and n_pass == total == AUTOTESTE[1] and r.returncode == 0
+    resumo.append(("CA-07", "autoteste do comparador", "PASS" if ok_cmp else "FAIL"))
+    md.append(f"- Autoteste do comparador (`{AUTOTESTE[0]}`): {n_pass} PASS, {n_fail} FAIL, de {total}"
+              f" (esperado {AUTOTESTE[1]}): **{'PASS' if ok_cmp else 'FAIL'}**")
+    md += bloco("autoteste do comparador: FAIL", "\n".join(l for l in r.stdout.splitlines() if l.startswith("[FAIL]")))
     with tempfile.TemporaryDirectory(prefix="dds_build_") as tmp:
         out = Path(tmp) / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"
         lay = Path(tmp) / "layout_V2_4.json"
