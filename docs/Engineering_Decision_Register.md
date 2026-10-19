@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, e EDR-017 substituído, em 2026-10-19). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado, em 2026-10-19). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -31,7 +31,7 @@
 
 ## 2. Índice
 
-Total: 43 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · SUPERSEDED: 1 · VERIFIED: 4
+Total: 44 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · SUPERSEDED: 1 · VERIFIED: 4
 
 | ID | Título | Status |
 |---|---|---|
@@ -78,6 +78,7 @@ Total: 43 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DEC
 | EDR-041 | Entradas α/γ/κ demonstrativas e N/A como estado de saída sem dado | APPROVED_WITH_CONDITIONS |
 | EDR-042 | Verificação das equações do pneu contra fontes de terceiros; caminho até a fonte primária | VERIFIED |
 | EDR-043 | Versionamento por Git e nomes estáveis (substitui o EDR-017) | VERIFIED |
+| EDR-044 | Recálculo da planilha no teste via Excel (COM), com LibreOffice como alternativa | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -968,6 +969,26 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** Substitui o EDR-017 (SUPERSEDED).
 - **Source_Conversation_or_Document:** Usuário (instrução na conversa, 2026-10-19: "Autorizo o EDR-043 com a regra híbrida e as três recomendações"); SPEC §3 e §11.
 
+### EDR-044 — Recálculo da planilha no teste via Excel (COM), com LibreOffice como alternativa
+
+- **Date:** 2026-10-19
+- **Status:** APPROVED
+- **Context:** O `test_workbook` (19 testes Excel × Python da planilha) recalcula cópias da planilha com o `recalc.py` da skill xlsx, que roda o LibreOffice em `/mnt/skills` (sandbox do claude.ai). Nesta máquina ele não roda (SPEC D2) e ficou NÃO EXECUTÁVEL na fase A. O EDR-008 proíbe xlwings/PyXLL/macros como ponte Excel–Python e o CLAUDE.md exige EDR próprio para qualquer uso em teste.
+- **Question:** Que motor recalcula a planilha no teste?
+- **Alternatives:** (a) só Excel via COM (pywin32); (b) só LibreOffice (headless, mesma macro do `recalc.py`); (c) Excel quando houver, LibreOffice quando não houver; (d) não integrar.
+- **Decision:** (c). O teste usa o Excel via COM (instância própria e invisível, `CalculateFull` + `Save`, sempre em cópias) quando o Excel e o `pywin32` existem; senão, o LibreOffice headless com a macro `calculateAll()` + `store()`. A variável `DDS_RECALC=excel|libreoffice` força um motor. O log registra qual motor rodou. O `pywin32` é dependência só de desenvolvimento e só no Windows. Sem nenhum motor, o teste sai como NÃO EXECUTÁVEL (nunca como aprovado).
+- **Rationale:** O Excel é o programa da equipe e é ~7 vezes mais rápido; o LibreOffice mantém o teste executável fora do Windows e é o motor do resultado original. Os dois dão o mesmo resultado (experimento).
+- **Evidence:** `docs/migracao/experimento-recalculo-libreoffice-x-excel.md`: `test_workbook` 19/19 com os dois motores, reproduzindo o 19/19 do sandbox (`registro-de-versoes-V2_4.md:17`); nas 347 fórmulas, diferença relativa máxima LibreOffice × Excel de 4,0e-15 e textos idênticos; 0,9 s (Excel) contra 6,3 s (LibreOffice) por recálculo.
+- **Assumptions:** H1: o comportamento numérico do Excel do Office 16 e do LibreOffice 26.8 vale para as versões que a equipe usa (não verificado em outras versões). H2: a mesma macro do `recalc.py` equivale ao arquivo usado no sandbox em 2026-10-14 (o arquivo exato não foi obtido).
+- **Consequences:** Não altera o EDR-008: a planilha entregue continua sem ponte automática; o COM só abre cópias temporárias dentro do teste. Nenhum check, tolerância ou fórmula muda. O CA-09 deixa de ser NÃO EXECUTÁVEL quando há motor.
+- **Affected_Artifacts:** `tests/test_workbook.py`; `tests/recalculo_planilha.py`; `pyproject.toml`; `uv.lock`; `tools/rodar_testes.py`; `CLAUDE.md`; SPEC (D2, §11).
+- **Affected_Tests:** TC-WB24-001..007 (19 testes).
+- **Dependencies:** EDR-008; EDR-043; SPEC D2.
+- **Approval_Conditions:** —
+- **Reopening_Criteria:** Diferença entre os motores que mude algum check; o EDR-008 passar a permitir uma ponte (o recálculo poderia virar parte dela); necessidade de rodar o teste num CI.
+- **Related_Decisions:** EDR-008, EDR-043.
+- **Source_Conversation_or_Document:** Usuário (instrução na conversa, 2026-10-19: experimento com os dois motores e escolha "Excel, com LibreOffice opcional").
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1015,6 +1036,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-041 | SUS-501, SUS-502 | 10_TIRE; 14_DASHBOARD. | TC-WB22-005 |
 | EDR-042 | SUS-501, SUS-502 | test_tire_oracles_V2_2.py; planilha V2.3; grade CSV. | TC-TIRE-ORC-001..005 |
 | EDR-043 | — | python/*.py; tests/; data/; tools/; pyproject.toml; CLAUDE.md. | Todos os da fase A (mesmo resultado) |
+| EDR-044 | SUS-501..503 | tests/test_workbook.py; tests/recalculo_planilha.py; pyproject.toml; tools/rodar_testes.py. | TC-WB24-001..007 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
