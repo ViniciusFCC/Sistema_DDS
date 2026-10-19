@@ -10,8 +10,10 @@ Foco declarado: completar a planilha (EDR-019).
   em andamento (`SPEC.md` §11): o EDR-043 trocou a versão no nome dos `.py` pela tag
   do Git.
 - Layout (EDR-043): módulos em `python/` com nomes estáveis; testes em `tests/`
-  (`tests/regressao/` guarda a V1.0 congelada); dados em `data/`, que mantêm o `_V2.0`
-  (versão do schema). A planilha em `excel/` mantém a versão no nome.
+  (`tests/regressao/` guarda a V1.0 congelada); dados em `data/` (os hardpoints mantêm
+  o `_V2.0`, versão do schema; os outros dados mantêm o sufixo de origem). A planilha em
+  `excel/` mantém a versão no nome. Docstrings e textos de células em `build_workbook.py`
+  ainda citam os nomes `_V2_x` de propósito: não os "corrija" (quebra o CA-07).
 - Carro atual: TX/E05. O T09/E03 é só referência histórica, nunca baseline (EDR-012).
 - Não há hardpoints reais do CAD (Fusion): toda a cinemática usa geometria sintética.
 
@@ -19,8 +21,10 @@ Foco declarado: completar a planilha (EDR-019).
 - Ambiente: `uv sync` (Python 3.13; no Git Bash, `uv sync --system-certs`). Ele instala o
   projeto em modo editável, com `python/` no caminho de import. Nunca `python`/`python3`
   direto: `python3` aqui é o atalho da Microsoft Store.
-- Tudo de uma vez: `uv run python -X utf8 tools/rodar_testes.py` (grava o log em
-  `docs/migracao/`). Um teste só: `uv run python -X utf8 tests/<script>.py`. Os testes são
+- Tudo de uma vez: `uv run python -X utf8 tools/rodar_testes.py` (log em
+  `build/verificacao-ultima.md`). Log de evidência, só quando for registrar:
+  `--saida docs/migracao/<novo>.md --titulo "..."`, numa árvore sem mudanças pendentes;
+  nunca regrave os logs existentes. Um teste só: `uv run python -X utf8 tests/<script>.py`. Os testes são
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
 - Esperado na V2.4: pneu 43, oráculos 5, suspensão 42, cinemática 53, hardpoints 35,

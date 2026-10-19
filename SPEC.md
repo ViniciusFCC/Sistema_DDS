@@ -24,7 +24,7 @@ Transformar os artefatos V2.4 exportados do claude.ai num projeto local versiona
 | D3 | PDFs de livros e suas conversões `.md` ficam fora do Git. Entra só `references/INDEX.md`. |
 | D4 | Repositório GitHub **privado**. Fora do Git: `*.tir`, PDFs, `importado-claude-ai/`, `Sistema_DDS_CONTEXTO_COMPLETO.md`. Sem Git LFS. |
 | D5 | Ordem: backup → commit 0 (cópia fiel) → commit 1 (portabilidade) → reprodução → tag `v2.4.1` → push. A renomeação vem depois. |
-| E1 | Fase A com **pasta plana** `python/` (módulos + testes + dados que os testes leem), igual ao layout do sandbox. A separação em `python/`, `tests/` e `data/` vai junto com a renomeação, na fase B. |
+| E1 | Fase A com **pasta plana** `python/` (módulos + testes + dados que os testes leem), igual ao layout do sandbox. A separação em `python/`, `tests/` e `data/` vai junto com a renomeação, na fase B. *Substituído na fase B pelo layout do EDR-043.* |
 | E2 | No fim da fase A, criar `ViniciusFCC/Sistema_DDS` privado e fazer o push, depois de mostrar a lista do que sobe. |
 | E3 | Backup em `C:\Users\vferr\OneDrive\Documents\`, com o SHA-256 num `.txt`. |
 
@@ -37,7 +37,7 @@ Sistema_DDS/
 ├── HANDOFF-Sistema_DDS.md        (versionado; índice da migração)
 ├── MANIFEST.sha256               (origem e hash de cada arquivo copiado)
 ├── pyproject.toml / uv.lock      (Python 3.13; numpy, scipy, openpyxl)
-├── python/                       (pasta plana: módulos, testes, mutação, build e dados lidos por eles)
+├── python/                       (pasta plana na fase A; na fase B, só módulos, EDR-043)
 ├── excel/                        (planilha V2.4 entregue e V2.1, insumo do build)
 ├── data/                         (CSVs que nenhum script lê por caminho fixo)
 ├── docs/                         (EDR, Standard, arquitetura, data contract, schema, registros de versões)
@@ -133,13 +133,13 @@ Todas as partes são sequenciais e pequenas. Cada uma depende do commit anterior
 ## 10. Decisões em aberto
 
 - **[ABERTO] A1.** Onde a equipe encontra a planilha vigente (pasta da equipe ou GitHub Releases). Recomendação: decidir na fase B, junto com a versão gravada dentro da planilha. Não afeta a fase A.
-- **[ABERTO] A2.** O número do EDR que revisa o EDR-017. Recomendação: o próximo livre, EDR-043, criado só com a sua autorização (regra de não criar IDs sem aprovação). Fica para a fase B.
+- **[RESOLVIDO] A2.** O número do EDR que revisa o EDR-017: EDR-043, autorizado pelo usuário em 2026-10-19.
 - **[ABERTO] A3.** `test_t09_reference_case.py` (pasta `plan/`) importa `suspension_model` da v0.1, e não da V2.1. Recomendação: fora da fase A; avaliar na fase B se ele deve ser portado para a V2.1.
 
 ## 11. Fase B (depois da `v2.4.1`, fora do mínimo)
 
 1. ~~EDR-043, que revisa o EDR-017~~: aprovado em 2026-10-19 e VERIFIED.
-2. ~~Commit de reestruturação e renomeação (`git mv` para `python/`, `tests/` e `data/`, com nomes estáveis e imports e caminhos ajustados). Testes de novo, com o mesmo resultado da fase A.~~ Feito no `d2e1d97`, com o mesmo resultado da fase A.
+2. ~~Commit de reestruturação e renomeação (`git mv` para `python/`, `tests/` e `data/`, com nomes estáveis e imports e caminhos ajustados). Testes de novo, com o mesmo resultado da fase A.~~ Feito no PR #1 (branch `refactor/nomes-estaveis`), com o mesmo resultado da fase A.
 3. Versão gravada dentro da planilha (estrutura nova, precisa de aprovação) e o local de distribuição (A1).
 4. Recálculo via COM no Excel, substituindo o `recalc.py`, com EDR próprio. O 19/19 deve ser reproduzido, e uma divergência segue o §2.6.
 
