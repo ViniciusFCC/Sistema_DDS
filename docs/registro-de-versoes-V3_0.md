@@ -87,9 +87,11 @@ outra fórmula existente mudou: a 2ª rodada acrescenta 6 fórmulas (356 → 362
 **Limites da 2ª rodada:**
 1. O aviso de origem desatualizada só percebe valor mudado com a origem igual; não impede que alguém marque "Dado do TX" num valor estimado. A regra "Dado do TX sem fonte" só reduz esse risco.
 2. Lista suspensa e cores conferidas no Excel desktop (COM: a lista `=Origens` e as cores exibidas batem). Não conferidas no Excel web, no LibreOffice nem no Google Sheets. Colar valores por cima de uma célula pode contornar a lista (comportamento do Excel; não testado aqui).
-3. "○ Estimativa" e "○ Arbitrário / demonstrativo" têm o mesmo símbolo e a mesma cor (as duas são tier T1, "não é dado do veículo"); o rótulo distingue.
-4. Fase 2 do FB-03 (pior origem calculada ao vivo nos resultados principais do dashboard) não foi feita: cria fórmulas novas e precisa de aprovação.
-5. A 07_KINEMATICS continua inteira placeholder (aviso já existente em A3/A4 e em B69 "Hardpoints reais carregados: NÃO"); os hardpoints ficam em `data/`, fora da coluna de origem.
+3. Na 10_TIRE (casos de carga e coeficientes) há lista e cores, mas não os avisos de origem desatualizada e de fonte faltando (cinco valores por linha); o guia diz isso.
+4. 05_VEHICLE B16/B17 viraram fórmula do diâmetro do pneu (◐ Dado do T09); a estimativa "raio do pneu ≈ altura do CG não suspenso" fica dita na Fonte dessas células, não na lista.
+5. "○ Estimativa" e "○ Arbitrário / demonstrativo" têm o mesmo símbolo e a mesma cor (as duas são tier T1, "não é dado do veículo"); o rótulo distingue.
+6. Fase 2 do FB-03 (pior origem calculada ao vivo nos resultados principais do dashboard) não foi feita: cria fórmulas novas e precisa de aprovação.
+7. A 07_KINEMATICS continua inteira placeholder (aviso já existente em A3/A4 e em B69 "Hardpoints reais carregados: NÃO"); os hardpoints ficam em `data/`, fora da coluna de origem.
 
 ## Alterações célula a célula (gerado por `python/atualizar_planilha.py --registro`)
 
@@ -211,6 +213,7 @@ outra fórmula existente mudou: a 2ª rodada acrescenta 6 fórmulas (356 → 362
 | 05_VEHICLE | B10 | 0.77197 | `='05_VEHICLE'!$B$6*'05_VEHICLE'!$B$32` | EDR-050 (feedback da equipe, 2026-10-14) |
 | 05_VEHICLE | B16 | 0.254 | `='05_VEHICLE'!$B$33*0.0254/2` | EDR-050 (feedback da equipe, 2026-10-14) |
 | 05_VEHICLE | B17 | 0.254 | `='05_VEHICLE'!$B$34*0.0254/2` | EDR-050 (feedback da equipe, 2026-10-14) |
+| 08_VEHICLE_STATE | A10 | (vazia) | Entrada de onde sai a_y (B5) — EDR-050 | EDR-050 (feedback da equipe, 2026-10-14) |
 | 08_VEHICLE_STATE | A11 | (vazia) | Aceleração lateral em g (entrada de a_y) | EDR-050 (feedback da equipe, 2026-10-14) |
 | 08_VEHICLE_STATE | B11 | (vazia) | 1.2 | EDR-050 (feedback da equipe, 2026-10-14); valor: 11,772 m/s² / 9,81 |
 | 08_VEHICLE_STATE | C11 | (vazia) | g | EDR-050 (feedback da equipe, 2026-10-14) |
@@ -457,7 +460,7 @@ outra fórmula existente mudou: a 2ª rodada acrescenta 6 fórmulas (356 → 362
 | 00_README | A48 | (vazia) | ? A confirmar | FB-06/EDR-035; nome definido 'Origens' |
 | 00_README | B48 | (vazia) | A origem do valor não está registrada. | FB-06/EDR-035 |
 | 00_README | E48 | (vazia) | sem classificação | FB-06/EDR-035 |
-| 00_README | A49 | (vazia) | 3. Avisos: Origem com fundo vermelho-alaranjado = o valor mudou e a Origem continuou a mesma (revise a Origem). Fonte com fundo vermelho = a Origem diz "Dado do TX" e falta a Fonte. | FB-06/EDR-035/050/051 |
+| 00_README | A49 | (vazia) | 3. Avisos: Origem com fundo vermelho-alaranjado = o valor mudou e a Origem continuou a mesma (revise a Origem). Fonte com fundo vermelho = a Origem diz "Dado do TX" e falta a Fonte. Na 10_TIRE não há esses avisos: ao trocar um caso de carga, troque a Origem à mão. | FB-06/EDR-035/050/051 |
 | 00_README | A50 | (vazia) | 4. Valor que sai de conta não é digitado (EDR-050): digite as parcelas, não o resultado. Exemplo: massa total = massa medida + piloto (05_VEHICLE B30 e B31). | FB-06/EDR-035/050/051 |
 | 00_README | A51 | (vazia) | 5. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima geração (EDR-051). Depois do fechamento, ela passa a ser o arquivo da equipe. | FB-06/EDR-035/050/051 |
 | 00_README | A52 | (vazia) | 6. Convenções de sinais e eixos: seção acima. Decisões e fichas: pasta docs/ do repositório (Engineering_Decision_Register.md e Engineering Standard). | FB-06/EDR-035/050/051 |
