@@ -60,7 +60,7 @@ def milliken_full(d, variante):
 
 
 def modelo_atual_sus103(d):
-    """SUS-103 como implementado (suspension_model.lateral_dfz, V2.5), nas unidades do exemplo (massa em lb/g, a_y = G)."""
+    """SUS-103 como implementado (suspension_model.lateral_dfz, V3.0), nas unidades do exemplo (massa em lb/g, a_y = G)."""
     cfg = sm.VehicleConfig(
         mass_total=d["W"] / sm.G, cg_height=d["h"], wheelbase=d["l"], track_front=d["t"], track_rear=d["t"],
         cg_to_front=d["a"], cg_to_rear=d["b"], unsprung_mass_front=d["WuF"] / sm.G, unsprung_mass_rear=d["WuR"] / sm.G,
@@ -192,7 +192,7 @@ def main():
               f"t·ΣΔW={r['momento']:.1f}  φ/A_Y={math.degrees(r['phi']):.3f} °/g  "
               f"(a_s={r['a_s']:.3f} ft, h2={r['h2']:.3f} ft)")
     r = modelo_atual_sus103(d)
-    print(f"SUS-103 modelo (V2.5):     F={r['dWF']:.1f}  R={r['dWR']:.1f}  t·ΣΔW={r['momento']:.1f}")
+    print(f"SUS-103 modelo (V3.0):     F={r['dWF']:.1f}  R={r['dWR']:.1f}  t·ΣΔW={r['momento']:.1f}")
     print(f"W·h = {d['W'] * d['h']:.1f} lb·ft/g")
     rc = milliken_full(d, "consistente")
     print(f"W·h + W_s·h2·|φ| = {d['W'] * d['h'] + (d['W'] - d['WuF'] - d['WuR']) * rc['h2'] * abs(rc['phi']):.1f}")
@@ -202,11 +202,11 @@ def main():
     for e in ("F", "R"):
         o = out[e]
         print(f"{e}: K_wheel={o['Kw']:.0f} N/m  K_ride={o['Kride']:.0f} N/m ({100 * (o['Kride'] / o['Kw'] - 1):+.1f} %)  "
-              f"m_canto V2.4={o['m_canto_atual']:.2f} kg V2.5={o["m_canto_livro"]:.2f} kg  "
-              f"f_n V2.4={o['f_atual']:.3f} Hz V2.5={o['f_livro']:.3f} Hz  "
-              f"K_phi V2.4={o['Kphi_atual']:.0f} V2.5={o['Kphi_livro']:.0f} N·m/rad "
+              f"m_canto V2.4={o['m_canto_atual']:.2f} kg V3.0={o["m_canto_livro"]:.2f} kg  "
+              f"f_n V2.4={o['f_atual']:.3f} Hz V3.0={o['f_livro']:.3f} Hz  "
+              f"K_phi V2.4={o['Kphi_atual']:.0f} V3.0={o['Kphi_livro']:.0f} N·m/rad "
               f"({100 * (o['Kphi_livro'] / o['Kphi_atual'] - 1):+.1f} %)")
-    print(f"lambda_f V2.4={lf_a:.4f}  V2.5 (pneu em série)={lf_l:.4f}")
+    print(f"lambda_f V2.4={lf_a:.4f}  V3.0 (pneu em série)={lf_l:.4f}")
 
     print("\n== IC lateral FL, geometria SINTÉTICA: métodos do projeto x eixo instantâneo (Milliken) ==")
     linhas, ia = comparar_ic_lateral()

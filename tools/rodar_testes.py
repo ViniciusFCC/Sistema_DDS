@@ -33,8 +33,8 @@ import openpyxl  # noqa: E402
 TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
-    ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V2_5.md"),
-    ("cinemática", "tests/test_kinematics_model.py", 54, "registro-de-versoes-V2_5.md"),
+    ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V3_0.md"),
+    ("cinemática", "tests/test_kinematics_model.py", 54, "registro-de-versoes-V3_0.md"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
@@ -44,8 +44,8 @@ RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
-PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V2.5; registro-de-versoes-V2_5.md"),
-             ("tests/test_workbook_suspensao.py", 9, "suspensão da V2.5; registro-de-versoes-V2_5.md")]
+PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de-versoes-V3_0.md"),
+             ("tests/test_workbook_suspensao.py", 9, "suspensão da V3.0; registro-de-versoes-V3_0.md")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
@@ -115,7 +115,7 @@ def git(*args: str) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--saida", type=Path, default=RAIZ / "build" / "verificacao-ultima.md")
-    ap.add_argument("--titulo", default="Verificação da V2.5 nesta máquina")
+    ap.add_argument("--titulo", default="Verificação da V3.0 nesta máquina")
     a = ap.parse_args()
 
     md: list[str] = []
@@ -205,19 +205,19 @@ def main() -> None:
         else:
             ok7, r7 = False, ["CA-07 FAIL: build não gerou a planilha"]
             ok8, r8 = False, ["CA-08 FAIL: build não gerou o layout"]
-        # V2.5 = V2.4 regenerada + python/atualizar_planilha.py (EDR-045 a EDR-049)
-        out25 = Path(tmp) / "FSAE_EV_Suspension_Fase1_V2_5.xlsx"
+        # V3.0 = V2.4 regenerada + python/atualizar_planilha.py (EDR-045 a EDR-049)
+        out25 = Path(tmp) / "FSAE_EV_Suspension_Fase1_V3_0.xlsx"
         r25 = rodar(["python/atualizar_planilha.py", str(out), str(out25), "--layout", str(lay)]) if out.exists() else None
-        md.append(f"- V2.5: `python/atualizar_planilha.py <tmp>/V2_4.xlsx <tmp>/V2_5.xlsx`, código {r25.returncode if r25 else 'não rodou'}")
+        md.append(f"- V3.0: `python/atualizar_planilha.py <tmp>/V2_4.xlsx <tmp>/V3_0.xlsx`, código {r25.returncode if r25 else 'não rodou'}")
         if r25 is not None and r25.returncode == 0 and out25.exists():
-            ok7b, r7b = comparar_planilhas.comparar_xlsx(out25, comparar_planilhas.ENTREGUE_XLSX_V25,
-                                                         comparar_planilhas.FORMULAS_ESPERADAS_V25)
+            ok7b, r7b = comparar_planilhas.comparar_xlsx(out25, comparar_planilhas.ENTREGUE_XLSX_V30,
+                                                         comparar_planilhas.FORMULAS_ESPERADAS_V30)
         else:
-            ok7b, r7b = False, ["CA-07 FAIL: atualizar_planilha não gerou a V2.5"] + ([cauda(r25.stderr)] if r25 else [])
+            ok7b, r7b = False, ["CA-07 FAIL: atualizar_planilha não gerou a V3.0"] + ([cauda(r25.stderr)] if r25 else [])
     resumo.append(("CA-07", "planilha vs V2.4 entregue", "PASS" if ok7 else "FAIL"))
     resumo.append(("CA-08", "layout vs entregue", "PASS" if ok8 else "FAIL"))
-    resumo.append(("CA-07", "planilha vs V2.5 entregue", "PASS" if ok7b else "FAIL"))
-    md += ["```text", *r7, *r8, "--- V2.5 ---", *r7b, "```", ""]
+    resumo.append(("CA-07", "planilha vs V3.0 entregue", "PASS" if ok7b else "FAIL"))
+    md += ["```text", *r7, *r8, "--- V3.0 ---", *r7b, "```", ""]
 
     # --- Versão gravada na planilha (fase B, passo 3) ---
     ok_ver, linhas_ver = versao_planilhas()

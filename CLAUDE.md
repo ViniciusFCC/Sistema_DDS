@@ -33,13 +33,13 @@ Foco declarado: completar a planilha (EDR-019).
   nunca regrave os logs existentes. Um teste só: `uv run python -X utf8 tests/<script>.py`. Os testes são
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
-- Esperado na V2.5: pneu 43, oráculos 5, suspensão 54, cinemática 54, hardpoints 35,
-  mutação 24/24; V2.4 regenerada com 347 fórmulas e V2.5 com 356, as duas com 0 diferença.
+- Esperado na V3.0: pneu 43, oráculos 5, suspensão 54, cinemática 54, hardpoints 35,
+  mutação 24/24; V2.4 regenerada com 347 fórmulas e V3.0 com 356, as duas com 0 diferença.
   `tests/test_workbook.py` 19/19 (pneu) e `tests/test_workbook_suspensao.py` 9/9 (suspensão),
-  ambos na V2.5: recalculam cópias pelo Excel via COM ou, sem Excel, pelo
+  ambos na V3.0: recalculam cópias pelo Excel via COM ou, sem Excel, pelo
   LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois eles
   saem NÃO EXECUTÁVEL, que nunca conta como aprovado.
-- Planilha vigente: V2.5, gerada da V2.4 por `python/atualizar_planilha.py` (toda célula
+- Planilha vigente: V3.0 (em desenvolvimento até terminar as correções de feedback; a 1ª rodada foi a revisão metodológica), gerada da V2.4 por `python/atualizar_planilha.py` (toda célula
   alterada fica em `alteracoes()`, com fonte e EDR). Mudança nova de fórmula entra ali,
   nunca editando a planilha à mão. A metodologia segue a literatura, principalmente o
   Milliken (usuário, 2026-10-19; `docs/revisao-metodologica.md`). Os livros e o OCR ficam

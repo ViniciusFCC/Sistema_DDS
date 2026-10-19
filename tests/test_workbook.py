@@ -1,7 +1,7 @@
 """
-Teste de integração da planilha (pneu, 10_TIRE) na versão vigente, V2.5. Recalcula pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_planilha.py).
-As abas de suspensão da V2.5 têm teste próprio: tests/test_workbook_suspensao.py.
-Uso: uv run python -X utf8 tests/test_workbook.py [<V2_5.xlsx> <V2.1.xlsx> <layout_V2_4.json> <tire.tir>]  (padrão: excel/ e data/)
+Teste de integração da planilha (pneu, 10_TIRE) na versão vigente, V3.0. Recalcula pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_planilha.py).
+As abas de suspensão da V3.0 têm teste próprio: tests/test_workbook_suspensao.py.
+Uso: uv run python -X utf8 tests/test_workbook.py [<V3_0.xlsx> <V2.1.xlsx> <layout_V2_4.json> <tire.tir>]  (padrão: excel/ e data/)
 Cada cenário altera uma CÓPIA, recalcula e lê; o arquivo entregue nunca é salvo pelo motor de recálculo. Namespace TC-WB24-xxx.
 """
 import sys, os, shutil, subprocess, tempfile, json, math, random
@@ -16,7 +16,7 @@ if MOTOR is None:
 print(f"MOTOR: {MOTOR} ({DETALHE})")
 _RAIZ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 V22, V21, LAY, TIR = sys.argv[1:5] if len(sys.argv) >= 5 else [os.path.join(_RAIZ, *p) for p in (
-    ("excel", "FSAE_EV_Suspension_Fase1_V2_5.xlsx"), ("excel", "FSAE_EV_Suspension_Fase1_V2.1.xlsx"),
+    ("excel", "FSAE_EV_Suspension_Fase1_V3_0.xlsx"), ("excel", "FSAE_EV_Suspension_Fase1_V2.1.xlsx"),
     ("data", "layout_V2_4.json"), ("data", "Hoosier_R25B_13x7_TTC_provisional.tir"))]
 L = json.load(open(LAY)); R, PR = L["rows"], L["prow"]
 ds = t.load_dataset(TIR, source_axis_system="SAE_CALSPAN")
@@ -68,7 +68,7 @@ def compare(ws, vals, tag, dsx=None):
 
 
 # ---------- preservação (sem recalcular) ----------
-# V2.5: só mudam as células listadas em atualizar_planilha.alteracoes (EDR-045 a EDR-049); todo o resto da V2.1 fica igual.
+# V3.0: só mudam as células listadas em atualizar_planilha.alteracoes (EDR-045 a EDR-049); todo o resto da V2.1 fica igual.
 import atualizar_planilha as ap
 PERMITIDAS = {(x["aba"], x["cel"]) for x in ap.alteracoes(R["Ky"])}
 o, n = openpyxl.load_workbook(V21), openpyxl.load_workbook(V22)
@@ -76,8 +76,8 @@ alt = [(s.title, c.coordinate) for s in o for row in s.iter_rows() for c in row
        if isinstance(c.value, str) and c.value.startswith("=") and n[s.title][c.coordinate].value != c.value
        and (s.title, c.coordinate) not in PERMITIDAS]
 cnt21 = sum(1 for s in o for row in s.iter_rows() for c in row if isinstance(c.value, str) and c.value.startswith("="))
-check("TC-WB24-001: as fórmulas da V2.1 permanecem idênticas na V2.5, fora das células da lista de alterações da V2.5", not alt and cnt21 == 88, f"alteradas fora da lista={alt}; V2.1={cnt21}")
-check("TC-WB24-002: abas de suspensão (05, 06, 07, 08, 09, 11): toda célula fora da lista de alterações da V2.5 é idêntica à V2.1",
+check("TC-WB24-001: as fórmulas da V2.1 permanecem idênticas na V3.0, fora das células da lista de alterações da V3.0", not alt and cnt21 == 88, f"alteradas fora da lista={alt}; V2.1={cnt21}")
+check("TC-WB24-002: abas de suspensão (05, 06, 07, 08, 09, 11): toda célula fora da lista de alterações da V3.0 é idêntica à V2.1",
       all(o[s][c.coordinate].value == c.value for s in ("05_VEHICLE", "06_SUSPENSION", "07_KINEMATICS", "08_VEHICLE_STATE", "09_LOADS", "11_DESIGN")
           for row in n[s].iter_rows() for c in row if (s, c.coordinate) not in PERMITIDAS))
 
