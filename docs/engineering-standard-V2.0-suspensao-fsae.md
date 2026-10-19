@@ -2,7 +2,7 @@
 
 **Atualização V3.0 (2026-10-19):** revisão metodológica contra Milliken, Gillespie, Seward e Pacejka (`docs/revisao-metodologica.md`; EDR-045 a EDR-049). Fichas alteradas: SUS-009, 103, 205, 206, 207, 208, 301, 302, 406 e 501; novas: SUS-211 e SUS-212. Onde uma ficha abaixo diz o contrário, vale a forma V3.0.
 
-**Atualização V3.0, 2ª rodada da revisão metodológica (2026-10-19):** SUS-010 e SUS-011 ganham a forma da planilha (razão h_u / raio como entrada, EDR-050). Textos de célula N/A e TBD (EDR-035, aprovados): **N/A** = não se aplica, ou não dá para calcular na configuração atual (sem número inventado); **TBD** = dado, meta, requisito ou decisão pendente (Lifecycle OPEN). Não são estados novos.
+**Atualização V3.0, 2ª rodada da revisão metodológica (2026-10-19):** SUS-010 e SUS-011 ganham a forma da planilha (razão h_u / raio como entrada, EDR-050). Direção (cap. 19 da Milliken; EDR-052): fichas novas SUS-414 (Ackermann), SUS-415 (roll steer) e SUS-416 (efeitos do esterço pelo pino mestre); SUS-408, 410, 413 e 601 revistas. SUS-412 ganha a definição primária pela linha de força (EDR-053). Textos de célula N/A e TBD (EDR-035, aprovados): **N/A** = não se aplica, ou não dá para calcular na configuração atual (sem número inventado); **TBD** = dado, meta, requisito ou decisão pendente (Lifecycle OPEN). Não são estados novos.
 
 **Versão:** V2.0 (2026-10-09). Base: `engineering-standard-V1.0`. Alterações desta versão: Bloco E.2 (SUS-407 a SUS-413, solver cinemático 3D), notas de achados em SUS-406/SUS-301/SUS-302, log de validação V2.0. Ver `registro-de-versoes-V2.0.md`.
 **Numeração de Test Cases (decisão do usuário, 2026-10-09):** canônica = a da arquitetura (seção 17.7), deste Standard e do Python (`TC-001` a `TC-012`); os casos de kinematics usam o namespace próprio `TC-KIN-xxx`. A numeração do Guide (Apêndice D) diverge e deve ser alinhada a esta.
@@ -709,7 +709,8 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 | Validation Status | NOT_VALIDATED |
 | Owner | Responsável de suspensão |
 | Revision | Kinematics REV (modelo); hardpoints: Geometry REV (`G-REV-X`) |
-| Validation Method | TC-KIN-103c, 104b, 106b, 109; TC-011 |
+| Validation Method | TC-KIN-103c, 104b, 106b, 109, 125; TC-011 |
+| Revisão 2026-10-19 (EDR-052) | Ride steer como na Milliken 19.4 (p. 721-725): inclinação no curso zero [°/mm, toe-out +], coeficiente quadrático e maior desvio da reta (curva = "a evitar", Fig. 19.9). Sinal de manobra: na frente, esterçar para fora da curva é subesterço; atrás, para dentro (Milliken p. 721). `kinematics_model.ride_steer`. O roll steer sai das mesmas curvas (SUS-415) |
 
 ### SUS-409 — Motion Ratio MR(z) (Model/Check)
 
@@ -741,7 +742,7 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 | Variables | `LCA_OUT`, `UCA_OUT`, `CONTACT_PATCH` (m) |
 | Units | ° ; m (mm na interface) |
 | Sign Convention | Caster + = topo para trás; KPI + = topo para dentro; scrub + = interseção inboard do contact patch; trail + = interseção à frente do contact patch. |
-| Assumptions | Hipóteses gerais. Trail medido no contact patch (não no centro da roda). Convenção de trail/scrub conforme prática comum; confirmar com a convenção da equipe. |
+| Assumptions | Hipóteses gerais. Trail medido no contact patch (não no centro da roda). Convenções conferidas (2026-10-19, EDR-052) com a Milliken Fig. 19.1 (p. 710: KPI, scrub, spindle length, caster, trail), o Gillespie Fig. 8.8 (p. 283-284: scrub + com a roda para fora da interseção; caster + com a interseção à frente do contact patch) e o OptimumKinematics §7.3.3.12 (scrub). **Spindle length** (Milliken 19.1): distância horizontal do pino mestre ao centro da roda, na altura do centro, `lado·(y_WC − y_K)`; + = roda para fora (TC-KIN-121). |
 | Reference/Source | Definições geométricas; caso analítico (14,0362°, 11,3099°, +22 mm, +35 mm) em TC-KIN-117a, esquerda e direita. |
 | Validity Domain | Como SUS-407 |
 | Data Type | MODEL *(cross-check)* |
@@ -783,6 +784,7 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 | Sign Convention | ISO 8855. Anti-dive/squat com sinal: ver notas de SUS-406 e SUS-301/302. |
 | Assumptions | Hipóteses gerais. **Incerteza de método:** a projeção do movimento 3D numa vista não é movimento plano rígido; o IC depende de quais pontos definem as normais (aqui, os dois ball joints). Reduz exatamente ao método 2D da V1 em mecanismo plano (TC-KIN-107, erro ≤ 4e-8 m) e à fórmula fechada por eixos em planos X-Z (TC-KIN-110a). Diferença de método na geometria sintética: IC frontal cinemático vs V1 = 34,6 mm (TC-KIN-114b). Passo da diferença finita: IC estável a 1e-8 m para `dz ≤ 1e-4 m`. Incerteza de entrada (Monte Carlo σ=0,5 mm): RC σ ≈ 1,9 mm (13% do valor nominal de 14,8 mm); %AD cinemático σ ≈ 1,0 ponto. O RC migra de +59 mm (−30 mm) a −29 mm (+30 mm) na geometria sintética (V1/Standard usa RC estático, limitação conhecida). |
 | Reference/Source | Derivação própria; verificação TC-KIN-107, 110, 111, 113, 114. Fontes secundárias consultadas só descrevem a construção qualitativa; fonte primária não consultada. |
+| Revisão 2026-10-19 (EDR-053) | **Definição primária:** linha de força pelo trabalho virtual (SAE J670: RC é onde força lateral não produz rolagem; Gillespie, Apêndice A). A linha passa pelo ponto de reação e é perpendicular à velocidade dele por unidade de curso: inclinação lateral = −v_x/v_z (contact patch para o anti-dive; centro da roda para o anti-squat, EDR-048); RC do canto = (−v_y/v_z)·(0 − y_cp); RC do eixo = interseção das duas linhas. IC exibido = centro instantâneo no plano que contém o ponto de reação (X = X_cp na frontal; Y = Y_cp ou Y_wc na lateral), único nesse plano. `kinematics_model.force_lines_vw`, `axle_roll_center_vw`; colunas `rc_height_vw_m` e `side_force_line_slope_vw` da varredura. O método dos ball joints (acima) fica como legado: depende do par de pontos fora do plano da vista. Diagnóstico da REFERENCE: `reference_literal_centers` (eixo instantâneo ∩ plano pelo contact patch, com o passo). TC-KIN-120a-c, 128. Sintético FL: RC 17,7 (primária) × 14,8 (legado) × −142,6 mm (leitura literal) |
 | Validity Domain | Como SUS-407; IC exige velocidades projetadas não nulas |
 | Data Type | MODEL *(cross-check; nunca substitui SUS-401/403/406 REFERENCE)* |
 | Lifecycle Status | CHECKED |
@@ -809,7 +811,68 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 | Validation Status | NOT_VALIDATED |
 | Owner | Responsável de suspensão |
 | Revision | Kinematics REV (modelo); hardpoints: Geometry REV (`G-REV-X`) |
-| Validation Method | TC-KIN-109a/b |
+| Validation Method | TC-KIN-109a/b, 124a |
+| Revisão 2026-10-19 (EDR-052) | Razão total do eixo (SAE J670 9.4.6: gradiente do volante sobre o ângulo **médio** das rodas dianteiras; Gillespie p. 293): `steering_ratio_overall`. Com Ackermann, a razão difere entre lados (Milliken p. 716) |
+
+
+### SUS-414 — Ackermann (geometria e % Ackermann) — *novo ID, V3.0 (EDR-052)*
+
+| Campo | Conteúdo |
+|---|---|
+| Domain | Steering (Bloco E.2) |
+| Definition | Diferença entre os ângulos das rodas dianteiras interna e externa num esterço. Ackermann exato = as duas rodas tangentes a trajetórias com o mesmo centro (Milliken 19.2, p. 713-716; Seward 6.3.1). |
+| Equation | Ackermann exato: `cot δo − cot δi = t/L` (Gillespie eq. 8-1 e 8-2, p. 277-278). % Ackermann `= (δi − δo)/(δi,Ack − δo)·100` no mesmo δo. Raio da roda externa `= L/sin δo` (Seward, Tab. 6.2). |
+| Variables | `δo`, `δi` [°]; `L` = SUS-003; `t` = SUS-004 |
+| Units | ° ; % ; m |
+| Sign Convention | Ângulos em módulo. 100 % = Ackermann exato; 0 % = paralelo; < 0 = reverso (Milliken p. 714-716). |
+| Assumptions | `t` = bitola (a literatura usa a bitola; o centro de giro real é o pino mestre). A razão (% Ackermann) é forma do projeto: a literatura define os extremos. Sem compliance (Milliken p. 715: em curva rápida a compliance pode superar o Ackermann). |
+| Reference/Source | Gillespie p. 277-278; Seward Tab. 6.2 (reproduzida em TC-KIN-122a); Milliken p. 713-716 (recomenda paralelo ou um pouco de reverso para corrida). |
+| Data Type | INPUT (δo, δi medidos) e MODEL (`ackermann_from_kinematics`, a partir da geometria) |
+| Lifecycle Status | DRAFT |
+| Validation Status | NOT_VALIDATED |
+| Owner | Responsável de steering |
+| Revision | Geometry REV |
+| Validation Method | TC-KIN-122a/b, 123; TC-WB30-015 (planilha 07_KINEMATICS B72:B76) |
+
+
+### SUS-415 — Roll steer e contribuição ao gradiente de subesterço — *novo ID, V3.0 (EDR-052)*
+
+| Campo | Conteúdo |
+|---|---|
+| Domain | Steering / Handling (Bloco E.2) |
+| Definition | Esterço das rodas de um eixo em relação à massa suspensa devido à rolagem dela (Gillespie p. 220; Milliken 19.4). |
+| Equation | `ε` = graus de esterço por grau de rolagem; `K_roll steer = (ε_f − ε_r)·∂φ/∂a_y` (Gillespie eq. 6-57). Do solver: rolagem φ → curso da roda direita `+(t/2)φ`, esquerda `−(t/2)φ`; esterço do eixo = média do yaw ISO; `ε = −Δyaw/Δφ`. Eixo simétrico e linear: `ε = b·t/2`, b = toe-out por curso (TC-KIN-126a). |
+| Variables | `ε_f`, `ε_r` [°/°]; `∂φ/∂a_y` [°/g] (planilha: φ de 09_LOADS B21 / a_y de 08 B11) |
+| Units | °/° ; °/g |
+| Sign Convention | `ε > 0` esterça para a direita numa rolagem para a direita (lado direito para baixo), como no Gillespie. Na frente, ε > 0 = subesterço; atrás, sobresterço. `K > 0` = subesterço. |
+| Assumptions | Cinemática pura (sem compliance; Milliken p. 724-726 lembra que a compliance pode dominar). Pequenas rolagens. |
+| Reference/Source | Gillespie p. 220 (eq. 6-57, conferida na imagem) e p. 281-282; Milliken p. 721-725. |
+| Data Type | MODEL (`roll_steer_coefficient`, `roll_steer_understeer_deg_per_g`); INPUT na planilha até haver hardpoints |
+| Lifecycle Status | DRAFT |
+| Validation Status | NOT_VALIDATED |
+| Owner | Responsável de suspensão |
+| Revision | Geometry REV |
+| Validation Method | TC-KIN-126a/b; TC-WB30-015 (07_KINEMATICS B82:B85) |
+
+
+### SUS-416 — Efeitos do esterço pelo pino mestre (camber e elevação) — *novo ID, V3.0 (EDR-052)*
+
+| Campo | Conteúdo |
+|---|---|
+| Domain | Steering (Bloco E.2) |
+| Definition | Variação de camber e elevação do carro quando a roda gira em torno do pino mestre (Milliken 19.1, p. 710-713). |
+| Equation | Manga girada de ψ em torno da reta LCA_OUT → UCA_OUT, ball joints parados: camber e toe pela pose girada; elevação = −ΔZ do contact patch no referencial do chassi. |
+| Variables | ψ [°] (+ = em torno do eixo orientado para cima) |
+| Units | ° ; m |
+| Sign Convention | Elevação + = o carro sobe. Camber + = topo para fora. |
+| Assumptions | Efeito geométrico (o livro descreve assim). Com KPI e spindle length positivos o carro sobe nos dois sentidos (TC-KIN-127b); com caster positivo a roda externa ganha camber negativo e a interna positivo, e a elevação muda entre os lados, o que dá o peso diagonal (TC-KIN-127a; Milliken p. 712-713). |
+| Reference/Source | Milliken 19.1, p. 710-713. |
+| Data Type | MODEL (`steer_effects`) |
+| Lifecycle Status | DRAFT |
+| Validation Status | NOT_VALIDATED |
+| Owner | Responsável de steering |
+| Revision | Geometry REV |
+| Validation Method | TC-KIN-127a/b |
 
 ---
 
@@ -976,7 +1039,7 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 | Definition | Razão entre o ângulo do volante e o ângulo médio das rodas dianteiras. |
 | Equation | `SR = Δsteering_wheel / Δwheel_angle,avg` |
 | Data Type | INPUT (medido) ou MODEL (geometria da cremalheira) |
-| Assumptions | Sem Ackermann dinâmico, sem bump steer calculado internamente — escopo reduzido da V1 |
+| Assumptions | V3.0 (EDR-052): Ackermann (SUS-414), ride steer (SUS-408) e roll steer (SUS-415) passam a ser calculados. Aproximação para cremalheira (Milliken p. 718): SR ≈ 360/asin(c/braço) [°], com a barra quase perpendicular ao braço; o livro imprime asin(c/braço)/360, inverso da razão definida na p. 716 (errata adotada). `steering_ratio_rack_approx` (TC-KIN-124b); planilha 07_KINEMATICS B78:B80 |
 | Lifecycle/Validation Status | DRAFT / NOT_VALIDATED |
 | Owner | Responsável de steering |
 | Revision | Geometry REV |

@@ -226,3 +226,36 @@ TTC) e o pacote do TTC Round 6 (R25B; o `.tir` de 12 psi é o provisório). Equa
 | Ressalvas: IC em 3D | definição da REFERENCE conhecida (7.2); falta implementar o método dela e medir a diferença |
 | Ressalvas: simplificações (RC fixo, superposição, barra pronta, aero, taxa geométrica do MR) | continuam aceitas; nenhum documento as contradiz |
 | K_T do pneu real, hardpoints do CAD, comparação com OptimumKinematics/OptimumTire | dependem de dados |
+
+## 8. 2ª rodada: cap. 19 da Milliken (direção) e definição do IC/RC (2026-10-19)
+
+### 8.1 Cap. 19 da Milliken (p. 709-727), com Gillespie cap. 6 e 8 e Seward 6.3
+
+O capítulo é quase todo qualitativo. As equações vêm do Gillespie e do Seward; a Milliken dá definições, sinais e
+recomendações. Decisão: EDR-052 (fichas novas SUS-414, 415 e 416).
+
+| Seção | O que o livro diz | Situação no projeto |
+|---|---|---|
+| 19.1 Geometria do pino mestre (p. 709-713) | Fig. 19.1: KPI, scrub, spindle length (pino mestre ao plano da roda, na altura do eixo), caster e trail. KPI com spindle positivo levanta o carro nos dois sentidos; caster levanta de um lado e baixa do outro (peso diagonal); caster positivo dá camber negativo na roda externa | Convenções da SUS-410 conferidas (também Gillespie Fig. 8.8). Spindle length acrescentado (TC-KIN-121). Efeitos de camber e elevação: SUS-416 nova (`steer_effects`, TC-KIN-127a/b) |
+| 19.2 Ackermann (p. 713-716) | Ackermann = trajetórias com centro comum; para corrida, paralelo ou um pouco de reverso; a compliance pode superar o efeito | Não havia nada no projeto (nem no carro anterior). SUS-414 nova: `cot δo − cot δi = t/L` (Gillespie eq. 8-1/8-2), % Ackermann e raio externo; Tab. 6.2 do Seward reproduzida (TC-KIN-122a); Ackermann da geometria (TC-KIN-123); planilha 07 B72:B76 |
+| 19.3 Caixa de direção (p. 716-719) | Razão total = ângulo do volante / ângulo da roda; com cremalheira, SR ≈ função de c e do braço de direção (p. 718) | SUS-601 e SUS-413 revistas: razão total pela média das rodas (SAE J670 9.4.6); aproximação da cremalheira com **errata**: a p. 718 imprime asin(c/braço)/360, inverso da razão da p. 716; adotado 360/asin(c/braço) (conferido na imagem; TC-KIN-124b). Planilha 07 B78:B80 |
+| 19.4 Ride e roll steer (p. 721-725) | Ride steer em °/in, curvas lineares são aceitáveis, curvas são "a evitar"; sinal: na frente, esterçar para fora da curva = subesterço | SUS-408 revista (`ride_steer`: inclinação, curvatura, desvio da reta; TC-KIN-125). Roll steer: SUS-415 nova, ε e K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57, conferida na imagem; TC-KIN-126). Planilha 07 B82:B85 |
+| 19.5 Alinhamento (p. 726-727) | Procedimento de medição de toe e camber; regra de bolso camber/esterço | Fora do modelo (procedimento de oficina) |
+
+### 8.2 IC e RC: definição primária no MODEL (EDR-053)
+
+Conselho de 4 lentes com revisão anônima (veredito completo na conversa de 2026-10-19). Conclusão: a grandeza que a
+planilha usa é a linha de força, e a definição exata dela é a do trabalho virtual (SAE J670, Gillespie Apêndice A): a
+linha passa pelo ponto de reação e é perpendicular à velocidade dele por unidade de curso. Na geometria sintética (FL):
+
+| Método | RC do canto [mm] | Inclinação da linha do anti-dive | %AD (L 1,55; h 0,315; FB 0,6) |
+|---|---|---|---|
+| Linha de força pelo trabalho virtual (primária) | 17,7 | −0,1307 | 38,6 |
+| Ball joints (método anterior, legado) | 14,8 | −0,1230 | 36,3 |
+| Leitura literal do help do OptimumKinematics (eixo ∩ plano, passo −0,47 m/rad) | −142,6 | −0,314 | cerca de 93 |
+
+O método anterior depende do par de pontos escolhido (o RC vai de −98,6 a +36,0 mm conforme o par), porque os ball
+joints não estão no plano da vista. A leitura literal ignora a translação ao longo do eixo (o passo). As três coincidem
+no mecanismo plano (TC-KIN-120a, 128). O que o OptimumKinematics faz de fato com o passo é desconhecido: a comparação,
+quando houver dados, começa por curvas que não dependem da definição de IC e por digitar a geometria sintética no
+programa (EDR-053).

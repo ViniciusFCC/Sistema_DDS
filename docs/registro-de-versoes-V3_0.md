@@ -107,6 +107,10 @@ de feedback e as ressalvas da 1ª rodada da revisão. Nome definido pelo usuári
 | 4 | 05 B16/B17: a hipótese "CG não suspenso ≈ raio do pneu" só aparecia na Fonte | "Vamos seguir a metodologia estabelecida" (EDR-050): a hipótese vira entrada. Aprovada a tabela: B35/B36 novas, B16, B17 e 07 B14 (usuário: "Aprovo os dois"). Achado na investigação: 07 B14 (centro da roda traseira, anti-squat) apontava para 05 B17 (CG não suspenso), duas grandezas na mesma célula; a 07 B14 passa a usar o raio direto | 05 B35/B36 (razão h_ns/raio = 1, ○ Estimativa; Milliken p. 672, conferida na imagem); B16 = B33·0,0254/2·B35; B17 = B34·0,0254/2·B36; 07 B14 = B34·0,0254/2. EDR-050 estendido; Standard SUS-010/011. TC-WB30-013 estendido (razão 0,8/0,9 move B16/B17 e não move 07 B14) e TC-WB30-005 com a razão perturbada |
 | 2 (FB-03, fase 2) | Pior origem ao vivo nos resultados principais do 14_DASHBOARD | Primeiro passo pedido pelo usuário: refazer o mapa de raízes. Depois, fase 2 aprovada como proposta (usuário, 2026-10-19): coluna E do 14_DASHBOARD com a pior origem ao vivo, na ordem proposta, e o teste TC-WB30-014 (ID autorizado) | Fase 2: 14_DASHBOARD E7:E10, E13:E17, E20:E24, E33:E37 (19 fórmulas `=INDEX(Origens,MAX(IFERROR(MATCH(<origem>,Origens,0),6),…))`; cabeçalho em E5, porque as linhas de seção são mescladas A:E; cores por origem). Pior primeiro: ? A confirmar, Arbitrário, Estimativa, Provisório (.tir TTC), Dado do T09, Dado do TX, que é a lista `Origens` invertida (o gerador confere); origem vazia conta como ? A confirmar. As células de origem de cada resultado saem do grafo na geração (`python/raizes.py`, usado também pelo mapa). TC-WB30-014: as fórmulas cobrem todas as raízes com Origem; o valor de base é a pior origem do grafo; trocar ou apagar uma origem muda o resultado. 362 → 381 fórmulas. Mapa: `tools/mapa_raizes.py` (novo) gera `data/placeholder-dependency-map-V3.0.csv` das fórmulas e da coluna Origem atuais: 362 fórmulas; referência que o parser não reconhece interrompe a geração; coluna inteira (COUNTIF de IDs) é registrada, não vira raiz. Diferenças de tier contra o mapa V2.1 nas 84 fórmulas comuns (22), todas explicadas: 09_LOADS B4:B9 (T3 → T1: a massa total agora separa o piloto de 68 kg, ○ Estimativa, 05 B31); 09 B12:B15 e B23:B28 (T2 → T1: caso de carga sem fonte é ○ Estimativa, tier T1 pela regra de fusão do EDR-035, mais o piloto); 09 B18 (T2 → T1: z_s em a_s depende das massas não suspensas arbitrárias, EDR-047); 14_DASHBOARD B4 e B27:B30 (T3 → sem origem: são texto de setup e contagens de registro, não grandeza física) |
 | EDR-039 | Sistema de eixos do `.tir` (SAE_CALSPAN, com o sinal do camber inferido) | Reaberto (usuário: "troque o sistema de eixos do .tir para ISO_TYDEX, com o efeito medido em cada resultado antes de aplicar"). Fonte: help do Adams 2024.1, PAC2002, p. 7 (parâmetros do arquivo sempre no eixo W do TYDEX, orientação ISO) | 10_TIRE B11 = ISO_TYDEX, B10 = CONFIRMED (texto e comentário), comentário de B21; 13_VALIDATION B37:B39 recalculados em ISO (1373,151 N; −1212,267 N; 2,6167); 14_DASHBOARD B38; 00_README A37; DR-013 (04_DECISION_REGISTER E17); meta.json do dataset; docstring do `tire_model`. A V2.4 continua em SAE_CALSPAN (histórico). TC-WB24-004c/d invertidos (base ISO; alternativa SAE). Efeito medido antes de aplicar: tabela abaixo |
+| Cap. 19 | Direção (pendência da 1ª rodada da revisão) | Usuário: "crie as fichas, implemente os cálculos e metodologias de acordo com a literatura" (Ackermann não dimensionado no projeto passado; sem dados) | EDR-052; SUS-414, 415 e 416 novas; SUS-408, 410, 413 e 601 revistas; `kinematics_model` (Ackermann, razão total e pela cremalheira com errata da Milliken p. 718, ride steer, roll steer, efeitos do pino mestre, spindle length); planilha 07_KINEMATICS l. 71-85 (6 fórmulas novas; entradas placeholder com origem). TC-KIN-121..127; TC-WB30-015. Detalhe em `docs/revisao-metodologica.md` §8.1 |
+| IC/RC | Método do código × leitura do OptimumKinematics | Conselho de 4 lentes; usuário: "Seguirei sua recomendação" | EDR-053: linha de força pelo trabalho virtual como primária; ball joints e leitura literal como diagnóstico; nenhuma fórmula da planilha muda; a Fonte de 07 B10:B13 pede a definição do IC. TC-KIN-120a-c, 128. §8.2 da revisão |
+| EDR-027 | Limiar de MR | Opção A (usuário seguiu a recomendação) | `MR_WARN_THRESHOLD = None` por padrão; aviso só com limite explícito; TC-SUS-V2-002 revisto |
+| R60A | Pneu da equipe | Usuário: não existem dados do TTC para o R60A | O R25B segue como substituto mais próximo, PROVISÓRIO (nota no EDR-038) |
 | 5 | EDR-035, N/A e TBD sem decisão | Aprovadas as definições (usuário: "Aprovo os dois"): N/A = não se aplica ou não dá para calcular na configuração atual; TBD = dado, meta, requisito ou decisão pendente (Lifecycle OPEN). Sem estado novo | item 7 do guia "Como preencher" (00_README A53); EDR-035; nota no Standard. Auditoria dos usos: todos coerentes, menos 01_SETUP B10 "N/A (Fase 2)", que pelo significado é TBD (como a Geometry REV em 07 B68): trocado para "TBD (Fase 2)" (aprovado pelo usuário) |
 
 **Efeito da troca do eixo do `.tir` (EDR-039), medido antes de aplicar:** V3.0 recalculada pelo Excel nos dois modos, com
@@ -142,6 +146,7 @@ arquivo provisório fica confirmada em primeira mão. A equipe usa o R60A, não 
 `LKYG = 1`); o IC/RC cinemático do código é construído de outro jeito que o da REFERENCE (diferença não quantificada).
 
 **Limites da 2ª rodada da revisão metodológica (até aqui):**
+0. Direção e linha de força: cinemática pura, sem compliance; o contact patch é um ponto fixo na manga, então curvas fora da pose estática herdam esse erro; não há canto traseiro na geometria sintética (o anti-squat traseiro não tem caso próprio); as entradas de direção da planilha são placeholder.
 1. A razão h_ns / raio e a altura do centro da roda usam o raio sem carga (diâmetro / 2). O Milliken usa o raio carregado; a diferença é a deflexão estática do pneu (Fz / K_T), não modelada.
 2. A coluna de pior origem lê os rótulos ao vivo, mas a lista de células de origem de cada resultado é a da geração. Depois do fechamento da V3.0 (planilha viva, EDR-051), se alguém mudar a fórmula de um resultado para usar outra entrada, a coluna E não acompanha sozinha: a próxima geração, ou o TC-WB30-014, mostra a diferença. O mapa V2.1 fica como registro da auditoria (e continua usado pelo TC-WB30-010).
 3. Raízes sem coluna Origem (texto de setup, sinais de eixo do pneu, ε da 10_TIRE, caso VERIF, referências do Python na 13_VALIDATION) não entram na pior origem; aparecem no mapa como "sem rótulo".
@@ -547,6 +552,91 @@ arquivo provisório fica confirmada em primeira mão. A equipe usa o R60A, não 
 | 13_VALIDATION | B38 | -1131.864312874941 | -1212.266853486353 | EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7; idem |
 | 13_VALIDATION | B39 | 2.715269352685693 | 2.6167185233010324 | EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7; idem |
 | 14_DASHBOARD | B38 | SAE→ISO (declarada); camber não confirmado | ISO (TYDEX W, help do Adams PAC2002); EDR-039 | EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7 |
+| 07_KINEMATICS | A71 | (vazia) | Direção — Ackermann (SUS-414) — entradas PLACEHOLDER até haver a medição ou a geometria do TX | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A77 | (vazia) | Direção — relação de direção pela cremalheira (SUS-601, Milliken p. 718) | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A81 | (vazia) | Direção — roll steer e gradiente de subesterço (SUS-415, Gillespie eq. 6-57) | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A72 | (vazia) | Ângulo da roda dianteira externa (δo) | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B72 | (vazia) | 20.0 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C72 | (vazia) | ° | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D72 | (vazia) | SUS-414 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F72 | (vazia) | Estimativa: carros de FSAE precisam de pouco mais de 20° de esterço na roda externa (Seward p. 162-163, Tab. 6.2). Não é o batente do TX. | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | E72 | (vazia) | ○ Estimativa | EDR-035 |
+| 07_KINEMATICS | G72 | (vazia) | 20.0 | EDR-035: valor da geração (oculto) |
+| 07_KINEMATICS | H72 | (vazia) | ○ Estimativa | EDR-035: origem da geração (oculto) |
+| 07_KINEMATICS | A73 | (vazia) | Ângulo da roda dianteira interna (δi) no mesmo esterço | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B73 | (vazia) | 20.0 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C73 | (vazia) | ° | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D73 | (vazia) | SUS-414 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F73 | (vazia) | Placeholder: igual a δo (direção paralela, 0 % Ackermann) até haver a medição do TX ou a geometria (Python: kinematics_model.ackermann_from_kinematics). | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | E73 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 |
+| 07_KINEMATICS | G73 | (vazia) | 20.0 | EDR-035: valor da geração (oculto) |
+| 07_KINEMATICS | H73 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035: origem da geração (oculto) |
+| 07_KINEMATICS | A74 | (vazia) | δi para Ackermann exato | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B74 | (vazia) | `=DEGREES(ATAN(1/(1/TAN(RADIANS('07_KINEMATICS'!$B$72))-'05_VEHICLE'!$B$7/'05_VEHICLE'!$B$6)))` | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C74 | (vazia) | ° | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D74 | (vazia) | SUS-414 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F74 | (vazia) | Calculada: cot δo − cot δi = t/L (Gillespie eq. 8-1 e 8-2, p. 277-278), com t = 05 B7 e L = 05 B6. Reproduz a Tab. 6.2 do Seward. | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A75 | (vazia) | % Ackermann | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B75 | (vazia) | `=('07_KINEMATICS'!$B$73-'07_KINEMATICS'!$B$72)/('07_KINEMATICS'!$B$74-'07_KINEMATICS'!$B$72)*100` | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C75 | (vazia) | % | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D75 | (vazia) | SUS-414 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F75 | (vazia) | Calculada: 100 % = Ackermann exato; 0 % = paralelo; < 0 = reverso (Milliken p. 714-716; Seward, glossário). A razão entre os dois extremos é a forma adotada pelo projeto (EDR-052). | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A76 | (vazia) | Raio da trajetória da roda dianteira externa | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B76 | (vazia) | `='05_VEHICLE'!$B$6/SIN(RADIANS('07_KINEMATICS'!$B$72))` | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C76 | (vazia) | m | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D76 | (vazia) | SUS-414 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F76 | (vazia) | Calculada: L / sin δo (Seward, Tab. 6.2). | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A78 | (vazia) | Curso da cremalheira por volta do pinhão (c-factor) | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B78 | (vazia) | 0.0508 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C78 | (vazia) | m/volta | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D78 | (vazia) | SUS-601 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F78 | (vazia) | Placeholder: o exemplo de "2-inch rack" do Milliken p. 718; não é a cremalheira do TX. | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | E78 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 |
+| 07_KINEMATICS | G78 | (vazia) | 0.0508 | EDR-035: valor da geração (oculto) |
+| 07_KINEMATICS | H78 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035: origem da geração (oculto) |
+| 07_KINEMATICS | A79 | (vazia) | Comprimento do braço de direção (pino mestre à barra) | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B79 | (vazia) | 0.1 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C79 | (vazia) | m | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D79 | (vazia) | SUS-601 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F79 | (vazia) | Placeholder: valor do caso de teste TC-KIN-109 (e = 0,10 m); não é o braço do TX. | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | E79 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 |
+| 07_KINEMATICS | G79 | (vazia) | 0.1 | EDR-035: valor da geração (oculto) |
+| 07_KINEMATICS | H79 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035: origem da geração (oculto) |
+| 07_KINEMATICS | A80 | (vazia) | Relação de direção estimada pela cremalheira | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B80 | (vazia) | `=360/DEGREES(ASIN('07_KINEMATICS'!$B$78/'07_KINEMATICS'!$B$79))` | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C80 | (vazia) | - | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D80 | (vazia) | SUS-601 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F80 | (vazia) | Calculada: SR ≈ 360 / asin(c/braço), Milliken p. 718 (o livro imprime asin(c/braço)/360, que é o inverso da razão definida na p. 716; EDR-052). Vale com a barra quase perpendicular ao braço. Compare com 06_SUSPENSION B44. | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A82 | (vazia) | Roll steer dianteiro (ε_f) | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B82 | (vazia) | 0.0 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C82 | (vazia) | °/° | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D82 | (vazia) | SUS-415 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F82 | (vazia) | Placeholder: sem hardpoints reais. ε > 0 esterça para a direita numa rolagem para a direita (Gillespie p. 220). Python: kinematics_model.roll_steer_coefficient (na geometria sintética, −0,125 °/°). | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | E82 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 |
+| 07_KINEMATICS | G82 | (vazia) | 0.0 | EDR-035: valor da geração (oculto) |
+| 07_KINEMATICS | H82 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035: origem da geração (oculto) |
+| 07_KINEMATICS | A83 | (vazia) | Roll steer traseiro (ε_r) | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B83 | (vazia) | 0.0 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C83 | (vazia) | °/° | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D83 | (vazia) | SUS-415 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F83 | (vazia) | Placeholder: sem hardpoints reais (ver B82). | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | E83 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035 |
+| 07_KINEMATICS | G83 | (vazia) | 0.0 | EDR-035: valor da geração (oculto) |
+| 07_KINEMATICS | H83 | (vazia) | ○ Arbitrário / demonstrativo | EDR-035: origem da geração (oculto) |
+| 07_KINEMATICS | A84 | (vazia) | Gradiente de rolagem ∂φ/∂a_y | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B84 | (vazia) | `=IF(AND(ISNUMBER('09_LOADS'!$B$21),'08_VEHICLE_STATE'!$B$11<>0),DEGREES('09_LOADS'!$B$21)/'08_VEHICLE_STATE'!$B$11,"N/A")` | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C84 | (vazia) | °/g | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D84 | (vazia) | SUS-415 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F84 | (vazia) | Calculada: φ (09_LOADS B21) / a_y em g (08 B11). O φ do modelo é linear em a_y (SUS-103), então a razão é o gradiente. | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | A85 | (vazia) | Contribuição do roll steer ao gradiente de subesterço | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | B85 | (vazia) | `=IF(ISNUMBER('07_KINEMATICS'!$B$84),('07_KINEMATICS'!$B$82-'07_KINEMATICS'!$B$83)*'07_KINEMATICS'!$B$84,"N/A")` | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | C85 | (vazia) | °/g | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | D85 | (vazia) | SUS-415 | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F85 | (vazia) | Calculada: K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57); K > 0 = subesterço. | EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19) |
+| 07_KINEMATICS | F10 | Placeholder geométrico para testar a fórmula; não é hardpoint real. Fase 2: REFERENCE do OptimumKinematics. | Placeholder geométrico para testar a fórmula; não é hardpoint real. Fase 2: REFERENCE do OptimumKinematics. Ao preencher, diga na Fonte de que definição veio o IC: linha de força pelo trabalho virtual (Python, kinematics_model.force_lines_vw; EDR-053) ou tela do OptimumKinematics (definição a confirmar). Na geometria sintética as duas dão 38,6 % e cerca de 93 % de anti-dive. | EDR-053 (conselho de 2026-10-19; usuário seguiu a recomendação) |
+| 07_KINEMATICS | F11 | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. Ao preencher, diga na Fonte de que definição veio o IC: linha de força pelo trabalho virtual (Python, kinematics_model.force_lines_vw; EDR-053) ou tela do OptimumKinematics (definição a confirmar). Na geometria sintética as duas dão 38,6 % e cerca de 93 % de anti-dive. | EDR-053 (conselho de 2026-10-19; usuário seguiu a recomendação) |
+| 07_KINEMATICS | F12 | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. Ao preencher, diga na Fonte de que definição veio o IC: linha de força pelo trabalho virtual (Python, kinematics_model.force_lines_vw; EDR-053) ou tela do OptimumKinematics (definição a confirmar). Na geometria sintética as duas dão 38,6 % e cerca de 93 % de anti-dive. | EDR-053 (conselho de 2026-10-19; usuário seguiu a recomendação) |
+| 07_KINEMATICS | F13 | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. | Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real. Ao preencher, diga na Fonte de que definição veio o IC: linha de força pelo trabalho virtual (Python, kinematics_model.force_lines_vw; EDR-053) ou tela do OptimumKinematics (definição a confirmar). Na geometria sintética as duas dão 38,6 % e cerca de 93 % de anti-dive. | EDR-053 (conselho de 2026-10-19; usuário seguiu a recomendação) |
 | 06_SUSPENSION | B4 (comentário) | Back-calculado da planilha detalhada T09 ('Ride Rate' front=16112.23 N/m, confirmado ser exatamente o Wheel Rate) x MR=1.76. CORRIGE valor anterior (baseado no spec sheet resumido, que arredondava F/R como iguais). | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' front=16112.23 N/m, confirmado ser exatamente o Wheel Rate) x MR=1.76. CORRIGE valor anterior (baseado no spec sheet resumido, que arredondava F/R como iguais). | EDR-012/022 |
 | 06_SUSPENSION | B5 (comentário) | Back-calculado da planilha detalhada T09 ('Ride Rate' rear=18418.2 N/m) x MR=1.76. | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Back-calculado da planilha detalhada T09 ('Ride Rate' rear=18418.2 N/m) x MR=1.76. | EDR-012/022 |
 | 06_SUSPENSION | B6 (comentário) | Fonte: E03 (1.76:1). Assumido como convencao wheel/spring (igual a nossa) - E03 nao especifica a direcao explicitamente. | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: E03 (1.76:1). Assumido como convencao wheel/spring (igual a nossa) - E03 nao especifica a direcao explicitamente. | EDR-012/022 |
@@ -616,7 +706,7 @@ arquivo provisório fica confirmada em primeira mão. A equipe usa o R60A, não 
 | (pasta) | nome definido Origens | (vazia) | '00_README'!$A$43:$A$48 | EDR-035 |
 | 05_VEHICLE | E3:F36 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 06_SUSPENSION | E3:F52 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
-| 07_KINEMATICS | E3:F69 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
+| 07_KINEMATICS | E3:F85 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 08_VEHICLE_STATE | E3:F11 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 11_DESIGN | E3:F21 (formatação) | (vazia) | lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; F: Dado do TX sem fonte); G/H ocultas | EDR-035 |
 | 10_TIRE | I20:J176 (formatação) | (vazia) | lista 'Origens' em I; cores por origem | EDR-035 |
