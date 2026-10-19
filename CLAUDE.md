@@ -6,21 +6,26 @@ verificada; a documentação de engenharia (docs/) registra as decisões.
 Foco declarado: completar a planilha (EDR-019).
 
 ## Situação atual
-- Migração do claude.ai em andamento: fase A do `SPEC.md` (reproduzir a V2.4 localmente).
-- `python/` é uma pasta plana de propósito: os scripts acham módulos e dados ao lado
-  deles (`HERE`). Não separe em tests/ ou data/ nem renomeie `_V2_x` antes da tag
-  `v2.4.1` (fase B do SPEC).
+- Fase A concluída (tag `v2.4.1`, repositório privado ViniciusFCC/Sistema_DDS). Fase B
+  em andamento (`SPEC.md` §11): o EDR-043 trocou a versão no nome dos `.py` pela tag
+  do Git.
+- Layout (EDR-043): módulos em `python/` com nomes estáveis; testes em `tests/`
+  (`tests/regressao/` guarda a V1.0 congelada); dados em `data/`, que mantêm o `_V2.0`
+  (versão do schema). A planilha em `excel/` mantém a versão no nome.
 - Carro atual: TX/E05. O T09/E03 é só referência histórica, nunca baseline (EDR-012).
 - Não há hardpoints reais do CAD (Fusion): toda a cinemática usa geometria sintética.
 
-## Comandos (a confirmar quando o pyproject existir)
-- Ambiente: `uv sync` (Python 3.13). Nunca `python`/`python3` direto: `python3` aqui é
-  o atalho da Microsoft Store.
-- Testes: na pasta `python/`, `uv run python -X utf8 <script>.py`. Os testes são
+## Comandos
+- Ambiente: `uv sync` (Python 3.13; no Git Bash, `uv sync --system-certs`). Ele instala o
+  projeto em modo editável, com `python/` no caminho de import. Nunca `python`/`python3`
+  direto: `python3` aqui é o atalho da Microsoft Store.
+- Tudo de uma vez: `uv run python -X utf8 tools/rodar_testes.py` (grava o log em
+  `docs/migracao/`). Um teste só: `uv run python -X utf8 tests/<script>.py`. Os testes são
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
 - Esperado na V2.4: pneu 43, oráculos 5, suspensão 42, cinemática 53, hardpoints 35,
-  mutação 23/23. `test_workbook_V2_4.py` NÃO roda localmente (depende de LibreOffice e
+  mutação 23/23, planilha regenerada com 347 fórmulas e 0 diferença.
+  `tests/test_workbook.py` NÃO roda localmente (depende de LibreOffice e
   de `/mnt/skills`); nunca o conte como aprovado.
 - Rode os testes afetados antes de dizer que uma tarefa terminou.
 

@@ -138,8 +138,8 @@ Todas as partes são sequenciais e pequenas. Cada uma depende do commit anterior
 
 ## 11. Fase B (depois da `v2.4.1`, fora do mínimo)
 
-1. EDR-043, que revisa o EDR-017 (precisa da sua aprovação).
-2. Commit de reestruturação e renomeação (`git mv` para `python/`, `tests/` e `data/`, com nomes estáveis e imports e caminhos ajustados). Testes de novo, com o mesmo resultado da fase A.
+1. ~~EDR-043, que revisa o EDR-017~~: aprovado em 2026-10-19 e VERIFIED.
+2. ~~Commit de reestruturação e renomeação~~ (feito no `d2e1d97`, mesmo resultado da fase A). Commit de reestruturação e renomeação (`git mv` para `python/`, `tests/` e `data/`, com nomes estáveis e imports e caminhos ajustados). Testes de novo, com o mesmo resultado da fase A.
 3. Versão gravada dentro da planilha (estrutura nova, precisa de aprovação) e o local de distribuição (A1).
 4. Recálculo via COM no Excel, substituindo o `recalc.py`, com EDR próprio. O 19/19 deve ser reproduzido, e uma divergência segue o §2.6.
 
