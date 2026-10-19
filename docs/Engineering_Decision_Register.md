@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado, em 2026-10-19). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -31,7 +31,7 @@
 
 ## 2. Índice
 
-Total: 44 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · SUPERSEDED: 1 · VERIFIED: 4
+Total: 44 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · SUPERSEDED: 1 · VERIFIED: 5
 
 | ID | Título | Status |
 |---|---|---|
@@ -78,7 +78,7 @@ Total: 44 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DEC
 | EDR-041 | Entradas α/γ/κ demonstrativas e N/A como estado de saída sem dado | APPROVED_WITH_CONDITIONS |
 | EDR-042 | Verificação das equações do pneu contra fontes de terceiros; caminho até a fonte primária | VERIFIED |
 | EDR-043 | Versionamento por Git e nomes estáveis (substitui o EDR-017) | VERIFIED |
-| EDR-044 | Recálculo da planilha no teste via Excel (COM), com LibreOffice como alternativa | APPROVED |
+| EDR-044 | Recálculo da planilha no teste via Excel (COM), com LibreOffice como alternativa | VERIFIED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -972,13 +972,13 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-044 — Recálculo da planilha no teste via Excel (COM), com LibreOffice como alternativa
 
 - **Date:** 2026-10-19
-- **Status:** APPROVED
+- **Status:** VERIFIED
 - **Context:** O `test_workbook` (19 testes Excel × Python da planilha) recalcula cópias da planilha com o `recalc.py` da skill xlsx, que roda o LibreOffice em `/mnt/skills` (sandbox do claude.ai). Nesta máquina ele não roda (SPEC D2) e ficou NÃO EXECUTÁVEL na fase A. O EDR-008 proíbe xlwings/PyXLL/macros como ponte Excel–Python e o CLAUDE.md exige EDR próprio para qualquer uso em teste.
 - **Question:** Que motor recalcula a planilha no teste?
 - **Alternatives:** (a) só Excel via COM (pywin32); (b) só LibreOffice (headless, mesma macro do `recalc.py`); (c) Excel quando houver, LibreOffice quando não houver; (d) não integrar.
 - **Decision:** (c). O teste usa o Excel via COM (instância própria e invisível, `CalculateFull` + `Save`, sempre em cópias) quando o Excel e o `pywin32` existem; senão, o LibreOffice headless com a macro `calculateAll()` + `store()`. A variável `DDS_RECALC=excel|libreoffice` força um motor. O log registra qual motor rodou. O `pywin32` é dependência só de desenvolvimento e só no Windows. Sem nenhum motor, o teste sai como NÃO EXECUTÁVEL (nunca como aprovado).
 - **Rationale:** O Excel é o programa da equipe e é ~7 vezes mais rápido; o LibreOffice mantém o teste executável fora do Windows e é o motor do resultado original. Os dois dão o mesmo resultado (experimento).
-- **Evidence:** `docs/migracao/experimento-recalculo-libreoffice-x-excel.md`: `test_workbook` 19/19 com os dois motores, reproduzindo o 19/19 do sandbox (`registro-de-versoes-V2_4.md:17`); nas 347 fórmulas, diferença relativa máxima LibreOffice × Excel de 4,0e-15 e textos idênticos; 0,9 s (Excel) contra 6,3 s (LibreOffice) por recálculo.
+- **Evidence:** `docs/migracao/experimento-recalculo-libreoffice-x-excel.md`: `test_workbook` 19/19 com os dois motores, reproduzindo o 19/19 do sandbox (`registro-de-versoes-V2_4.md:17`); nas 347 fórmulas, diferença relativa máxima LibreOffice × Excel de 4,0e-15 e textos idênticos; 0,9 s (Excel) contra 6,3 s (LibreOffice) por recálculo. Implementação (PR #4): `test_workbook` 19/19 pelo Excel no `tools/rodar_testes.py` (`docs/migracao/verificacao-EDR-044-planilha.md`, árvore sem mudanças pendentes) e 19/19 com `DDS_RECALC=libreoffice`; `DDS_RECALC` inválido dá FAIL.
 - **Assumptions:** H1: o comportamento numérico do Excel do Office 16 e do LibreOffice 26.8 vale para as versões que a equipe usa (não verificado em outras versões). H2: a mesma macro do `recalc.py` equivale ao arquivo usado no sandbox em 2026-10-14 (o arquivo exato não foi obtido).
 - **Consequences:** Não altera o EDR-008: a planilha entregue continua sem ponte automática; o COM só abre cópias temporárias dentro do teste. Nenhum check, tolerância ou fórmula muda. O CA-09 deixa de ser NÃO EXECUTÁVEL quando há motor.
 - **Affected_Artifacts:** `tests/test_workbook.py`; `tests/recalculo_planilha.py`; `pyproject.toml`; `uv.lock`; `tools/rodar_testes.py`; `CLAUDE.md`; SPEC (D2, §11).
