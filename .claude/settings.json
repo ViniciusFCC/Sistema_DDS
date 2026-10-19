@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "pyright-lsp@anthropic-plugin-directory": true
+  },
+  "permissions": {
+    "deny": [
+      "Edit(importado-claude-ai/**)",
+      "Write(importado-claude-ai/**)",
+      "Edit(//C:/Users/vferr/Documents/Sistema_DDS/importado-claude-ai/**)",
+      "Write(//C:/Users/vferr/Documents/Sistema_DDS/importado-claude-ai/**)"
+    ]
+  }
+}
