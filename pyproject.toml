@@ -10,13 +10,16 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 # EDR-043: o `uv sync` instala o projeto em modo editável e põe python/ no caminho
-# de import, para que os testes em tests/ achem os módulos sem mexer no sys.path.
+# de import, para que os testes em tests/ achem os módulos de python/ sem mexer no
+# sys.path. O wheel (instalação não editável) põe os mesmos módulos na raiz.
 [tool.hatch.build]
 dev-mode-dirs = ["python"]
 
 [tool.hatch.build.targets.wheel]
 only-include = ["python"]
+sources = ["python"]
+exclude = ["*.md"]
