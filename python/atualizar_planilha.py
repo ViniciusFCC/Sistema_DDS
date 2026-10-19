@@ -288,6 +288,7 @@ def _rodada2() -> list[dict]:
         _a("05_VEHICLE", "B10", f"={V}$B$6*{V}$B$32", ref50, calc),
         _a("05_VEHICLE", "B16", f"={V}$B$33*0.0254/2", ref50, calc),
         _a("05_VEHICLE", "B17", f"={V}$B$34*0.0254/2", ref50, calc),
+        _a("08_VEHICLE_STATE", "A10", "Entrada de onde sai a_y (B5) — EDR-050", ref50, ("08_VEHICLE_STATE", 3, "A")),
         _a("08_VEHICLE_STATE", "A11", "Aceleração lateral em g (entrada de a_y)", ref50, ("08_VEHICLE_STATE", 5, "A")),
         _a("08_VEHICLE_STATE", "B11", 1.2, ref50 + "; valor: 11,772 m/s² / 9,81", inp("08_VEHICLE_STATE", 5)),
         _a("08_VEHICLE_STATE", "C11", "g", ref50, ("08_VEHICLE_STATE", 5, "C")),
@@ -343,7 +344,8 @@ def _rodada2() -> list[dict]:
     fim = LINHAS_ORIGENS.stop
     resto = [
         "3. Avisos: Origem com fundo vermelho-alaranjado = o valor mudou e a Origem continuou a mesma (revise a Origem). "
-        "Fonte com fundo vermelho = a Origem diz \"Dado do TX\" e falta a Fonte.",
+        "Fonte com fundo vermelho = a Origem diz \"Dado do TX\" e falta a Fonte. Na 10_TIRE não há esses avisos: ao trocar um "
+        "caso de carga, troque a Origem à mão.",
         "4. Valor que sai de conta não é digitado (EDR-050): digite as parcelas, não o resultado. Exemplo: massa total = massa "
         "medida + piloto (05_VEHICLE B30 e B31).",
         "5. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima "
@@ -507,6 +509,7 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
     reg("10_TIRE", "I20:J176 (formatação)", None, "lista 'Origens' em I; cores por origem", "EDR-035")
     # Versão e changelog.
     m = wb["00_README"]
+    assert "EDR-045 a EDR-049)" in m["A3"].value, "texto da versão em 00_README!A3 mudou"
     m["A3"].value = m["A3"].value.replace("EDR-045 a EDR-049)", "EDR-045 a EDR-049; 2ª rodada, feedback da equipe: origem de cada "
                                                                "entrada, valores derivados como fórmula, guia de preenchimento; "
                                                                "EDR-035, EDR-050, EDR-051)")

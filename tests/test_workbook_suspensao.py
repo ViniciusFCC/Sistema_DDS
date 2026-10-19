@@ -190,6 +190,8 @@ MAPA = {"ARBITRARIO": ARB, "PLACEHOLDER": ARB, "ALVO_DEMONSTRATIVO": ARB, "ESTIM
         "CASO_DE_CARGA_SEM_PROVENIENCIA": EST, "REAL_OUTRO_VEICULO_T09": T09, "REAL_OUTRO_VEICULO_E03": T09,
         "REAL_OUTRO_VEICULO_PROVISORIO": TTC}
 EXCECOES = {("06_SUSPENSION", "B14"): T09, ("06_SUSPENSION", "B15"): T09}   # RC = T09/E03 (usuário, 2026-10-19; EDR-035)
+# Raízes da V2.1 que viraram fórmula (EDR-050): não têm lista; a categoria da auditoria fica dita na Fonte.
+VIRARAM_FORMULA = {("05_VEHICLE", "B16"): "Estimativa", ("05_VEHICLE", "B17"): "Estimativa", ("08_VEHICLE_STATE", "B5"): "a_y em g"}
 raizes = {}
 with open(os.path.join(_RAIZ, "data", "placeholder-dependency-map-V2.1.csv"), encoding="utf-8") as fh:
     for lin in csv.DictReader(fh):
@@ -198,8 +200,9 @@ with open(os.path.join(_RAIZ, "data", "placeholder-dependency-map-V2.1.csv"), en
                 cel, cat = item[:-1].split("[")
                 raizes[tuple(cel.split("!"))] = cat
 diverge = [(k, cat, wbf[k[0]][f"E{k[1][1:]}"].value) for k, cat in raizes.items()
-           if not str(wbf[k[0]][k[1]].value).startswith("=")
-           and wbf[k[0]][f"E{k[1][1:]}"].value != EXCECOES.get(k, MAPA[cat])]
+           if (k in VIRARAM_FORMULA and not (str(wbf[k[0]][k[1]].value).startswith("=")
+                                             and VIRARAM_FORMULA[k] in str(wbf[k[0]][f"F{k[1][1:]}"].value)))
+           or (k not in VIRARAM_FORMULA and wbf[k[0]][f"E{k[1][1:]}"].value != EXCECOES.get(k, MAPA[cat]))]
 check("TC-WB30-010: toda entrada numérica (05, 06, 07, 08, 11; casos e coeficientes da 10_TIRE) tem Origem da lista e Fonte "
       "visíveis, sem comentário duplicado; calculadas sem lista e com Fonte; origens = categorias da auditoria V2.1",
       not sem and not calc_sem_fonte and not coment and not diverge and len(raizes) == 27,
@@ -218,9 +221,11 @@ fora = [(a, f"E{r}") for a, r in entradas if (a, f"E{r}") not in cobertas] + \
 amarelo = [(w.title, c.coordinate) for w in wbf.worksheets for row in w.iter_rows() for c in row
            if c.fill.fill_type and c.fill.fgColor.rgb == "00FFF2CC"]
 m = wbf["00_README"]
-estilo = lambda c: (c.fill.fill_type, c.fill.fgColor.rgb if c.fill.fill_type else None, c.font.color.rgb if c.font.color else None)
-legenda = [estilo(m[f"A{r}"]) == estilo(wbf[a][c]) for r, (a, c) in zip(range(16, 20), (("05_VEHICLE", "B14"), ("05_VEHICLE", "B6"),
-                                                                                        ("06_SUSPENSION", "B14"), ("05_VEHICLE", "B23")))]
+estilo = lambda c: (c.fill.fgColor.rgb if c.fill.fill_type else None, c.font.color.rgb if c.font.color else None)
+# Cores da legenda da V2.4 (azul, verde-teal, laranja + fundo, preto + fundo cinza) e as células que usam cada uma.
+ESPERADO = [(None, "000000FF"), (None, "00007A5E"), ("00FCE4D6", "00C55A11"), ("00F2F2F2", "00000000")]
+legenda = [estilo(m[f"A{r}"]) == e_ == estilo(wbf[a][c]) for r, e_, (a, c) in
+           zip(range(16, 20), ESPERADO, (("05_VEHICLE", "B14"), ("05_VEHICLE", "B6"), ("06_SUSPENSION", "B14"), ("05_VEHICLE", "B23")))]
 check("TC-WB30-011: lista 'Origens' (00_README A43:A48, 6 rótulos) em toda célula de Origem; nenhum fundo amarelo; "
       "amostras da legenda com o estilo real das células e sem a classe 'Amarelo'",
       lista_ok and not fora and not amarelo and all(legenda) and not any("Amarelo" in str(m[f"A{r}"].value) for r in range(16, 21)),
