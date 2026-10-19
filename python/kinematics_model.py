@@ -160,7 +160,7 @@ def anti_dive_squat_model_check(lca_outer: Hardpoint, lca_bushing_front: Hardpoi
 
 import numpy as np
 
-from hardpoints_V2_0 import HardpointSet, HardpointError  # noqa: F401
+from hardpoints import HardpointSet, HardpointError  # noqa: F401
 
 _PARALLEL_REL_TOL = 1e-9
 

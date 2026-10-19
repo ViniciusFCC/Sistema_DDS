@@ -6,7 +6,7 @@ Roda como script: python3 test_suspension_model_V2_1.py
 
 import math
 import copy
-from suspension_model_V2_1 import (
+from suspension_model import (
     VehicleConfig, static_fz_corner, longitudinal_dfz, lateral_dfz,
     combined_fz_corner, sprung_mass_total, sprung_cg_height, G,
     wheel_rate, spring_rate_from_wheel_rate, natural_frequency,
@@ -168,7 +168,7 @@ check("Piloto Design Mode: ciclo fechado (Analysis -> Design -> mesmo Ks)",
 # V2.0 — validação de entradas (Guide D.2) e aviso de Fz<0 (SUS-104, Guide D.4)
 # =====================================================================
 import warnings
-import suspension_model_V2_1 as sm
+import suspension_model as sm
 
 
 def raises(fn, exc=ValueError, needle=None):
@@ -223,7 +223,8 @@ check("TC-SUS-V2-003e: conservação ΣFz = W continua valendo mesmo com Fz<0 (s
 
 # Regressão contra a V1.0 (se o arquivo estiver ao lado): mesmos valores para entradas válidas
 try:
-    import importlib
+    import importlib, os, sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "regressao"))  # EDR-043: V1.0 congelada
     v1 = importlib.import_module("suspension_model_V1_0")
 except ImportError:
     v1 = None
@@ -263,9 +264,9 @@ with warnings.catch_warnings(record=True) as w:
 check("TC-SUS-V21-004: CARACTERIZAÇÃO — limiar absoluto 0,2 não avisa na inversão 1,76->0,568 (K_w errado em ~9,6x)",
       len(w) == 0 and abs(kw_inv / kw_ok - 1.76 ** 4) < 1e-6, f"K_w={kw_ok:.0f} x {kw_inv:.0f} N/m, razão={kw_inv/kw_ok:.3f} (=1,76^4)")
 try:
-    import os, kinematics_model_V2_0 as km, hardpoints_V2_0 as hp
+    import os, kinematics_model as km, hardpoints as hp
     H = os.path.dirname(os.path.abspath(__file__))
-    cn = km.Corner(hp.load_hardpoints(os.path.join(H, "hardpoints_synthetic_V2.0.csv"), os.path.join(H, "hardpoints_synthetic_V2.0.meta.json")), "FL")
+    cn = km.Corner(hp.load_hardpoints(os.path.join(H, "..", "data", "hardpoints_synthetic_V2.0.csv"), os.path.join(H, "..", "data", "hardpoints_synthetic_V2.0.meta.json")), "FL")
     mr_geo = km.motion_ratio(cn)["mr_wheel_per_spring"]
     check("TC-SUS-V21-005: ponta a ponta (MR geométrico do solver, geometria SINTÉTICA): correto -> MATCH; inverso -> INVERSION_SUSPECTED",
           cc(mr_geo, mr_geo, 1e-6)["status"] == "MATCH" and cc(1.0 / mr_geo, mr_geo, 1e-6)["status"] == "INVERSION_SUSPECTED", f"MR geométrico (sintético)={mr_geo:.4f}")

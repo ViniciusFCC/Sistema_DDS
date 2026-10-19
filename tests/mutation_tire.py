@@ -1,7 +1,16 @@
 import subprocess, shutil, os, tempfile, sys
 # Portabilidade (commit 1, SPEC R3): sys.executable no lugar de python3; pré-checagem
 # do original; "detectado" = a saída contém FAIL e o código de saída é != 0.
-src=open('tire_model_V2_4.py',encoding='utf-8').read()
+HERE=os.path.dirname(os.path.abspath(__file__)); ROOT=os.path.dirname(HERE)
+TEST=os.path.join(HERE,'test_tire_model.py'); TIR=os.path.join(ROOT,'data','Hoosier_R25B_13x7_TTC_provisional.tir')
+src=open(os.path.join(ROOT,'python','tire_model.py'),encoding='utf-8').read()
+def preparar(fonte):
+    # EDR-043: cópia temporária com tests/ (teste + modelo) e data/ (.tir), como no repositório.
+    # O modelo fica na pasta do teste para ter prioridade sobre o python/ instalado pelo uv.
+    d=tempfile.mkdtemp(); t=os.path.join(d,'tests'); os.makedirs(t); os.makedirs(os.path.join(d,'data'))
+    shutil.copy(TEST,t); shutil.copy(TIR,os.path.join(d,'data'))
+    open(os.path.join(t,'tire_model.py'),'w',encoding='utf-8').write(fonte)
+    return t
 muts={
  "Ex sinal PEX4":("(1.0 - p[\"PEX4\"] * _sgn(kx))","(1.0 + p[\"PEX4\"] * _sgn(kx))"),
  "Ky PKY2*fz":("p[\"PKY2\"] * fz0","p[\"PKY2\"] * fz"),
@@ -28,9 +37,8 @@ muts={
  "loader aceita eixo None":("if source_axis_system not in AXIS_TRANSFORMS:","if False:"),
  "gamma SAE so s_g=+1":("\"SAE_CALSPAN\": (-1.0, -1.0, -1.0),","\"SAE_CALSPAN\": (-1.0, -1.0, 1.0),"),
 }
-d=tempfile.mkdtemp()
-for f in ("test_tire_model_V2_4.py","Hoosier_R25B_13x7_TTC_provisional.tir","tire_model_V2_4.py"): shutil.copy(f,d)
-out=subprocess.run([sys.executable,'-X','utf8','test_tire_model_V2_4.py'],cwd=d,capture_output=True,text=True)
+d=preparar(src)
+out=subprocess.run([sys.executable,'-X','utf8','test_tire_model.py'],cwd=d,capture_output=True,text=True)
 resumo=(out.stdout.strip().splitlines() or [''])[-1]
 if out.returncode!=0 or ' 0 FAIL' not in resumo:
     print('PRE-CHECAGEM FALHOU: original ->',resumo,'| código',out.returncode); print(out.stderr[-2000:]); sys.exit(2)
@@ -38,10 +46,8 @@ print('PRE-CHECAGEM OK: original ->',resumo)
 det=0
 for name,(a,b) in muts.items():
     assert a in src, name
-    d=tempfile.mkdtemp()
-    for f in ("test_tire_model_V2_4.py","Hoosier_R25B_13x7_TTC_provisional.tir"): shutil.copy(f,d)
-    open(os.path.join(d,'tire_model_V2_4.py'),'w',encoding='utf-8').write(src.replace(a,b,1))
-    out=subprocess.run([sys.executable,'-X','utf8','test_tire_model_V2_4.py'],cwd=d,capture_output=True,text=True)
+    d=preparar(src.replace(a,b,1))
+    out=subprocess.run([sys.executable,'-X','utf8','test_tire_model.py'],cwd=d,capture_output=True,text=True)
     ok=out.returncode!=0 and '[FAIL]' in out.stdout
     det+= ok
     print(('DETECTADO     ' if ok else 'NÃO DETECTADO '),name)

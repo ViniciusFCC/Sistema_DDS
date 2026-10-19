@@ -8,10 +8,10 @@ código de terceiros; NÃO é validação contra medição, nem contra o livro (
 Namespace TC-TIRE-ORC-xxx. python3 test_tire_oracles_V2_4.py
 """
 import math, os, random
-import tire_model_V2_4 as t
+import tire_model as t
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ds = t.load_dataset(os.path.join(HERE, "Hoosier_R25B_13x7_TTC_provisional.tir"), source_axis_system="SAE_CALSPAN"); p = ds.p
+ds = t.load_dataset(os.path.join(HERE, "..", "data", "Hoosier_R25B_13x7_TTC_provisional.tir"), source_axis_system="SAE_CALSPAN"); p = ds.p
 results = []
 
 
