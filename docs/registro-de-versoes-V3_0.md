@@ -1,35 +1,41 @@
-# Registro de versões — Sistema_DDS — V2.5 (revisão metodológica contra a literatura)
+# Registro de versões — Sistema_DDS — V3.0 (revisão metodológica contra a literatura)
 
 Data: 2026-10-19. Motivo: o usuário pediu que as fórmulas e métodos seguissem a literatura,
 principalmente o Milliken, e autorizou todas as propostas da revisão
 (`docs/revisao-metodologica.md`, P-01 a P-07). Decisões: EDR-045 a EDR-049; EDR-026 aprovado.
 
-## Mapa V2.4 → V2.5
+**Numeração (usuário, 2026-10-19):** o trabalho que começou com a revisão metodológica é a
+**V3.0**, e não V2.5. A V3.0 fica em desenvolvimento até terminar a implementação das
+correções vindas de feedback; esta é a primeira rodada (revisão metodológica). Os nomes
+"V2.5" que aparecem nos títulos dos PRs #5 e #6 e nas mensagens de commit anteriores a esta
+troca se referem a esta mesma versão.
 
-| Anterior | V2.5 | Mudança |
+## Mapa V2.4 → V3.0
+
+| Anterior | V3.0 | Mudança |
 |---|---|---|
-| `FSAE_EV_Suspension_Fase1_V2_4.xlsx` | `FSAE_EV_Suspension_Fase1_V2_5.xlsx` | Gerada da V2.4 por `python/atualizar_planilha.py` (openpyxl, sem recálculo nem gravação pelo Excel). 356 fórmulas (347 + 9 novas). Lista célula a célula abaixo. A V2.4 fica em `excel/` como histórico. |
-| `suspension_model` V2.1 | V2.5 | Pneu em série (`ride_rate`, `wheel_rate_from_ride_rate`, `roll_stiffness_axle(..., k_tire)`, `arb_required`); `natural_frequency` recebe a ride rate; `wheel_rate_from_target_frequency(f, m, k_tire)`; massa suspensa por eixo (`sprung_mass_axle`, `sprung_cg_to_front`); `lateral_dfz` com termo gravitacional e CG suspenso em a_s (devolve também `a_s`, `h2`, `roll_angle_rad`); bloqueio de instabilidade de rolagem. |
-| `tire_model` V2.4 | V2.5 | Ky com um único λFz0 (EDR-049). |
+| `FSAE_EV_Suspension_Fase1_V2_4.xlsx` | `FSAE_EV_Suspension_Fase1_V3_0.xlsx` | Gerada da V2.4 por `python/atualizar_planilha.py` (openpyxl, sem recálculo nem gravação pelo Excel). 356 fórmulas (347 + 9 novas). Lista célula a célula abaixo. A V2.4 fica em `excel/` como histórico. |
+| `suspension_model` V2.1 | V3.0 | Pneu em série (`ride_rate`, `wheel_rate_from_ride_rate`, `roll_stiffness_axle(..., k_tire)`, `arb_required`); `natural_frequency` recebe a ride rate; `wheel_rate_from_target_frequency(f, m, k_tire)`; massa suspensa por eixo (`sprung_mass_axle`, `sprung_cg_to_front`); `lateral_dfz` com termo gravitacional e CG suspenso em a_s (devolve também `a_s`, `h2`, `roll_angle_rad`); bloqueio de instabilidade de rolagem. |
+| `tire_model` V2.4 | V3.0 | Ky com um único λFz0 (EDR-049). |
 | `kinematics_model` | idem | `REACTION_POINT` do carro (EDR-048); funções do método V1 do SUS-406 marcadas como legado. |
-| — | `python/atualizar_planilha.py` | Novo: gera a V2.5 e o registro de alterações. |
-| — | `tests/test_workbook_suspensao.py` | Novo: Excel × Python das abas de suspensão (TC-WB25-001..009). |
-| `tests/test_workbook.py` | idem | Passa a testar a V2.5 (10_TIRE); TC-WB24-001/002 aceitam só as células da lista de alterações. |
-| testes de suspensão, pneu, oráculos, cinemática e mutação | idem | Identidades atualizadas (TC-005, TC-007, TC-008, TC-010, piloto, TC-SUS-V2-004, TC-TIRE-ORC-004) e oráculos da literatura (TC-SUS-V25-001..011, TC-KIN-119, mutante "LFZO extra em Ky"). |
-| `tools/rodar_testes.py`, `tools/comparar_planilhas.py` | idem | Contagens novas; CA-07 também regenera a V2.5 e compara com a entregue (356 fórmulas, 0 diferença); CA-09 roda os dois testes de planilha. |
-| Engineering Standard V2.0 | com nota V2.5 | Fichas SUS-009, 103, 205-208, 301, 302, 406 atualizadas; novas SUS-211 (K_T) e SUS-212 (ride rate). |
+| — | `python/atualizar_planilha.py` | Novo: gera a V3.0 e o registro de alterações. |
+| — | `tests/test_workbook_suspensao.py` | Novo: Excel × Python das abas de suspensão (TC-WB30-001..009). |
+| `tests/test_workbook.py` | idem | Passa a testar a V3.0 (10_TIRE); TC-WB24-001/002 aceitam só as células da lista de alterações. |
+| testes de suspensão, pneu, oráculos, cinemática e mutação | idem | Identidades atualizadas (TC-005, TC-007, TC-008, TC-010, piloto, TC-SUS-V2-004, TC-TIRE-ORC-004) e oráculos da literatura (TC-SUS-V30-001..011, TC-KIN-119, mutante "LFZO extra em Ky"). |
+| `tools/rodar_testes.py`, `tools/comparar_planilhas.py` | idem | Contagens novas; CA-07 também regenera a V3.0 e compara com a entregue (356 fórmulas, 0 diferença); CA-09 roda os dois testes de planilha. |
+| Engineering Standard V2.0 | com nota V3.0 | Fichas SUS-009, 103, 205-208, 301, 302, 406 atualizadas; novas SUS-211 (K_T) e SUS-212 (ride rate). |
 | `Engineering_Decision_Register.md` | idem | EDR-045 a EDR-049 (VERIFIED); EDR-026 APPROVED_WITH_CONDITIONS. |
 
 ## Resultados de código (2026-10-19, `tools/rodar_testes.py`)
 
 - Pneu 43/43, oráculos 5/5, suspensão 54/54, cinemática 54/54, hardpoints 35/35, mutação 24/24.
-- Planilha: V2.4 regenerada com 347 fórmulas e 0 diferença; V2.5 regenerada com 356 fórmulas e 0 diferença.
-- `test_workbook` 19/19 (V2.5, pneu) e `test_workbook_suspensao` 9/9 (V2.5, suspensão), pelo Excel via COM.
+- Planilha: V2.4 regenerada com 347 fórmulas e 0 diferença; V3.0 regenerada com 356 fórmulas e 0 diferença.
+- `test_workbook` 19/19 (V3.0, pneu) e `test_workbook_suspensao` 9/9 (V3.0, suspensão), pelo Excel via COM.
 - Exemplos publicados reproduzidos pelo modelo: Milliken p. 683 (590,8/483,4 lb/g e −2,0 °/g), p. 592 (barra 19 904 lb·ft/rad; K_W 476/254 lb/in), Tab. 16.3 e p. 602-603 (massas e h_s); Seward Ex. 4.1; Gillespie p. 154.
 
 ## Efeito nos valores da planilha (recalculada pelo Excel; entradas DEMONSTRATIVAS)
 
-| Grandeza | Célula | V2.4 | V2.5 |
+| Grandeza | Célula | V2.4 | V3.0 |
 |---|---|---|---|
 | K_φF [N·m/rad] | 06_SUSPENSION!B22 | 18 149,7 | 15 316,0 |
 | K_φR [N·m/rad] | 06_SUSPENSION!B23 | 14 887,5 | 12 909,8 |
@@ -156,6 +162,6 @@ PROVISÓRIO: nada desta tabela é resultado do carro.
 | 06_SUSPENSION | B11 (comentário) | Fonte: planilha detalhada T09 (AntiRoll Bar Rate rear, ~0, consistente com 'sem ARB' declarado). Inconsistencia anterior estava no Wheel Rate do spec sheet resumido, ja corrigida em SUS-203. | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: planilha detalhada T09 (AntiRoll Bar Rate rear, ~0, consistente com 'sem ARB' declarado). Inconsistencia anterior estava no Wheel Rate do spec sheet resumido, ja corrigida em SUS-203. | EDR-012/022 |
 | 06_SUSPENSION | B14 (comentário) | Fonte: planilha detalhada T09 (0.0675m) - mais precisa que o spec sheet resumido do E03 (60mm, arredondado). PROVISORIO ate Fase 2 (OptimumKinematics). | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: planilha detalhada T09 (0.0675m) - mais precisa que o spec sheet resumido do E03 (60mm, arredondado). PROVISORIO ate Fase 2 (OptimumKinematics). | EDR-012/022 |
 | 06_SUSPENSION | B15 (comentário) | Fonte: E03 (110mm, Roll center height above ground static). PROVISORIO ate Fase 2 (OptimumKinematics). | DEMONSTRATIVO (EDR-012/022): valor herdado do T09/E03, usado só para referência, comparação e teste das fórmulas (confirmado pelo usuário em 2026-10-19). Não é o TX/E05. Fonte: E03 (110mm, Roll center height above ground static). PROVISORIO ate Fase 2 (OptimumKinematics). | EDR-012/022 |
-| 10_TIRE | B16 | (texto V2.4) | (texto V2.5) | EDR-042/049 |
-| 00_README | A3 | Versão do workbook: V2.4 ... | Versão do workbook: V2.5 ... | EDR-043 |
-| 15_CHANGELOG | A16:C16 | (vazia) | (linha V2.5) | EDR-043 |
+| 10_TIRE | B16 | (texto V2.4) | (texto V3.0) | EDR-042/049 |
+| 00_README | A3 | Versão do workbook: V2.4 ... | Versão do workbook: V3.0 ... | EDR-043 |
+| 15_CHANGELOG | A16:C16 | (vazia) | (linha V3.0) | EDR-043 |
