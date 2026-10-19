@@ -4,17 +4,19 @@ Gerado por `tools/rodar_testes.py`. Não edite à mão: rode de novo.
 
 ## Ambiente (CA-10)
 
-- Data: 2026-10-19T00:13:22
-- Commit: `25592b9` (com mudanças não commitadas em arquivos versionados)
+- Data: 2026-10-19T00:37:35
+- Commit: `441487d`
 - Sistema: Windows-11-10.0.26300-SP0
 - Python: 3.13.15 (C:\Users\vferr\Documents\Sistema_DDS\.venv\Scripts\python.exe)
 - numpy 2.5.4, scipy 1.18.1, openpyxl 3.1.5 (fixados no `uv.lock`)
 - Execução: `sys.executable -X utf8 <script>`, cwd=raiz do repositório, `PYTHONUTF8=1`
+- Módulos importados de (PASS): `C:\Users\vferr\Documents\Sistema_DDS\python\tire_model.py`, `C:\Users\vferr\Documents\Sistema_DDS\python\suspension_model.py`, `C:\Users\vferr\Documents\Sistema_DDS\python\kinematics_model.py`, `C:\Users\vferr\Documents\Sistema_DDS\python\hardpoints.py`
 
 ## Resumo
 
 | CA | Item | Status |
 |---|---|---|
+| CA-10 | módulos importados de python/ | **PASS** |
 | CA-05 | pneu | **PASS** |
 | CA-05 | oráculos | **PASS** |
 | CA-05 | suspensão | **PASS** |
@@ -81,7 +83,7 @@ DETECTADO      gamma SAE so s_g=+1
 <details><summary>build: stdout</summary>
 
 ```text
-salvo C:\Users\vferr\AppData\Local\Temp\dds_build_5vcrafgk\FSAE_EV_Suspension_Fase1_V2_4.xlsx linhas 177 ref 1526.9250569300661 -1131.8643128749413 2.715269352685693
+salvo C:\Users\vferr\AppData\Local\Temp\dds_build_j_xnfzmx\FSAE_EV_Suspension_Fase1_V2_4.xlsx linhas 177 ref 1526.9250569300661 -1131.8643128749413 2.715269352685693
 ```
 
 </details>
@@ -96,5 +98,5 @@ CA-08 PASS
 
 ## Teste da planilha (CA-09)
 
-- `tests/test_workbook.py`: **NÃO EXECUTÁVEL**. depende de LibreOffice e de `/mnt/skills/public/xlsx/scripts/recalc.py` (linhas 10 e 28, chamado com `python3`), que não existem nesta máquina (SPEC D2). Na fase A ele nunca conta como aprovado (R6). Resultado registrado no sandbox: 19/19 (registro-de-versoes-V2_4.md:17), não reproduzido aqui.
+- `tests/test_workbook.py`: **NÃO EXECUTÁVEL**. depende de LibreOffice e de `/mnt/skills/public/xlsx/scripts/recalc.py` (linhas 10 e 28, chamado com `python3`), que não existem nesta máquina (SPEC D2). Ele nunca conta como aprovado (R6). Resultado registrado no sandbox: 19/19 (registro-de-versoes-V2_4.md:17), não reproduzido aqui.
 
