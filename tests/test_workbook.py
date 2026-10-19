@@ -1,15 +1,22 @@
 """
-Teste de integração da planilha V2.2 (pneu). Requer LibreOffice e o recalc.py do skill xlsx.
-Uso: python3 test_workbook_V2_2.py <FSAE_EV_Suspension_Fase1_V2_4.xlsx> <FSAE_EV_Suspension_Fase1_V2_1.xlsx> <layout_V2_4.json> <tire.tir>
-Cada cenário altera uma CÓPIA, recalcula e lê; o arquivo entregue nunca é salvo pelo LibreOffice. Namespace TC-WB24-xxx.
+Teste de integração da planilha V2.2 (pneu). Recalcula pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_planilha.py).
+Uso: uv run python -X utf8 tests/test_workbook.py [<V2_4.xlsx> <V2.1.xlsx> <layout_V2_4.json> <tire.tir>]  (padrão: excel/ e data/)
+Cada cenário altera uma CÓPIA, recalcula e lê; o arquivo entregue nunca é salvo pelo motor de recálculo. Namespace TC-WB24-xxx.
 """
 import sys, os, shutil, subprocess, tempfile, json, math, random
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name  # tudo que o teste cria em temp fica aqui e é apagado no fim
 import openpyxl
 import tire_model as t
 
-RECALC_DIR = "/mnt/skills/public/xlsx"
-V22, V21, LAY, TIR = sys.argv[1:5]
+import recalculo_planilha as rc
+MOTOR, DETALHE = rc.escolher()
+if MOTOR is None:
+    print(f"NÃO EXECUTÁVEL: nenhum motor de recálculo ({DETALHE})"); sys.exit(3)
+print(f"MOTOR: {MOTOR} ({DETALHE})")
+_RAIZ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+V22, V21, LAY, TIR = sys.argv[1:5] if len(sys.argv) >= 5 else [os.path.join(_RAIZ, *p) for p in (
+    ("excel", "FSAE_EV_Suspension_Fase1_V2_4.xlsx"), ("excel", "FSAE_EV_Suspension_Fase1_V2.1.xlsx"),
+    ("data", "layout_V2_4.json"), ("data", "Hoosier_R25B_13x7_TTC_provisional.tir"))]
 L = json.load(open(LAY)); R, PR = L["rows"], L["prow"]
 ds = t.load_dataset(TIR, source_axis_system="SAE_CALSPAN")
 ds_iso = t.load_dataset(TIR, source_axis_system="ISO_TYDEX")
@@ -26,8 +33,7 @@ def scenario(mods):
     wb = openpyxl.load_workbook(f); ws = wb["10_TIRE"]
     for addr, val in mods.items(): ws[addr].value = val
     wb.save(f)
-    out = subprocess.run(["python3", "scripts/recalc.py", f, "120"], cwd=RECALC_DIR, capture_output=True, text=True).stdout
-    info = json.loads(out)
+    info = rc.recalcular(f, MOTOR, 120)
     v = openpyxl.load_workbook(f, data_only=True)
     return info, v["10_TIRE"], v
 
