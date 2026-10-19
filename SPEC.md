@@ -132,7 +132,7 @@ Todas as partes são sequenciais e pequenas. Cada uma depende do commit anterior
 
 ## 10. Decisões em aberto
 
-- **[ABERTO] A1.** Onde a equipe encontra a planilha vigente (pasta da equipe ou GitHub Releases). Recomendação: decidir na fase B, junto com a versão gravada dentro da planilha. Não afeta a fase A.
+- **[RESOLVIDO] A1.** Onde a equipe encontra a planilha vigente: GitHub Releases do repositório privado, com a planilha anexada a cada release. Por enquanto, a versão vigente também é entregue ao usuário na conversa (decisão do usuário, 2026-10-19).
 - **[RESOLVIDO] A2.** O número do EDR que revisa o EDR-017: EDR-043, autorizado pelo usuário em 2026-10-19.
 - **[ABERTO] A3.** `test_t09_reference_case.py` (pasta `plan/`) importa `suspension_model` da v0.1, e não da V2.1. Recomendação: fora da fase A; avaliar na fase B se ele deve ser portado para a V2.1.
 
@@ -140,7 +140,7 @@ Todas as partes são sequenciais e pequenas. Cada uma depende do commit anterior
 
 1. ~~EDR-043, que revisa o EDR-017~~: aprovado em 2026-10-19 e VERIFIED.
 2. ~~Commit de reestruturação e renomeação (`git mv` para `python/`, `tests/` e `data/`, com nomes estáveis e imports e caminhos ajustados). Testes de novo, com o mesmo resultado da fase A.~~ Feito no PR #1 (branch `refactor/nomes-estaveis`), com o mesmo resultado da fase A.
-3. Versão gravada dentro da planilha (estrutura nova, precisa de aprovação) e o local de distribuição (A1).
+3. ~~Versão gravada dentro da planilha (estrutura nova, precisa de aprovação) e o local de distribuição (A1).~~ Sem estrutura nova (decisão do usuário, 2026-10-19): a versão já fica em `00_README!A3`, e o `tools/rodar_testes.py` confere que ela é a mesma do nome do arquivo. Distribuição: A1.
 4. Recálculo via COM no Excel, substituindo o `recalc.py`, com EDR próprio. O 19/19 deve ser reproduzido, e uma divergência segue o §2.6.
 
 ## 12. Ordem no fluxo global
