@@ -4,6 +4,7 @@ Recalcula CÓPIAS pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_plani
 Uso: uv run python -X utf8 tests/test_workbook_suspensao.py [<V3_0.xlsx>]   (padrão: excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx)
 Namespace TC-WB30-xxx. "Passou" = Excel reproduz o suspension_model/kinematics_model (tol. 1e-9 relativa), não validação física.
 TC-WB30-010 a 013 (1ª rodada de feedback): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
+TC-WB30-013 estendido na 2ª rodada de feedback: razão h_ns / raio como entrada (05 B35/B36) e 07 B14 separado do CG não suspenso.
 """
 import csv, math, os, random, shutil, sys, tempfile, warnings
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
@@ -35,13 +36,15 @@ ENTRADAS = {
     "KarbF": ("06_SUSPENSION", "B10"), "KarbR": ("06_SUSPENSION", "B11"), "zF": ("06_SUSPENSION", "B14"), "zR": ("06_SUSPENSION", "B15"),
     "FBf": ("06_SUSPENSION", "B36"), "TFr": ("06_SUSPENSION", "B37"), "KTF": ("06_SUSPENSION", "B47"), "KTR": ("06_SUSPENSION", "B48"),
     "zICF": ("07_KINEMATICS", "B10"), "dxF": ("07_KINEMATICS", "B11"), "zICR": ("07_KINEMATICS", "B12"), "dxR": ("07_KINEMATICS", "B13"),
+    "zWR": ("07_KINEMATICS", "B14"),
     "ax": ("08_VEHICLE_STATE", "B4"), "ay": ("08_VEHICLE_STATE", "B5"), "DF": ("08_VEHICLE_STATE", "B8"), "bal": ("08_VEHICLE_STATE", "B9"),
     "fF": ("11_DESIGN", "B4"), "fR": ("11_DESIGN", "B5"), "lam": ("11_DESIGN", "B18"),
 }
 # EDR-050: estas entradas são calculadas na V3.0 a partir das parcelas abaixo; o teste lê o valor, mas só escreve as parcelas.
-DERIVADAS = {"m", "a", "b", "huF", "huR", "ay"}
+DERIVADAS = {"m", "a", "b", "huF", "huR", "ay", "zWR"}
 PARCELAS = {"m_med": ("05_VEHICLE", "B30"), "m_pil": ("05_VEHICLE", "B31"), "f": ("05_VEHICLE", "B32"),
-            "D_F": ("05_VEHICLE", "B33"), "D_R": ("05_VEHICLE", "B34"), "ay_g": ("08_VEHICLE_STATE", "B11")}
+            "D_F": ("05_VEHICLE", "B33"), "D_R": ("05_VEHICLE", "B34"), "ay_g": ("08_VEHICLE_STATE", "B11"),
+            "rF": ("05_VEHICLE", "B35"), "rR": ("05_VEHICLE", "B36")}   # razão h_ns / raio (2ª rodada de feedback)
 SAIDAS = {   # nome -> (aba, célula)
     "msF": ("05_VEHICLE", "B25"), "msR": ("05_VEHICLE", "B26"), "a_s": ("05_VEHICLE", "B27"), "hs": ("05_VEHICLE", "B24"),
     "KwF": ("06_SUSPENSION", "B18"), "KwR": ("06_SUSPENSION", "B19"), "KphiF": ("06_SUSPENSION", "B22"), "KphiR": ("06_SUSPENSION", "B23"),
@@ -78,7 +81,7 @@ def python_ref(x):
         "KwF": KwF, "KwR": KwR, "KphiF": KphiF, "KphiR": KphiR, "lamF": KphiF / (KphiF + KphiR), "mcF": mc["FL"], "mcR": mc["RL"],
         "fnF": sm.natural_frequency(KRF, mc["FL"]), "fnR": sm.natural_frequency(KRR, mc["RL"]), "KRF": KRF, "KRR": KRR,
         "AD": km.anti_dive_percent_signed(x["zICF"] / x["dxF"], x["FBf"], x["L"], x["h"]),
-        "AS": km.anti_squat_percent_signed((x["zICR"] - x["huR"]) / x["dxR"], x["TFr"], x["L"], x["h"]),
+        "AS": km.anti_squat_percent_signed((x["zICR"] - x["zWR"]) / x["dxR"], x["TFr"], x["L"], x["h"]),
         "zs": lat["z_s"], "dFzF": lat["front_axle"], "dFzR": lat["rear_axle"], "phi": lat["roll_angle_rad"], **fz,
         "KwFd": KwFd, "KwRd": KwRd, "KsFd": sm.spring_rate_from_wheel_rate(KwFd, x["MRF"]), "KsRd": sm.spring_rate_from_wheel_rate(KwRd, x["MRR"]),
         "KphiFd": KphiFd, "KarbFd": sm.arb_required(KphiFd, KwF, x["tF"], x["KTF"]),
@@ -127,16 +130,24 @@ check("TC-WB30-004: K_T de 06_SUSPENSION é o VERTICAL_STIFFNESS do .tir provis�
 # ---------- EDR-050: valores derivados como fórmula, com as parcelas como entrada ----------
 wbf = openpyxl.load_workbook(V30)
 DERIV = {("05_VEHICLE", "B4"): ("$B$30", "$B$31"), ("05_VEHICLE", "B9"): ("$B$6", "$B$32"), ("05_VEHICLE", "B10"): ("$B$6", "$B$32"),
-         ("05_VEHICLE", "B16"): ("$B$33",), ("05_VEHICLE", "B17"): ("$B$34",), ("08_VEHICLE_STATE", "B5"): ("$B$11",)}
+         ("05_VEHICLE", "B16"): ("$B$33", "$B$35"), ("05_VEHICLE", "B17"): ("$B$34", "$B$36"), ("08_VEHICLE_STATE", "B5"): ("$B$11",),
+         ("07_KINEMATICS", "B14"): ("'05_VEHICLE'!$B$34",)}
 eh_formula = all(str(wbf[a][c].value).startswith("=") and all(r in wbf[a][c].value for r in refs) for (a, c), refs in DERIV.items())
+eh_formula = eh_formula and "$B$17" not in wbf["07_KINEMATICS"]["B14"].value   # centro da roda ≠ CG não suspenso (2ª rodada)
 v5, v8 = wbv["05_VEHICLE"], wbv["08_VEHICLE_STATE"]
 esperado = {"B4": 316.5, "B9": 1.594 * (1 - 0.4843), "B10": 1.594 * 0.4843, "B16": 0.254, "B17": 0.254}
-dif = max([abs(v5[k].value - e_) for k, e_ in esperado.items()] + [abs(v8["B5"].value - 11.772)])
-parcelas = [v5["B30"].value, v5["B31"].value, v5["B32"].value, v5["B33"].value, v5["B34"].value, v8["B11"].value]
-check("TC-WB30-013: B4, B9, B10, B16, B17 (05) e B5 (08) são fórmula das parcelas e reproduzem os valores digitados antes "
-      "(a e b só diferem pelo arredondamento antigo, < 1e-5 m)",
-      eh_formula and dif < 1e-12 and parcelas == [248.5, 68, 0.4843, 20, 20, 1.2]
-      and abs(v5["B9"].value - 0.82203) < 1e-5 and abs(v5["B10"].value - 0.77197) < 1e-5, f"dif={dif:.1e}; parcelas={parcelas}")
+dif = max([abs(v5[k].value - e_) for k, e_ in esperado.items()] + [abs(v8["B5"].value - 11.772)]
+          + [abs(wbv["07_KINEMATICS"]["B14"].value - 0.254)])
+parcelas = [v5["B30"].value, v5["B31"].value, v5["B32"].value, v5["B33"].value, v5["B34"].value, v8["B11"].value,
+            v5["B35"].value, v5["B36"].value]
+# Mudar a razão h_ns / raio move o CG não suspenso e não move o centro da roda (07 B14).
+_, wbr = scenario({("05_VEHICLE", "B35"): 0.8, ("05_VEHICLE", "B36"): 0.9})
+sep = (abs(wbr["05_VEHICLE"]["B16"].value - 0.8 * 0.254) < 1e-12 and abs(wbr["05_VEHICLE"]["B17"].value - 0.9 * 0.254) < 1e-12
+       and abs(wbr["07_KINEMATICS"]["B14"].value - 0.254) < 1e-12)
+check("TC-WB30-013: B4, B9, B10, B16, B17 (05), B5 (08) e 07 B14 são fórmula das parcelas e reproduzem os valores digitados antes "
+      "(a e b só diferem pelo arredondamento antigo, < 1e-5 m); a razão h_ns / raio (B35/B36) move só o CG não suspenso",
+      eh_formula and dif < 1e-12 and sep and parcelas == [248.5, 68, 0.4843, 20, 20, 1.2, 1, 1]
+      and abs(v5["B9"].value - 0.82203) < 1e-5 and abs(v5["B10"].value - 0.77197) < 1e-5, f"dif={dif:.1e}; sep={sep}; parcelas={parcelas}")
 
 # ---------- perturbações aleatórias de todas as entradas ----------
 rnd = random.Random(20261019)
