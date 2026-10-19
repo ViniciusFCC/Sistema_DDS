@@ -1,13 +1,25 @@
 """Gera FSAE_EV_Suspension_Fase1_V2_4.xlsx a partir da V2.1. Só adições/ substituição da aba 10_TIRE; as 88 fórmulas existentes não são tocadas."""
-import copy, math, sys
+import argparse, copy, math, sys
+from pathlib import Path
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.comments import Comment
 import tire_model_V2_4 as t
 
-SRC = "/mnt/project/FSAE_EV_Suspension_Fase1_V2_1.xlsx"
-OUT = sys.argv[1] if len(sys.argv) > 1 else "/home/claude/work/FSAE_EV_Suspension_Fase1_V2_4.xlsx"
-TIR = "/home/claude/work/Hoosier_R25B_13x7_TTC_provisional.tir"
+# Portabilidade (commit 1, SPEC R3): os caminhos fixos do sandbox viraram argumentos
+# com padrão relativo a este script. A saída padrão fica em build/, nunca sobre a entregue.
+HERE = Path(__file__).resolve().parent
+_ap = argparse.ArgumentParser()
+_ap.add_argument("out", nargs="?", default=str(HERE.parent / "build" / "FSAE_EV_Suspension_Fase1_V2_4.xlsx"))
+_ap.add_argument("--src", default=str(HERE.parent / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"))
+_ap.add_argument("--tir", default=str(HERE / "Hoosier_R25B_13x7_TTC_provisional.tir"))
+_ap.add_argument("--layout", default=None, help="padrão: layout_V2_4.json na pasta de OUT")
+_args = _ap.parse_args()
+SRC = _args.src
+OUT = _args.out
+TIR = _args.tir
+LAYOUT = _args.layout or str(Path(OUT).parent / "layout_V2_4.json")
+Path(OUT).parent.mkdir(parents=True, exist_ok=True)
 ds = t.load_dataset(TIR, source_axis_system="SAE_CALSPAN")
 P = ds.p
 
@@ -425,5 +437,5 @@ c["C15"].value = ("Pedido do usuario apos informar que o TTC usa SAE e que os da
 wb.calculation.fullCalcOnLoad = True
 wb.save(OUT)
 import json
-json.dump({"rows": rows, "prow": prow, "ref": {"fx": ref_fx, "fy": ref_fy, "mu": ref_mu}, "base": base}, open("/home/claude/work/layout_V2_4.json", "w"))
+json.dump({"rows": rows, "prow": prow, "ref": {"fx": ref_fx, "fy": ref_fy, "mu": ref_mu}, "base": base}, open(LAYOUT, "w"))
 print("salvo", OUT, "linhas", r, "ref", ref_fx, ref_fy, ref_mu)
