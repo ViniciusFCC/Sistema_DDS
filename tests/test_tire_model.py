@@ -122,7 +122,7 @@ def ref_forces(P, Fz, al, ga, ka):
     u = Bx * kx; Fx0 = Dx * sin(Cx * atan(u - Ex * (u - atan(u)))) + Svx
     # Fy0
     gy = ga * P["LGAY"]
-    Ky = P["PKY1"] * Fz0 * sin(2 * atan(Fz / (P["PKY2"] * Fz0))) * (1 - P["PKY3"] * abs(gy)) * P["LFZO"] * P["LKY"]
+    Ky = P["PKY1"] * Fz0 * sin(2 * atan(Fz / (P["PKY2"] * Fz0))) * (1 - P["PKY3"] * abs(gy)) * P["LKY"]   # EDR-049
     Shy = (P["PHY1"] + P["PHY2"] * d) * P["LHY"] + P["PHY3"] * gy; ay = al + Shy
     Cy = P["PCY1"] * P["LCY"]; muy = (P["PDY1"] + P["PDY2"] * d) * (1 - P["PDY3"] * gy ** 2) * P["LMUY"]; Dy = muy * Fz
     Ey = (P["PEY1"] + P["PEY2"] * d) * (1 - (P["PEY3"] + P["PEY4"] * gy) * sg(ay)) * P["LEY"]; Ey = Ey if Ey < 1 else 1.0

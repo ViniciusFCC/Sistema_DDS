@@ -27,7 +27,7 @@ import math
 import re
 from dataclasses import dataclass, field
 
-__version__ = "V2.4"
+__version__ = "V2.5"
 EPS = 1e-6
 
 
@@ -160,7 +160,8 @@ def pure_fy0(p, fz, alpha, gamma):
     fz0 = p["LFZO"] * p["FNOMIN"]
     dfz = (fz - fz0) / fz0
     gy = gamma * p["LGAY"]
-    Ky = p["PKY1"] * fz0 * math.sin(2.0 * math.atan(fz / (p["PKY2"] * fz0))) * (1.0 - p["PKY3"] * abs(gy)) * p["LFZO"] * p["LKY"]
+    # EDR-049: um único λFz0 (via F'z0 = LFZO·FNOMIN), como Pacejka (2006) eq. 4.E25 e Seward eq. 5.9; a forma do Racer tinha um segundo
+    Ky = p["PKY1"] * fz0 * math.sin(2.0 * math.atan(fz / (p["PKY2"] * fz0))) * (1.0 - p["PKY3"] * abs(gy)) * p["LKY"]
     SHy = (p["PHY1"] + p["PHY2"] * dfz) * p["LHY"] + p["PHY3"] * gy
     ay = alpha + SHy
     Cy = p["PCY1"] * p["LCY"]

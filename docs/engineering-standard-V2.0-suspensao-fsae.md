@@ -1,5 +1,7 @@
 # Engineering Standard V2.0 — FSAE EV Suspension System
 
+**Atualização V2.5 (2026-10-19):** revisão metodológica contra Milliken, Gillespie, Seward e Pacejka (`docs/revisao-metodologica.md`; EDR-045 a EDR-049). Fichas alteradas: SUS-009, 103, 205, 206, 207, 208, 301, 302, 406 e 501; novas: SUS-211 e SUS-212. Onde uma ficha abaixo diz o contrário, vale a forma V2.5.
+
 **Versão:** V2.0 (2026-10-09). Base: `engineering-standard-V1.0`. Alterações desta versão: Bloco E.2 (SUS-407 a SUS-413, solver cinemático 3D), notas de achados em SUS-406/SUS-301/SUS-302, log de validação V2.0. Ver `registro-de-versoes-V2.0.md`.
 **Numeração de Test Cases (decisão do usuário, 2026-10-09):** canônica = a da arquitetura (seção 17.7), deste Standard e do Python (`TC-001` a `TC-012`); os casos de kinematics usam o namespace próprio `TC-KIN-xxx`. A numeração do Guide (Apêndice D) diverge e deve ser alinhada a esta.
 
@@ -179,13 +181,13 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 |---|---|
 | Domain | Stiffness (Bloco D) |
 | Definition | Frequência natural não-amortecida do sistema massa-mola de um canto da suspensão (modelo simplificado de 1 grau de liberdade). |
-| Equation (Analysis Mode) | `f_n = (1/2π)·√(K_wheel / m_sprung,corner)` |
-| Equation (Design Mode — reverso) | `K_wheel = (2π·f_target)² · m_sprung,corner` |
+| Equation (Analysis Mode) | **V2.5 (EDR-045):** `f_n = (1/2π)·√(K_R / m_sprung,corner)`, com a ride rate `K_R = SUS-212` (mola na roda em série com o pneu) |
+| Equation (Design Mode — reverso) | **V2.5:** `K_R = (2π·f_target)²·m_sprung,corner`; `K_wheel = K_R·K_T/(K_T − K_R)` (exige `K_T > K_R`) |
 | Variables | `K_wheel` [N/m], `m_sprung,corner` [kg] |
 | Units | Hz |
 | Sign Convention | N/A |
 | Assumptions | Sistema massa-mola de 1 GDL, sem amortecimento, **sem acoplamento com outros cantos/eixos** (não modela modos de ride/pitch/roll do veículo completo — limitação conhecida e documentada da V1) |
-| Reference/Source | Formulação básica de frequência natural não-amortecida — padrão em Milliken/literatura de dinâmica veicular |
+| Reference/Source | Gillespie eq. 5-8/5-9 (p. 148); Seward eq. 4.1, 4.2 e 4.4 (p. 95-97); Milliken p. 588, 591 e 601 |
 | Validity Domain | Pequenas oscilações em torno do ride height; `MR_RH` constante |
 | Data Type | MODEL (Analysis) / MODEL calculado a partir de `TARGET-XXX` (Design) |
 | Target/Requirement | `TARGET-XXX` (ex.: "frequência dianteira-alvo = 2,5 Hz") quando em Design Mode |
@@ -299,12 +301,12 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 |---|---|
 | Domain | Stiffness (Bloco D) |
 | Definition | Massa suspensa associada a um canto específico, usada diretamente em `SUS-205` (frequência natural). |
-| Equation | `m_sprung,total = SUS-001 − SUS-007 − SUS-008`; distribuição longitudinal usando a mesma fração de `SUS-006`: `m_sprung,front = m_sprung,total·(b/L)`, `m_sprung,rear = m_sprung,total·(a/L)`; por canto (simetria lateral): `m_sprung,corner = m_sprung,front/2` ou `m_sprung,rear/2` |
+| Equation | `m_sprung,total = SUS-001 − SUS-007 − SUS-008`; **V2.5 (EDR-047):** por eixo, `m_sprung,front = m·b/L − m_uF` e `m_sprung,rear = m·a/L − m_uR`; CG suspenso a `a_s = L·m_sprung,rear/m_sprung,total` do eixo dianteiro; por canto (simetria lateral): `m_sprung,corner = m_sprung,front/2` ou `m_sprung,rear/2` |
 | Variables | `SUS-001`, `SUS-007`, `SUS-008`, `a`, `b`, `L` (`SUS-006`, `SUS-003`) |
 | Units | kg |
 | Sign Convention | N/A |
 | Assumptions | Distribuição longitudinal da massa suspensa aproximada pela mesma fração `a/L`, `b/L` da massa total (mesma aproximação documentada em `SUS-006`); simetria lateral perfeita |
-| Reference/Source | Derivado — não é uma equação de literatura, é uma consequência das definições acima |
+| Reference/Source | Milliken p. 601 (Tab. 16.3: W_SF = W_F − W_UF) e p. 602-603; Seward eq. 5.14. Hipótese: CG não suspenso sobre o eixo |
 | Validity Domain | Mesma do Setup/ride height das massas de origem |
 | Data Type | CALCULATED |
 | Target/Requirement | — |
@@ -427,17 +429,17 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 |---|---|
 | Domain | Stiffness (Bloco D, revisado) |
 | Definition | Rigidez de rolagem do eixo dianteiro (momento por ângulo de rolagem), incluindo contribuição da mola (via wheel rate) e do anti-roll bar. |
-| Equation | `K_φF = (K_wheel,F · t_F²) / 2 + K_ARB,F`, onde `K_ARB,F` é um input simplificado da contribuição do ARB (V1 não modela a cinemática interna da barra — se não houver ARB, `K_ARB,F = 0`) |
+| Equation | **V2.5 (EDR-045):** `K_φF = série(K_wheel,F·t_F²/2 + K_ARB,F ; K_T,F·t_F²/2)`, `série(x;y) = x·y/(x+y)`. Forma V2.4 (sem pneu): `K_φF = (K_wheel,F · t_F²) / 2 + K_ARB,F`, onde `K_ARB,F` é um input simplificado da contribuição do ARB (V1 não modela a cinemática interna da barra — se não houver ARB, `K_ARB,F = 0`) |
 | Variables | `K_wheel,F` (`SUS-202`, avaliado no canto dianteiro), `t_F` (`SUS-004`), `K_ARB,F` [N·m/rad] |
 | Units | N·m/rad (SI); N·m/° na interface, se preferido |
 | Sign Convention | N/A (rigidez positiva) |
 | Assumptions | ARB tratado como rigidez adicional simplificada (input direto), sem modelar motion ratio próprio da barra — simplificação deliberada da V1, documentada aqui explicitamente |
-| Reference/Source | Milliken, RCVD — roll stiffness de um eixo com duas rodas independentes |
+| Reference/Source | Gillespie eq. 6-26 (p. 211-212); Milliken p. 589-592 (barra referida à roda, pneu em série) e p. 680; Seward eq. 4.5 |
 | Data Type | MODEL (parte spring) + INPUT (parte ARB) |
 | Lifecycle/Validation Status | DRAFT / NOT_VALIDATED |
 | Owner | Responsável de suspensão |
 | Revision | Dynamics REV |
-| Validation Method | Comparação com cálculo manual; TC-006 (alterar distribuição mantendo total constante) |
+| Validation Method | Comparação com cálculo manual; TC-006 (alterar distribuição mantendo total constante); TC-SUS-V25-004/005 (Milliken p. 592) |
 
 ### SUS-207 — Rear Roll Stiffness (`K_φR`)
 
@@ -445,12 +447,12 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 |---|---|
 | Domain | Stiffness (Bloco D, revisado) |
 | Definition | Rigidez de rolagem do eixo traseiro (momento por ângulo de rolagem), incluindo contribuição da mola (via wheel rate) e do anti-roll bar. |
-| Equation | `K_φR = (K_wheel,R · t_R²) / 2 + K_ARB,R`, onde `K_ARB,R` é um input simplificado da contribuição do ARB (V1 não modela a cinemática interna da barra — se não houver ARB, `K_ARB,R = 0`) |
+| Equation | **V2.5 (EDR-045):** `K_φR = série(K_wheel,R·t_R²/2 + K_ARB,R ; K_T,R·t_R²/2)`. Forma V2.4 (sem pneu): `K_φR = (K_wheel,R · t_R²) / 2 + K_ARB,R`, onde `K_ARB,R` é um input simplificado da contribuição do ARB (V1 não modela a cinemática interna da barra — se não houver ARB, `K_ARB,R = 0`) |
 | Variables | `K_wheel,R` (`SUS-202`, avaliado no canto traseiro), `t_R` (`SUS-005`), `K_ARB,R` [N·m/rad] |
 | Units | N·m/rad (SI); N·m/° na interface, se preferido |
 | Sign Convention | N/A (rigidez positiva) |
 | Assumptions | Mesma simplificação de ARB documentada em `SUS-206` |
-| Reference/Source | Milliken, RCVD — roll stiffness de um eixo com duas rodas independentes |
+| Reference/Source | Gillespie eq. 6-26; Milliken p. 589-592 e p. 680; Seward eq. 4.5 |
 | Data Type | MODEL (parte spring) + INPUT (parte ARB) |
 | Lifecycle/Validation Status | DRAFT / NOT_VALIDATED |
 | Owner | Responsável de suspensão |
@@ -463,7 +465,7 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 |---|---|
 | Domain | Stiffness (Bloco D, revisado) |
 | Definition | Fração da rigidez de rolagem total atribuída a cada eixo — determina como o momento elástico de rolagem se divide entre dianteira e traseira. |
-| Equation | Analysis Mode: `λ_f = K_φF/(K_φF+K_φR)`; `λ_r = K_φR/(K_φF+K_φR)`; `λ_f+λ_r=1`. Design Mode (reverso): dado um `λ_f` alvo e mantendo `K_φR` fixo (rigidez traseira congelada), `K_φF,required = (λ_f/(1-λ_f)) · K_φR`; e o ARB dianteiro necessário: `K_ARB,F,required = K_φF,required − K_φF,no_ARB` (onde `K_φF,no_ARB = K_wheel,F·t_F²/2`, `SUS-206`). |
+| Equation | Analysis Mode: `λ_f = K_φF/(K_φF+K_φR)`; `λ_r = K_φR/(K_φF+K_φR)`; `λ_f+λ_r=1`. Design Mode (reverso): dado um `λ_f` alvo e mantendo `K_φR` fixo (rigidez traseira congelada), `K_φF,required = (λ_f/(1-λ_f)) · K_φR`; e o ARB dianteiro necessário: `K_ARB,F,required = K_φF,required − K_φF,no_ARB` (onde `K_φF,no_ARB = K_wheel,F·t_F²/2`, `SUS-206`). **V2.5 (EDR-045):** com o pneu em série, `K_susp = K_φF,required·K_φT/(K_φT − K_φF,required)` com `K_φT = K_T,F·t_F²/2`, e `K_ARB,F,required = K_susp − K_wheel,F·t_F²/2` (Milliken p. 592). |
 | Variables | `SUS-206`, `SUS-207` (Analysis); adicionalmente `λ_f target (TARGET-XXX)` (Design) |
 | Units | Adimensional |
 | Data Type | CALCULATED (Analysis) / CALCULATED a partir de TARGET (Design) |
@@ -471,6 +473,37 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 | Owner | Responsável de suspensão |
 | Revision | Dynamics REV |
 | Validation Method | Checagem `λ_f+λ_r=1`; TC-006 |
+
+### SUS-211 — Tire Vertical Stiffness (`K_T`) — *novo ID, V2.5*
+
+| Campo | Conteúdo |
+|---|---|
+| Domain | Stiffness / Tire |
+| Definition | Rigidez vertical do pneu na carga de operação, por eixo. |
+| Equation | INPUT (medido ou do dataset do pneu) |
+| Units | N/m (SI); N/mm na interface |
+| Assumptions | Linear; igual nos dois lados do eixo |
+| Reference/Source | Dataset do pneu (`VERTICAL_STIFFNESS` do .tir) ou medição. **Valor atual: 120 312 N/m do .tir TTC PROVISÓRIO (EDR-038), não é o pneu do carro** |
+| Data Type | INPUT |
+| Lifecycle/Validation Status | DRAFT / NOT_VALIDATED |
+| Owner | Responsável de pneus |
+| Revision | Tire REV |
+| Validation Method | Medição de rigidez vertical do pneu real |
+
+### SUS-212 — Ride Rate (`K_R`) — *novo ID, V2.5*
+
+| Campo | Conteúdo |
+|---|---|
+| Domain | Stiffness |
+| Definition | Rigidez vertical efetiva do canto: wheel rate em série com o pneu. |
+| Equation | `K_R = K_wheel·K_T/(K_wheel + K_T)`; reverso: `K_wheel = K_R·K_T/(K_T − K_R)` |
+| Units | N/m |
+| Reference/Source | Milliken p. 591; Gillespie eq. 5-8; Seward eq. 4.1 e 4.4 |
+| Data Type | CALCULATED |
+| Lifecycle/Validation Status | CHECKED (TC-SUS-V25-001..003, exemplos publicados) / NOT_VALIDATED |
+| Owner | Responsável de suspensão |
+| Revision | Dynamics REV |
+| Validation Method | TC-SUS-V25-001..003; TC-WB25-002 |
 
 **Nota:** `SUS-204` (Total Roll Stiffness, definida de forma genérica na Dependency Matrix original) passa a ser `SUS-204 = SUS-206 + SUS-207` — mantém o ID, mas a definição agora é explícita como soma dos dois componentes por eixo.
 
@@ -482,7 +515,7 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 |---|---|
 | Domain | Loads (Bloco F) |
 | Definition | Transferência de carga lateral por eixo, separando contribuição elástica (rigidez de rolagem), geométrica (altura do roll center) e de massa não-suspensa. |
-| Equation | `ΔFz_F = (a_y/t_F)[λ_f·m_s·(h_s−z_s) + (b/L)·m_s·z_F + m_uF·h_uF]` <br> `ΔFz_R = (a_y/t_R)[λ_r·m_s·(h_s−z_s) + (a/L)·m_s·z_R + m_uR·h_uR]` <br> com `z_s = (b/L)·z_F + (a/L)·z_R` |
+| Equation | **V2.5 (EDR-046/047), fórmula completa da Milliken (p. 682):** `φ = m_s·a_y·h2/(K_φF + K_φR − m_s·g·h2)`, `h2 = h_s − z_s` (vertical) <br> `ΔFz_F = [K_φF·φ + a_y·(m_s,F·z_F + m_uF·h_uF)]/t_F` <br> `ΔFz_R = [K_φR·φ + a_y·(m_s,R·z_R + m_uR·h_uR)]/t_R` <br> com `z_s = z_F + (z_R − z_F)·a_s/L` e `m_s,F`, `m_s,R`, `a_s` de SUS-009. Bloqueio se `m_s·g·h2 ≥ K_φF + K_φR` (instabilidade de rolagem). <br> Forma V2.4: `ΔFz_F = (a_y/t_F)[λ_f·m_s·(h_s−z_s) + (b/L)·m_s·z_F + m_uF·h_uF]`, com `z_s = (b/L)·z_F + (a/L)·z_R` |
 | Variables | `a_y` [m/s²]; `t_F, t_R` (`SUS-004/005`); `λ_f, λ_r` (`SUS-208`); `m_s` (`SUS-009`, total); `h_s` (`SUS-012`); `z_F, z_R` = `SUS-401` avaliado no eixo dianteiro e traseiro respectivamente (RC estático, REFERENCE); `a, b, L` (`SUS-006, SUS-003`); `m_uF, m_uR` (`SUS-007/008`); `h_uF, h_uR` (`SUS-010/011`) |
 | Units | N (SI) |
 | Sign Convention | `a_y > 0` = aceleração lateral para a esquerda (convenção ISO 8855, curva à esquerda). Para `a_y > 0`, a carga **aumenta no lado direito** (outer) e **diminui no lado esquerdo** (inner): `Fz_FR = Fz_F,static + ΔFz_F`; `Fz_FL = Fz_F,static − ΔFz_F` (e análogo para o eixo traseiro) |
@@ -495,7 +528,7 @@ Primeiras 8 fichas (Blocos A, B, C, D da ordem definida). Cada ficha segue o tem
 | Validation Status | NOT_VALIDATED |
 | Owner | Responsável de dinâmica |
 | Revision | Dynamics REV |
-| Validation Method | TC-001 (`a_y=0 → ΔFz=0`), **TC-005 (`t_F·ΔF_zF + t_R·ΔF_zR = m·a_y·h_CG` — já verificado algebricamente na seção 17.4)**, TC-006 (distribuição de rigidez), TC-007 (`z_F=z_R=0` remove parcela geométrica), TC-008 (`m_uF=m_uR=0` remove parcela não-suspensa) |
+| Validation Method | TC-001 (`a_y=0 → ΔFz=0`), **TC-005 (V2.5: `t_F·ΔF_zF + t_R·ΔF_zR = m·a_y·h_CG + m_s·g·h2·φ`)**, TC-SUS-V25-009/010 (exemplo da Milliken p. 683-684 reproduzido: 590,8/483,4 lb/g e −2,0 °/g), TC-006 (distribuição de rigidez), TC-007 (`z_F=z_R=0` remove parcela geométrica), TC-008 (`m_uF=m_uR=0` remove parcela não-suspensa) |
 
 **Nota de indexação para o Bloco E:** ao escrever as fichas de `SUS-401` a `SUS-405` (ainda pendentes), lembrar que RC, IC, camber e toe são grandezas **por eixo** (e, em alguns casos, por canto) — a Dependency Matrix original não deixou essa indexação explícita. Recomendo usar sufixo `-F`/`-R` (ex. `SUS-401-F`, `SUS-401-R`) quando essas fichas forem escritas, exatamente como fizemos aqui ao referenciar "`SUS-401` avaliado no eixo dianteiro e traseiro".
 
@@ -572,7 +605,7 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 |---|---|
 | Domain | Kinematics (Bloco E) |
 | Definition | Instant center em vista lateral (side-view), geometricamente distinto do `SUS-403` (vista frontal) — é a entrada direta de anti-dive (`SUS-301`) e anti-squat (`SUS-302`). Por eixo: `SUS-406-F` (frenagem), `SUS-406-R` (tração). |
-| Equation | **Passo 0 — pré-processamento (diferente do `SUS-402`):** o eixo de pivô interno de cada braço é assumido ~paralelo a X (mesma hipótese do `SUS-402`), o que faz esse eixo projetar como uma **reta ao longo de X** em vista lateral, não um ponto — o oposto do que acontece em vista frontal. Solução: usar o **ponto médio** das buchas dianteira/traseira do braço como ponto representativo: `inner_mid = ((X_bucha_frente+X_bucha_tras)/2, (Z_bucha_frente+Z_bucha_tras)/2)`. **Passo 1 — Instant Center lateral:** mesma fórmula de interseção de retas do `SUS-402` (duas retas por dois pontos cada), aplicada a `(X,Z)` em vez de `(Y,Z)`: `IC = interseção(reta[LCA_outer, LCA_inner_mid], reta[UCA_outer, UCA_inner_mid])`. **Passo 2 — ângulo para Anti-Dive/Anti-Squat:** `d = \|X_IC − X_CP\|` (distância horizontal absoluta entre o contact patch do eixo e o IC); `tan(φ) = Z_IC / d`. |
+| Equation | **V2.5 (EDR-048): o método abaixo é LEGADO** (não aparece na literatura e falha em geometria realista, TC-KIN-114). O IC lateral do MODEL é o cinemático de SUS-412; a linha de força vai do ponto de reação ao IC, com sinal (`s = dz/dx`), e o ponto de reação segue a Milliken p. 618-619: contact patch para freio no cubo e centro da roda para torque reagido pelo chassi. Método V1: **Passo 0 — pré-processamento (diferente do `SUS-402`):** o eixo de pivô interno de cada braço é assumido ~paralelo a X (mesma hipótese do `SUS-402`), o que faz esse eixo projetar como uma **reta ao longo de X** em vista lateral, não um ponto — o oposto do que acontece em vista frontal. Solução: usar o **ponto médio** das buchas dianteira/traseira do braço como ponto representativo: `inner_mid = ((X_bucha_frente+X_bucha_tras)/2, (Z_bucha_frente+Z_bucha_tras)/2)`. **Passo 1 — Instant Center lateral:** mesma fórmula de interseção de retas do `SUS-402` (duas retas por dois pontos cada), aplicada a `(X,Z)` em vez de `(Y,Z)`: `IC = interseção(reta[LCA_outer, LCA_inner_mid], reta[UCA_outer, UCA_inner_mid])`. **Passo 2 — ângulo para Anti-Dive/Anti-Squat:** `d = \|X_IC − X_CP\|` (distância horizontal absoluta entre o contact patch do eixo e o IC); `tan(φ) = Z_IC / d`. |
 | Variables | `LCA_bushing_front`, `LCA_bushing_rear`, `LCA_outer`, `UCA_bushing_front`, `UCA_bushing_rear`, `UCA_outer` (hardpoints, projeção X-Z), `Contact Patch (X_CP, 0)` do eixo correspondente |
 | Units | m (coordenadas); adimensional (`tan φ`) |
 | Sign Convention | `d` é sempre tomado em módulo (`\|X_IC−X_CP\|`) — a direção (IC à frente ou atrás do contact patch) não entra com sinal na fórmula de `SUS-301`/`SUS-302`, que já assume `tan(φ)≥0`. Se o IC ficar exatamente na mesma posição X do contact patch (`d≈0`), o ângulo não é definido (assíntota) — tratar como aviso, não dividir por zero silenciosamente. |
@@ -813,7 +846,7 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 |---|---|
 | Domain | Anti-geometry (Bloco H) |
 | Definition | Percentual da transferência de carga longitudinal (por frenagem) reagido geometricamente pela suspensão dianteira, em vez de elasticamente pela mola. |
-| Equation | `AD_f[%] = FB_f · tan(φ_f) · (L/h_CG) · 100` |
+| Equation | **V2.5 (EDR-048):** `AD_f[%] = FB_f·(−s_f)·(L/h_CG)·100`, `s_f = dz/dx` da linha contact patch dianteiro → IC lateral (freio dentro da roda, em volta do cubo: Milliken p. 618, Fig. 17.12). + = anti, − = pro-dive (EDR-026). Forma V1: `AD_f[%] = FB_f · tan(φ_f) · (L/h_CG) · 100` |
 | Variables | `FB_f` (`SUS-013`); `φ_f` = ângulo, em vista lateral, da linha contact patch→IC dianteiro (derivado de `SUS-406-F`); `L` (`SUS-003`); `h_CG` (`SUS-002` — CG **total**, não `SUS-012`, pois aqui a referência é a geometria do veículo completo, não da massa suspensa isolada) |
 | Units | % |
 | Sign Convention | Conforme seção 17.3 — `SUS-301` nunca alimenta `SUS-102` (não altera a magnitude do load transfer longitudinal) |
@@ -832,7 +865,7 @@ Próximo bloco fisicamente novo: **Bloco H — Anti-geometry** (`SUS-301`/`SUS-3
 |---|---|
 | Domain | Anti-geometry (Bloco H) |
 | Definition | Percentual da transferência de carga longitudinal (por tração) reagido geometricamente pela suspensão traseira. |
-| Equation | `AS_r[%] = TF_r · tan(φ_r) · (L/h_CG) · 100` |
+| Equation | **V2.5 (EDR-048):** `AS_r[%] = TF_r·s_r·(L/h_CG)·100`, `s_r = dz/dx` da linha **centro da roda** traseiro → IC lateral (motor no chassi com semieixos: Milliken Fig. 17.15b; Gillespie eq. 7-19). + = anti, − = pro-squat. Forma V1: `AS_r[%] = TF_r · tan(φ_r) · (L/h_CG) · 100` |
 | Variables | `TF_r` (`SUS-014`, =1 para RWD); `φ_r` = ângulo, em vista lateral, da linha relevante → IC traseiro (derivado de `SUS-406-R`); `L`, `h_CG` (`SUS-003`, `SUS-002`) |
 | Units | % |
 | Sign Convention | `SUS-302` nunca alimenta `SUS-102` |
