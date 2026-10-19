@@ -370,6 +370,7 @@ class Corner:
         k = _unit(up - lo)
         t = (cpt[2] - lo[2]) / k[2]
         inter = lo + t * k                         # interseção do pino mestre com o solo (Z do contact patch)
+        kc = lo + ((wc[2] - lo[2]) / k[2]) * k     # pino mestre na altura do centro da roda (spindle length, Milliken 19.1)
         cp0 = self.p0["CONTACT_PATCH"]
         return {
             "travel_m": sol.travel,
@@ -379,6 +380,7 @@ class Corner:
             "kpi_deg": float(np.degrees(np.arctan2(-self.side * k[1], k[2]))),
             "scrub_radius_m": float(self.side * (cpt[1] - inter[1])),
             "mech_trail_m": float(inter[0] - cpt[0]),
+            "spindle_length_m": float(self.side * (wc[1] - kc[1])),
             "track_change_m": float(self.side * (cpt[1] - cp0[1])),
             "wheelbase_change_m": float(cpt[0] - cp0[0]),
             "wheel_center": wc, "contact_patch": cpt,
@@ -563,6 +565,216 @@ def ic_methods_at_reference(corner: Corner):
     return out
 
 
+# ---------------- linha de força pelo trabalho virtual (definição primária do MODEL; EDR-053) ----------------
+# SAE J670 (Gillespie, Apêndice A): o RC é o ponto, no plano transversal, em que forças laterais na massa suspensa não
+# produzem rolagem. Pelo trabalho virtual (corpo rígido, pequeno deslocamento, cremalheira fixa), a força aplicada num
+# ponto do conjunto não suspenso não carrega a mola quando é perpendicular à velocidade desse ponto em relação ao curso.
+# Logo a linha de força passa pelo ponto de reação e é perpendicular à velocidade dele: contact patch para o anti-dive
+# (freio no cubo) e para o RC; centro da roda para o anti-squat com motor no chassi (EDR-048). No mecanismo plano coincide
+# com a construção clássica (Milliken p. 612-620; Gillespie p. 249). Ver docs/revisao-metodologica.md §8.
+
+def _twist(corner: Corner, travel=0.0, steer=0.0, dz=1e-5):
+    """Movimento instantâneo do conjunto não suspenso por unidade de curso: ω [rad/m] e v(ponto) [m/m] por diferença central."""
+    s0 = corner.solve(travel, steer)
+    sp = corner.solve(travel + dz, steer, q0=s0.q, phi0=s0.phi)
+    sm = corner.solve(travel - dz, steer, q0=s0.q, phi0=s0.phi)
+    Rp, Rm = _rot_vec(sp.q[:3]), _rot_vec(sm.q[:3])
+    D = Rp @ Rm.T
+    W = (D - D.T) / (4 * dz)
+    w = np.array([W[2, 1], W[0, 2], W[1, 0]])
+    vel = lambda key: (corner.pt(sp, key) - corner.pt(sm, key)) / (2 * dz)
+    return s0, w, vel
+
+
+def force_lines_vw(corner: Corner, travel=0.0, steer=0.0, dz=1e-5):
+    """SUS-412 (definição primária, EDR-053): linhas de força pelo trabalho virtual, na pose.
+    Retorna inclinações e ICs no plano que contém o ponto de reação (únicos nesse plano):
+      - 'side_slope_cp' = dz/dx da linha pelo contact patch (anti-dive com freio no cubo);
+      - 'side_slope_wc' = dz/dx da linha pelo centro da roda (anti-squat com motor no chassi);
+      - 'rc_height_m'   = altura acima do solo onde a linha frontal pelo contact patch cruza Y = 0;
+      - 'ic_front' (Y, Z) no plano X = X_cp; 'ic_side_cp' (X, Z) no plano Y = Y_cp; 'ic_side_wc' no plano Y = Y_wc.
+    None quando a linha é vertical ou o IC está no infinito (ω nulo na vista)."""
+    s0, w, vel = _twist(corner, travel, steer, dz)
+    cp, wc = corner.pt(s0, "CONTACT_PATCH"), corner.pt(s0, "WHEEL_CENTER")
+    vcp, vwc = vel("CONTACT_PATCH"), vel("WHEEL_CENTER")
+    slope = lambda num, den: None if abs(den) < 1e-12 else float(-num / den)
+
+    def ic_front(P, v):
+        return None if abs(w[0]) < 1e-12 else np.array([P[1] - v[2] / w[0], P[2] + v[1] / w[0]])
+
+    def ic_side(P, v):
+        return None if abs(w[1]) < 1e-12 else np.array([P[0] + v[2] / w[1], P[2] - v[0] / w[1]])
+
+    sf = slope(vcp[1], vcp[2])                     # dz/dy da linha frontal pelo contact patch
+    return {
+        "side_slope_cp": slope(vcp[0], vcp[2]), "side_slope_wc": slope(vwc[0], vwc[2]),
+        "rc_height_m": None if sf is None else float(sf * (0.0 - cp[1])),
+        "front_slope_cp": sf,
+        "ic_front": ic_front(cp, vcp), "ic_side_cp": ic_side(cp, vcp), "ic_side_wc": ic_side(wc, vwc),
+        "omega_per_m": w, "v_cp": vcp, "v_wc": vwc, "contact_patch": cp, "wheel_center": wc,
+    }
+
+
+def axle_roll_center_vw(corner_left: Corner, corner_right: Corner, travel=0.0):
+    """RC do eixo (EDR-053): interseção das linhas de força frontais pelos contact patches. (Y, altura acima do solo)."""
+    lines = []
+    for c in (corner_left, corner_right):
+        f = force_lines_vw(c, travel)
+        if f["front_slope_cp"] is None:
+            raise KinematicsError("linha de força frontal vertical: RC do eixo indefinido")
+        lines.append((f["contact_patch"][1], f["contact_patch"][2], f["front_slope_cp"]))
+    (y1, z1, m1), (y2, z2, m2) = lines
+    if abs(m1 - m2) < 1e-12:
+        raise KinematicsError("linhas de força frontais paralelas: RC do eixo indefinido")
+    y = (z2 - z1 + m1 * y1 - m2 * y2) / (m1 - m2)
+    return float(y), float(m1 * (y - y1))
+
+
+def instant_screw_axis(corner: Corner, travel=0.0, steer=0.0, dz=1e-5):
+    """Diagnóstico: eixo instantâneo (helicoide) do conjunto não suspenso. Direção ω, ponto mais próximo do centro da roda
+    e passo [m/rad]. O passo diferente de zero é o que separa a leitura literal "eixo × plano" da linha de força."""
+    s0, w, vel = _twist(corner, travel, steer, dz)
+    P, v = corner.pt(s0, "WHEEL_CENTER"), vel("WHEEL_CENTER")
+    ww = float(w @ w)
+    if ww < 1e-18:
+        raise KinematicsError("conjunto não gira com o curso: eixo instantâneo indefinido")
+    return {"omega_per_m": w, "point": P + np.cross(w, v) / ww, "pitch_m_per_rad": float((w @ v) / ww), "solution": s0}
+
+
+def reference_literal_centers(corner: Corner, travel=0.0, steer=0.0, dz=1e-5):
+    """Diagnóstico (EDR-053): leitura literal do help do OptimumKinematics (§7.3.3.13, 7.3.3.16, 7.3.3.23): IC = eixo
+    instantâneo ∩ plano vertical pelo contact patch; RC do canto = plano (eixo + contact patch) ∩ plano central, na estação
+    X do contact patch. NÃO é a REFERENCE: o help não diz o que o programa faz com o passo; serve para identificar a
+    definição dele quando houver dados."""
+    ax = instant_screw_axis(corner, travel, steer, dz)
+    w, a0, s0 = ax["omega_per_m"], ax["point"], ax["solution"]
+    cp = corner.pt(s0, "CONTACT_PATCH")
+    out = {"pitch_m_per_rad": ax["pitch_m_per_rad"]}
+    for nome, i, cols in (("ic_front", 0, [1, 2]), ("ic_side", 1, [0, 2])):
+        out[nome] = None if abs(w[i]) < 1e-12 else (a0 + (cp[i] - a0[i]) / w[i] * w)[cols]
+    n = np.cross(w, cp - a0)
+    out["rc_height_m"] = None if abs(n[2]) < 1e-12 else float(n[1] * cp[1] / n[2])
+    return out
+
+
+# ---------------- direção (cap. 19 da Milliken; Gillespie cap. 6 e 8; Seward 6.3) — EDR-052 ----------------
+
+def ackermann_inner_ideal_deg(delta_outer_deg, wheelbase, track):
+    """SUS-414: ângulo da roda interna para Ackermann exato, dado o da externa: cot δo − cot δi = t/L
+    (Gillespie eq. 8-1 e 8-2, p. 277-278; confere com a Tab. 6.2 do Seward)."""
+    if not 0.0 < abs(delta_outer_deg) < 90.0:
+        raise ValueError("δo deve estar entre 0 e 90° em módulo")
+    c = 1.0 / math.tan(math.radians(abs(delta_outer_deg))) - track / wheelbase
+    if c <= 0:
+        raise ValueError("δo grande demais para a geometria (cot δi ≤ 0)")
+    return math.copysign(math.degrees(math.atan(1.0 / c)), delta_outer_deg)
+
+
+def ackermann_percent(delta_inner_deg, delta_outer_deg, wheelbase, track):
+    """SUS-414: % Ackermann = (δi − δo)/(δi,Ack − δo)·100 no mesmo δo. 100 % = Ackermann exato (Seward, glossário); 0 % =
+    paralelo; < 0 = reverso (Milliken p. 714-716). Forma do projeto (EDR-052): a literatura define os extremos, não a razão."""
+    ideal = ackermann_inner_ideal_deg(delta_outer_deg, wheelbase, track)
+    return (abs(delta_inner_deg) - abs(delta_outer_deg)) / (abs(ideal) - abs(delta_outer_deg)) * 100.0
+
+
+def turn_radius_outer_m(delta_outer_deg, wheelbase):
+    """SUS-414: raio da trajetória da roda dianteira externa em Ackermann, L/sin δo (Seward, Tab. 6.2)."""
+    return wheelbase / math.sin(math.radians(abs(delta_outer_deg)))
+
+
+def ackermann_from_kinematics(corner_left: Corner, corner_right: Corner, rack, wheelbase, track):
+    """SUS-414 (MODEL): ângulos das rodas para um curso de cremalheira e o % Ackermann da geometria (toe estático
+    descontado: steer_sweep dá o yaw relativo ao curso zero)."""
+    yl = steer_sweep(corner_left, [rack])[0][1]
+    yr = steer_sweep(corner_right, [rack])[0][1]
+    if abs(yl) < 1e-9 or abs(yr) < 1e-9 or yl * yr <= 0:
+        raise KinematicsError("rodas não esterçam no mesmo sentido com esse curso de cremalheira")
+    right_turn = (yl + yr) < 0                     # yaw ISO + = esquerda
+    inner, outer = (abs(yr), abs(yl)) if right_turn else (abs(yl), abs(yr))
+    return {"turn": "direita" if right_turn else "esquerda", "delta_inner_deg": inner, "delta_outer_deg": outer,
+            "delta_inner_ackermann_deg": ackermann_inner_ideal_deg(outer, wheelbase, track),
+            "ackermann_percent": ackermann_percent(inner, outer, wheelbase, track)}
+
+
+def steering_ratio_overall(corner_left: Corner, corner_right: Corner, rack_travel_per_rev_m, ds=1e-4):
+    """SUS-601 (MODEL): razão total = gradiente do ângulo do volante sobre o ângulo médio das rodas dianteiras
+    (SAE J670 9.4.6, Gillespie p. 293 e Apêndice A; Milliken p. 716). (360/c) / |d(yaw médio)/ds|."""
+    a = steer_sweep(corner_left, [-ds, ds])
+    b = steer_sweep(corner_right, [-ds, ds])
+    d = ((a[1][1] - a[0][1]) + (b[1][1] - b[0][1])) / (4 * ds)
+    if abs(d) < 1e-9:
+        raise KinematicsError("rodas não esterçam com a cremalheira")
+    return abs((360.0 / rack_travel_per_rev_m) / d)
+
+
+def steering_ratio_rack_approx(rack_travel_per_rev_m, steering_arm_m):
+    """SUS-601: aproximação do Milliken (p. 718) para cremalheira com barra perpendicular ao braço de direção:
+    SR = 360 / asin(c/braço) [graus]. O livro imprime asin(c/braço)/360, que é o inverso da razão que ele mesmo define
+    na p. 716 (volante/roda); adotada a forma coerente com a definição (EDR-052)."""
+    r = rack_travel_per_rev_m / steering_arm_m
+    if not 0.0 < r < 1.0:
+        raise ValueError("c/braço deve estar entre 0 e 1")
+    return 360.0 / math.degrees(math.asin(r))
+
+
+def ride_steer(corner: Corner, travels):
+    """SUS-408 (Milliken 19.4): toe em função do curso. Devolve a inclinação no curso zero [°/mm, toe-out +] por diferença
+    central, o coeficiente quadrático do ajuste [°/mm²] e o maior desvio da reta [°] (curva = 'a evitar', Fig. 19.9)."""
+    ts = sorted(set(list(travels) + [0.0]))
+    rows = sweep(corner, ts)
+    z = np.array([m["travel_m"] for _, m in rows]) * 1e3
+    toe = np.array([m["toe_deg"] for _, m in rows])
+    h = 1e-2
+    a = sweep(corner, [-h * 1e-3, h * 1e-3])
+    slope0 = (a[1][1]["toe_deg"] - a[0][1]["toe_deg"]) / (2 * h)
+    c2, c1, c0 = np.polyfit(z, toe, 2)
+    lin = np.polyfit(z, toe, 1)
+    return {"slope_deg_per_mm": float(slope0), "quad_deg_per_mm2": float(c2),
+            "max_dev_from_linear_deg": float(np.max(np.abs(toe - np.polyval(lin, z)))), "toe_curve": list(zip(z, toe))}
+
+
+def roll_steer_coefficient(corner_left: Corner, corner_right: Corner, track, dphi=1e-3):
+    """SUS-415 (Gillespie p. 220 e 281-282): ε = graus de esterço por grau de rolagem do eixo; ε > 0 esterça para a
+    DIREITA numa rolagem para a direita (lado direito para baixo). Rolagem φ da massa suspensa: curso da roda direita
+    = +(t/2)·φ (bump), da esquerda = −(t/2)·φ. Esterço do eixo = média do yaw ISO das duas rodas; ε = −Δyaw/Δφ."""
+    def yaw_avg(phi):
+        tot = 0.0
+        for c, z in ((corner_left, -0.5 * track * phi), (corner_right, 0.5 * track * phi)):
+            s = c.solve(z)
+            tot += c.side * c.metrics(s)["toe_deg"]
+        return tot / 2.0
+    d = (yaw_avg(dphi) - yaw_avg(-dphi)) / (2 * dphi)     # deg de yaw por rad de rolagem
+    return float(-math.radians(d))                         # rad/rad = °/°
+
+
+def roll_steer_understeer_deg_per_g(eps_front, eps_rear, roll_gradient_deg_per_g):
+    """SUS-415: contribuição do roll steer ao gradiente de subesterço, K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57).
+    K > 0 = subesterço."""
+    return (eps_front - eps_rear) * roll_gradient_deg_per_g
+
+
+def steer_effects(corner: Corner, kingpin_rotation_deg, travel=0.0):
+    """SUS-416 (Milliken 19.1): efeito geométrico do esterço, com a manga girando em torno do pino mestre (reta
+    LCA_OUT -> UCA_OUT) e os ball joints parados, como o livro descreve. Rotação + = em torno do eixo orientado para cima
+    (yaw para a esquerda). Devolve yaw da roda [°], variação de camber [°] (topo para fora +) e elevação do carro [m] =
+    −ΔZ do contact patch no referencial do chassi (o pneu desce, o carro sobe). KPI com spindle length positivo levanta o
+    carro nos dois sentidos; caster levanta de um lado e baixa do outro (peso diagonal)."""
+    s0 = corner.solve(travel, 0.0)
+    lo, up = corner.pt(s0, "LCA_OUT"), corner.pt(s0, "UCA_OUT")
+    k = _unit(up - lo)
+    R = _rot_axis(k, math.radians(kingpin_rotation_deg))
+    wc, sp, cp = (corner.pt(s0, n) for n in ("WHEEL_CENTER", "SPINDLE_PT", "CONTACT_PATCH"))
+    rot = lambda P: lo + R @ (P - lo)
+
+    def ang(w, s):
+        a = _unit(s - w)
+        return math.degrees(math.asin(-a[2])), math.degrees(math.asin(-a[0] / math.hypot(a[0], a[1])))
+
+    cam0, toe0 = ang(wc, sp)
+    cam1, toe1 = ang(rot(wc), rot(sp))
+    return {"yaw_deg": corner.side * (toe1 - toe0), "dcamber_deg": cam1 - cam0, "lift_m": float(-(rot(cp)[2] - cp[2]))}
+
+
 def full_sweep(corner: Corner, travels, steer=0.0, reaction_point="contact_patch"):
     """Varredura completa (uma linha por curso): métricas de pose + MR (se há mola) + IC/RC cinemáticos + inclinação
     da linha de força lateral. reaction_point: 'contact_patch' (freio/tração reagidos pela manga) ou 'wheel_center'
@@ -582,6 +794,9 @@ def full_sweep(corner: Corner, travels, steer=0.0, reaction_point="contact_patch
         row["ic_side_x_m"] = None if k["side"]["point"] is None else float(k["side"]["point"][0])
         row["ic_side_z_m"] = None if k["side"]["point"] is None else float(k["side"]["point"][1])
         row["side_force_line_slope"] = force_line_slope(k["side"], ref[[0, 2]])
+        f = force_lines_vw(corner, t, steer)                       # definição primária (EDR-053)
+        row["rc_height_vw_m"] = f["rc_height_m"]
+        row["side_force_line_slope_vw"] = f["side_slope_cp"] if reaction_point == "contact_patch" else f["side_slope_wc"]
         if corner.has_push:
             row["mr_wheel_per_spring"] = motion_ratio(corner, t)["mr_wheel_per_spring"]
         rows.append(row)
