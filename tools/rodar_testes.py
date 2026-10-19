@@ -45,7 +45,7 @@ RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
 PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de-versoes-V3_0.md"),
-             ("tests/test_workbook_suspensao.py", 12, "suspensão da V3.0 (12 com a 2ª rodada); registro-de-versoes-V3_0.md")]
+             ("tests/test_workbook_suspensao.py", 13, "suspensão da V3.0 (13 com a 2ª rodada); registro-de-versoes-V3_0.md")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
