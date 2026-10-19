@@ -42,13 +42,9 @@ MUTACAO = ("tests/mutation_tire.py", 23)
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 10)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
-NAO_EXECUTAVEL = (
-    "tests/test_workbook.py",
-    "depende de LibreOffice e de `/mnt/skills/public/xlsx/scripts/recalc.py` "
-    "(linhas 10 e 28, chamado com `python3`), que não existem nesta máquina (SPEC D2). "
-    "Ele nunca conta como aprovado (R6). Resultado registrado no sandbox: 19/19 "
-    "(registro-de-versoes-V2_4.md:17), não reproduzido aqui.",
-)
+# Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
+# código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
+PLANILHA = ("tests/test_workbook.py", 19, "registro-de-versoes-V2_4.md:17 (19/19 no sandbox)")
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
@@ -219,9 +215,26 @@ def main() -> None:
            "A versão escrita em `00_README!A3` precisa ser a mesma do nome do arquivo.", "",
            *linhas_ver, ""]
 
-    # --- NÃO EXECUTÁVEL (CA-09) ---
-    resumo.append(("CA-09", NAO_EXECUTAVEL[0], "NÃO EXECUTÁVEL"))
-    md += ["## Teste da planilha (CA-09)", "", f"- `{NAO_EXECUTAVEL[0]}`: **NÃO EXECUTÁVEL**. {NAO_EXECUTAVEL[1]}", ""]
+    # --- Teste da planilha, Excel x Python (CA-09, EDR-044) ---
+    script, esperado, fonte = PLANILHA
+    r = rodar([script])
+    linhas = r.stdout.splitlines()
+    motor = next((l for l in linhas if l.startswith(("MOTOR:", "NÃO EXECUTÁVEL:"))), "MOTOR: (não informado)")
+    resumos = [m for m in map(RE_RESUMO.match, linhas) if m]
+    if r.returncode == 3 and motor.startswith("NÃO EXECUTÁVEL"):
+        st, obtido = "NÃO EXECUTÁVEL", "não rodou"
+    elif resumos:
+        n_pass, n_fail, total = map(int, resumos[-1].groups())
+        obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
+        st = "PASS" if n_fail == 0 and n_pass == total == esperado and r.returncode == 0 else "FAIL"
+    else:
+        st, obtido = "FAIL", "sem linha de resumo"
+    resumo.append(("CA-09", "planilha Excel x Python", st))
+    md += ["## Teste da planilha (CA-09)", "",
+           f"- `{script}`: esperado {esperado} ({fonte}); obtido {obtido}; código {r.returncode}: **{st}**",
+           f"- {motor}", ""]
+    md += bloco(f"{script}: testes FAIL", "\n".join(l for l in linhas if l.startswith("[FAIL]")))
+    md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
 
     md[md.index("## Testes (CA-05)"):md.index("## Testes (CA-05)")] = [
         "## Resumo", "", "| CA | Item | Status |", "|---|---|---|",
