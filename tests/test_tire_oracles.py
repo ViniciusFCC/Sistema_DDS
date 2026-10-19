@@ -120,8 +120,8 @@ p2 = dict(p); p2["LFZO"] = 1.1
 ds2 = t.TireDataset(p=p2, strings=ds.strings)
 d_lfzo = max(abs(t.combined_forces(ds2, fz, a, g, k, check_range=False)[1] - mfeval_mf52(p2, fz, a, g, k)[1]) for fz, a, g, k in pts[:200])
 d_lfzo_r = max(abs(t.combined_forces(ds2, fz, a, g, k, check_range=False)[1] - racer_mf52(p2, fz, a, g, k)[1]) for fz, a, g, k in pts[:200])
-check("TC-TIRE-ORC-004: CARACTERIZAÇÃO — com LFZO≠1 o módulo concorda com o Racer (fator LFZO extra em Ky) e DIVERGE do MFeval; fontes discordam sobre esse fator (irrelevante enquanto LFZO=1)",
-      d_lfzo_r < 0.05 and d_lfzo > 1.0, f"Fy: dif vs Racer={d_lfzo_r:.2e} N; vs MFeval={d_lfzo:.1f} N")
+check("TC-TIRE-ORC-004: CARACTERIZAÇÃO — com LFZO≠1 o módulo concorda com o MFeval (um só λFz0 em Ky, como Pacejka 4.E25 e Seward 5.9; EDR-049) e DIVERGE do Racer (fator LFZO extra)",
+      d_lfzo < 0.1 and d_lfzo_r > 1.0, f"Fy: dif vs MFeval={d_lfzo:.2e} N; vs Racer={d_lfzo_r:.1f} N")
 p3 = dict(p); p3["LGAY"] = 1.5; p3["LGAX"] = 1.5
 ds3 = t.TireDataset(p=p3, strings=ds.strings)
 d_lga_r = max(abs(t.combined_forces(ds3, fz, a, g, k, check_range=False)[1] - racer_mf52(p3, fz, a, g, k)[1]) for fz, a, g, k in pts[:200])
