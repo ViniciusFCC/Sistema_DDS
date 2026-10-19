@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado e EDR-017 substituído em 2026-10-19). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -31,7 +31,7 @@
 
 ## 2. Índice
 
-Total: 42 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · VERIFIED: 3
+Total: 43 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DECISION: 9 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 2 · SUPERSEDED: 1 · VERIFIED: 3
 
 | ID | Título | Status |
 |---|---|---|
@@ -51,7 +51,7 @@ Total: 42 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DEC
 | EDR-014 | Design Mode explícito, sem goal seek opaco | APPROVED |
 | EDR-015 | Pneu como REFERENCE, sem ajuste próprio na V1 | APPROVED |
 | EDR-016 | Numeração canônica de Test Cases | IMPLEMENTED |
-| EDR-017 | Regra de versionamento dos artefatos | APPROVED |
+| EDR-017 | Regra de versionamento dos artefatos | SUPERSEDED (por EDR-043) |
 | EDR-018 | Consolidação do Decision Register da planilha (versão mais completa) | PENDING_CONFIRMATION |
 | EDR-019 | Tratamento do Guide, de valores de teste e foco | APPROVED |
 | EDR-020 | Solver cinemático 3D como MODEL/cross-check (Kinematics V2) | IMPLEMENTED |
@@ -77,6 +77,7 @@ Total: 42 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 5 · AWAITING_DEC
 | EDR-040 | Formato do dataset de pneu (PAC2002 x MF 5.2 x 6.1.2 x 6.2) e origem (OptimumTire 2) | AWAITING_DECISION |
 | EDR-041 | Entradas α/γ/κ demonstrativas e N/A como estado de saída sem dado | APPROVED_WITH_CONDITIONS |
 | EDR-042 | Verificação das equações do pneu contra fontes de terceiros; caminho até a fonte primária | VERIFIED |
+| EDR-043 | Versionamento por Git e nomes estáveis (substitui o EDR-017) | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -430,7 +431,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-017 — Regra de versionamento dos artefatos
 
 - **Date:** Sessão 2026-10-09/10 (data/hora exatas do turno não registradas)
-- **Status:** APPROVED
+- **Status:** SUPERSEDED (por EDR-043, 2026-10-19)
 - **Context:** Problemas de versionamento.
 - **Question:** Como versionar?
 - **Alternatives:** —
@@ -444,7 +445,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Dependencies:** —
 - **Approval_Conditions:** —
 - **Reopening_Criteria:** —
-- **Related_Decisions:** —
+- **Related_Decisions:** Substituído pelo EDR-043 (versionamento por Git e nomes estáveis; a planilha mantém a versão no nome).
 - **Source_Conversation_or_Document:** Conversa Sistema_DDS
 
 ### EDR-018 — Consolidação do Decision Register da planilha (versão mais completa)
@@ -947,6 +948,26 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-037, EDR-039, EDR-040
 - **Source_Conversation_or_Document:** Conversa Sistema_DDS (2026-10-13)
 
+### EDR-043 — Versionamento por Git e nomes estáveis (substitui o EDR-017)
+
+- **Date:** 2026-10-19 (proposta em 2026-10-18)
+- **Status:** APPROVED
+- **Context:** O EDR-017 versiona pelo nome do arquivo (`tire_model_V2_4.py`, `test_suspension_model_V2_1.py`) e nunca sobrescreve os históricos. Com o projeto no Git (repositório privado ViniciusFCC/Sistema_DDS, tag `v2.4.1`), isso gera três problemas: (1) toda versão nova exige mudar os imports de todos os scripts que usam o módulo; (2) teste e módulo têm versões diferentes no nome (`test_kinematics_model_V2_1.py` testa `kinematics_model_V2_0.py`), como o próprio EDR-017 previa em Consequences; (3) o histórico passa a existir em dobro, no nome e no Git. A fase A da migração provou a reprodução com os nomes originais, o que torna a renomeação verificável.
+- **Question:** Como versionar código, testes, dados e planilha a partir da V2.4.1?
+- **Alternatives:** (a) manter o EDR-017 (versão no nome de tudo); (b) híbrido: Git com tags para código, testes, dados e docs, com nomes estáveis, e a planilha entregue mantendo a versão no nome; (c) Git para tudo, inclusive a planilha com nome estável.
+- **Decision:** (b). (1) Código e testes sem versão no nome: `tire_model.py`, `suspension_model.py`, `kinematics_model.py`, `hardpoints.py`, `build_workbook.py`, `mutation_tire.py`, e os testes `test_<módulo>.py` em `tests/`. (2) Os arquivos de dados mantêm o sufixo `_V2.0` (`hardpoints_synthetic_V2.0.csv` e `.meta.json`), porque ali ele é a versão do schema de hardpoints (EDR-024), e não a revisão do arquivo. (3) A planilha continua `FSAE_EV_Suspension_Fase1_V2_x.xlsx`; a versão gravada dentro dela tem aprovação própria (SPEC §11, passo 3). (4) Versão do projeto: tag Git anotada `vX.Y.Z` a cada entrega; `X.Y` acompanha a versão da planilha (V2.4 → `v2.4.z`) e `Z` sobe em mudanças sem efeito na planilha; o decimal continua subindo a cada pequena implementação, como no EDR-017. (5) Históricos: "nunca sobrescrever" passa a ser garantido pelas tags do Git, por `importado-claude-ai/` (somente leitura) e pelo backup na OneDrive; a referência V1.0 do `TC-SUS-V2-004` fica congelada em `tests/regressao/suspension_model_V1_0.py`, com o nome original. (6) Os testes em `tests/` acham os módulos de `python/` porque o `uv sync` instala o projeto em modo editável, com `python/` no caminho de import (configuração do `pyproject.toml`).
+- **Rationale:** Nomes estáveis acabam com a mudança de imports a cada versão e com o descompasso entre teste e módulo. O Git guarda o histórico com hash e data, em vez de cópias. A planilha fica fora da regra porque circula fora do Git. Os dados mantêm o sufixo porque ele identifica o schema.
+- **Evidence:** Fase A da migração: CA-01 a CA-12 e tag `v2.4.1` (`docs/migracao/verificacao-V2.4-local.md`). Proposta: `docs/migracao/proposta-EDR-043.md`. Veredito do conselho (D1), registrado no SPEC §3.
+- **Assumptions:** H1: a equipe não depende dos nomes `_V2_x` dos `.py` fora deste repositório (não verificado). H2: a confirmação do "V2", ausente no EDR-017, passa a valer com esta decisão.
+- **Consequences:** A renomeação é um commit próprio de reestruturação, que só move arquivos e ajusta imports e caminhos. Nenhuma equação muda, e os testes precisam dar o mesmo resultado da fase A (43, 5, 42, 53, 35; mutação 23/23; planilha com 347 fórmulas e 0 diferença). O `MANIFEST.sha256` continua valendo para a tag `v2.4.0-import`.
+- **Affected_Artifacts:** `python/*.py`; testes (para `tests/`); dados lidos pelos testes (para `data/`); `tools/rodar_testes.py`; `tools/comparar_planilhas.py`; `pyproject.toml`; `CLAUDE.md`; `python/README.md`; SPEC.
+- **Affected_Tests:** Todos os da fase A; o critério é o mesmo resultado.
+- **Dependencies:** EDR-017; EDR-024; SPEC D1 e E1.
+- **Approval_Conditions:** —
+- **Reopening_Criteria:** A equipe precisar dos `.py` versionados fora do Git; qualquer diferença de resultado depois da renomeação (vale o processo de divergência, §2.6 do handoff).
+- **Related_Decisions:** Substitui o EDR-017 (SUPERSEDED).
+- **Source_Conversation_or_Document:** Usuário (instrução na conversa, 2026-10-19: "Autorizo o EDR-043 com a regra híbrida e as três recomendações"); SPEC §3 e §11.
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -993,6 +1014,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-040 | SUS-501..503 | tire_model_V2_2.py; Data Contract §7. | TC-TIRE-008f |
 | EDR-041 | SUS-501, SUS-502 | 10_TIRE; 14_DASHBOARD. | TC-WB22-005 |
 | EDR-042 | SUS-501, SUS-502 | test_tire_oracles_V2_2.py; planilha V2.3; grade CSV. | TC-TIRE-ORC-001..005 |
+| EDR-043 | — | python/*.py; tests/; data/; tools/; pyproject.toml; CLAUDE.md. | Todos os da fase A (mesmo resultado) |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
