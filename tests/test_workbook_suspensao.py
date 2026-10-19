@@ -3,7 +3,7 @@ Teste de integração das abas de suspensão da planilha V3.0 (EDR-045 a EDR-048
 Recalcula CÓPIAS pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_planilha.py); a entregue nunca é salva.
 Uso: uv run python -X utf8 tests/test_workbook_suspensao.py [<V3_0.xlsx>]   (padrão: excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx)
 Namespace TC-WB30-xxx. "Passou" = Excel reproduz o suspension_model/kinematics_model (tol. 1e-9 relativa), não validação física.
-TC-WB30-010 a 013 (2ª rodada): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
+TC-WB30-010 a 013 (1ª rodada de feedback): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
 """
 import csv, math, os, random, shutil, sys, tempfile, warnings
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
