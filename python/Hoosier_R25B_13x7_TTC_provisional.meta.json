@@ -1,0 +1,72 @@
+{
+  "schema_version": "V2.4-PROPOSAL",
+  "dataset_id": "Hoosier_R25B_13x7_TTC_provisional",
+  "tire_rev": "T-REV-A",
+  "provisional": true,
+  "provisional_reason": "Arquivo de teste recebido do usuario (2026-10-12) para permitir o desenvolvimento; NAO corresponde necessariamente ao pneu que sera usado.",
+  "source_file": "Hoosier_R25B_13x7_TTC_provisional.tir",
+  "cleaned_file_sha256": "f3bc80fda4145d53da06f69c8c0fcffbddfbbf73f4aab4149e1caa386c77c796",
+  "source_chain": "TTC -> Stackpole Engineering Services (M. Arbogast, criado 2020-10-13) -> terceiro (chat 2026-03-02) -> usuario -> Sistema_DDS. Prefixos de chat removidos; valores nao alterados.",
+  "property_file_format": "PAC2002",
+  "use_mode": 4,
+  "tyreside": "Right",
+  "units": {
+    "length": "meter",
+    "force": "newton",
+    "angle": "radians"
+  },
+  "tire_description": "Hoosier R25B 177.8/53.6R13, aro 13x7, 12 psi, 25 mph (cabecalho do .tir)",
+  "convention_status": "USER_ASSERTED",
+  "convention_evidence": "Declarado pelo usuario (2026-10-14): dados baixados direto do TTC, que usa a convencao SAE. Fonte secundaria (tese UNCC 2015, dado bruto TTC): alpha>0 = curva a esquerda; Fy<0 e Mz<0 para alpha>0; Fz negativo. O .tir tem Fz positivo (processado). NAO confirmado pela documentacao do TTC. Sinais do arquivo por avaliacao (referencial do arquivo): Fy<0 para alpha>0, Fy<0 para camber>0, Fx>0 para kappa>0. A afirmacao anterior 'compativel com ISO' foi retirada: alpha e Fy trocam de sinal juntos entre SAE e ISO, entao o pareamento nao discrimina.",
+  "mirroring_rule_for_left_wheels": "aplicada ANTES da transformacao: alpha_R=-alpha_L; Fy_L=-Fy_R_ISO; camber do projeto (+ = topo para fora) igual nos dois lados (hipotese H4, decisao de projeto provisoria)",
+  "pressure_effects": "omitidos (IP=IP_NOM e PP*=0 exigidos pelo loader)",
+  "imported_sections": [
+    "SCALING (L* usados)",
+    "LONGITUDINAL_COEFFICIENTS",
+    "LATERAL_COEFFICIENTS",
+    "ranges (FZ, ALP, CAM, KPU)",
+    "FNOMIN",
+    "IP/IP_NOM"
+  ],
+  "not_imported": [
+    "OVERTURNING (Mx)",
+    "ROLLING (My)",
+    "ALIGNING (Mz)",
+    "relaxamento",
+    "raio carregado",
+    "rigidez vertical"
+  ],
+  "validation_status": "NOT_VALIDATED",
+  "validity_ranges": {
+    "FZ_N": [
+      100,
+      1521
+    ],
+    "alpha_rad": [
+      -0.261799,
+      0.261799
+    ],
+    "camber_rad": [
+      -0.069813,
+      0.069813
+    ],
+    "kappa": [
+      -0.25,
+      0.25
+    ]
+  },
+  "source_axis_system": "SAE_CALSPAN",
+  "transform_to_iso8855_right_wheel": {
+    "alpha_file": "-alpha_ISO",
+    "Fy_ISO": "-Fy_file",
+    "gamma_file": "-gamma_project (INFERENCIA: empuxo de camber aponta para o lado da inclinacao; definicao de IA do TTC nao verificada)",
+    "Fx": "igual",
+    "kappa": "igual",
+    "Fz": "positivo"
+  },
+  "open_items": [
+    "definicao de IA (inclinacao) e de SA no documento do TTC",
+    "comparacao da grade tire_comparison_grid_V2_3.csv com OptimumTire 2/Adams",
+    "dataset real"
+  ]
+}

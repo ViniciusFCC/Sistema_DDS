@@ -1,0 +1,21 @@
+# --- D4 do SPEC: fora do Git ---
+*.tir
+*.pdf
+importado-claude-ai/
+Sistema_DDS_CONTEXTO_COMPLETO.md
+# references/: só o INDEX.md é versionado (D3)
+references/*
+!references/INDEX.md
+
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+
+# --- Excel (arquivo de bloqueio aberto) ---
+~$*
+
+# --- Local ---
+.env
+CLAUDE.local.md
+.claude/settings.local.json
