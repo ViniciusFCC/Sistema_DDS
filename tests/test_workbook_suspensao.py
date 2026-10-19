@@ -5,6 +5,7 @@ Uso: uv run python -X utf8 tests/test_workbook_suspensao.py [<V3_0.xlsx>]   (pad
 Namespace TC-WB30-xxx. "Passou" = Excel reproduz o suspension_model/kinematics_model (tol. 1e-9 relativa), não validação física.
 TC-WB30-010 a 013 (1ª rodada de feedback): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
 TC-WB30-013 estendido na 2ª rodada de feedback: razão h_ns / raio como entrada (05 B35/B36) e 07 B14 separado do CG não suspenso.
+TC-WB30-014 (2ª rodada de feedback, ID autorizado pelo usuário em 2026-10-19): pior origem ao vivo no 14_DASHBOARD (FB-03 fase 2).
 """
 import csv, math, os, random, shutil, sys, tempfile, warnings
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
@@ -264,6 +265,35 @@ check("TC-WB30-012: cores e avisos da Origem (E) e da Fonte (F) nas 5 abas, G/H 
       "semântica: valor mudou com a mesma origem -> aviso; origem trocada -> sem aviso; Dado do TX sem fonte -> aviso",
       regras_ok and ocultas_ok and copia_ok and z == [True, False, False, False, True, False] and info["total_errors"] == 0,
       f"regras={regras_ok}; ocultas={ocultas_ok}; G/H={copia_ok}; avaliação={z}")
+
+# ---------- FB-03 fase 2: pior origem ao vivo no 14_DASHBOARD (2ª rodada de feedback) ----------
+import raizes
+PIOR = [CONF, ARB, EST, TTC, T09, TX]          # ordem aprovada pelo usuário (2026-10-19), escrita aqui de novo de propósito
+LINHAS_DASH = (7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 33, 34, 35, 36, 37)
+g = raizes.Grafo(wbf)
+dsh = wbf["14_DASHBOARD"]
+cobertura, esperado_dash = [], {}
+for r in LINHAS_DASH:
+    f_ = str(dsh[f"E{r}"].value)
+    lidas = set(raizes.referencias(f_, "14_DASHBOARD", nomes=g.nomes)) - {("00_README", f"A{k}") for k in range(43, 49)}
+    devidas = set(g.celulas_origem(("14_DASHBOARD", f"B{r}")))
+    if not f_.startswith("=") or lidas != devidas:
+        cobertura.append((r, sorted(devidas - lidas), sorted(lidas - devidas)))
+    orig = [wbf[a][c].value for a, c in devidas]
+    esperado_dash[r] = next(o for o in PIOR if o in orig or (o == CONF and any(v not in ROTULOS for v in orig)))
+info, wbd = scenario({})
+base_dash = {r: wbd["14_DASHBOARD"][f"E{r}"].value for r in LINHAS_DASH}
+# Semântica ao vivo: troca de origem numa entrada muda o resultado; origem apagada conta como "? A confirmar".
+info2, wbd2 = scenario({("05_VEHICLE", "E5"): CONF,                                   # altura do CG (TX) -> ? A confirmar
+                        ("06_SUSPENSION", "E4"): None,                                # mola dianteira: origem apagada
+                        ("06_SUSPENSION", "E5"): TX, ("06_SUSPENSION", "E7"): TX,     # wheel rate traseiro: só TX
+                        ("07_KINEMATICS", "E31"): TX})                                # curso dianteiro: única raiz do REQ-004 F
+v2 = {r: wbd2["14_DASHBOARD"][f"E{r}"].value for r in (7, 13, 14, 22, 23)}
+check("TC-WB30-014: 14_DASHBOARD E (19 resultados) = pior origem das entradas, ao vivo: fórmulas cobrem todas as raízes "
+      "com Origem; base = pior origem do grafo; trocar/apagar origens muda o resultado",
+      not cobertura and base_dash == esperado_dash and info["total_errors"] == 0 and info2["total_errors"] == 0
+      and v2 == {7: CONF, 13: CONF, 14: TX, 22: CONF, 23: TX},
+      f"cobertura={cobertura[:3]}; base≠={[(r, base_dash[r], esperado_dash[r]) for r in LINHAS_DASH if base_dash[r] != esperado_dash[r]]}; ao vivo={v2}")
 
 print("\n--- Resumo ---"); p = sum(1 for _, s in results if s == "PASS"); f = len(results) - p
 print(f"{p} PASS, {f} FAIL, de {len(results)} testes")
