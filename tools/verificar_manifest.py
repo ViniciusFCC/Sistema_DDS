@@ -28,6 +28,7 @@ INVENTARIO = {
         "tire/build_workbook_V2_4.py", "tire/test_workbook_V2_4.py",
         "tire/layout_V2_4.json", "tire/Hoosier_R25B_13x7_TTC_provisional.meta.json",
         "kin/suspension_model_V2_1.py", "kin/test_suspension_model_V2_1.py",
+        "kin/suspension_model_V1_0.py",  # dependência do TC-SUS-V2-004 (divergência 01)
         "kin/kinematics_model_V2_0.py", "kin/test_kinematics_model_V2_1.py",
         "kin/hardpoints_V2_0.py", "kin/test_hardpoints_V2_1.py",
         "kin/hardpoints_synthetic_V2.0.csv", "kin/hardpoints_synthetic_V2.0.meta.json",
