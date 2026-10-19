@@ -27,6 +27,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comparar_planilhas  # noqa: E402
+import openpyxl  # noqa: E402
 
 # Contagens esperadas e fonte (SPEC §6)
 TESTES = [
@@ -84,6 +85,29 @@ def bloco(titulo: str, texto: str) -> list[str]:
     if not texto.strip():
         return []
     return [f"<details><summary>{titulo}</summary>", "", "```text", texto, "```", "", "</details>", ""]
+
+
+def versao_planilhas() -> tuple[bool, list[str]]:
+    """Fase B, passo 3: a versão da planilha fica no nome do arquivo (EDR-043) e no
+    texto de 00_README!A3 ("Versão do workbook: V2.4 ..."). Confere que os dois batem
+    em cada planilha de excel/, sem mudar a estrutura da planilha."""
+    linhas, ok = [], True
+    arquivos = sorted((RAIZ / "excel").glob("FSAE_EV_Suspension_Fase1_V*.xlsx"))
+    for f in arquivos:
+        m_nome = re.search(r"_V(\d+)[._](\d+)\.xlsx$", f.name)
+        wb = openpyxl.load_workbook(f, read_only=True)
+        try:  # no modo read_only o arquivo fica aberto (e travado no Windows) até o close()
+            a3 = wb["00_README"]["A3"].value
+        finally:
+            wb.close()
+        m_a3 = re.match(r"Versão do workbook: V(\d+)\.(\d+)\b", a3 or "")
+        bate = bool(m_nome and m_a3 and m_nome.groups() == m_a3.groups())
+        ok &= bate
+        lido = f"V{'.'.join(m_a3.groups())}" if m_a3 else f"ilegível: {str(a3)[:60]!r}"
+        linhas.append(f"- `excel/{f.name}`: A3 diz {lido}: **{'PASS' if bate else 'FAIL'}**")
+    if not arquivos:
+        ok, linhas = False, ["- nenhuma planilha encontrada em `excel/`: **FAIL**"]
+    return ok, linhas
 
 
 def git(*args: str) -> str:
@@ -187,6 +211,13 @@ def main() -> None:
     resumo.append(("CA-07", "planilha vs V2.4 entregue", "PASS" if ok7 else "FAIL"))
     resumo.append(("CA-08", "layout vs entregue", "PASS" if ok8 else "FAIL"))
     md += ["```text", *r7, *r8, "```", ""]
+
+    # --- Versão gravada na planilha (fase B, passo 3) ---
+    ok_ver, linhas_ver = versao_planilhas()
+    resumo.append(("versão", "00_README!A3 = versão no nome do arquivo", "PASS" if ok_ver else "FAIL"))
+    md += ["## Versão gravada na planilha (fase B, passo 3)", "",
+           "A versão escrita em `00_README!A3` precisa ser a mesma do nome do arquivo.", "",
+           *linhas_ver, ""]
 
     # --- NÃO EXECUTÁVEL (CA-09) ---
     resumo.append(("CA-09", NAO_EXECUTAVEL[0], "NÃO EXECUTÁVEL"))
