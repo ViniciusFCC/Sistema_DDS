@@ -248,8 +248,12 @@ check("TC-SUS-V2-001j: entradas válidas dos testes herdados continuam aceitas (
 with warnings.catch_warnings(record=True) as w:
     warnings.simplefilter("always")
     wheel_rate(40000.0, 0.1)
-check("TC-SUS-V2-002: MR muito pequeno emite SmallMotionRatioWarning (limite 0,2 é HIPÓTESE sem fonte)",
-      any(issubclass(x.category, sm.SmallMotionRatioWarning) for x in w))
+    sem_aviso = not any(issubclass(x.category, sm.SmallMotionRatioWarning) for x in w)
+    sm.MR_WARN_THRESHOLD = 0.2                     # limite definido explicitamente: o aviso ainda funciona
+    wheel_rate(40000.0, 0.1)
+    sm.MR_WARN_THRESHOLD = None
+check("TC-SUS-V2-002: sem limiar absoluto de MR por padrão (EDR-027, opção A); com limite definido explicitamente, o aviso é emitido",
+      sem_aviso and any(issubclass(x.category, sm.SmallMotionRatioWarning) for x in w) and wheel_rate(40000.0, 1.0) == 40000.0)
 
 # Fz < 0: aviso acionável, valores inalterados
 with warnings.catch_warnings():
