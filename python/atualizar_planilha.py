@@ -409,6 +409,8 @@ def _feedback2() -> list[dict]:
                 "instabilidade): a célula nunca mostra número inventado. TBD = falta um dado, uma meta ou uma decisão (equivale a "
                 "OPEN). \"? A confirmar\" (coluna Origem) é outra coisa: há valor, mas a origem dele não está registrada.",
                 "EDR-035 (N/A e TBD; usuário, 2026-10-19)", ("00_README", 23, "A")))
+    # Kinematics REV ainda não definida = pendência (TBD), como a Geometry REV em 07 B68 (auditoria dos usos; usuário, 2026-10-19).
+    a.append(_a("01_SETUP", "B10", "TBD (Fase 2)", "EDR-035 (N/A e TBD; troca aprovada pelo usuário, 2026-10-19)"))
     return a
 
 
