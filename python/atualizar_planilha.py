@@ -1,4 +1,5 @@
-"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049).
+"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049) e 2ª rodada
+(feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051).
 
 Uso:
     uv run python -X utf8 python/atualizar_planilha.py [ORIGEM_V2_4.xlsx] [SAIDA_V3_0.xlsx] [--registro ARQ.md]
@@ -155,6 +156,204 @@ def alteracoes(ky_row: int) -> list[dict]:
     a.append(_a("10_TIRE", f"A{ky_row}", "Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)", "EDR-049"))
     for c in "BCDEF":
         a.append(_a("10_TIRE", f"{c}{ky_row}", None, "EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9"))
+    return a + _rodada2()
+
+
+# =====================================================================================================================
+# 2ª rodada da V3.0 (feedback da equipe, 2026-10-14; decisões do usuário em 2026-10-19): EDR-035, EDR-050, EDR-051.
+# =====================================================================================================================
+# Rótulos da coluna "Origem" (EDR-035). O símbolo dá a leitura em P&B; a ordem é a da lista suspensa.
+TX, T09, TTC, EST, ARB, CONF = ("● Dado do TX", "◐ Dado do T09", "◐ Provisório (.tir TTC)", "○ Estimativa",
+                                "○ Arbitrário / demonstrativo", "? A confirmar")
+ORIGENS_LISTA = (TX, T09, TTC, EST, ARB, CONF)
+SIGNIFICADO = {   # rótulo -> (significado para quem preenche, categorias da auditoria V2.1 e tier)
+    TX: ("Medido no carro atual ou tirado de documento do TX/E05 (ex.: Key Parameters).", "T3_FONTE_TX_REGISTRADA (T3)"),
+    T09: ("Valor do carro anterior (T09/E03): serve para testar as fórmulas, não é o TX.", "REAL_OUTRO_VEICULO_T09/E03 (T2)"),
+    TTC: ("Vem do arquivo de pneu provisório do TTC; não é o pneu do carro.", "REAL_OUTRO_VEICULO_PROVISORIO (T2)"),
+    EST: ("Estimado ou suposto: inclui hipótese de modelo e caso de carga sem fonte.",
+          "ESTIMATIVA_NAO_MEDIDA (T1), HIPOTESE_CONGELADA_V1 e CASO_DE_CARGA_SEM_PROVENIENCIA (T2); vale a pior, T1"),
+    ARB: ("Placeholder, valor arbitrário ou meta de exemplo: não usar para decisão de projeto.",
+          "ARBITRARIO, PLACEHOLDER, ALVO_DEMONSTRATIVO (T1)"),
+    CONF: ("A origem do valor não está registrada.", "sem classificação"),
+}
+_T09 = ("Demonstrativo (EDR-012/022): valor do T09/E03 para referência, comparação e teste das fórmulas "
+        "(usuário, 2026-10-19); não é o TX/E05. ")
+_KIN = "Placeholder geométrico (07_KINEMATICS inteira é placeholder até a Fase 2); não é hardpoint real."
+_CARGA = "Caso de carga sem fonte registrada. "
+# Entradas das abas 05/06/07/08/11: (aba, linha, origem; None = célula calculada, sem lista), fonte (coluna F).
+# Fonte: comentários das células na V2.4/V3.0 (migrados para a coluna F) e mapa da auditoria V2.1
+# (data/placeholder-dependency-map-V2.1.csv). O RC (06 B14/B15) é T09/E03 por confirmação do usuário (2026-10-19).
+ORIGENS = [
+    ("05_VEHICLE", 4, None, "Calculada (EDR-050): massa medida sem piloto (B30) + massa do piloto (B31)."),
+    ("05_VEHICLE", 5, TX, "E05, Key Parameters (315 mm). Medida a partir do plano do solo (SUS-000), não da origem do CAD."),
+    ("05_VEHICLE", 6, TX, "E05, Key Parameters (1594 mm). Diverge do E03 (1550 mm, chassi anterior)."),
+    ("05_VEHICLE", 7, TX, "E05, Key Parameters (1277 mm)."),
+    ("05_VEHICLE", 8, TX, "E05, Key Parameters (1271 mm)."),
+    ("05_VEHICLE", 9, None, "Calculada (EDR-050): L·(1 − f), com f = fração de peso no eixo dianteiro (B32)."),
+    ("05_VEHICLE", 10, None, "Calculada (EDR-050): L·f, com f = fração de peso no eixo dianteiro (B32)."),
+    ("05_VEHICLE", 14, ARB, "Não disponível para o TX/E05: a pesagem em plataforma mede a carga total no solo e não separa massa "
+                            "suspensa de não suspensa (confirmado pela equipe). Valor arbitrário: não usar para decisão de projeto."),
+    ("05_VEHICLE", 15, ARB, "Não disponível para o TX/E05 (mesma razão do SUS-007). Valor arbitrário: não usar para decisão de projeto."),
+    ("05_VEHICLE", 16, None, "Calculada (EDR-050): diâmetro do pneu (B33) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura "
+                             "do CG não suspenso; não é medição da equipe."),
+    ("05_VEHICLE", 17, None, "Calculada (EDR-050): diâmetro do pneu (B34) × 0,0254 / 2. Estimativa: o raio do pneu aproxima a altura "
+                             "do CG não suspenso; não é medição da equipe."),
+    ("05_VEHICLE", 20, CONF, "SUS-000: coordenada Z do solo no sistema de coordenadas da equipe. As alturas desta planilha já são "
+                             "medidas a partir do solo (ficha SUS-000 do Engineering Standard). A origem do valor −0,05 m não está registrada."),
+    ("05_VEHICLE", 30, TX, "Adesivo SAE Brasil 2026: medição real, sem piloto (248,5 kg)."),
+    ("05_VEHICLE", 31, EST, "Piloto de referência (68 kg, padrão FSAE); não é a massa medida do piloto."),
+    ("05_VEHICLE", 32, TX, "Distribuição medida no adesivo do TX/E05: 48,43 % no eixo dianteiro, com piloto (coerente com a massa total, "
+                           "que inclui o piloto)."),
+    ("05_VEHICLE", 33, T09, "Pneu 20.0-13 do E03 (diâmetro 20,0 in)."),
+    ("05_VEHICLE", 34, T09, "Pneu 20.0-13 do E03 (mesmo pneu na frente e atrás)."),
+    ("06_SUSPENSION", 4, T09, _T09 + "Calculado a partir da planilha detalhada do T09: ride rate dianteiro 16 112,23 N/m (que é o wheel "
+                                     "rate) × MR² (MR = 1,76). Corrige o valor anterior, do spec sheet resumido, que arredondava F e R como iguais."),
+    ("06_SUSPENSION", 5, T09, _T09 + "Calculado a partir da planilha detalhada do T09: ride rate traseiro 18 418,2 N/m × MR² (MR = 1,76)."),
+    ("06_SUSPENSION", 6, T09, _T09 + "E03 (1,76:1). Convenção wheel/spring assumida (igual à do projeto); o E03 não diz a direção."),
+    ("06_SUSPENSION", 7, T09, _T09 + "E03 (1,76:1, igual à dianteira)."),
+    ("06_SUSPENSION", 10, T09, _T09 + "Planilha detalhada do T09 (AntiRoll Bar Rate dianteiro), valor direto."),
+    ("06_SUSPENSION", 11, T09, _T09 + "Planilha detalhada do T09 (AntiRoll Bar Rate traseiro, ≈ 0, coerente com 'sem ARB')."),
+    ("06_SUSPENSION", 14, T09, _T09 + "Planilha detalhada do T09 (0,0675 m), mais precisa que o spec sheet do E03 (60 mm, arredondado). "
+                                      "Provisório até a Fase 2 (OptimumKinematics)."),
+    ("06_SUSPENSION", 15, T09, _T09 + "E03 (110 mm, roll center estático acima do solo). Provisório até a Fase 2 (OptimumKinematics)."),
+    ("06_SUSPENSION", 36, ARB, "Placeholder: fração da força de frenagem no eixo dianteiro (brake bias). Substituir pelo balanço de freio "
+                               "real do Setup."),
+    ("06_SUSPENSION", 37, EST, "Hipótese congelada da V1: TF_r = 1 (tração só traseira). Revisitar se a equipe mudar para AWD."),
+    ("06_SUSPENSION", 44, ARB, "Placeholder: razão entre o ângulo do volante e o ângulo médio das rodas dianteiras. Substituir pela "
+                               "medição da cremalheira ou pela geometria do rack."),
+    ("06_SUSPENSION", 47, TTC, "VERTICAL_STIFFNESS do .tir TTC provisório (Hoosier R25B; EDR-038, EDR-045). Não é o pneu do carro nem "
+                               "medição da equipe: substituir pela rigidez vertical do pneu real."),
+    ("06_SUSPENSION", 48, TTC, "VERTICAL_STIFFNESS do .tir TTC provisório (Hoosier R25B; EDR-038, EDR-045). Não é o pneu do carro nem "
+                               "medição da equipe: substituir pela rigidez vertical do pneu real."),
+    ("07_KINEMATICS", 10, ARB, "Placeholder geométrico para testar a fórmula; não é hardpoint real. Fase 2: REFERENCE do OptimumKinematics."),
+    ("07_KINEMATICS", 11, ARB, _KIN), ("07_KINEMATICS", 12, ARB, _KIN), ("07_KINEMATICS", 13, ARB, _KIN),
+    ("07_KINEMATICS", 14, None, "Calculada: = SUS-011 (05_VEHICLE B17). Placeholder: substituir pela altura do centro da roda do CAD."),
+    ("07_KINEMATICS", 17, ARB, _KIN), ("07_KINEMATICS", 18, ARB, _KIN), ("07_KINEMATICS", 19, ARB, _KIN),
+    ("07_KINEMATICS", 20, ARB, _KIN), ("07_KINEMATICS", 23, ARB, _KIN), ("07_KINEMATICS", 24, ARB, _KIN),
+    ("07_KINEMATICS", 27, ARB, _KIN), ("07_KINEMATICS", 28, ARB, _KIN),
+    ("07_KINEMATICS", 31, ARB, "Placeholder geométrico; não é a medição do curso instalado. Substituir pelo curso real (bump + rebound) "
+                               "com o piloto sentado, conforme V.3.1.1."),
+    ("07_KINEMATICS", 32, ARB, "Placeholder geométrico; não é a medição do curso instalado (ver B31)."),
+    ("08_VEHICLE_STATE", 4, EST, _CARGA + "ISO 8855: a_x + = aceleração para frente (transfere carga para o eixo traseiro); "
+                                          "negativo = frenagem."),
+    ("08_VEHICLE_STATE", 5, None, "Calculada (EDR-050): a_y em g (B11) × 9,81. ISO 8855: a_y + = para a esquerda (o lado direito ganha carga)."),
+    ("08_VEHICLE_STATE", 8, EST, _CARGA + "Aero constante por Setup (SUS-701, EDR-013)."),
+    ("08_VEHICLE_STATE", 9, EST, _CARGA + "Fração dianteira da downforce (SUS-702, EDR-013)."),
+    ("08_VEHICLE_STATE", 11, EST, _CARGA + "Curva à esquerda de 1,2 g."),
+    ("11_DESIGN", 4, ARB, "Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-001)."),
+    ("11_DESIGN", 5, ARB, "Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-002)."),
+    ("11_DESIGN", 18, ARB, "Alvo demonstrativo: a meta da equipe está TBD em 03_TARGETS (TARGET-003)."),
+]
+# 10_TIRE: as colunas E-H estão ocupadas (cantos, unidade, ID); a origem vai em I e a fonte em J, por linha de caso e
+# para o bloco de coeficientes (linha 84, logo acima do cabeçalho mesclado A85:I85). Sem o aviso de desatualização (cinco valores por linha).
+TIRE_ORIGENS = [
+    (23, ARB, "Demonstrativos (EDR-022): α, γ e κ não vêm de cálculo do carro (não há modelo de slip). Valores arbitrários coerentes "
+              "em sinal com 08_VEHICLE_STATE (curva à esquerda, frenagem). Substituir por casos de carga da equipe. VERIF (F): caso fixo de teste."),
+    (24, ARB, "Camber de entrada manual (EDR-036 sem decisão: ainda não há ID para camber estático). Convenção do projeto: "
+              "+ = topo para fora, nos dois lados."),
+    (25, ARB, "Demonstrativo (EDR-022), como α e γ."),
+    (84, TTC, "Todos os coeficientes da tabela abaixo (B86:B175) foram transcritos do .tir provisório (ver os metadados acima). REFERENCE "
+              "por natureza (DR-011), mas o dataset é provisório. Mudou o dataset: mudar o Tire REV (01_SETUP) e reexecutar "
+              "13_VALIDATION; os resultados antigos viram STALE."),
+]
+ABAS_ORIGEM = ("05_VEHICLE", "06_SUSPENSION", "07_KINEMATICS", "08_VEHICLE_STATE", "11_DESIGN")
+LINHA_COMO_PREENCHER = 39          # 00_README: início da seção "Como preencher"
+LINHAS_ORIGENS = range(43, 49)     # 00_README: A = rótulos (nome definido "Origens"), B:D = significado, E = auditoria V2.1
+NOME_LISTA = "Origens"
+G_MS2 = "9.81"                     # mesmo g literal das fórmulas existentes (09_LOADS, 13_VALIDATION)
+
+
+def _rodada2() -> list[dict]:
+    a = []
+    ref35, ref50 = "EDR-035 (feedback da equipe, 2026-10-14)", "EDR-050 (feedback da equipe, 2026-10-14)"
+    inp = lambda aba, r: (aba, r, "B")                     # estilo de uma entrada existente
+    # ---- FB-05 / EDR-050: parcelas externas viram entrada; a célula vira a conta ----
+    a.append(_a("05_VEHICLE", "A29", "Entradas de onde saem B4, B9/B10 e B16/B17 (EDR-050: valor que sai de conta não é digitado)",
+                ref50, ("05_VEHICLE", 22, "A")))
+    for r, rot, val, un, sid in (
+        (30, "Massa medida sem piloto", 248.5, "kg", "SUS-001"),
+        (31, "Massa do piloto", 68, "kg", "SUS-001"),
+        (32, "Fração de peso no eixo dianteiro (f)", 0.4843, "-", "SUS-006"),
+        (33, "Diâmetro do pneu dianteiro", 20.0, "in", "SUS-010"),
+        (34, "Diâmetro do pneu traseiro", 20.0, "in", "SUS-011"),
+    ):
+        a += [_a("05_VEHICLE", f"A{r}", rot, ref50, ("05_VEHICLE", 14, "A")),
+              _a("05_VEHICLE", f"B{r}", val, ref50 + "; valor: comentário da V2.4 (ver coluna F)", inp("05_VEHICLE", 14)),
+              _a("05_VEHICLE", f"C{r}", un, ref50, ("05_VEHICLE", 14, "C")),
+              _a("05_VEHICLE", f"D{r}", sid, ref50, ("05_VEHICLE", 14, "D"))]
+    calc = ("05_VEHICLE", 23, "B")
+    a += [
+        _a("05_VEHICLE", "B4", f"={V}$B$30+{V}$B$31", ref50, calc),
+        _a("05_VEHICLE", "B9", f"={V}$B$6*(1-{V}$B$32)", ref50, calc),
+        _a("05_VEHICLE", "B10", f"={V}$B$6*{V}$B$32", ref50, calc),
+        _a("05_VEHICLE", "B16", f"={V}$B$33*0.0254/2", ref50, calc),
+        _a("05_VEHICLE", "B17", f"={V}$B$34*0.0254/2", ref50, calc),
+        _a("08_VEHICLE_STATE", "A10", "Entrada de onde sai a_y (B5) — EDR-050", ref50, ("08_VEHICLE_STATE", 3, "A")),
+        _a("08_VEHICLE_STATE", "A11", "Aceleração lateral em g (entrada de a_y)", ref50, ("08_VEHICLE_STATE", 5, "A")),
+        _a("08_VEHICLE_STATE", "B11", 1.2, ref50 + "; valor: 11,772 m/s² / 9,81", inp("08_VEHICLE_STATE", 5)),
+        _a("08_VEHICLE_STATE", "C11", "g", ref50, ("08_VEHICLE_STATE", 5, "C")),
+        _a("08_VEHICLE_STATE", "D11", "-", ref50, ("08_VEHICLE_STATE", 5, "D")),
+        _a("08_VEHICLE_STATE", "B5", f"={E}$B$11*{G_MS2}", ref50, ("05_VEHICLE", 23, "B")),
+    ]
+    # ---- FB-03 / EDR-035: origem (E), fonte (F) e, ocultos, valor e origem da geração (G, H) ----
+    for aba in ABAS_ORIGEM:
+        a += [_a(aba, "E2", "Origem do valor (lista)", ref35, (aba, 3, "A")),
+              _a(aba, "F2", "Fonte / observação", ref35, (aba, 3, "A"))]
+    for aba, r, org, fonte in ORIGENS:
+        st = (aba, r, "C")
+        if org is not None:
+            a.append(_a(aba, f"E{r}", org, ref35, st))
+        a.append(_a(aba, f"F{r}", fonte, ref35, st))
+        if org is not None:
+            a += [_a(aba, f"G{r}", ("COPIA", f"B{r}"), ref35 + ": valor da geração (oculto; aviso de desatualização)", st),
+                  _a(aba, f"H{r}", org, ref35 + ": origem da geração (oculto; aviso de desatualização)", st)]
+    a += [_a("10_TIRE", "I20", "Origem do valor (lista)", ref35, ("10_TIRE", 20, "A")),
+          _a("10_TIRE", "J20", "Fonte / observação", ref35, ("10_TIRE", 20, "A"))]
+    for r, org, fonte in TIRE_ORIGENS:
+        a += [_a("10_TIRE", f"I{r}", org, ref35, ("10_TIRE", 86, "H")),
+              _a("10_TIRE", f"J{r}", fonte, ref35, ("10_TIRE", 86, "H"))]
+    # ---- FB-02: legenda com o estilo real das células; a classe "amarelo" sai (o fundo amarelo é removido em aplicar) ----
+    a += [
+        _a("00_README", "A16", "■ Azul", "FB-02; estilo = 05_VEHICLE B14", ("05_VEHICLE", 14, "B")),
+        _a("00_README", "A17", "■ Verde-teal", "FB-02; estilo = 05_VEHICLE B6", ("05_VEHICLE", 6, "B")),
+        _a("00_README", "A18", "■ Laranja + fundo", "FB-02; estilo = 06_SUSPENSION B14", ("06_SUSPENSION", 14, "B")),
+        _a("00_README", "A19", "■ Preto + fundo cinza", "FB-02; estilo = 05_VEHICLE B23", ("05_VEHICLE", 23, "B")),
+        _a("00_README", "A20", "Origem do valor", "FB-02/EDR-035", ("00_README", 19, "B")),
+        _a("00_README", "B20", "Não é cor da célula: fica na coluna E de cada entrada (● ◐ ○ ?). Ver \"Como preencher\", abaixo.",
+           "FB-02/EDR-035"),
+    ]
+    # ---- FB-06: guia de preenchimento na própria planilha ----
+    h, t = ("00_README", 22, "A"), ("00_README", 23, "A")
+    r0 = LINHA_COMO_PREENCHER
+    guia = [
+        (r0, "Como preencher esta planilha (EDR-035, EDR-050, EDR-051)", h),
+        (r0 + 1, "1. Edite só as entradas (fonte azul; verde-teal e laranja quando houver o dado real) das abas 05, 06, 07, 08, "
+                 "10 (casos de carga) e 11 (metas). Célula com fundo cinza é calculada: não edite.", t),
+        (r0 + 2, "2. Cada entrada tem ao lado a Origem (coluna E; na 10_TIRE, coluna I) e a Fonte (coluna F; na 10_TIRE, J). "
+                 "Ao trocar um valor, escolha a Origem na lista e escreva na Fonte de onde veio o número. Origens possíveis:", t),
+    ]
+    a += [_a("00_README", f"A{r}", txt, "FB-06/EDR-035", st) for r, txt, st in guia]
+    a += [_a("00_README", f"A{r0 + 3}", "Origem", "FB-06/EDR-035", t),
+          _a("00_README", f"B{r0 + 3}", "Significado", "FB-06/EDR-035", t),
+          _a("00_README", f"E{r0 + 3}", "Categorias da auditoria V2.1 (data/placeholder-dependency-map-V2.1.csv)", "FB-06/EDR-035", t)]
+    for r, org in zip(LINHAS_ORIGENS, ORIGENS_LISTA):
+        sig, aud = SIGNIFICADO[org]
+        a += [_a("00_README", f"A{r}", org, "FB-06/EDR-035; nome definido 'Origens'", t),
+              _a("00_README", f"B{r}", sig, "FB-06/EDR-035", t),
+              _a("00_README", f"E{r}", aud, "FB-06/EDR-035", t)]
+    fim = LINHAS_ORIGENS.stop
+    resto = [
+        "3. Avisos: Origem com fundo vermelho-alaranjado = o valor mudou e a Origem continuou a mesma (revise a Origem). "
+        "Fonte com fundo vermelho = a Origem diz \"Dado do TX\" e falta a Fonte. Na 10_TIRE não há esses avisos: ao trocar um "
+        "caso de carga, troque a Origem à mão.",
+        "4. Valor que sai de conta não é digitado (EDR-050): digite as parcelas, não o resultado. Exemplo: massa total = massa "
+        "medida + piloto (05_VEHICLE B30 e B31).",
+        "5. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima "
+        "geração (EDR-051). Depois do fechamento, ela passa a ser o arquivo da equipe.",
+        "6. Convenções de sinais e eixos: seção acima. Decisões e fichas: pasta docs/ do repositório "
+        "(Engineering_Decision_Register.md e Engineering Standard).",
+    ]
+    a += [_a("00_README", f"A{fim + i}", txt, "FB-06/EDR-035/050/051", t) for i, txt in enumerate(resto)]
     return a
 
 
@@ -176,8 +375,10 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
         c = ws[alt["cel"]]
         antes = c.value
         novo = alt["novo"]
-        if alt["aba"] == "10_TIRE" and alt["cel"][0] in "BCDEF":
+        if alt["aba"] == "10_TIRE" and alt["cel"] in {f"{col}{rows['Ky']}" for col in "BCDEF"}:
             novo = _ky_formula(antes, lfzo, lky)
+        if isinstance(novo, tuple) and novo[0] == "COPIA":   # coluna G: valor da geração (EDR-035)
+            novo = ws[novo[1]].value
         if alt["estilo"]:
             aba_e, linha_e, col_e = alt["estilo"]
             c._style = copy.copy(wb[aba_e][f"{col_e}{linha_e}"]._style)
@@ -224,10 +425,113 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
                       "Excel x Python (test_workbook e test_workbook_suspensao). NOT_VALIDATED fisicamente. Autor: nao registrado.")
     registro.append({"aba": "15_CHANGELOG", "cel": "A16:C16", "antes": None, "novo": "(linha V3.0)", "ref": "EDR-043"})
 
+    _rodada2_formatacao(wb, registro)
     wb.calculation.fullCalcOnLoad = True
     out.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out)
     return registro
+
+
+AMARELO = "00FFF2CC"
+COR_ORIGEM = {"●": "00CCE3F0", "◐": "00FAE2B3", "○": "00F0D7E5", "?": "00E0E0E0"}   # tons claros da paleta Okabe-Ito
+
+
+def _rodada2_formatacao(wb, registro: list[dict]) -> None:
+    """Parte da 2ª rodada que não é valor de célula: fundo amarelo, comentários migrados, lista, cores e avisos (EDR-035)."""
+    from openpyxl.formatting.rule import FormulaRule
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.workbook.defined_name import DefinedName
+    from openpyxl.worksheet.datavalidation import DataValidation
+
+    def reg(aba, cel, antes, novo, ref):
+        registro.append({"aba": aba, "cel": cel, "antes": antes, "novo": novo, "ref": ref})
+
+    # FB-02: o fundo amarelo "hipótese-chave" sai; a célula fica com o estilo de entrada (fonte azul), como as demais.
+    for ws in wb.worksheets:
+        for linha in ws.iter_rows():
+            for c in linha:
+                if c.fill.fill_type and c.fill.fgColor.rgb == AMARELO:
+                    c.fill = PatternFill(fill_type=None)
+                    reg(ws.title, f"{c.coordinate} (estilo)", "fundo amarelo (hipótese-chave)", "sem fundo", "FB-02 (usuário, 2026-10-19)")
+    # FB-03: o texto dos comentários das entradas passou para a coluna Fonte; o comentário sai para não haver duas cópias.
+    migrados = [(aba, f"B{r}") for aba, r, _, _ in ORIGENS] + [("10_TIRE", "B23"), ("10_TIRE", "B24"), ("10_TIRE", "B86")]
+    for aba, cel in migrados:
+        c = wb[aba][cel]
+        if c.comment is not None:
+            reg(aba, f"{cel} (comentário)", c.comment.text, "(removido; texto na coluna Fonte)", "EDR-035")
+            c.comment = None
+    # Lista de origens (nome definido) e colunas.
+    rot = f"'00_README'!$A${LINHAS_ORIGENS.start}:$A${LINHAS_ORIGENS.stop - 1}"
+    wb.defined_names[NOME_LISTA] = DefinedName(NOME_LISTA, attr_text=rot)
+    reg("(pasta)", f"nome definido {NOME_LISTA}", None, rot, "EDR-035")
+    quebra = Alignment(wrap_text=True, vertical="top")
+
+    def lista(ws, celulas):
+        dv = DataValidation(type="list", formula1=f"={NOME_LISTA}", allow_blank=True, showErrorMessage=True,
+                            errorTitle="Origem fora da lista", error="Escolha uma das origens da lista (00_README, 'Como preencher').")
+        ws.add_data_validation(dv)
+        for cel in celulas:
+            dv.add(cel)
+
+    def cores(ws, col, linha0, linha1):
+        faixa = f"{col}{linha0}:{col}{linha1}"
+        for simb, cor in COR_ORIGEM.items():
+            ws.conditional_formatting.add(faixa, FormulaRule(formula=[f'LEFT(${col}{linha0},1)="{simb}"'],
+                                                             fill=PatternFill("solid", start_color=cor, end_color=cor)))
+
+    for aba in ABAS_ORIGEM:
+        ws = wb[aba]
+        linhas = [r for a_, r, org, _ in ORIGENS if a_ == aba and org is not None]
+        todas = [r for a_, r, _, _ in ORIGENS if a_ == aba]
+        r0, r1 = 3, max(ws.max_row, max(todas))
+        ws.column_dimensions["E"].width, ws.column_dimensions["F"].width = 30, 80
+        ws.column_dimensions["G"].hidden = ws.column_dimensions["H"].hidden = True
+        for r in todas:
+            ws[f"F{r}"].alignment = quebra
+        lista(ws, [f"E{r}" for r in linhas])
+        # Avisos primeiro (param a avaliação das cores): valor mudou e origem não; "Dado do TX" sem fonte.
+        alerta = PatternFill("solid", start_color="00D55E00", end_color="00D55E00")
+        ws.conditional_formatting.add(f"E{r0}:E{r1}", FormulaRule(
+            formula=[f"AND(ISNUMBER($G{r0}),$B{r0}<>$G{r0},$E{r0}=$H{r0})"], fill=alerta,
+            font=Font(color="00FFFFFF", bold=True), stopIfTrue=True))
+        ws.conditional_formatting.add(f"F{r0}:F{r1}", FormulaRule(
+            formula=[f'AND(LEFT($E{r0},1)="●",LEN(TRIM($F{r0}))=0)'],
+            fill=PatternFill("solid", start_color="00FF0000", end_color="00FF0000"), stopIfTrue=True))
+        cores(ws, "E", r0, r1)
+        reg(aba, f"E{r0}:F{r1} (formatação)", None, "lista 'Origens' em E; cores por origem; avisos (E: valor mudou e origem não; "
+            "F: Dado do TX sem fonte); G/H ocultas", "EDR-035")
+    t = wb["10_TIRE"]
+    t.column_dimensions["J"].width = 80
+    for r, _, _ in TIRE_ORIGENS:
+        t[f"J{r}"].alignment = quebra
+    lista(t, [f"I{r}" for r, _, _ in TIRE_ORIGENS])
+    cores(t, "I", 20, 176)
+    reg("10_TIRE", "I20:J176 (formatação)", None, "lista 'Origens' em I; cores por origem", "EDR-035")
+    # Versão e changelog.
+    m = wb["00_README"]
+    assert "EDR-045 a EDR-049)" in m["A3"].value, "texto da versão em 00_README!A3 mudou"
+    m["A3"].value = m["A3"].value.replace("EDR-045 a EDR-049)", "EDR-045 a EDR-049; 2ª rodada, feedback da equipe: origem de cada "
+                                                               "entrada, valores derivados como fórmula, guia de preenchimento; "
+                                                               "EDR-035, EDR-050, EDR-051)")
+    # Texto corrido em A:E mesclado, como o resto da 00_README; a tabela de origens tem o significado em B:D.
+    for r in list(range(LINHA_COMO_PREENCHER, LINHAS_ORIGENS.start - 1)) + list(range(LINHAS_ORIGENS.stop, LINHAS_ORIGENS.stop + 4)):
+        m.merge_cells(f"A{r}:E{r}")
+    for r in range(LINHAS_ORIGENS.start - 1, LINHAS_ORIGENS.stop):
+        m.merge_cells(f"B{r}:D{r}")
+        m[f"B{r}"].alignment = m[f"E{r}"].alignment = quebra
+        m.row_dimensions[r].height = 30
+    reg("00_README", "A3", "Versão do workbook: V3.0 ...", "(acrescenta a 2ª rodada)", "EDR-035/050/051")
+    reg("00_README", f"A{LINHA_COMO_PREENCHER}:E{LINHAS_ORIGENS.stop + 3} (mesclagem)", None, "A:E nas linhas de texto; B:D na tabela de origens", "FB-06")
+    c = wb["15_CHANGELOG"]
+    for col in "ABCDE":
+        c[f"{col}17"]._style = copy.copy(c[f"{col}15"]._style)
+    c["A17"].value = "2026-10"
+    c["B17"].value = ("V3.0, 2a rodada (feedback da equipe): coluna Origem (lista) e Fonte em cada entrada (05, 06, 07, 08, 11; 10_TIRE I/J), "
+                      "com cores e aviso de origem desatualizada; fundo amarelo retirado e legenda corrigida; valores derivados como formula "
+                      "(05_VEHICLE B4, B9, B10, B16, B17; 08 B5; entradas novas 05 B30:B34 e 08 B11); guia 'Como preencher' na 00_README.")
+    c["C17"].value = ("Feedback da equipe (2026-10-14) e decisoes do usuario (2026-10-19). EDR-025 (A), EDR-035, EDR-050, EDR-051. Registro celula "
+                      "a celula: docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-010..013). NOT_VALIDATED fisicamente.")
+    reg("15_CHANGELOG", "A17:C17", None, "(linha V3.0, 2ª rodada)", "EDR-035/050/051")
 
 
 def escrever_registro(registro: list[dict], caminho: Path) -> None:
