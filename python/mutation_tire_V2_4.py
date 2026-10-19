@@ -1,4 +1,6 @@
-import subprocess, shutil, os, tempfile
+import subprocess, shutil, os, tempfile, sys
+# Portabilidade (commit 1, SPEC R3): sys.executable no lugar de python3; pré-checagem
+# do original; "detectado" = a saída contém FAIL e o código de saída é != 0.
 src=open('tire_model_V2_4.py',encoding='utf-8').read()
 muts={
  "Ex sinal PEX4":("(1.0 - p[\"PEX4\"] * _sgn(kx))","(1.0 + p[\"PEX4\"] * _sgn(kx))"),
@@ -26,13 +28,21 @@ muts={
  "loader aceita eixo None":("if source_axis_system not in AXIS_TRANSFORMS:","if False:"),
  "gamma SAE so s_g=+1":("\"SAE_CALSPAN\": (-1.0, -1.0, -1.0),","\"SAE_CALSPAN\": (-1.0, -1.0, 1.0),"),
 }
+d=tempfile.mkdtemp()
+for f in ("test_tire_model_V2_4.py","Hoosier_R25B_13x7_TTC_provisional.tir","tire_model_V2_4.py"): shutil.copy(f,d)
+out=subprocess.run([sys.executable,'-X','utf8','test_tire_model_V2_4.py'],cwd=d,capture_output=True,text=True)
+resumo=(out.stdout.strip().splitlines() or [''])[-1]
+if out.returncode!=0 or ' 0 FAIL' not in resumo:
+    print('PRE-CHECAGEM FALHOU: original ->',resumo,'| código',out.returncode); print(out.stderr[-2000:]); sys.exit(2)
+print('PRE-CHECAGEM OK: original ->',resumo)
 det=0
 for name,(a,b) in muts.items():
     assert a in src, name
     d=tempfile.mkdtemp()
     for f in ("test_tire_model_V2_4.py","Hoosier_R25B_13x7_TTC_provisional.tir"): shutil.copy(f,d)
     open(os.path.join(d,'tire_model_V2_4.py'),'w',encoding='utf-8').write(src.replace(a,b,1))
-    out=subprocess.run(['python3','test_tire_model_V2_4.py'],cwd=d,capture_output=True,text=True)
-    det+= out.returncode!=0
-    print(('DETECTADO     ' if out.returncode else 'NÃO DETECTADO '),name)
+    out=subprocess.run([sys.executable,'-X','utf8','test_tire_model_V2_4.py'],cwd=d,capture_output=True,text=True)
+    ok=out.returncode!=0 and '[FAIL]' in out.stdout
+    det+= ok
+    print(('DETECTADO     ' if ok else 'NÃO DETECTADO '),name)
 print(det,'/',len(muts))
