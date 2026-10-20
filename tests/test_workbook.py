@@ -19,8 +19,8 @@ V22, V21, LAY, TIR = sys.argv[1:5] if len(sys.argv) >= 5 else [os.path.join(_RAI
     ("excel", "FSAE_EV_Suspension_Fase1_V3_0.xlsx"), ("excel", "FSAE_EV_Suspension_Fase1_V2.1.xlsx"),
     ("data", "layout_V2_4.json"), ("data", "Hoosier_R25B_13x7_TTC_provisional.tir"))]
 L = json.load(open(LAY)); R, PR = L["rows"], L["prow"]
-ds = t.load_dataset(TIR, source_axis_system="SAE_CALSPAN")
-ds_iso = t.load_dataset(TIR, source_axis_system="ISO_TYDEX")
+ds = t.load_dataset(TIR, source_axis_system="ISO_TYDEX")       # declarado na V3.0 (EDR-039 reaberto: .tir PAC2002 = TYDEX W, ISO)
+ds_sae = t.load_dataset(TIR, source_axis_system="SAE_CALSPAN")  # modo alternativo, ainda suportado e testado
 results = []
 COLS = "BCDEF"; CORNER = {"B": "FL", "C": "FR", "D": "RL", "E": "RR", "F": "FR"}
 
@@ -114,7 +114,8 @@ for k in list(PR):
     if k.startswith("L"):
         nv = pr.uniform(0.9, 1.1)
     p2[k] = nv; mods[f"B{PR[k]}"] = nv
-ds2 = t.TireDataset(p=p2, strings=ds.strings, axis_system="SAE_CALSPAN")
+p2["LKYG"] = pr.uniform(0.9, 1.1); mods["B177"] = p2["LKYG"]   # LKYG (V3.0, linha 177; fora do layout da V2.4)
+ds2 = t.TireDataset(p=p2, strings=ds.strings, axis_system="ISO_TYDEX")
 vals = {c: (rnd2 := random.Random(5 + i)).uniform(150, 1400) for i, c in enumerate(COLS)}
 pts = {c: (vals[c], random.Random(11 + i).uniform(-12, 12), random.Random(21 + i).uniform(-3.5, 3.5), random.Random(31 + i).uniform(-0.2, 0.2)) for i, c in enumerate(COLS)}
 info, ws, _ = scenario({**mods, **setcols(pts)})
@@ -129,15 +130,15 @@ check("TC-WB24-004b: com TODOS os coeficientes P*/R* e fatores L* perturbados (�
 
 # ---------- sistema de eixos do arquivo (V2.4) ----------
 AX = f"B{R['m_axis']}"
-check("TC-WB24-004c: planilha declara SAE_CALSPAN e s_α = s_Fy = s_γ = −1 no cenário base", ws0[AX].value == "SAE_CALSPAN" and [ws0[f"B{R[k]}"].value for k in ("m_sa", "m_sf", "m_sg")] == [-1, -1, -1]) if (ws0 := scenario({})[1]) else None
+check("TC-WB24-004c: planilha declara ISO_TYDEX e s_α = s_Fy = s_γ = +1 no cenário base (EDR-039 reaberto)", ws0[AX].value == "ISO_TYDEX" and [ws0[f"B{R[k]}"].value for k in ("m_sa", "m_sf", "m_sg")] == [1, 1, 1]) if (ws0 := scenario({})[1]) else None
 rnd3 = random.Random(77)
 vals = {c: (rnd3.uniform(100, 1521), rnd3.uniform(-14, 14), rnd3.uniform(-3.9, 3.9), rnd3.uniform(-0.24, 0.24)) for c in COLS}
-info, wsx, _ = scenario({**setcols(vals), AX: "ISO_TYDEX"})
-w, bad = compare(wsx, vals, "iso", ds_iso)
-check("TC-WB24-004d: com eixo = ISO_TYDEX (identidade) o Excel == Python ISO nos 5 pontos aleatórios", w < 1e-6 and not bad and info["total_errors"] == 0, f"pior dif relativa={w:.2e}")
-fy_sae = {c: wsx[f"{c}{R['o_fy']}"].value for c in COLS}
+info, wsx, _ = scenario({**setcols(vals), AX: "SAE_CALSPAN"})
+w, bad = compare(wsx, vals, "sae", ds_sae)
+check("TC-WB24-004d: com eixo = SAE_CALSPAN (modo alternativo) o Excel == Python SAE nos 5 pontos aleatórios", w < 1e-6 and not bad and info["total_errors"] == 0, f"pior dif relativa={w:.2e}")
+fy_alt = {c: wsx[f"{c}{R['o_fy']}"].value for c in COLS}
 info, wsy, _ = scenario({**setcols(vals)})
-diff_modes = max(abs(wsy[f"{c}{R['o_fy']}"].value - fy_sae[c]) for c in COLS)
+diff_modes = max(abs(wsy[f"{c}{R['o_fy']}"].value - fy_alt[c]) for c in COLS)
 check("TC-WB24-004e: SAE_CALSPAN e ISO_TYDEX dão Fy diferentes na planilha (a transformação está ativa)", diff_modes > 1.0, f"dif máx Fy={diff_modes:.1f} N")
 info, wsz, wbz = scenario({AX: "UNKNOWN"})
 check("TC-WB24-004f: eixo 'UNKNOWN' (ou qualquer outro texto) => dataset INVÁLIDO, todos os cantos N/A, 13_VALIDATION sem PASS, sem erros de fórmula",

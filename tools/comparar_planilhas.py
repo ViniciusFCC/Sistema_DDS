@@ -22,7 +22,7 @@ ENTREGUE_JSON = RAIZ / "data" / "layout_V2_4.json"
 FORMULAS_ESPERADAS = 347  # SPEC CA-07
 # V3.0 (EDR-045 a EDR-049): gerada da V2.4 por python/atualizar_planilha.py; 9 fórmulas novas.
 ENTREGUE_XLSX_V30 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V3_0.xlsx"
-FORMULAS_ESPERADAS_V30 = 362  # 356 + 6 da 1ª rodada de feedback (EDR-050)
+FORMULAS_ESPERADAS_V30 = 387  # 356 + 6 da 1ª rodada de feedback (EDR-050) + 19 (pior origem no 14_DASHBOARD) e 6 (direção, EDR-052) da 2ª rodada da revisão metodológica
 
 
 def _formula(v) -> str | None:
@@ -77,6 +77,77 @@ def comparar_xlsx(gerada: Path, entregue: Path = ENTREGUE_XLSX,
     if difs:
         ok = False
     rel.append("CA-07 PASS" if ok else "CA-07 FAIL")
+    return ok, rel
+
+
+ROTULOS_ORIGEM = ("● Dado do TX", "◐ Dado do T09", "◐ Provisório (.tir TTC)", "○ Estimativa",
+                  "○ Arbitrário / demonstrativo", "? A confirmar")
+
+
+def _estrutura(caminho: Path) -> dict:
+    """Validações de dados, formatação condicional, nomes definidos e colunas ocultas, normalizados para a forma que
+    o Excel grava ao salvar (lista "=Origens" vira "Origens"; colunas G e H ocultas viram a faixa G:H)."""
+    from openpyxl.utils import get_column_letter
+    wb = openpyxl.load_workbook(caminho)
+    out = {"nomes": {n: d.attr_text for n, d in wb.defined_names.items()}}
+    for ws in wb.worksheets:
+        dv = sorted((" ".join(sorted(str(v.sqref).split())), (v.formula1 or "").lstrip("=")) for v in ws.data_validations.dataValidation)
+        cf = sorted((str(k.sqref), tuple(sorted(str(r.formula) for r in v))) for k, v in ws.conditional_formatting._cf_rules.items())
+        ocultas = sorted({get_column_letter(i) for d in ws.column_dimensions.values() if d.hidden
+                          for i in range(d.min or 1, (d.max or d.min or 1) + 1)})
+        out[ws.title] = {"validação": dv, "formatação condicional": cf, "colunas ocultas": ocultas}
+    return out
+
+
+def comparar_viva(viva: Path, referencia: Path, entradas: set[tuple[str, str]],
+                  esperadas: int = FORMULAS_ESPERADAS_V30) -> tuple[bool, list[str]]:
+    """CA-07, planilha viva (EDR-051, fechamento da V3.0): tudo igual à referência (a V3.0 da tag) menos as células de
+    entrada, que a equipe preenche. Nas entradas, a Origem tem de ser um dos 6 rótulos (ou vazia) e o valor de uma
+    entrada numérica não pode virar fórmula. Confere também validações, formatação condicional, nomes e colunas ocultas.
+    Só lê os arquivos."""
+    rel, ok = [], True
+    abas_r, ref = celulas(referencia)
+    abas_v, viv = celulas(viva)
+    if abas_r != abas_v:
+        rel.append(f"FAIL: abas diferem\n  referência: {abas_r}\n  viva:       {abas_v}")
+        ok = False
+    n_form = sum(1 for v in viv.values() if _formula(v) is not None)
+    rel.append(f"fórmulas: viva {n_form} | esperado {esperadas}")
+    if n_form != esperadas:
+        rel.append("FAIL: número de fórmulas diferente do esperado")
+        ok = False
+    difs = []
+    for chave in sorted(set(ref) | set(viv)):
+        vr, vv = ref.get(chave), viv.get(chave)
+        if chave in entradas:
+            if _formula(vv) is not None and _formula(vr) is None:
+                difs.append(f"{chave[0]}!{chave[1]} entrada virou fórmula: {vv!r}")
+            continue
+        fr, fv = _formula(vr), _formula(vv)
+        if fr is not None or fv is not None:
+            if fr != fv:
+                difs.append(f"{chave[0]}!{chave[1]} fórmula: referência={fr!r} viva={fv!r}")
+        elif vr != vv or type(vr) is not type(vv):
+            difs.append(f"{chave[0]}!{chave[1]} estrutura (fora das entradas): referência={vr!r} viva={vv!r}")
+    origens = {c for c in entradas if c[1][0] in "EI" and c[0] != "03_TARGETS"}
+    for chave in sorted(origens):
+        v = viv.get(chave)
+        if isinstance(ref.get(chave), str) and ref[chave] in ROTULOS_ORIGEM and v is not None and v not in ROTULOS_ORIGEM:
+            difs.append(f"{chave[0]}!{chave[1]} origem fora da lista: {v!r}")
+    er, ev = _estrutura(referencia), _estrutura(viva)
+    for k in sorted(set(er) | set(ev)):
+        if er.get(k) != ev.get(k):
+            if k == "nomes":
+                difs.append(f"nomes definidos: referência={er.get(k)} viva={ev.get(k)}")
+            else:
+                for campo in er.get(k, {}):
+                    if er[k][campo] != ev.get(k, {}).get(campo):
+                        difs.append(f"{k}: {campo} difere da referência")
+    rel.append(f"células comparadas: {len(set(ref) | set(viv))} (entradas livres: {len(entradas)}) | diferenças: {len(difs)}")
+    rel.extend(f"  DIF {d}" for d in difs)
+    if difs:
+        ok = False
+    rel.append("CA-07 (viva) PASS" if ok else "CA-07 (viva) FAIL")
     return ok, rel
 
 

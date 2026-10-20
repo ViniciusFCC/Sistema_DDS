@@ -504,6 +504,9 @@ com `z_s = (b/L)z_F + (a/L)z_R` (altura do roll axis na posição longitudinal d
 | SUS-411 | Contact Patch Travel (track/wheelbase change) | hardpoints.csv | MODEL |
 | SUS-412 | Instant Centers e Roll Center cinemáticos (3D) — estende SUS-402/403/406 | hardpoints.csv | MODEL *(cross-check)* |
 | SUS-413 | Steering Kinematics — cross-check de SUS-601 | hardpoints.csv, curso de cremalheira por volta (INPUT) | MODEL *(cross-check)* |
+| SUS-414 | Ackermann (geometria e % Ackermann) — V3.0, EDR-052 | δo, δi; SUS-003, SUS-004; hardpoints.csv | INPUT/MODEL |
+| SUS-415 | Roll steer e contribuição ao gradiente de subesterço — V3.0, EDR-052 | hardpoints.csv; φ e a_y (SUS-103) | MODEL |
+| SUS-416 | Efeitos do esterço pelo pino mestre (camber, elevação) — V3.0, EDR-052 | hardpoints.csv | MODEL |
 
 `hardpoints.csv` + `hardpoints.meta.json` (schema V2.0, ver `hardpoint-schema-V2.0.md`) é o Geometry Contract da seção 8, com unidade no nome do campo (seção 10).
 

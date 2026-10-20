@@ -11,10 +11,11 @@ HIPÓTESES (rotuladas; nenhuma fonte primária foi consultada nesta etapa):
      (não há pacote disponível no ambiente). Verificação disponível: limites analíticos (test_tire_model_V2_2.py).
  H2  Pressão: dpi = 0 (IP = IP_NOM) e coeficientes PP* = 0 -> termos de pressão omitidos; o loader REJEITA
      o arquivo se IP != IP_NOM ou algum PP* != 0.
- H3  Sistema de eixos do arquivo DECLARADO pelo usuário: SAE (convenção Calspan/TTC; dados baixados do TTC).
-     Fonte secundária consultada: tese UNCC 2015 (dado bruto TTC: alpha>0 = curva à esquerda, Fy<0 e Mz<0 para alpha>0,
-     Fz negativo). NÃO confirmada pela documentação do TTC. convention_status = USER_ASSERTED.
- H3b Transformação SAE_CALSPAN -> ISO 8855 (pneu direito): alpha_file = -alpha_ISO; Fy_ISO = -Fy_file; Fx e kappa iguais;
+ H3  Sistema de eixos do arquivo: o .tir provisório é PAC2002 do Adams e os parâmetros dele valem no eixo W do TYDEX
+     (orientação ISO; help do Adams 2024.1, PAC2002, p. 7): declarado ISO_TYDEX (EDR-039 reaberto, 2026-10-19;
+     convention_status = CONFIRMED, pela documentação do formato). Até a V2.4 era declarado SAE_CALSPAN (usuário; tese UNCC 2015 como fonte secundária).
+     O modo SAE_CALSPAN continua disponível para dado bruto em SAE.
+ H3b Modo SAE_CALSPAN (alternativo) -> ISO 8855 (pneu direito): alpha_file = -alpha_ISO; Fy_ISO = -Fy_file; Fx e kappa iguais;
      camber: gamma_file = -gamma_proj (INFERÊNCIA: o empuxo de camber aponta para o lado da inclinação; o sinal de IA do TTC
      NÃO foi verificado; os termos de camber do arquivo dão Fy_file<0 para gamma_file>0). O .tir tem Fz positivo
      (o dado bruto TTC é negativo): o arquivo passou por processamento; não se sabe se outros sinais foram convertidos.
@@ -65,7 +66,7 @@ def parse_tir(path):
 
 REQUIRED = ["FNOMIN", "KPUMIN", "KPUMAX", "ALPMIN", "ALPMAX", "CAMMIN", "CAMMAX", "FZMIN", "FZMAX", "IP", "IP_NOM",
             "LFZO", "LCX", "LMUX", "LEX", "LKX", "LHX", "LVX", "LGAX", "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY",
-            "LXAL", "LYKA", "LVYKA",
+            "LXAL", "LYKA", "LVYKA", "LKYG",
             "PCX1", "PDX1", "PDX2", "PDX3", "PEX1", "PEX2", "PEX3", "PEX4", "PKX1", "PKX2", "PKX3", "PHX1", "PHX2",
             "PVX1", "PVX2", "RBX1", "RBX2", "RCX1", "REX1", "REX2", "RHX1",
             "PCY1", "PDY1", "PDY2", "PDY3", "PEY1", "PEY2", "PEY3", "PEY4", "PKY1", "PKY2", "PKY3", "PHY1", "PHY2",
@@ -162,14 +163,14 @@ def pure_fy0(p, fz, alpha, gamma):
     gy = gamma * p["LGAY"]
     # EDR-049: um único λFz0 (via F'z0 = LFZO·FNOMIN), como Pacejka (2006) eq. 4.E25 e Seward eq. 5.9; a forma do Racer tinha um segundo
     Ky = p["PKY1"] * fz0 * math.sin(2.0 * math.atan(fz / (p["PKY2"] * fz0))) * (1.0 - p["PKY3"] * abs(gy)) * p["LKY"]
-    SHy = (p["PHY1"] + p["PHY2"] * dfz) * p["LHY"] + p["PHY3"] * gy
+    SHy = (p["PHY1"] + p["PHY2"] * dfz) * p["LHY"] + p["PHY3"] * gy * p["LKYG"]   # λKyγ: Adams PAC2002 eq. 41-42 (EDR-042)
     ay = alpha + SHy
     Cy = p["PCY1"] * p["LCY"]
     muy = (p["PDY1"] + p["PDY2"] * dfz) * (1.0 - p["PDY3"] * gy * gy) * p["LMUY"]
     Dy = muy * fz
     Ey = min((p["PEY1"] + p["PEY2"] * dfz) * (1.0 - (p["PEY3"] + p["PEY4"] * gy) * _sgn(ay)) * p["LEY"], 1.0)
     By = Ky / (Cy * Dy + EPS)
-    SVy = fz * ((p["PVY1"] + p["PVY2"] * dfz) * p["LVY"] + (p["PVY3"] + p["PVY4"] * dfz) * gy) * p["LMUY"]
+    SVy = fz * ((p["PVY1"] + p["PVY2"] * dfz) * p["LVY"] + (p["PVY3"] + p["PVY4"] * dfz) * gy * p["LKYG"]) * p["LMUY"]
     return _mf(By, Cy, Dy, Ey, ay) + SVy, {"Ky": Ky, "Dy": Dy, "SHy": SHy, "SVy": SVy, "By": By, "Cy": Cy, "Ey": Ey, "muy": muy}
 
 

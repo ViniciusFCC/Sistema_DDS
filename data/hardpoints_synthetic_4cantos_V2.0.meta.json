@@ -1,0 +1,11 @@
+{
+  "schema_version": "V2.0",
+  "geometry_rev": "G-REV-SYNTH-4C",
+  "coordinate_system": "ISO8855_X_FORWARD_Y_LEFT_Z_UP",
+  "units": "m",
+  "ground_plane_z_m": 0.0,
+  "kop": "RH (ride height de referência)",
+  "source": "SYNTHETIC - geometria de teste, NAO representa o carro. Cantos dianteiros = hardpoints_synthetic_V2.0; traseiros novos (2026-10-20) para testar anti-squat, RC e roll steer traseiros; TIE_* traseiro = braco de convergencia (RACK parado)",
+  "freeze_level": "F0",
+  "timestamp": "2026-10-20T00:00:00-03:00"
+}
