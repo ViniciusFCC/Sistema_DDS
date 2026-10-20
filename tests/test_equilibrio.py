@@ -130,10 +130,28 @@ try:
 except Exception:  # o check precisa registrar qualquer exceção como falha
     cap_fora = None
     sem_excecao = False
-check("TC-EQ-007: FL com Fz < FZMIN em 2,0 g -> fy_max None e motivo 'fora da faixa do pneu', sem exceção",
+def _cap_sem_excecao(caso_x, ay):
+    try:
+        return eq.capacidade_eixo(caso_x, "F", ay, 25)
+    except Exception:  # o check precisa registrar qualquer exceção como falha
+        return None
+
+
+# camber estático além de CAMMAX numa roda dianteira, e toe maior que a faixa de α
+cam_fora = ds.p["CAMMAX"] + math.radians(1.0)
+cap_cam = _cap_sem_excecao(eq.CasoEquilibrio(
+    cfg=cfg, ds=ds, camber_estatico_rad={"FL": 0.0, "FR": cam_fora, "RL": 0.0, "RR": 0.0}), 0.0)
+toe_grande = 2.0 * min(abs(ds.p["ALPMIN"]), ds.p["ALPMAX"])
+cap_toe = _cap_sem_excecao(eq.CasoEquilibrio(
+    cfg=cfg, ds=ds, toe_rad={"FL": toe_grande, "FR": toe_grande, "RL": 0.0, "RR": 0.0}), 0.0)
+check("TC-EQ-007: Fz, camber ou toe fora da faixa do pneu -> fy_max None com motivo, sem exceção",
       fz2["FL"] < ds.p["FZMIN"] and sem_excecao and cap_fora.fy_max_N is None
-      and cap_fora.alfa_pico_rad is None and "fora da faixa do pneu" in (cap_fora.motivo or ""),
-      f"Fz_FL={fz2['FL']:.1f} N, FZMIN={ds.p['FZMIN']}, motivo={getattr(cap_fora, 'motivo', None)!r}")
+      and cap_fora.alfa_pico_rad is None and "fora da faixa do pneu" in (cap_fora.motivo or "")
+      and cap_cam is not None and cap_cam.fy_max_N is None and cap_cam.alfa_pico_rad is None
+      and cap_cam.motivo.startswith("camber_FR = ") and "fora da faixa do pneu" in cap_cam.motivo
+      and cap_toe is not None and cap_toe.fy_max_N is None and cap_toe.motivo == "toe consome a faixa de α",
+      f"Fz_FL={fz2['FL']:.1f} N, FZMIN={ds.p['FZMIN']}, motivos={getattr(cap_fora, 'motivo', None)!r}; "
+      f"{getattr(cap_cam, 'motivo', None)!r}; {getattr(cap_toe, 'motivo', None)!r}")
 
 # ---------------- TC-EQ-008 : sinal do toe (EDR-002) ----------------
 um_grau = math.radians(1.0)

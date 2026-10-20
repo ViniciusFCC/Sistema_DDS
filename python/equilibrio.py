@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass, field
 
 from suspension_model import VehicleConfig, combined_fz_corner, lateral_dfz
-from tire_model import TireDataset, wheel_forces
+from tire_model import AXIS_TRANSFORMS, TireDataset, wheel_forces
 
 CANTOS = ("FL", "FR", "RL", "RR")
 
@@ -130,7 +130,19 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int)
         if not (p["FZMIN"] <= fz[c] <= p["FZMAX"]):
             return Capacidade(None, None,
                               f"Fz_{c} = {fz[c]:.1f} N fora da faixa do pneu [FZMIN, FZMAX]")
-    alfas = grade_alfa(caso, n_alfa)  # |α_roda| fica dentro de [ALPMIN, ALPMAX] por construção
+    # γ que o pneu recebe (ds.axis_system pode inverter o sinal); fora de [CAMMIN, CAMMAX] não se extrapola.
+    s_g = AXIS_TRANSFORMS[caso.ds.axis_system][2]
+    gam = camber(caso, ay_ms2)
+    for c in rodas:
+        if not (p["CAMMIN"] <= s_g * gam[c] <= p["CAMMAX"]):
+            return Capacidade(None, None,
+                              f"camber_{c} = {math.degrees(gam[c]):.2f}° fora da faixa do pneu [CAMMIN, CAMMAX]")
+    try:
+        alfas = grade_alfa(caso, n_alfa)  # |α_roda| fica dentro de [ALPMIN, ALPMAX] por construção
+    except ValueError:
+        if n_alfa < 2:
+            raise
+        return Capacidade(None, None, "toe consome a faixa de α")
     fys = [fy_eixo(caso, eixo, ay_ms2, a) for a in alfas]
     i = max(range(len(fys)), key=fys.__getitem__)
     motivo = "pico na borda da grade de α" if i == len(fys) - 1 else None
