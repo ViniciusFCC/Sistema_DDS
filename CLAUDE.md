@@ -44,8 +44,11 @@ Foco declarado: completar a planilha (EDR-019).
   gerada da V2.4 por `python/atualizar_planilha.py` (toda célula alterada fica em `alteracoes()`, com fonte e EDR);
   o script recusa gravar por cima da planilha viva. CA-07: a regeneração bate com a referência, e a viva bate
   com a referência em tudo menos as células de entrada (`atualizar_planilha.celulas_de_entrada()`). Mudança
-  de fórmula ou estrutura (V3.1) entra por migração sobre um retrato da viva, com pré-condição em cada célula
-  escrita (procedimento no EDR-051), nunca editando a planilha à mão. Commit de dados da equipe é separado
+  de fórmula ou estrutura entra na próxima planilha, a **V4.0** (os textos da V3.0 que dizem "V3.1" se referem a
+  ela), nunca editando a planilha à mão. Pelo EDR-051, o caminho é migrar sobre um retrato da viva, com
+  pré-condição em cada célula escrita; a especificação da V4.0
+  (`docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md`) propõe gerar da tag `v3.0` e injetar
+  os dados por chave, o que reabre o EDR-051. Commit de dados da equipe é separado
   (`dados: ...`), com `tools/extrato_entradas.py` para o diff legível. A metodologia segue a literatura, principalmente o
   Milliken (usuário, 2026-10-19; `docs/revisao-metodologica.md`). Os livros e o OCR ficam
   em `references/` (fora do Git); busque no `.md`, mas confira a equação na imagem do PDF.
