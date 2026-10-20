@@ -66,7 +66,7 @@ def parse_tir(path):
 
 REQUIRED = ["FNOMIN", "KPUMIN", "KPUMAX", "ALPMIN", "ALPMAX", "CAMMIN", "CAMMAX", "FZMIN", "FZMAX", "IP", "IP_NOM",
             "LFZO", "LCX", "LMUX", "LEX", "LKX", "LHX", "LVX", "LGAX", "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY",
-            "LXAL", "LYKA", "LVYKA",
+            "LXAL", "LYKA", "LVYKA", "LKYG",
             "PCX1", "PDX1", "PDX2", "PDX3", "PEX1", "PEX2", "PEX3", "PEX4", "PKX1", "PKX2", "PKX3", "PHX1", "PHX2",
             "PVX1", "PVX2", "RBX1", "RBX2", "RCX1", "REX1", "REX2", "RHX1",
             "PCY1", "PDY1", "PDY2", "PDY3", "PEY1", "PEY2", "PEY3", "PEY4", "PKY1", "PKY2", "PKY3", "PHY1", "PHY2",
@@ -163,14 +163,14 @@ def pure_fy0(p, fz, alpha, gamma):
     gy = gamma * p["LGAY"]
     # EDR-049: um único λFz0 (via F'z0 = LFZO·FNOMIN), como Pacejka (2006) eq. 4.E25 e Seward eq. 5.9; a forma do Racer tinha um segundo
     Ky = p["PKY1"] * fz0 * math.sin(2.0 * math.atan(fz / (p["PKY2"] * fz0))) * (1.0 - p["PKY3"] * abs(gy)) * p["LKY"]
-    SHy = (p["PHY1"] + p["PHY2"] * dfz) * p["LHY"] + p["PHY3"] * gy
+    SHy = (p["PHY1"] + p["PHY2"] * dfz) * p["LHY"] + p["PHY3"] * gy * p["LKYG"]   # λKyγ: Adams PAC2002 eq. 41-42 (EDR-042)
     ay = alpha + SHy
     Cy = p["PCY1"] * p["LCY"]
     muy = (p["PDY1"] + p["PDY2"] * dfz) * (1.0 - p["PDY3"] * gy * gy) * p["LMUY"]
     Dy = muy * fz
     Ey = min((p["PEY1"] + p["PEY2"] * dfz) * (1.0 - (p["PEY3"] + p["PEY4"] * gy) * _sgn(ay)) * p["LEY"], 1.0)
     By = Ky / (Cy * Dy + EPS)
-    SVy = fz * ((p["PVY1"] + p["PVY2"] * dfz) * p["LVY"] + (p["PVY3"] + p["PVY4"] * dfz) * gy) * p["LMUY"]
+    SVy = fz * ((p["PVY1"] + p["PVY2"] * dfz) * p["LVY"] + (p["PVY3"] + p["PVY4"] * dfz) * gy * p["LKYG"]) * p["LMUY"]
     return _mf(By, Cy, Dy, Ey, ay) + SVy, {"Ky": Ky, "Dy": Dy, "SHy": SHy, "SVy": SVy, "By": By, "Cy": Cy, "Ey": Ey, "muy": muy}
 
 

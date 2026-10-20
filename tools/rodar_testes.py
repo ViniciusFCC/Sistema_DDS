@@ -34,11 +34,11 @@ TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
     ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V3_0.md"),
-    ("cinemática", "tests/test_kinematics_model.py", 70, "registro-de-versoes-V3_0.md"),
+    ("cinemática", "tests/test_kinematics_model.py", 74, "registro-de-versoes-V3_0.md"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
-MUTACAO = ("tests/mutation_tire.py", 24)
+MUTACAO = ("tests/mutation_tire.py", 25)
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 10)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")

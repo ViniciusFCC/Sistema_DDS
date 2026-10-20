@@ -21,7 +21,7 @@ from atualizar_planilha import ABAS_ORIGEM, ORIGENS_LISTA, TX, T09, TTC, EST, AR
 SEM_ROTULO = "sem rótulo de origem"
 PIOR_PRIMEIRO = (CONF, ARB, EST, TTC, T09, TX)
 TIER = {TX: "T3", T09: "T2", TTC: "T2", EST: "T1", ARB: "T1", CONF: "?"}
-COEF_TIRE = range(86, 176)                       # 10_TIRE: coeficientes do .tir; origem em I84
+COEF_TIRE = set(range(86, 176)) | {177}            # 10_TIRE: coeficientes do .tir (177 = LKYG); origem em I84
 COLUNA = re.compile(r"^(?:(?P<aba>'[^']+'|[^!']+)!)?\$?(?P<c1>[A-Z]{1,3}):\$?(?P<c2>[A-Z]{1,3})$")
 REF = re.compile(r"^(?:(?P<aba>'[^']+'|[^!']+)!)?\$?(?P<c1>[A-Z]{1,3})\$?(?P<r1>\d+)(?::\$?(?P<c2>[A-Z]{1,3})\$?(?P<r2>\d+))?$")
 

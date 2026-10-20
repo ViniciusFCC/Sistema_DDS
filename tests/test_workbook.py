@@ -114,6 +114,7 @@ for k in list(PR):
     if k.startswith("L"):
         nv = pr.uniform(0.9, 1.1)
     p2[k] = nv; mods[f"B{PR[k]}"] = nv
+p2["LKYG"] = pr.uniform(0.9, 1.1); mods["B177"] = p2["LKYG"]   # LKYG (V3.0, linha 177; fora do layout da V2.4)
 ds2 = t.TireDataset(p=p2, strings=ds.strings, axis_system="ISO_TYDEX")
 vals = {c: (rnd2 := random.Random(5 + i)).uniform(150, 1400) for i, c in enumerate(COLS)}
 pts = {c: (vals[c], random.Random(11 + i).uniform(-12, 12), random.Random(21 + i).uniform(-3.5, 3.5), random.Random(31 + i).uniform(-0.2, 0.2)) for i, c in enumerate(COLS)}
