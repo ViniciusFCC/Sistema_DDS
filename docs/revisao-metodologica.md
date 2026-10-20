@@ -203,7 +203,7 @@ TTC) e o pacote do TTC Round 6 (R25B; o `.tir` de 12 psi é o provisório). Equa
 
 | Método | Documento | Situação |
 |---|---|---|
-| Fy0 puro (SUS-501) | Adams eq. 30-44 (p. 30-31) | confere termo a termo, menos o fator λKyγ (`LKYG`) nos termos de camber de S_Hy e S_Vy, que o código não aplica. Com `LKYG = 1` no arquivo, o efeito é zero hoje |
+| Fy0 puro (SUS-501) | Adams eq. 30-44 (p. 30-31) | confere termo a termo, menos o fator λKyγ (`LKYG`) nos termos de camber de S_Hy e S_Vy, que o código não aplicava. Corrigido em 2026-10-20 (EDR-042): o código e a 10_TIRE (B177) aplicam o LKYG; com `LKYG = 1` no arquivo, nenhum valor muda |
 | Ky com um único λFz0 (EDR-049) | Adams eq. 38: K_y0 = p_Ky1·F_z0·sin[2·atan(F_z/(p_Ky2·F'_z0))]·λ_Fz0·λ_Ky, com F'_z0 = λ_Fz0·F_z0 | mantém (idêntico à forma do código) |
 | Fx0 puro e combinados (G_xα, G_yκ, S_Vyκ) | Adams eq. 18-29 e 80-99 (p. 27-28, 43-45) | conferem termo a termo |
 | α ou tan α (EDR-040) | Adams eq. 4 define α por tan α = V_sy/\|V_x\| e as equações usam α (eq. 32); OptimumT (p. 141) e Pacejka 2006 (eq. 4.E3) usam tan α em outras versões do modelo | mantém α para arquivos PAC2002 (forma do programa para o qual o `.tir` foi feito). A dúvida do EDR-040 sobre "como o OptimumTire ajustou" não se aplica a este arquivo (foi ajustado pela Stackpole, não no OptimumTire) |
@@ -218,7 +218,7 @@ TTC) e o pacote do TTC Round 6 (R25B; o `.tir` de 12 psi é o provisório). Equa
 |---|---|
 | Cap. 19 da Milliken contra SUS-405/408/413 | aberta |
 | Modelo de bicicleta e gradiente de subesterço | aberta (só se a planilha ganhar o bloco) |
-| Forma exata do Fy0 e dos fatores λ no PAC2002 | **resolvida** (7.2); resta a lacuna do `LKYG` |
+| Forma exata do Fy0 e dos fatores λ no PAC2002 | **resolvida** (7.2); a lacuna do `LKYG` foi corrigida em 2026-10-20 |
 | Sinal do IA do TTC (EDR-039) | **resolvida**: o arquivo é ISO (Adams p. 7); trocado para ISO_TYDEX em 2026-10-19 (EDR-039 revisto) |
 | Anti-lift com regeneração (EDR-033) | método confirmado pelo OptimumKinematics; faltam os dados de divisão de frenagem da equipe |
 | α* = tan α (EDR-040) | **resolvida para PAC2002**: α. A escolha do formato do pneu real (R60A) continua aberta |
