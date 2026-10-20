@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-from suspension_model import VehicleConfig, combined_fz_corner, lateral_dfz
+from suspension_model import G, VehicleConfig, combined_fz_corner, lateral_dfz
 from tire_model import AXIS_TRANSFORMS, TireDataset, wheel_forces
 
 CANTOS = ("FL", "FR", "RL", "RR")
@@ -147,3 +147,161 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int)
     i = max(range(len(fys)), key=fys.__getitem__)
     motivo = "pico na borda da grade de α" if i == len(fys) - 1 else None
     return Capacidade(fys[i], alfas[i], motivo)
+
+
+# ---------------------------------------------------------------------------
+# Análise de par: saturação, veredito e C_N (Milliken §7.1 p. 283-286; §8.4 p. 311-312)
+# ---------------------------------------------------------------------------
+
+PUSH = "PUSH"
+LOOSE = "LOOSE"
+NEUTRO = "NEUTRO"
+NA = "N/A"
+NAO_CONCLUSIVO = "NÃO CONCLUSIVO"
+
+
+def forca_exigida(caso: CasoEquilibrio, ay_ms2: float) -> tuple[float, float]:
+    """(F_yf, F_yr) [N] que os eixos precisam dar em a_y: (m·a_y·b/L, m·a_y·a/L).
+
+    Equilíbrio de forças e de momento de guinada em regime (r = 0), Milliken §7.1. A downforce
+    muda a capacidade (via Fz), não a força exigida.
+    """
+    cfg = caso.cfg
+    m_ay = cfg.mass_total * ay_ms2
+    return (m_ay * cfg.cg_to_rear / cfg.wheelbase, m_ay * cfg.cg_to_front / cfg.wheelbase)
+
+
+@dataclass(frozen=True)
+class LinhaPar:
+    """Uma linha da grade de a_y: cargas, capacidade e força exigida de cada eixo."""
+    ay_ms2: float
+    fz: dict
+    cap_f: Capacidade
+    cap_r: Capacidade
+    req_f: float
+    req_r: float
+
+
+@dataclass(frozen=True)
+class ResultadoPar:
+    """Resultado da análise de par. veredito ∈ {PUSH, LOOSE, NEUTRO, N/A}; c_n só em PUSH/LOOSE."""
+    linhas: tuple
+    passo_ms2: float
+    ay_sat_f: float | None
+    ay_sat_r: float | None
+    ay_lim: float | None
+    veredito: str
+    motivo: str | None
+    c_n: float | None
+
+
+@dataclass(frozen=True)
+class _Saturacao:
+    ay_sat: float | None      # a_y de saturação [m/s²], ou None
+    k: int | None             # índice k do intervalo (k, k+1) em que a folga troca de sinal
+    ay_valido: float | None   # último a_y da parte válida contínua (desde k = 0), ou None
+    motivo: str | None        # por que não saturou (None quando saturou)
+
+
+def _folga(linha: LinhaPar, eixo: str) -> float:
+    cap, req = (linha.cap_f, linha.req_f) if eixo == "F" else (linha.cap_r, linha.req_r)
+    return cap.fy_max_N - req
+
+
+def _saturacao(linhas: tuple, eixo: str, ay_max_g: float) -> _Saturacao:
+    """Primeira troca de sinal da folga entre linhas consecutivas válidas, interpolada linearmente.
+
+    A busca para na primeira linha inválida (capacidade com motivo): nada além dela é usado.
+    """
+    ay_valido = None
+    m_ant = None
+    for k, ln in enumerate(linhas):
+        cap = ln.cap_f if eixo == "F" else ln.cap_r
+        if cap.motivo is not None:
+            return _Saturacao(None, None, ay_valido, f"{cap.motivo} em a_y = {ln.ay_ms2 / G:g} g")
+        m = _folga(ln, eixo)
+        if m_ant is not None and m_ant > 0.0 >= m:
+            a0 = linhas[k - 1].ay_ms2
+            ay_sat = a0 + (ln.ay_ms2 - a0) * m_ant / (m_ant - m)
+            # ay_valido segue até a última linha válida conhecida (a busca para aqui, mas a
+            # linha k é válida)
+            return _Saturacao(ay_sat, k - 1, ln.ay_ms2, None)
+        ay_valido = ln.ay_ms2
+        m_ant = m
+    return _Saturacao(None, None, ay_valido, f"não satura até {ay_max_g:g} g")
+
+
+def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.05,
+                n_alfa: int = 25) -> ResultadoPar:
+    """Varre a_y_k = k·passo (k = 0…⌊ay_max/passo⌋) e decide PUSH/LOOSE/NEUTRO pelo eixo que satura antes.
+
+    Milliken §7.1 (p. 283-286): no limite, o eixo que satura primeiro define o comportamento final
+    (dianteiro = push, final understeer; traseiro = loose, final oversteer). C_N (spec 7.2;
+    Milliken §8.4, p. 311-312) é o momento de guinada adimensional que sobra no limite: a folga do
+    eixo não saturado em a_y_lim vezes o braço até o CG, sobre W·L, com W = m·G.
+
+    Capacidade com motivo (fora da faixa do pneu, pico na borda da grade de α, toe) nunca entra
+    no cálculo: a busca do eixo para nela e o veredito sai N/A se ela impedir a decisão.
+    """
+    if not (isinstance(ay_max_g, (int, float)) and ay_max_g > 0 and math.isfinite(ay_max_g)):
+        raise ValueError(f"ay_max_g deve ser > 0 e finito; recebido {ay_max_g!r}.")
+    if not (isinstance(passo_g, (int, float)) and passo_g > 0 and math.isfinite(passo_g)):
+        raise ValueError(f"passo_g deve ser > 0 e finito; recebido {passo_g!r}.")
+    if not (isinstance(n_alfa, int) and n_alfa >= 3):
+        raise ValueError(f"n_alfa deve ser um inteiro >= 3; recebido {n_alfa!r}.")
+
+    # ⌊ay_max/passo⌋ com folga de arredondamento: 0.3/0.05 = 5.999…, que deve dar 6.
+    n = math.floor(ay_max_g / passo_g + 1e-9)
+    linhas = []
+    for k in range(n + 1):
+        ay = k * passo_g * G
+        req_f, req_r = forca_exigida(caso, ay)
+        linhas.append(LinhaPar(ay_ms2=ay, fz=cargas(caso, ay),
+                               cap_f=capacidade_eixo(caso, "F", ay, n_alfa),
+                               cap_r=capacidade_eixo(caso, "R", ay, n_alfa),
+                               req_f=req_f, req_r=req_r))
+    linhas = tuple(linhas)
+    passo_ms2 = passo_g * G
+
+    sf = _saturacao(linhas, "F", ay_max_g)
+    sr = _saturacao(linhas, "R", ay_max_g)
+    S_f, S_r = sf.ay_sat, sr.ay_sat
+    V_f = sf.ay_valido if sf.ay_valido is not None else -math.inf
+    V_r = sr.ay_valido if sr.ay_valido is not None else -math.inf
+
+    motivo = None
+    if S_f is not None and S_r is not None and abs(S_f - S_r) < passo_ms2:
+        veredito = NEUTRO
+    elif (S_f is not None and S_r is not None and S_f < S_r) or (S_f is not None and S_r is None and V_r > S_f):
+        veredito = PUSH
+    elif (S_f is not None and S_r is not None and S_r < S_f) or (S_r is not None and S_f is None and V_f > S_r):
+        veredito = LOOSE
+    else:
+        veredito = NA
+        if S_f is not None:        # o traseiro não chegou válido até S_f
+            motivo = sr.motivo
+        elif S_r is not None:      # o dianteiro não chegou válido até S_r
+            motivo = sf.motivo
+        else:                      # nenhum saturou: vale o eixo cuja parte válida acaba antes
+            motivo = sf.motivo if V_f <= V_r else sr.motivo
+
+    conhecidas = [s for s in (S_f, S_r) if s is not None]
+    ay_lim = min(conhecidas) if conhecidas else None
+
+    c_n = None
+    if veredito in (PUSH, LOOSE):
+        cfg = caso.cfg
+        W = cfg.mass_total * G
+        # A folga do eixo não saturado é interpolada no mesmo intervalo (k, k+1) em que o eixo
+        # saturado trocou de sinal; as duas linhas são válidas para ele (V > a_y_lim).
+        sat, outro = (sf, "R") if veredito == PUSH else (sr, "F")
+        la, lb = linhas[sat.k], linhas[sat.k + 1]
+        ma, mb = _folga(la, outro), _folga(lb, outro)
+        folga = ma + (mb - ma) * (ay_lim - la.ay_ms2) / (lb.ay_ms2 - la.ay_ms2)
+        if veredito == PUSH:
+            c_n = folga * cfg.cg_to_rear / (W * cfg.wheelbase)
+        else:
+            c_n = -folga * cfg.cg_to_front / (W * cfg.wheelbase)
+
+    return ResultadoPar(linhas=linhas, passo_ms2=passo_ms2, ay_sat_f=S_f, ay_sat_r=S_r, ay_lim=ay_lim,
+                        veredito=veredito, motivo=motivo, c_n=c_n)
