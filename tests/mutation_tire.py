@@ -38,6 +38,7 @@ muts={
  "LKY ignorado":("abs(gy)) * p[\"LKY\"]\n    SHy","abs(gy))\n    SHy"),
  "LFZO extra em Ky (forma Racer, EDR-049)":("abs(gy)) * p[\"LKY\"]\n    SHy","abs(gy)) * p[\"LFZO\"] * p[\"LKY\"]\n    SHy"),
  "PHY3 camber":("+ p[\"PHY3\"] * gy","- p[\"PHY3\"] * gy"),
+ "LKYG ignorado em SHy":("p[\"PHY3\"] * gy * p[\"LKYG\"]","p[\"PHY3\"] * gy"),
  "RVY3 camber":("p[\"RVY3\"] * gamma","p[\"RVY3\"] * 0"),
  "kappa-range":("if not (p[\"KPUMIN\"] <= kappa <= p[\"KPUMAX\"]):","if not (p[\"KPUMIN\"] <= kappa <= 2*p[\"KPUMAX\"]):"),
 

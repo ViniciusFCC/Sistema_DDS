@@ -563,6 +563,42 @@ def _feedback2_pior_origem(wb, registro: list[dict]) -> None:
                      "ref": ref})
 
 
+LINHA_LKYG = 177   # 10_TIRE: logo abaixo do ε (176); B86:B175 são os coeficientes da V2.4
+
+
+def _lkyg(wb, layout: dict, registro: list[dict]) -> None:
+    """λKyγ (LKYG) nos termos de camber de SHy e SVy (Adams 2024.1, PAC2002, eq. 41-42; EDR-042; usuário, 2026-10-20:
+    "Pode corrigir"). Com LKYG = 1 no .tir provisório, nenhum valor muda."""
+    import tire_model as tm
+    ref = "EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20)"
+    t = wb["10_TIRE"]
+    prow, rows = layout["prow"], layout["rows"]
+    lkyg = tm.load_dataset(TIR_PROVISORIO, source_axis_system=EIXO_TIR).p["LKYG"]
+    r = LINHA_LKYG
+    for col, val, src in (("A", "LKYG", "A175"), ("B", lkyg, "B175"), ("G", "-", "G175"), ("H", "SUS-501", "H175"),
+                          ("I", "Escala da rigidez de camber Kyγ0 (termos de camber de SHy e SVy)", "I175")):
+        c = t[f"{col}{r}"]
+        c._style = copy.copy(t[src]._style)
+        registro.append({"aba": "10_TIRE", "cel": f"{col}{r}", "antes": c.value, "novo": val, "ref": ref})
+        c.value = val
+    L = f"$B${r}"
+    phy3, lmuy = f"$B${prow['PHY3']}", f"$B${prow['LMUY']}"
+    for col in "BCDEF":
+        gy = f"{col}${rows['gy']}"
+        for linha, velho, novo in ((rows["SHy"], f"{phy3}*{gy})", f"{phy3}*{gy}*{L})"),
+                                   (rows["SVy"], f"*{gy})*{lmuy})", f"*{gy}*{L})*{lmuy})")):
+            c = t[f"{col}{linha}"]
+            antes = c.value
+            if antes.count(velho) != 1:
+                raise RuntimeError(f"10_TIRE {col}{linha}: fórmula inesperada {antes!r}")
+            c.value = antes.replace(velho, novo)
+            registro.append({"aba": "10_TIRE", "cel": f"{col}{linha}", "antes": antes, "novo": c.value, "ref": ref})
+    j = t["J84"]
+    antes = j.value
+    j.value = antes.replace("(B86:B175)", "(B86:B175 e o LKYG em B177)")
+    registro.append({"aba": "10_TIRE", "cel": "J84", "antes": antes, "novo": j.value, "ref": ref})
+
+
 def _eixo_iso_textos(wb, registro: list[dict]) -> None:
     """Textos e comentários que diziam SAE (EDR-039 reaberto); nenhum valor nem fórmula muda aqui."""
     def troca(aba, cel, velho, novo_txt):
@@ -688,6 +724,7 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
     registro.append({"aba": "15_CHANGELOG", "cel": "A16:C16", "antes": None, "novo": "(linha V3.0)", "ref": "EDR-043"})
 
     _rodada2_formatacao(wb, registro)
+    _lkyg(wb, layout, registro)
     _feedback2_formatacao(wb, registro)
     _feedback2_pior_origem(wb, registro)
     _eixo_iso_textos(wb, registro)
