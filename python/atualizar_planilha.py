@@ -380,6 +380,21 @@ ORIGENS_FB2 = [   # mesmo formato de ORIGENS; processadas junto com elas na form
 ]
 
 
+def celulas_de_entrada() -> set[tuple[str, str]]:
+    """Células que a equipe preenche na planilha viva (EDR-051, fechamento da V3.0). Derivadas das mesmas listas que
+    geram a planilha (nada mantido à mão em paralelo): valor, Origem e Fonte de cada entrada com origem; casos de carga,
+    metadados e coeficientes do pneu; metas da 03_TARGETS; identificação e revisões do setup. Todo o resto é estrutura
+    e só muda pelo script (com aprovação)."""
+    out = {(aba, f"{c}{r}") for aba, r, org, _ in _todas_origens() if org is not None for c in "BEF"}
+    out |= {("10_TIRE", f"{c}{r}") for r, _, _ in TIRE_ORIGENS for c in "BCDEIJ" if r != 84}   # F = caso VERIF fixo
+    out |= {("10_TIRE", f"{c}84") for c in "IJ"}
+    out |= {("10_TIRE", f"B{r}") for r in list(range(86, 176)) + [LINHA_LKYG]}
+    out |= {("10_TIRE", f"B{r}") for r in (5, 6, 7, 9, 10, 11)}
+    out |= {("03_TARGETS", f"{c}{r}") for r in range(5, 10) for c in "CDEFG"}
+    out |= {("01_SETUP", f"B{r}") for r in (4, 5, 6, 9, 10, 11, 12)}
+    return out
+
+
 def _todas_origens() -> list[tuple]:
     return ORIGENS + ORIGENS_FB2 + ORIGENS_DIR
 
@@ -859,6 +874,9 @@ def main() -> None:
     a = ap.parse_args()
     if Path(a.out).resolve() == Path(a.src).resolve():
         raise SystemExit("saída igual à origem: recusado (nunca sobrescrever a planilha entregue)")
+    viva = (AQUI.parent / "excel" / "FSAE_EV_Suspension_Fase1_V3_0.xlsx").resolve()
+    if Path(a.out).resolve() == viva:
+        raise SystemExit("saída = planilha viva da equipe (V3.0 fechada, EDR-051): recusado; gere em build/ ou numa pasta temporária")
     layout = json.loads(Path(a.layout).read_text(encoding="utf-8"))
     reg = aplicar(Path(a.src), Path(a.out), layout)
     if a.registro:

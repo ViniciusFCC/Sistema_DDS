@@ -116,6 +116,49 @@ with tempfile.TemporaryDirectory(prefix="dds_cmp_") as tmp:
     ok, rel = cp.comparar_json(j)
     check("comparador 10: chave removida do layout -> FAIL", not ok and any("só em entregue" in r for r in rel))
 
+    # ---- CA-07 da planilha viva (EDR-051, fechamento da V3.0): só as entradas podem mudar ----
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "python"))
+    import atualizar_planilha as ap  # noqa: E402
+    ENT = ap.celulas_de_entrada()
+    REF = cp.ENTREGUE_XLSX_V30
+
+    def viva(nome, alterar):
+        wb = openpyxl.load_workbook(REF)
+        alterar(wb)
+        caminho = tmp / f"viva_{nome}.xlsx"
+        wb.save(caminho)
+        return caminho
+
+    def preenche(wb):
+        v = wb["05_VEHICLE"]
+        v["B5"].value, v["E5"].value, v["F5"].value = 0.300, "○ Estimativa", "Teste: estimativa da equipe"
+        wb["03_TARGETS"]["C5"].value = 2.5
+        wb["01_SETUP"]["B9"].value = "G-REV-B"
+        wb["10_TIRE"]["B23"].value = -4
+    ok, rel = cp.comparar_viva(viva("preenchida", preenche), REF, ENT)
+    check("comparador 11 (viva): entradas preenchidas (valor, origem, fonte, meta, revisão, caso de carga) -> PASS", ok, rel[-1])
+
+    def formula_valor(wb):
+        wb["05_VEHICLE"]["B23"].value = 290.0
+    ok, rel = cp.comparar_viva(viva("formula_valor", formula_valor), REF, ENT)
+    check("comparador 12 (viva): fórmula trocada por valor -> FAIL apontando a célula",
+          not ok and any("05_VEHICLE!B23" in r for r in rel))
+
+    def rotulo(wb):
+        wb["05_VEHICLE"]["C5"].value = "mm"
+    ok, rel = cp.comparar_viva(viva("rotulo", rotulo), REF, ENT)
+    check("comparador 13 (viva): unidade (estrutura fora das entradas) alterada -> FAIL", not ok and any("05_VEHICLE!C5" in r for r in rel))
+
+    def sem_lista(wb):
+        wb["06_SUSPENSION"].data_validations.dataValidation = []
+    ok, rel = cp.comparar_viva(viva("sem_lista", sem_lista), REF, ENT)
+    check("comparador 14 (viva): lista de Origem removida de uma aba -> FAIL", not ok and any("06_SUSPENSION: validação" in r for r in rel))
+
+    def origem_ruim(wb):
+        wb["05_VEHICLE"]["E6"].value = "medido"
+    ok, rel = cp.comparar_viva(viva("origem_ruim", origem_ruim), REF, ENT)
+    check("comparador 15 (viva): Origem fora dos 6 rótulos (colada por cima da lista) -> FAIL", not ok and any("origem fora da lista" in r for r in rel))
+
 print("\n--- Resumo ---")
 p = sum(1 for _, s in results if s == "PASS"); f = len(results) - p
 print(f"{p} PASS, {f} FAIL, de {len(results)} testes")
