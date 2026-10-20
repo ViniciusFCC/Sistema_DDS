@@ -614,6 +614,37 @@ def _lkyg(wb, layout: dict, registro: list[dict]) -> None:
     registro.append({"aba": "10_TIRE", "cel": "J84", "antes": antes, "novo": j.value, "ref": ref})
 
 
+def _fechamento(wb, registro: list[dict]) -> None:
+    """Fechamento da V3.0 (usuário, 2026-10-20: "Vamos fechar a V3.0"; EDR-051): a planilha vira o arquivo vivo da equipe.
+    Muda só texto: versão (00_README A3), item 5 do guia e linha do changelog."""
+    ref = "EDR-051 (fechamento da V3.0, 2026-10-20)"
+    m = wb["00_README"]
+    antes = m["A3"].value
+    velho = "V3.0 (em desenvolvimento até concluir as correções de feedback;"
+    assert velho in antes, "texto da versão em 00_README!A3 mudou"
+    m["A3"].value = antes.replace(velho, "V3.0 (fechada em 2026-10-20: arquivo vivo da equipe, EDR-051;")
+    registro.append({"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V3.0 (em desenvolvimento ...",
+                     "novo": "Versão do workbook: V3.0 (fechada em 2026-10-20 ...", "ref": ref})
+    r5 = LINHAS_ORIGENS.stop + 2
+    c = m[f"A{r5}"]
+    assert str(c.value).startswith("5. "), "item 5 do guia mudou de linha"
+    antes = c.value
+    c.value = ("5. Esta é a planilha da equipe (V3.0 fechada, EDR-051). Preencha só as entradas (valor, Origem e Fonte), as "
+               "metas da 03_TARGETS e o setup da 01_SETUP. Não insira nem apague linhas, colunas ou abas, não troque fórmula "
+               "por valor e não salve pelo LibreOffice. Mudança de fórmula ou de estrutura só pelo script do repositório, "
+               "com aprovação. Resultado calculado com dado novo não é validado (NOT_VALIDATED) até alguém conferir.")
+    registro.append({"aba": "00_README", "cel": f"A{r5}", "antes": antes, "novo": c.value, "ref": ref})
+    ch = wb["15_CHANGELOG"]
+    for col in "ABCDE":
+        ch[f"{col}19"]._style = copy.copy(ch[f"{col}15"]._style)
+    ch["A19"].value = "2026-10"
+    ch["B19"].value = ("V3.0 fechada (2026-10-20): a planilha vira o arquivo vivo da equipe; a referencia imutavel e o arquivo da tag "
+                       "v3.0. FB-04 passa para a V3.1.")
+    ch["C19"].value = ("EDR-051 (fechamento; tratamento do CA-07 decidido por conselho, a pedido do usuario). Verificacao: "
+                       "tools/rodar_testes.py (CA-07 regeneracao e viva; CA-09 sobre a referencia).")
+    registro.append({"aba": "15_CHANGELOG", "cel": "A19:C19", "antes": None, "novo": "(linha do fechamento da V3.0)", "ref": ref})
+
+
 def _eixo_iso_textos(wb, registro: list[dict]) -> None:
     """Textos e comentários que diziam SAE (EDR-039 reaberto); nenhum valor nem fórmula muda aqui."""
     def troca(aba, cel, velho, novo_txt):
@@ -743,6 +774,7 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
     _feedback2_formatacao(wb, registro)
     _feedback2_pior_origem(wb, registro)
     _eixo_iso_textos(wb, registro)
+    _fechamento(wb, registro)
     wb.calculation.fullCalcOnLoad = True
     out.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out)
