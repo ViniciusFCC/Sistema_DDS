@@ -505,6 +505,39 @@ check("TC-KIN-128: mecanismo plano: passo nulo e a leitura literal (eixo × plan
       abs(lit_pl["pitch_m_per_rad"]) < 1e-8 and abs(lit_pl["rc_height_m"] - fpl["rc_height_m"]) < 1e-8,
       f"passo={lit_pl['pitch_m_per_rad']:.1e}")
 
+# ---- TC-KIN-129: cantos traseiros sintéticos (anti-squat, RC e roll steer traseiros; usuário, 2026-10-20) ----
+hs4 = load_hardpoints(os.path.join(HERE, "..", "data", "hardpoints_synthetic_4cantos_V2.0.csv"),
+                      os.path.join(HERE, "..", "data", "hardpoints_synthetic_4cantos_V2.0.meta.json"))
+RL_, RR_ = Corner(hs4, "RL"), Corner(hs4, "RR")
+same_front = all(np.allclose(hs4.points[k].xyz, synth_hs.points[k].xyz, atol=0) and hs4.points[k].component == synth_hs.points[k].component
+                 for k in synth_hs.points) and len(hs4.points) == len(synth_hs.points) + 22
+worst4 = 0.0
+s0r = RL_.solve(0.0)
+for sol, m in sweep(RL_, TR):
+    for a, b in (("LCA_OUT", "LCA_IN_F"), ("LCA_OUT", "LCA_IN_R"), ("UCA_OUT", "UCA_IN_F"), ("UCA_OUT", "UCA_IN_R"),
+                 ("TIE_OUT", "TIE_IN"), ("LCA_OUT", "UCA_OUT"), ("LCA_OUT", "WHEEL_CENTER")):
+        worst4 = max(worst4, abs(np.linalg.norm(RL_.pt(sol, a) - RL_.pt(sol, b)) - np.linalg.norm(RL_.pt(s0r, a) - RL_.pt(s0r, b))))
+check("TC-KIN-129a: arquivo de 4 cantos: dianteiros idênticos ao sintético original; traseiros válidos (X traseiro < dianteiro) e comprimentos preservados em ±40 mm",
+      same_front and worst4 < 1e-10, f"pior erro={worst4:.1e} m")
+fRL, fRR = km.force_lines_vw(RL_), km.force_lines_vw(RR_)
+as_vw = anti_squat_percent_signed(fRL["side_slope_wc"], 1.0, 1.55, 0.315)
+piv = ic_methods_at_reference(RL_)["side"]["pivot_axes"]
+as_piv = anti_squat_percent_signed(force_line_slope(piv, RL_.p0["WHEEL_CENTER"][[0, 2]]), 1.0, 1.55, 0.315)
+check("TC-KIN-129b: anti-squat traseiro pela linha de força no centro da roda (motor no chassi): positivo, igual nos dois lados e "
+      "perto da construção clássica pelos eixos de pivô (Gillespie p. 249) — CARACTERIZAÇÃO, SINTÉTICO",
+      as_vw > 0 and abs(fRL["side_slope_wc"] - fRR["side_slope_wc"]) < 1e-9 and abs(as_vw - as_piv) < 2.0,
+      f"AS linha de força={as_vw:.2f} %, eixos de pivô={as_piv:.2f} %")
+tr_r = float(RL_.p0["CONTACT_PATCH"][1] - RR_.p0["CONTACT_PATCH"][1])
+yr, zr = km.axle_roll_center_vw(RL_, RR_)
+check("TC-KIN-129c: RC traseiro do eixo (linhas de força) no plano central e igual ao RC por canto (geometria simétrica)",
+      abs(yr) < 1e-9 and abs(zr - fRL["rc_height_m"]) < 1e-9, f"RC traseiro={zr*1e3:.2f} mm")
+rs_r = km.ride_steer(RL_, TR)
+eps_r = km.roll_steer_coefficient(RL_, RR_, tr_r)
+K_rs = km.roll_steer_understeer_deg_per_g(eps_f, eps_r, 1.0)
+check("TC-KIN-129d: roll steer traseiro ε_r = b·t/2 (eixo simétrico, inclinação local) e contribuição K = (ε_f − ε_r)·∂φ/∂a_y de ponta a ponta",
+      abs(eps_r - math.radians(rs_r["slope_deg_per_mm"] * 1e3) * tr_r / 2) < 1e-4 * abs(eps_r) and abs(K_rs - (eps_f - eps_r)) < 1e-12,
+      f"ε_r={eps_r:.4f} °/°; K={K_rs:.4f} °/g por °/g de rolagem; curvatura do toe={rs_r['max_dev_from_linear_deg']:.3f}° (SINTÉTICO)")
+
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s in results if s == "PASS")
