@@ -1,6 +1,6 @@
 # Arquitetura planejada do Sistema_DDS: roadmap, fases e onde o projeto está
 
-**Data:** 2026-10-20. **Situação:** registro de leitura, sem decisão nova. Este documento não aprova nada: as
+**Data:** 2026-10-20. **Situação:** registro de leitura; as pendências 1 e 2 da seção 7 foram decididas em 2026-10-20 (EDR-054). Este documento não aprova nada: as
 escolhas que ele levanta (seção 7) ficam como pendências do usuário.
 
 **Fontes.**
@@ -152,11 +152,15 @@ Ele não pula etapas: nada nele depende de CarSim, de otimização formal ou de 
 
 ## 7. Pendências que este registro levanta (decisão do usuário)
 
-1. **Qual roadmap é o canônico.** O Guia é o documento técnico da V1; o [ROADMAP] é mais recente e mais amplo,
-   mas não tem origem registrada no projeto. Uma saída é adotar o [ROADMAP] como plano, com os complementos da
-   seção 4, por um EDR.
-2. **Como separar as três numerações** (seção 1). Uma possibilidade: chamar as etapas do roadmap de "Fase 0" a
-   "Fase 5" (como o Guia e o nome do arquivo já fazem) e reservar "V" para a revisão dos artefatos.
+1. **Qual roadmap é o canônico.** *Decidido (EDR-054, 2026-10-20):* o [ROADMAP] V0-V5 é o plano, com os
+   complementos da seção 4; o Guia é a referência técnica do conteúdo da etapa 1. Condição: registrar a origem
+   (autoria e data) do [ROADMAP].
+2. **Como separar as três numerações** (seção 1). *Decidido (EDR-054):* as etapas do [ROADMAP] passam a se
+   chamar **Etapa E0 a E5**, e "V" fica para a revisão dos artefatos (planilha V4.0, tags). A proposta que
+   estava aqui ("Fase 0" a "Fase 5") foi descartada: "Fase" já tem quatro sentidos (etapa do Guia; fases A-J
+   do [ROADMAP]; fases A e B da migração; "fase 2" da pior origem, EDR-035), e cada um mantém o nome com
+   qualificador.
 3. **Correspondência entre as classes de proveniência do Guia e os 6 rótulos de Origem da V3.0** (seção 4,
    item 5).
-4. **EDR-034:** usar os níveis F0-F4 e a promoção proporcional ao uso do Guia como base.
+4. **EDR-034:** usar os níveis F0-F4 e a promoção proporcional ao uso do Guia como base. O EDR-034 registra, desde 2026-10-20, que a
+   proposta que ele citava nunca foi escrita; continua AWAITING_DECISION.
