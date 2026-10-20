@@ -12,7 +12,10 @@ camber têm padrão 0: "sem dado" (EDR-036), nunca valor inventado.
 
 from __future__ import annotations
 
+import copy
+import itertools
 import math
+import dataclasses
 from dataclasses import dataclass, field
 
 from suspension_model import G, VehicleConfig, combined_fz_corner, lateral_dfz
@@ -305,3 +308,69 @@ def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.
 
     return ResultadoPar(linhas=linhas, passo_ms2=passo_ms2, ay_sat_f=S_f, ay_sat_r=S_r, ay_lim=ay_lim,
                         veredito=veredito, motivo=motivo, c_n=c_n)
+
+
+# ---------------------------------------------------------------------------
+# Robustez do veredito ao pneu e texto de exibição (spec 7.3 e 7.6)
+# ---------------------------------------------------------------------------
+
+def com_fatores(ds: TireDataset, fatores: dict) -> TireDataset:
+    """Cópia do dataset com p[nome] *= valor. Só aceita fatores λ (nome com "L") que existam em ds.p.
+
+    Um nome errado ("LMUX ", "PDY2") levanta ValueError: um erro de digitação não pode virar
+    "robusto" em silêncio (spec 7.6). O ds de entrada nunca é alterado.
+    """
+    p = copy.deepcopy(ds.p)
+    for nome, valor in fatores.items():
+        if not (isinstance(nome, str) and nome.startswith("L") and nome in ds.p):
+            raise ValueError(f"fator de pneu inválido: {nome!r}; só são aceitos fatores λ (nome com 'L') "
+                             f"que existam no .tir.")
+        p[nome] = p[nome] * valor
+    return dataclasses.replace(ds, p=p)
+
+
+def varredura_pneu(caso: CasoEquilibrio, fatores: dict, **kw) -> list:
+    """Produto cartesiano das listas de fatores; cada combinação roda analise_par com o pneu escalado.
+
+    Devolve [(combinação, ResultadoPar), ...]. Dicionário vazio dá lista vazia. As amplitudes vêm
+    de quem chama (EDR-055); esta função não escolhe valor nenhum. **kw vai para analise_par.
+    """
+    if not fatores:
+        return []
+    nomes = list(fatores)
+    saida = []
+    for valores in itertools.product(*(fatores[n] for n in nomes)):
+        comb = dict(zip(nomes, valores))
+        saida.append((comb, analise_par(dataclasses.replace(caso, ds=com_fatores(caso.ds, comb)), **kw)))
+    return saida
+
+
+def veredito_robusto(vereditos: list) -> tuple:
+    """Resume os vereditos da varredura (spec 7.6, item 3): só PUSH puro ou LOOSE puro é robusto.
+
+    NEUTRO conta como inversão; qualquer mistura (inclusive com N/A) é NÃO CONCLUSIVO.
+    """
+    if not vereditos:
+        return (NA, "robustez ao pneu não avaliada")
+    unicos = set(vereditos)
+    if unicos == {PUSH} or unicos == {LOOSE}:
+        return (vereditos[0], "mesmo sinal na varredura exploratória do pneu")
+    if unicos == {NA}:
+        return (NA, "N/A em toda a varredura")
+    return (NAO_CONCLUSIVO, "o sinal depende do pneu")
+
+
+_ROTULO = {PUSH: "▲ PUSH: sai de frente (final understeer)",
+           LOOSE: "▼ LOOSE: sai de traseira (final oversteer)",
+           NEUTRO: "● NEUTRO no limite"}
+
+
+def texto_veredito(res: ResultadoPar, pior_origem: str, robusto: tuple | None = None) -> str:
+    """Texto exato de exibição (spec 7.3). Prefixo "DEMONSTRATIVO · " se a pior origem não for o TX (D16)."""
+    if robusto is not None and robusto[0] == NAO_CONCLUSIVO:
+        texto = "? NÃO CONCLUSIVO: o sinal depende do pneu"
+    elif res.veredito == NA:
+        texto = "N/A: " + (res.motivo or "")
+    else:
+        texto = _ROTULO[res.veredito]
+    return texto if pior_origem == "● Dado do TX" else "DEMONSTRATIVO · " + texto
