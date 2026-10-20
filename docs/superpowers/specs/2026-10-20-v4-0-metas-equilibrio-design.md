@@ -1,7 +1,8 @@
 # Especificação: planilha V4.0, bloco de metas e equilíbrio em regime permanente
 
-**Data:** 2026-10-20. **Situação:** desenho aprovado seção a seção no brainstorming (usuário, 2026-10-20);
-esta especificação aguarda a revisão do usuário. Nada aqui está implementado. IDs novos (TARGET-, SUS-, EDR-)
+**Data:** 2026-10-20. **Situação:** desenho aprovado seção a seção no brainstorming (usuário, 2026-10-20) e
+revisado no mesmo dia com as decisões D12 a D19 (lista consolidada das pendências, depois do conselho rigoroso de
+7 assentos); aguarda a aprovação final do usuário antes do plano de implementação. Nada aqui está implementado. IDs novos (TARGET-, SUS-, EDR-)
 aparecem como **propostos** e só nascem com autorização; fórmulas novas e reescritas também dependem de aprovação
 explícita (CLAUDE.md, regras de trabalho).
 
@@ -25,7 +26,8 @@ oversteer no limite e o quanto.
 
 **Dentro:** processo comum de metas (fichas, lógica entre fichas, estados); equilíbrio linear (gradiente de
 subesterço) e no limite (análise de par do Milliken na planilha, MMM no Python); fundação da planilha V4.0
-(nomes definidos, dados por chave, equivalência por valor); correções de documentação já aprovadas (seção 12).
+(nomes definidos, dados por chave, equivalência por valor); robustez do veredito ao pneu (seção 7.6); correções de
+documentação já aprovadas (seção 12).
 
 **Fora:** dinâmica transitória e amortecedores ([GUIA] §1.5; Milliken p. 283); CarSim; otimização formal com
 função-objetivo e pesos; compliance (sem dado); Mz no momento de guinada (Mz do PAC2002 não verificado,
@@ -47,6 +49,23 @@ estético da planilha (fase própria, mais tarde; a V4.0 só remove as travas qu
 | D9 | Domínio de ID próprio para o equilíbrio (revisão do EDR-005) | resposta (A) |
 | D10 | A próxima planilha é a V4.0 (o "V3.1" dos documentos da V3.0 passa a V4.0) | instrução do usuário |
 | D11 | Correções aprovadas, para fazer depois: EDR-034 sem proposta escrita; arquitetura §3 com "Validation = STALE" | "pode fazer as duas correções, mas não agora" |
+
+**Revisão de 2026-10-20** (lista consolidada; respostas do usuário às recomendações do conselho rigoroso):
+
+| # | Decisão | Origem |
+|---|---|---|
+| D12 | Ordem nova dos incrementos: primeiro uma decisão demonstrável (viabilidade e robustez ao pneu, equilíbrio no Python, nomes, aba de equilíbrio); processo de metas, MMM e escada depois (seção 10) | B1 aprovado |
+| D13 | Fundação em duas partes: (1) nomes definidos apontando para as células, sem reescrever fórmulas (o CA-07 por texto continua valendo); (2) reescrita das 387 fórmulas para nomes, antes do preenchimento da equipe | B2 aprovado |
+| D14 | O processo de metas completo **fica** na V4.0: estados de coerência, tabela L/E/M, F0-F4 e escada de hipóteses não são suspensos; a D12 só muda a ordem | B3: "manter tudo na V4.0" (recomendação de suspender recusada) |
+| D15 | Robustez do veredito ao pneu, com "? NÃO CONCLUSIVO" quando o sinal inverter (seção 7.6) | B4 aprovado |
+| D16 | Prefixo condicional "DEMONSTRATIVO ·" dentro da célula do veredito enquanto a pior origem não for "● Dado do TX" (seção 7.3) | B5 aprovado |
+| D17 | Ciclo de vida de metas do Guia (G.1) | B6 aprovado |
+| D18 | Faixa de ID do equilíbrio: SUS-10XX (a SUS-9XX foi aposentada na arquitetura V2.0 e IDs não se reutilizam) | B7 aprovado |
+| D19 | Um Setup ativo por vez na V4.0 (monocaso); a tabela de troca faz a varredura; vários setups só por EDR, quando houver dois acertos reais | B10 aprovado |
+
+Registradas fora desta especificação: EDR-054 (roadmap V0-V5 como plano; etapas E0-E5; "V" só para revisão de
+artefatos) e EDR-032 reaberto (B8, B9 e B11). Os EDRs técnicos desta especificação nascem no início do incremento
+que os implementa (regra "antes ou durante a implementação"), com autorização em cada um.
 
 ## 4. Processo comum de metas
 
@@ -91,9 +110,8 @@ Ficha curta na planilha (aba de metas); ficha completa em `docs/metas/TARGET-xxx
 
 Quatro grupos independentes, que nunca se misturam. Os três primeiros já existem; o quarto é novo.
 
-**Ciclo de vida da meta** ([GUIA] G.1). *Muda em relação ao brainstorming:* a seção 1 aprovada usava o ciclo
-de parâmetros (OPEN → DRAFT → CHECKED → FROZEN); o Guia tem um ciclo próprio para metas, e esta especificação
-propõe adotá-lo. **Confirmar na revisão.**
+**Ciclo de vida da meta** ([GUIA] G.1), adotado (D17). A seção 1 do brainstorming usava o ciclo de parâmetros
+(OPEN → DRAFT → CHECKED → FROZEN); o Guia tem um ciclo próprio para metas, e é ele que vale para as fichas.
 
 | Estado | Significado |
 |---|---|
@@ -221,6 +239,12 @@ como teste do máximo numérico.
 5. Linear e limite lado a lado, com "regimes diferentes (Milliken p. 313-315)"; subesterço linear com loose no
    limite não é marcado como erro.
 6. Pior origem ao lado.
+7. **Prefixo "DEMONSTRATIVO ·" (D16)** na própria célula do veredito (e do K) sempre que a pior origem das entradas
+   não for "● Dado do TX", por fórmula sobre a pior origem viva (EDR-035, fase 2). Motivo: uma célula copiada ou
+   fotografada sozinha não perde o aviso (CLAUDE.md: valor demonstrativo sempre rotulado). O prefixo some sozinho
+   quando todas as entradas forem dados do TX. "◐ Dado do T09" também leva o prefixo: é outro carro (EDR-012).
+8. **"? NÃO CONCLUSIVO: o sinal depende do pneu"** (D15) quando a varredura da seção 7.6 inverter push/loose; a
+   linha de apoio mostra o veredito e o "quanto" em cada extremo da varredura.
 
 ### 7.4 Hipóteses
 
@@ -257,6 +281,25 @@ como teste do máximo numérico.
 Implementação: chaves 1/0 na planilha para as hipóteses que ela implementa; `tests/test_escada.py` na suíte para o
 resto. Nenhum número do Python é copiado para a planilha (valor estático envelhece em silêncio).
 
+### 7.6 Robustez ao pneu (D15)
+
+O sinal de push/loose depende sobretudo da sensibilidade do pneu à carga, a parte menos confiável do `.tir` do TTC
+(R25B, e não o R60A do carro). Antes de a equipe usar o veredito, ele precisa resistir a essa incerteza.
+
+1. **O que varia:** os fatores de escala do próprio PAC2002 ligados à carga e ao pico (por exemplo λ_Fz0, λ_μy,
+   λ_Ky; lista final no incremento 1, com a definição de cada um conferida no help do Adams). Eles existem no
+   formato justamente para escalar o pneu sem refazer o ajuste.
+2. **Amplitude:** decisão de engenharia registrada em EDR no incremento 1 (como a tolerância da escada). Os valores
+   da varredura são rotulados como exploratórios ("○ Arbitrário / demonstrativo"), nunca como faixa do pneu, e não
+   viram dado do carro (EDR-022).
+3. **Veredito:** se push/loose (e o sinal de K) for o mesmo em toda a varredura, a célula mostra o veredito com a
+   nota "mesmo sinal na varredura exploratória do pneu". Se inverter, mostra "? NÃO CONCLUSIVO" (seção 7.3, item 8).
+   NEUTRO dentro da resolução numérica em algum ponto conta como inversão.
+4. **Onde roda:** primeiro no Python (incremento 1, exploratório; incremento 2, em `equilibrio.py` com teste);
+   na planilha, só se o incremento 1 mostrar que o recálculo aguenta; senão o Python gera o relatório e a planilha
+   mostra o veredito nominal com o aviso "robustez ao pneu: ver relatório", sem copiar números (seção 7.5).
+5. **Com o pneu real** (R60A, OptimumTire), a varredura roda de novo; a conclusão vale para o pneu testado.
+
 ## 8. Arquitetura
 
 ### 8.1 Python
@@ -274,8 +317,11 @@ resto. Nenhum número do Python é copiado para a planilha (valor estático enve
 
 - Gerada a partir do arquivo da tag `v3.0` (reabre o EDR-051: a alternativa "parte da tag e os dados entram por
   chave" vira o caminho principal).
-- **Nomes definidos** em todas as entradas e resultados; fórmulas reescritas para usar nomes (conversão mecânica
-  pelo leitor de referências de `python/raizes.py`, cada fórmula registrada com aba, célula, antes e depois).
+- **Nomes definidos em duas partes (D13).** Parte 1 (incremento 3): nomes em todas as entradas e resultados,
+  apontando para as células, sem tocar no texto das fórmulas; o CA-07 por texto continua valendo e o risco fica
+  perto de zero. Parte 2 (incremento 7, antes do preenchimento da equipe): fórmulas reescritas para usar nomes
+  (conversão mecânica pelo leitor de referências de `python/raizes.py`, cada fórmula registrada com aba, célula,
+  antes e depois), e a equivalência por valor substitui o CA-07 por texto.
 - **Dados por chave:** extrator lê a viva pelos nomes; o gerador injeta pelo mesmo nome.
 - **Equivalência por valor** no lugar do CA-07 por texto: com as entradas da V3.0 de referência, todo resultado com
   nome tem o mesmo valor na V4.0. Testes passam a ler por nome (fim da dependência de `layout_V2_4.json`).
@@ -285,7 +331,7 @@ resto. Nenhum número do Python é copiado para a planilha (valor estático enve
 - Entradas novas com Origem e Fonte e incluídas na lista de células de entrada: toe por roda, raio do skidpad, CG
   lateral, aero do Setup, CdA e resistência ao rolamento, tipo de diferencial, justificativa, EDR e responsável
   nas fichas.
-- A equipe continua na V3.0 viva até o incremento 7; só então há retrato, congelamento do preenchimento e
+- A equipe continua na V3.0 viva até o incremento 7 (a reescrita das fórmulas acontece antes do preenchimento); só então há retrato, congelamento do preenchimento e
   injeção dos dados. O local oficial da viva precisa estar decidido antes do retrato.
 
 ### 8.3 Documentação
@@ -312,21 +358,28 @@ resto. Nenhum número do Python é copiado para a planilha (valor estático enve
    trocar a pior origem.
 9. **Salvar pelo Excel:** nomes, validações e formatação condicional sobrevivem (como no EDR-051 para a V3.0).
 10. **Desempenho:** tempo de recálculo no log; limite só por decisão registrada.
+11. **Credibilidade** (conselho rigoroso; distribuídos nos incrementos pelo plano): mutação estendida à suspensão
+    e à cinemática; testes do pneu em ISO_TYDEX (hoje `tests/test_tire_model.py:12` e `tests/test_tire_oracles.py:14`
+    carregam o `.tir` em SAE_CALSPAN, a convenção da V2.4); teste de que toda evidência citada num EDR existe;
+    integração contínua só para o Python (a planilha precisa de Excel ou LibreOffice).
+12. **Robustez ao pneu** (seção 7.6): o veredito "? NÃO CONCLUSIVO" é forçado num caso construído para inverter.
 
 Verificação no carro (fora da suíte): teste de raio constante quando houver carro e aquisição; até lá
 Validation = NOT_VALIDATED.
 
 ## 10. Ordem de entrega
 
+Ordem revisada (D12): primeiro uma decisão demonstrável; o escopo não perde nada (D14).
+
 | # | Incremento | Entrega |
 |---|---|---|
-| 1 | Viabilidade | Protótipo descartável da análise de par no Excel e no LibreOffice: tempo de recálculo, α do pico dentro de ALPMAX. Relatório "vai ou não vai"; se não for, a alternativa (tabela do Python) é decisão do usuário |
-| 2 | Fundação V4.0 | Gerador, nomes, chave, equivalência; nenhuma grandeza nova |
-| 3 | Metas, estrutura | `docs/metas/`, F0-F4 (EDR-034), aba de listas, META/CONSEQUÊNCIA, sobredeterminação, fichas das metas atuais e das novas (K e limite, TBD) |
-| 4 | Equilíbrio no Python | `equilibrio.py`, Ky, C_γ, ∂γ/∂φ |
-| 5 | Equilíbrio na planilha | Aba de equilíbrio, exibição, chaves, tabela de troca, dashboard |
-| 6 | MMM e escada | `mmm.py`, `test_escada.py`, orçamento de erro, EDR da tolerância |
-| 7 | Coerência completa e fechamento | Efeito no objetivo, custo, malha fechada, Δt, estados ao vivo, ficha-exemplo, retrato e injeção da viva, registro de versões, tag `v4.0` |
+| 1 | Viabilidade e robustez ao pneu | Protótipo descartável da análise de par no Excel e no LibreOffice (tempo de recálculo, α do pico dentro de ALPMAX) e varredura exploratória do pneu no Python (seção 7.6). Relatório "vai ou não vai" e "o sinal resiste ao pneu?"; se a planilha não aguentar, a alternativa (tabela do Python) é decisão do usuário. EDR da amplitude da varredura |
+| 2 | Equilíbrio no Python | `equilibrio.py`, Ky, C_γ, ∂γ/∂φ, robustez ao pneu; oráculos obrigatórios: exemplo resolvido do Gillespie (p. 231-233) e caso assintótico do modelo bicicleta; testes do pneu passam a usar ISO_TYDEX |
+| 3 | Fundação V4.0, parte 1 | Gerador a partir da tag `v3.0`, nomes definidos sem reescrever fórmulas, extrator por nome, testes por nome; nenhuma grandeza nova |
+| 4 | Equilíbrio na planilha | Aba de equilíbrio já com nomes, exibição (seção 7.3, com D15 e D16), chaves, tabela de troca, dashboard; páginas "cadeia de decisão" e "o que o modelo cobre e o que não cobre" |
+| 5 | Metas e coerência | `docs/metas/`, ciclo G.1, F0-F4 (EDR-034), aba de listas com relações L/E/M, META/CONSEQUÊNCIA, sobredeterminação, estados de coerência, fichas das metas atuais e das novas (K e limite, TBD) |
+| 6 | MMM e escada | `mmm.py`, `test_escada.py`, escada de hipóteses (seção 7.4), orçamento de erro, EDR da tolerância |
+| 7 | Fundação parte 2 e fechamento | Reescrita das fórmulas para nomes com equivalência por valor; coerência completa (efeito no objetivo, custo, malha fechada, Δt, estados ao vivo); ficha-exemplo; retrato e injeção da viva; registro de versões; tag `v4.0` |
 
 Cada incremento: branch própria, PR, suíte inteira passando, commits separados por propósito (CLAUDE.md).
 
@@ -335,27 +388,42 @@ Cada incremento: branch própria, PR, suíte inteira passando, commits separados
 - **EDRs:** processo de metas e coerência; método do equilíbrio (análise de par na planilha, §7.2/MMM no Python,
   escada); tolerância da escada (decisão do usuário); revisão do EDR-005 com a faixa nova; EDR-051 reaberto
   (caminho por chave); EDR-034 resolvido com F0-F4; lista de objetivos da equipe.
-- **Faixa de ID:** domínio próprio "Equilíbrio / dirigibilidade" (decisão D9). Número a confirmar (por exemplo
-  SUS-10XX: as faixas 0XX a 9XX estão ocupadas).
+- **Faixa de ID:** domínio próprio "Equilíbrio / dirigibilidade" (D9), na faixa **SUS-10XX** (D18). A revisão do
+  EDR-005 nasce no incremento que criar o primeiro ID da faixa.
 - **TARGET:** gradiente de subesterço; comportamento no limite.
 - **Prefixo das relações de coerência** (por exemplo REL-): só com autorização; até lá, numeração interna da tabela.
 
-## 12. Correções de documentação aprovadas (fazer depois, D11)
+## 12. Correções de documentação (D11): feitas em 2026-10-20
 
-1. EDR-034: registrar que a proposta citada (`kinematics-exploratory-and-promotion-V2.1.md` §F) nunca existiu; os
-   critérios passam a ser os desta especificação (4.4).
-2. Arquitetura §3: "Validation = STALE" → STALE é estado de ciclo de vida.
+1. EDR-034: registrado que a proposta citada (`kinematics-exploratory-and-promotion-V2.1.md` §F) nunca existiu;
+   candidata para a decisão: F0-F4 desta especificação (4.4). Continua AWAITING_DECISION.
+2. Arquitetura V2.0 §3: o exemplo passou a "Lifecycle = STALE e Validation = PASS".
 
-Achados ainda sem aprovação (só registrados): a proposta da Decisão C (EDR §4) usa SUS-414 a 416, já ocupados pelo
-EDR-052; o cabeçalho do índice do EDR está desatualizado (53 registros: 16 VERIFIED, 7 APPROVED_WITH_CONDITIONS,
-6 AWAITING_DECISION); o EDR-041 ainda cita o fundo amarelo; a §3 do EDR lista o EDR-025 e o EDR-035 como
-pendentes.
+Também corrigidos (texto, sem mudar decisão): índice do EDR, §1 (arquivos citados que não existem), §3 (EDR-025 e
+EDR-035 já decididos), §4 (colisão de SUS-414 a 416 com o EDR-052, sem renumerar), EDR-041 (fundo amarelo),
+EDR-032 (evidência ausente; reaberto por decisão do usuário), `CLAUDE.md` (V3.1 → V4.0), HANDOFF (retrato
+histórico) e versão do `pyproject.toml`.
+
+### 12.1 Contradições da planilha V3.0 a corrigir na V4.0
+
+A V3.0 está fechada (EDR-051); estes textos mudam no gerador da V4.0, cada um registrado com aba, célula, antes e
+depois, e com aprovação no incremento.
+
+| Aba e célula | Hoje | Problema |
+|---|---|---|
+| 13_VALIDATION A25 | "16/16 Test Cases PASS em suspension_model_V2_0.py" | Nome e contagem da V2.0; hoje `suspension_model.py`, 54 testes |
+| 00_README A8 | cita `suspension_model_V2_1.py` e `tire_model_V2_2.py` | Nomes anteriores ao EDR-043 |
+| 14_DASHBOARD A19:A21 | "Status de Validação" = TC-004 e TC-005 | São identidades algébricas (conservação): verificação, não validação (EDR-007); o título induz a ler "validado" |
+| Nomes definidos | só `Origens` | A fundação (D13) resolve |
+| 04_DECISION_REGISTER D8 (DR-004) | "ARB documentado mas não efetivamente implementado" no TX | Fato a confirmar com a equipe antes de repetir na V4.0 |
 
 ## 13. Riscos e premissas
 
 - A análise de par pode ficar pesada no Excel ou no LibreOffice (incremento 1 decide).
 - A justificativa pode virar carimbo: teste de EDR existente e aprovado; contador de compromissos no dashboard.
-- Fadiga de alerta com dados demonstrativos: rótulo de origem ao lado, nunca no lugar do veredito.
+- Fadiga de alerta com dados demonstrativos: o prefixo "DEMONSTRATIVO ·" aparece em todo veredito enquanto os
+  dados forem do T09 ou arbitrários (D16). Aceito porque é verdade, e some com os dados do TX.
+- O pneu pode decidir o sinal: por isso a robustez ao pneu vem no incremento 1 (D12, D15).
 - O custo depende principalmente da sensibilidade do pneu à carga, a parte menos confiável do `.tir` do TTC; a
   ficha diz isso.
 - Listas dependentes (INDIRECT/FILTER) ficam fora (frágeis no LibreOffice e no openpyxl).
@@ -364,13 +432,20 @@ pendentes.
 
 ## 14. Pendências do usuário
 
-1. Revisar esta especificação.
-2. Adotar o ciclo de vida de metas do Guia (G.1) no lugar do de parâmetros (4.4).
-3. Número da faixa de ID do equilíbrio.
-4. Tolerância da escada (pode esperar o incremento 6).
-5. Local oficial da planilha viva (antes do incremento 7).
-6. Lista de objetivos da equipe e responsável por cada meta.
-7. Pendências de `docs/arquitetura-planejada.md` §7 (roadmap canônico e separação das numerações).
+Decididos em 2026-10-20: ciclo G.1 (D17), faixa SUS-10XX (D18), roadmap e numerações (EDR-054).
+
+1. Aprovar esta especificação revisada (depois dela, o plano de implementação).
+2. Amplitude da varredura do pneu (EDR no incremento 1).
+3. Tolerância da escada (pode esperar o incremento 6).
+4. Origem (autoria e data) do roadmap V0-V5 (condição do EDR-054).
+5. Correspondência entre as classes de proveniência do Guia e os 6 rótulos de Origem (`arquitetura-planejada.md` §7).
+
+**Da equipe** (o usuário leva): local oficial da planilha viva e responsável pelos commits `dados:` (antes do
+incremento 7); lista de objetivos e responsável por cada meta; TX congelado ou fabricado, uso real da planilha,
+calendário e Design Event; licenças do OptimumKinematics e do OptimumTire (EDR-004, EDR-040) e dados do R60A;
+hardpoints do Fusion, massas e CG (inclusive lateral), molas, MR, barra, RC, brake bias e divisão regenerativa
+(EDR-033), CdA e Crr, tipo de diferencial, raio do skidpad; relatos dos pilotos do T09 (push/loose); ARB do TX
+(DR-004).
 
 ## 15. Fontes
 
