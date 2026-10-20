@@ -212,7 +212,9 @@ Cada domínio reserva um bloco de 100 IDs — suficiente para a V1 e com folga p
 - WARNING — divergência acima da tolerância numérica, mas dentro da tolerância de engenharia
 - FAIL — divergência acima da tolerância de engenharia (não significa necessariamente "modelo errado", significa "não validado")
 
-Um parâmetro pode legitimamente estar em `Lifecycle = FROZEN` e `Validation = STALE` ao mesmo tempo (era válido, uma dependência mudou) — por isso as duas dimensões não podem ser uma lista única.
+Um parâmetro pode legitimamente estar em `Lifecycle = STALE` e `Validation = PASS` ao mesmo tempo (foi validado, depois uma dependência mudou) — por isso as duas dimensões não podem ser uma lista única.
+
+> **Correção (2026-10-20, aprovada pelo usuário).** A frase acima dizia "`Lifecycle = FROZEN` e `Validation = STALE`". STALE é estado de Lifecycle, não de Validation (lista acima); o exemplo foi corrigido sem mudar a regra.
 
 ---
 

@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, em 2026-10-20). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -29,9 +29,11 @@
 
 **Referência cruzada.** Registro de versões: `registro-de-versoes-V2.1.md`. Auditoria: `audit-report-V2.1.md`. Mapa de dependências da planilha: `placeholder-dependency-map-V2.1.csv`. Geometry Brief: `geometry-brief-V2.1.md`. Critérios de promoção: `kinematics-exploratory-and-promotion-V2.1.md`.
 
+> **Nota de integridade (2026-10-20).** Dos cinco arquivos acima, só o `placeholder-dependency-map-V2.1.csv` existe (em `data/`). Os outros quatro (`registro-de-versoes-V2.1.md`, `audit-report-V2.1.md`, `geometry-brief-V2.1.md`, `kinematics-exploratory-and-promotion-V2.1.md`) não estão no repositório nem no registro da migração (`importado-claude-ai/`): foram citados nas conversas do claude.ai, mas não chegaram a ser entregues. Os registros que os usam como evidência levam nota própria (EDR-032, EDR-034). Os registros de versões existentes estão em `docs/registro-de-versoes-*.md`.
+
 ## 2. Índice
 
-Total: 51 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 7 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · SUPERSEDED: 1 · VERIFIED: 12
+Total: 53 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 7 · AWAITING_DECISION: 6 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
 
 | ID | Título | Status |
 |---|---|---|
@@ -94,14 +96,14 @@ Total: 51 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DEC
 - **EDR-018** (PENDING_CONFIRMATION): Consolidação do Decision Register da planilha (versão mais completa)
 - **EDR-023** (AWAITING_DECISION): D1 — Identificadores SUS-407 a SUS-413
 - **EDR-024** (AWAITING_DECISION): D2 — Schema de hardpoints V2.0
-- **EDR-025** (AWAITING_DECISION): D3 / Decisão A — Tratamento de placeholders na planilha
 - **EDR-033** (AWAITING_DECISION): Escopo de AD/AS e anti-lift (frenagem regenerativa)
 - **EDR-034** (AWAITING_DECISION): Critérios de promoção DRAFT/CHECKED/FROZEN/STALE
-- **EDR-035** (AWAITING_DECISION): Semântica de N/A e TBD (e proveniência de dados)
 - **EDR-036** (AWAITING_DECISION): Decisão C — IDs para camber e toe estáticos (referência e calculado)
 - **EDR-040** (AWAITING_DECISION): Formato do dataset de pneu e origem (OptimumTire 2)
 
 ## 4. Proposta de IDs para camber/toe estáticos (Decisão C — NÃO criados)
+
+> **Nota (2026-10-20).** Os números SUS-414 a SUS-416 desta proposta já foram usados pelo EDR-052 (direção: Ackermann, relação de direção, ride steer e roll steer). A proposta não foi renumerada aqui: novos números só com autorização, quando o EDR-036 for decidido.
 
 Proposta apresentada para decisão; números **provisórios**, dependentes da resolução de D1 (EDR-023). Segue o padrão SUS-401/402 (um ID por fonte) e a regra de que uma estimativa geométrica **não substitui silenciosamente** um valor de referência.
 
@@ -745,7 +747,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Alternatives:** Aba nova na planilha; artefato separado.
 - **Decision:** Estrutura criada como artefato separado (geometry-brief-V2.1.md), com campos pendentes explícitos. Aba nova NÃO criada (alteraria a arquitetura de 16 abas).
 - **Rationale:** Não duplicar hardpoints; não inventar targets.
-- **Evidence:** geometry-brief-V2.1.md.
+- **Evidence:** geometry-brief-V2.1.md. **Nota de integridade (2026-10-20):** o arquivo não existe no repositório nem no registro da migração (`importado-claude-ai/`); a implementação declarada não tem artefato verificável (ver §1, referência cruzada).
 - **Assumptions:** Cargas verticais por canto não dependem do pneu (arquitetura §1.1): CORRIGE afirmação anterior do assistente.
 - **Consequences:** Nenhum target/limite numérico foi criado.
 - **Affected_Artifacts:** geometry-brief-V2.1.md; (futuro) planilha.
@@ -785,7 +787,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Alternatives:** —
 - **Decision:** PENDENTE: proposta redigida em kinematics-exploratory-and-promotion-V2.1.md §F, usando a taxonomia oficial (sem estados novos).
 - **Rationale:** —
-- **Evidence:** Documento citado.
+- **Evidence:** Documento citado. **Correção (2026-10-20, aprovada pelo usuário):** a proposta citada (`kinematics-exploratory-and-promotion-V2.1.md` §F) nunca foi escrita: o arquivo não existe no repositório nem no registro da migração. Não há, portanto, proposta de critérios registrada. Candidata para a decisão: os níveis de congelamento F0-F4 do Guia, com promoção proporcional ao uso ([GUIA] §3.2 e §3.12), conforme `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md` §4.4. O status continua AWAITING_DECISION.
 - **Assumptions:** —
 - **Consequences:** Define quando IC, RC e AD/AS podem ser promovidos.
 - **Affected_Artifacts:** documento exploratório; Standard.
@@ -923,7 +925,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Context:** Não há modelo de slip nem de camber estático aprovado; EDR-035 (N/A/TBD) e EDR-036 (IDs de camber) estão sem decisão. Pergunta ao usuário sobre depender dessas decisões: 'por enquanto sim'.
 - **Question:** Como alimentar α, γ, κ e como representar a ausência de dado?
 - **Alternatives:** Deixar vazio (tudo N/A); valores demonstrativos.
-- **Decision:** Valores demonstrativos arbitrários (célula azul, fundo amarelo, comentário), com sinal coerente com 08_VEHICLE_STATE; saídas 'N/A' quando faltar entrada ou sair da faixa. Camber de entrada manual (sem ID, aguardando EDR-036).
+- **Decision:** Valores demonstrativos arbitrários (célula azul, fundo amarelo, comentário), com sinal coerente com 08_VEHICLE_STATE; saídas 'N/A' quando faltar entrada ou sair da faixa. Camber de entrada manual (sem ID, aguardando EDR-036). **Nota (2026-10-20):** o fundo amarelo saiu da planilha na V3.0; a marcação de valor demonstrativo passou a ser a coluna Origem (`○ Arbitrário / demonstrativo`), pelo EDR-035.
 - **Rationale:** EDR-022 (valores de teste identificados como tais); permite exercitar a planilha.
 - **Evidence:** TC-WB22-005c (entrada ausente → N/A sem erro).
 - **Assumptions:** O Fz de 09_LOADS usado nas colunas FL..RR é ele próprio placeholder (EDR-025); FR do caso demonstrativo está a ~5% de FZMAX.
