@@ -4,6 +4,7 @@ TC-EQ-001..003 (IDs autorizados pelo usuário): caso, cargas e camber por roda.
 TC-EQ-004..008 (idem): curva do eixo, capacidade, borda da grade, faixa do pneu e sinal do toe.
 TC-EQ-009..015 (idem): análise de par (força exigida, saturação, veredito e C_N, Milliken §7.1 e §8.4).
 TC-EQ-016..018 (idem): robustez do veredito ao pneu, nomes de fator e texto do veredito (spec 7.3 e 7.6).
+TC-EQ-019..020 (idem): caso lido da planilha recalculada e pior origem (leitura apenas, sem salvar a planilha).
 Roda como script: uv run python -X utf8 tests/test_equilibrio.py
 O veículo e os números de camber abaixo são entradas de teste, não do carro.
 """
@@ -355,6 +356,46 @@ ok_018b = (eq.texto_veredito(_r(eq.PUSH), T09) == "DEMONSTRATIVO · ▲ PUSH: sa
            == "DEMONSTRATIVO · ? NÃO CONCLUSIVO: o sinal depende do pneu")
 check("TC-EQ-018: nome de fator inválido -> ValueError; textos exatos de 7.3 e prefixo DEMONSTRATIVO",
       ok_018a and ok_018b, f"{ok_018a}/{ok_018b}")
+
+# ---------------- TC-EQ-019 : planilha sem valores calculados ----------------
+import hashlib
+import tempfile
+
+import openpyxl
+
+import caso_planilha as cp
+import raizes
+
+with tempfile.TemporaryDirectory(prefix="dds_eq019_") as _tmp:
+    _f = os.path.join(_tmp, "sem_valores.xlsx")
+    _wb = openpyxl.Workbook()
+    _wb.remove(_wb.active)
+    for _aba in sorted({a for a, _ in cp.ENTRADAS_CASO.values()}):
+        _wb.create_sheet(_aba)
+    for _aba, _cel in cp.ENTRADAS_CASO.values():
+        _wb[_aba][_cel].value = "=1+1"
+    _wb.save(_f)
+    ok_019a = raises(lambda: cp.caso_da_planilha(_f, TIR), ValueError, "precisa ser recalculada")
+ok_019b = (len(cp.ENTRADAS_CASO) == 23 and cp.ENTRADAS_CASO["DF"] == ("08_VEHICLE_STATE", "B8")
+           and cp.ENTRADAS_CASO["bal"] == ("08_VEHICLE_STATE", "B9"))
+check("TC-EQ-019: planilha sem valor calculado -> ValueError 'precisa ser recalculada'; mapa de entradas",
+      ok_019a and ok_019b, f"{ok_019a}/{ok_019b}")
+
+# ---------------- TC-EQ-020 : pior origem da planilha viva (só leitura) ----------------
+VIVA = os.path.join(HERE, "..", "excel", "FSAE_EV_Suspension_Fase1_V3_0.xlsx")
+
+
+def _sha(p):
+    with open(p, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
+_h0 = _sha(VIVA)
+_pior = cp.pior_origem_do_caso(VIVA)
+_h1 = _sha(VIVA)
+ok_020 = _pior in raizes.PIOR_PRIMEIRO and _pior != "● Dado do TX" and _h0 == _h1
+check("TC-EQ-020: pior origem da viva é rótulo conhecido e não é TX; arquivo intacto (SHA-256)",
+      ok_020, f"pior = {_pior}")
 
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
