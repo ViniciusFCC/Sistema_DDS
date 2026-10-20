@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, em 2026-10-20). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 53 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 7 · AWAITING_DECISION: 6 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
+Total: 54 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
 
 | ID | Título | Status |
 |---|---|---|
@@ -68,7 +68,7 @@ Total: 53 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 7 · AWAITING_DEC
 | EDR-029 | D8 — Roll Center: funcionalidade exploratória e procedimento de validação | APPROVED_WITH_CONDITIONS |
 | EDR-030 | D7 — Camber/toe estáticos: referência x calculado; sem distância mínima universal | APPROVED_WITH_CONDITIONS |
 | EDR-031 | REQ-001/REQ-002 e proveniência do REQ-003 em 13_VALIDATION | VERIFIED |
-| EDR-032 | Geometry Brief — estrutura de interface especificação→CAD | IMPLEMENTED |
+| EDR-032 | Geometry Brief — estrutura de interface especificação→CAD | REOPENED |
 | EDR-033 | Escopo de AD/AS e anti-lift (frenagem regenerativa) | AWAITING_DECISION |
 | EDR-034 | Critérios de promoção DRAFT/CHECKED/FROZEN/STALE | AWAITING_DECISION |
 | EDR-035 | Semântica de N/A e TBD (e proveniência de dados) | APPROVED_WITH_CONDITIONS |
@@ -90,12 +90,14 @@ Total: 53 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 7 · AWAITING_DEC
 | EDR-051 | Fonte de verdade da planilha: gerada durante o desenvolvimento, viva depois de fechada a V3.0 | VERIFIED |
 | EDR-052 | Direção pela literatura: Ackermann, relação de direção, ride steer, roll steer e efeitos do pino mestre (SUS-414 a 416) | VERIFIED |
 | EDR-053 | Linha de força pelo trabalho virtual como definição primária do IC/RC no MODEL (SUS-412) | VERIFIED |
+| EDR-054 | Roadmap V0-V5 como plano do projeto; etapas E0-E5 e "V" só para revisão de artefatos | APPROVED_WITH_CONDITIONS |
 
 ## 3. Decisões que dependem do usuário (agora)
 
 - **EDR-018** (PENDING_CONFIRMATION): Consolidação do Decision Register da planilha (versão mais completa)
 - **EDR-023** (AWAITING_DECISION): D1 — Identificadores SUS-407 a SUS-413
 - **EDR-024** (AWAITING_DECISION): D2 — Schema de hardpoints V2.0
+- **EDR-032** (REOPENED): Geometry Brief — o artefato declarado não existe; decidir entre escrevê-lo ou substituir a decisão
 - **EDR-033** (AWAITING_DECISION): Escopo de AD/AS e anti-lift (frenagem regenerativa)
 - **EDR-034** (AWAITING_DECISION): Critérios de promoção DRAFT/CHECKED/FROZEN/STALE
 - **EDR-036** (AWAITING_DECISION): Decisão C — IDs para camber e toe estáticos (referência e calculado)
@@ -741,7 +743,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-032 — Geometry Brief — estrutura de interface especificação→CAD
 
 - **Date:** 2026-10-10
-- **Status:** IMPLEMENTED
+- **Status:** REOPENED (2026-10-20; antes IMPLEMENTED)
 - **Context:** A planilha vem antes como especificação; hoje contribui pouco.
 - **Question:** Criar a estrutura do brief?
 - **Alternatives:** Aba nova na planilha; artefato separado.
@@ -754,7 +756,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Affected_Tests:** Verificação estrutural manual
 - **Dependencies:** EDR-023, EDR-025, EDR-036
 - **Approval_Conditions:** Integração na planilha depende de decisão sobre aba nova.
-- **Reopening_Criteria:** Targets definidos pela equipe.
+- **Reopening_Criteria:** Targets definidos pela equipe. **Reaberto em 2026-10-20 (aprovado pelo usuário):** nova evidência contradiz a premissa de implementação — o `geometry-brief-V2.1.md` não existe (nota em Evidence), e um registro IMPLEMENTED sem artefato verificável não se sustenta. Próximo passo, decisão do usuário: escrever o brief (com os targets, quando existirem) ou substituir esta decisão.
 - **Related_Decisions:** EDR-015
 - **Source_Conversation_or_Document:** Prompt §11
 
@@ -1179,6 +1181,26 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-004, EDR-028, EDR-048, EDR-052.
 - **Source_Conversation_or_Document:** Conselho de 2026-10-19 (Pragmático, Cético, Arquiteto, especialista em cinemática; revisão anônima); help do OptimumKinematics §6.10, 7.3.3.13-23; Gillespie Apêndice A (J670); Milliken p. 612-620.
 
+### EDR-054 — Roadmap V0-V5 como plano do projeto; etapas E0-E5 e "V" só para revisão de artefatos
+
+- **Date:** 2026-10-20
+- **Status:** APPROVED_WITH_CONDITIONS
+- **Context:** O projeto tem dois roadmaps: o do Guia ([GUIA] §8.4-8.9: V1.0, V1.1, V2, V3, que o Guia chama de "Fase") e o [ROADMAP] V0-V5 recebido do usuário (`docs/arquitetura-planejada-roadmap-V0-V5.md`). Três numerações começam por "V" (os dois roadmaps e a revisão dos artefatos: planilha V3.0, próxima V4.0) e a palavra "Fase" tem quatro sentidos (etapa do Guia, como em `Fase1` no nome da planilha e em "PROVISÓRIO até a Fase 2"; fases A-J de processo do [ROADMAP]; fases A e B da migração, `SPEC.md`; "fase 2" da pior origem, EDR-035). A planilha V4.0 não tem relação com a etapa V4 (otimização) do [ROADMAP]. Análise em `docs/arquitetura-planejada.md` §1, §3, §4 e §7.
+- **Question:** Qual roadmap é o plano do projeto e como nomear as etapas sem colisão?
+- **Alternatives:** Plano: (a) o roadmap do Guia; (b) o [ROADMAP] V0-V5, com os complementos do Guia (`docs/arquitetura-planejada.md` §4); (c) um documento novo que funda os dois. Nomes: (i) "Fase 0" a "Fase 5" (colide com os outros três sentidos de "Fase"); (ii) "Etapa E0" a "Etapa E5".
+- **Decision:** (b) e (ii) (usuário, 2026-10-20, aceitando a recomendação do assistente). O [ROADMAP] V0-V5 é o plano; o Guia é a referência técnica do conteúdo da etapa 1 e complementa o [ROADMAP] nos pontos da `arquitetura-planejada.md` §4 (F0-F4, ciclo de vida de metas G.1, processo G.3, marcadores, proveniência, descarte de resultado). As etapas do [ROADMAP] passam a se chamar **E0** (fundação e governança), **E1** (dinâmica e dimensionamento), **E2** (cinemática), **E3** (pneu, CarSim e desempenho do veículo), **E4** (otimização) e **E5** (validação experimental). "V" fica reservado à revisão de artefatos (planilha V4.0, tags `vX.Y`). Os outros usos mantêm o nome, sempre com qualificador: "fase A-J do processo" ([ROADMAP]), "fase A/B da migração", "Fase 1/2 do Guia" (= E1/E2 quanto ao conteúdo, com a diferença registrada na `arquitetura-planejada.md` §3.1: o Guia põe compliance na V2, o [ROADMAP] em E5).
+- **Rationale:** O [ROADMAP] é mais recente e mais amplo (pneu, CarSim, otimização, validação experimental); o Guia é o documento técnico da equipe e já resolve pontos que o [ROADMAP] deixa "a definir". "Etapa E" não colide com nenhum nome em uso.
+- **Evidence:** `docs/arquitetura-planejada.md` §1 (três numerações), §3.1 (correspondência), §4 (complementos do Guia).
+- **Assumptions:** O [ROADMAP] é um documento do projeto aceito pelo usuário; sua origem não está registrada.
+- **Consequences:** Textos novos (documentos, especificação e planilha V4.0) usam "Etapa E0-E5". Os textos da planilha V3.0 não mudam (planilha fechada, CA-07); o "Fase1" do nome do arquivo continua significando a etapa 1 do Guia, e o nome do arquivo da V4.0 é decidido no plano de implementação. Não muda o foco do EDR-019 (completar a planilha).
+- **Affected_Artifacts:** `docs/arquitetura-planejada.md`; especificação da V4.0; textos da planilha V4.0.
+- **Affected_Tests:** —
+- **Dependencies:** EDR-019, EDR-043.
+- **Approval_Conditions:** Registrar a origem (autoria e data) do [ROADMAP]; até lá ele vale como plano, mas não é citado como documento da equipe.
+- **Reopening_Criteria:** A equipe adotar outro plano ou o Guia ganhar revisão que mude as etapas.
+- **Related_Decisions:** EDR-017, EDR-019, EDR-034, EDR-043.
+- **Source_Conversation_or_Document:** Conversa de 2026-10-20 (lista consolidada da V4.0, decisão B8; conselho rigoroso de 7 assentos).
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1236,6 +1258,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-051 | — | planilha V3.0 (00_README, 15_CHANGELOG); comparar_planilhas (comparar_viva); rodar_testes; atualizar_planilha (celulas_de_entrada, trava da viva); extrato_entradas; CLAUDE.md. | CA-07 (regeneração e viva), CA-09 na referência, autoteste 11-15 |
 | EDR-052 | SUS-408, SUS-410, SUS-413, SUS-414, SUS-415, SUS-416, SUS-601 | kinematics_model; planilha V3.0 (07 l. 71-85); Standard. | TC-KIN-121..127, TC-WB30-015 |
 | EDR-053 | SUS-301, SUS-302, SUS-412 | kinematics_model; Standard; planilha V3.0 (07 F10:F13). | TC-KIN-120, TC-KIN-128 |
+| EDR-054 | — | docs/arquitetura-planejada.md; especificação da V4.0. | — |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
