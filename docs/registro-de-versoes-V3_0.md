@@ -153,6 +153,25 @@ arquivo provisório fica confirmada em primeira mão. A equipe usa o R60A, não 
 2. A coluna de pior origem lê os rótulos ao vivo, mas a lista de células de origem de cada resultado é a da geração. Depois do fechamento da V3.0 (planilha viva, EDR-051), se alguém mudar a fórmula de um resultado para usar outra entrada, a coluna E não acompanha sozinha: a próxima geração, ou o TC-WB30-014, mostra a diferença. O mapa V2.1 fica como registro da auditoria (e continua usado pelo TC-WB30-010).
 3. Raízes sem coluna Origem (texto de setup, sinais de eixo do pneu, ε da 10_TIRE, caso VERIF, referências do Python na 13_VALIDATION) não entram na pior origem; aparecem no mapa como "sem rótulo".
 
+## Fechamento da V3.0 (2026-10-20)
+
+Decisão do usuário: "Vamos fechar a V.3.0" (sem esperar as metas; o FB-04 passa para a V3.1). O tratamento do CA-07 foi
+decidido por conselho de 4 lentes com revisão anônima, a pedido do usuário (EDR-051, que fica VERIFIED).
+
+| O que | Como fica |
+|---|---|
+| Referência da V3.0 | O arquivo gravado na tag `v3.0` (imutável). A tag é criada no merge do PR desta rodada |
+| Planilha da árvore | Arquivo vivo da equipe. O gerador recusa gravar por cima dela |
+| CA-07, regeneração | V2.4 → `atualizar_planilha.py` igual à referência célula a célula (como antes) |
+| CA-07, viva | Igual à referência em tudo menos as 311 células de entrada (`celulas_de_entrada()`); Origem dentro dos 6 rótulos; validações, formatação condicional, nomes e colunas ocultas iguais (normalizados para o que o Excel grava) |
+| CA-09 | `test_workbook` e `test_workbook_suspensao` rodam sobre a referência |
+| V3.1 | Migração sobre um retrato commitado da viva, com pré-condição em cada célula escrita; conflitos com o preenchimento são listados, não sobrescritos |
+| Dados | Commits `dados: ...` separados de código; extrato `tools/extrato_entradas.py` para o diff |
+| Salvar pelo Excel | Permitido para a viva (verificado: não muda fórmulas nem valores); LibreOffice continua proibido |
+
+Na planilha, só texto: versão (00_README A3), item 5 do guia (o que a equipe pode e não pode fazer) e linha 19 do
+15_CHANGELOG. **Em aberto:** o local oficial onde a equipe edita a viva (decisão do usuário).
+
 ## Alterações célula a célula (gerado por `python/atualizar_planilha.py --registro`)
 
 | Aba | Célula | Antes | Depois | Fonte / EDR |
@@ -715,6 +734,22 @@ arquivo provisório fica confirmada em primeira mão. A equipe usa o R60A, não 
 | 00_README | A3 | Versão do workbook: V3.0 ... | (acrescenta a 1ª rodada de feedback) | EDR-035/050/051 |
 | 00_README | A39:E52 (mesclagem) | (vazia) | A:E nas linhas de texto; B:D na tabela de origens | FB-06 |
 | 15_CHANGELOG | A17:C17 | (vazia) | (linha V3.0, 1ª rodada de feedback) | EDR-035/050/051 |
+| 10_TIRE | A177 | (vazia) | LKYG | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | B177 | (vazia) | 1.0 | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | G177 | (vazia) | - | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | H177 | (vazia) | SUS-501 | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | I177 | (vazia) | Escala da rigidez de camber Kyγ0 (termos de camber de SHy e SVy) | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | B57 | `=IF(B$26<>"OK","N/A",($B$147+$B$148*B$40)*$B$109+$B$149*B$55)` | `=IF(B$26<>"OK","N/A",($B$147+$B$148*B$40)*$B$109+$B$149*B$55*$B$177)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | B64 | `=IF(B$26<>"OK","N/A",B$22*(($B$150+$B$151*B$40)*$B$110+($B$152+$B$153*B$40)*B$55)*$B$106)` | `=IF(B$26<>"OK","N/A",B$22*(($B$150+$B$151*B$40)*$B$110+($B$152+$B$153*B$40)*B$55*$B$177)*$B$106)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | C57 | `=IF(C$26<>"OK","N/A",($B$147+$B$148*C$40)*$B$109+$B$149*C$55)` | `=IF(C$26<>"OK","N/A",($B$147+$B$148*C$40)*$B$109+$B$149*C$55*$B$177)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | C64 | `=IF(C$26<>"OK","N/A",C$22*(($B$150+$B$151*C$40)*$B$110+($B$152+$B$153*C$40)*C$55)*$B$106)` | `=IF(C$26<>"OK","N/A",C$22*(($B$150+$B$151*C$40)*$B$110+($B$152+$B$153*C$40)*C$55*$B$177)*$B$106)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | D57 | `=IF(D$26<>"OK","N/A",($B$147+$B$148*D$40)*$B$109+$B$149*D$55)` | `=IF(D$26<>"OK","N/A",($B$147+$B$148*D$40)*$B$109+$B$149*D$55*$B$177)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | D64 | `=IF(D$26<>"OK","N/A",D$22*(($B$150+$B$151*D$40)*$B$110+($B$152+$B$153*D$40)*D$55)*$B$106)` | `=IF(D$26<>"OK","N/A",D$22*(($B$150+$B$151*D$40)*$B$110+($B$152+$B$153*D$40)*D$55*$B$177)*$B$106)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | E57 | `=IF(E$26<>"OK","N/A",($B$147+$B$148*E$40)*$B$109+$B$149*E$55)` | `=IF(E$26<>"OK","N/A",($B$147+$B$148*E$40)*$B$109+$B$149*E$55*$B$177)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | E64 | `=IF(E$26<>"OK","N/A",E$22*(($B$150+$B$151*E$40)*$B$110+($B$152+$B$153*E$40)*E$55)*$B$106)` | `=IF(E$26<>"OK","N/A",E$22*(($B$150+$B$151*E$40)*$B$110+($B$152+$B$153*E$40)*E$55*$B$177)*$B$106)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | F57 | `=IF(F$26<>"OK","N/A",($B$147+$B$148*F$40)*$B$109+$B$149*F$55)` | `=IF(F$26<>"OK","N/A",($B$147+$B$148*F$40)*$B$109+$B$149*F$55*$B$177)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | F64 | `=IF(F$26<>"OK","N/A",F$22*(($B$150+$B$151*F$40)*$B$110+($B$152+$B$153*F$40)*F$55)*$B$106)` | `=IF(F$26<>"OK","N/A",F$22*(($B$150+$B$151*F$40)*$B$110+($B$152+$B$153*F$40)*F$55*$B$177)*$B$106)` | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
+| 10_TIRE | J84 | Todos os coeficientes da tabela abaixo (B86:B175) foram transcritos do .tir provisório (ver os metadados acima). REFERENCE por natureza (DR-011), mas o dataset é provisório. Mudou o dataset: mudar o Tire REV (01_SETUP) e reexecutar 13_VALIDATION; os resultados antigos viram STALE. | Todos os coeficientes da tabela abaixo (B86:B175 e o LKYG em B177) foram transcritos do .tir provisório (ver os metadados acima). REFERENCE por natureza (DR-011), mas o dataset é provisório. Mudou o dataset: mudar o Tire REV (01_SETUP) e reexecutar 13_VALIDATION; os resultados antigos viram STALE. | EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20) |
 | 00_README | A53:E53 (mesclagem) | (vazia) | A:E | EDR-035 |
 | 00_README | A3 | Versão do workbook: V3.0 ... | (acrescenta a 2ª rodada da revisão metodológica) | EDR-035/050 |
 | 15_CHANGELOG | A18:C18 | (vazia) | (linha V3.0, 2ª rodada da revisão metodológica) | EDR-035/050 |
@@ -742,3 +777,6 @@ arquivo provisório fica confirmada em primeira mão. A equipe usa o R60A, não 
 | 00_README | A37 | • Pneu (10_TIRE): coeficientes de um .tir TTC PROVISÓRIO (pode não ser o pneu real); arquivo em SAE (TTC, declarado) transformado para ISO, sinal de camber não confirmado; sem Mx/My/Mz, pressão ou relaxamento; fora da faixa do dataset o resultado é N/A. μ efetivo é derivado do dataset, não medido pela equipe. | • Pneu (10_TIRE): coeficientes de um .tir TTC PROVISÓRIO (pode não ser o pneu real); arquivo em ISO (eixo W do TYDEX, como manda o help do Adams para o PAC2002; EDR-039); sem Mx/My/Mz, pressão ou relaxamento; fora da faixa do dataset o resultado é N/A. μ efetivo é derivado do dataset, não medido pela equipe. | EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7 |
 | 04_DECISION_REGISTER | E17 | Sistema de eixos do arquivo = SAE (Calspan/TTC), DECLARADO pelo usuario (dados baixados do TTC), transformado para ISO (alpha_arq=-alpha, Fy_ISO=-Fy_arq; camber: empuxo para o lado da inclinacao, INFERIDO: IA do TTC nao verificado). Espelhamento das rodas esquerdas (arquivo e Right) e hipotese de projeto. Equacoes: verificadas (V2.3) contra duas implementacoes de terceiros (Racer CalcMF52 e ramo MF5.2 do MFeval; 3000 pontos, dif <= 3e-4 N) e por limites analiticos (tire_model_V2_2.py); NAO validadas contra o livro (Pacejka) nem contra medicao/OptimumTire: Validation = NOT_VALIDATED. Mx/My/Mz, pressao e relaxamento fora de escopo. | Sistema de eixos do arquivo = ISO (eixo W do TYDEX): o .tir e PAC2002 do Adams, cujos parametros valem sempre no TYDEX W (help do Adams 2024.1, p. 7; EDR-039 reaberto na V3.0). Ate a V2.4 era declarado SAE (Calspan/TTC), com o sinal do camber inferido. Espelhamento das rodas esquerdas (arquivo e Right) e hipotese de projeto. Equacoes: verificadas (V2.3) contra duas implementacoes de terceiros (Racer CalcMF52 e ramo MF5.2 do MFeval; 3000 pontos, dif <= 3e-4 N) e por limites analiticos (tire_model_V2_2.py); NAO validadas contra o livro (Pacejka) nem contra medicao/OptimumTire: Validation = NOT_VALIDATED. Mx/My/Mz, pressao e relaxamento fora de escopo. | EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7 |
 | 10_TIRE | B21 (comentário) | Dataset é de pneu Right (TYRESIDE). Rodas L usam espelhamento (H4, decisão de projeto provisória): α_R=−α e Fy_L=−Fy_R; o camber do projeto (+ = topo para fora) vale nos dois lados. Depois, transformação de eixos do arquivo (SAE_CALSPAN→ISO). VERIF = pneu direito, caso fixo de verificação contra Python. | Dataset é de pneu Right (TYRESIDE). Rodas L usam espelhamento (H4; equivale ao espelhamento do Adams em relação a α = 0, help p. 73-74): α_R=−α e Fy_L=−Fy_R; o camber do projeto (+ = topo para fora) vale nos dois lados. Depois, transformação de eixos do arquivo (ISO_TYDEX = identidade). VERIF = pneu direito, caso fixo de verificação contra Python. | EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7 |
+| 00_README | A3 | Versão do workbook: V3.0 (em desenvolvimento ... | Versão do workbook: V3.0 (fechada em 2026-10-20 ... | EDR-051 (fechamento da V3.0, 2026-10-20) |
+| 00_README | A51 | 5. Até a V3.0 ser fechada, esta planilha é gerada pelo script do repositório e o que for digitado nela se perde na próxima geração (EDR-051). Depois do fechamento, ela passa a ser o arquivo da equipe. | 5. Esta é a planilha da equipe (V3.0 fechada, EDR-051). Preencha só as entradas (valor, Origem e Fonte), as metas da 03_TARGETS e o setup da 01_SETUP. Não insira nem apague linhas, colunas ou abas, não troque fórmula por valor e não salve pelo LibreOffice. Mudança de fórmula ou de estrutura só pelo script do repositório, com aprovação. Resultado calculado com dado novo não é validado (NOT_VALIDATED) até alguém conferir. | EDR-051 (fechamento da V3.0, 2026-10-20) |
+| 15_CHANGELOG | A19:C19 | (vazia) | (linha do fechamento da V3.0) | EDR-051 (fechamento da V3.0, 2026-10-20) |
