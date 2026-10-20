@@ -5,7 +5,7 @@ ficam fora do Git (SPEC D3); só este índice é versionado.
 
 | Arquivo | Onde está | Observação |
 |---|---|---|
-| `Definitive_Guide_DDS.pdf` | `importado-claude-ai/conhecimento/` | importado do claude.ai |
+| `Definitive_Guide_DDS.pdf` (*Guia Definitivo de Dimensionamento Dinâmico da Suspensão*, EESC-USP Tupã) | `references/pdf/`; OCR em `references/md/definitive-guide/livro.md` | recebido do usuário em 2026-10-20 (a cópia em `importado-claude-ai/conhecimento/` tem 304 bytes e não abre). 153 folhas sem camada de texto; OCR docling + EasyOCR (pt, en) com `<!-- pdf:N -->` por folha. Página impressa = rodapé "N/140"; conferir citações na imagem. Resumo da arquitetura em `docs/arquitetura-planejada.md` |
 | Milliken & Milliken, *Race Car Vehicle Dynamics*, SAE R-146, 1995, 5ª impressão | `references/pdf/`; conversão em `references/md/milliken-rcvd/livro.md` | digitalização sem camada de texto, duas páginas por folha. Página impressa p (par) na folha PDF n = (p + 38)/2 de p. 588 a 708 e n = (p + 36)/2 de p. 48 a 66 (conferido); fora disso, conferir no cabeçalho da página |
 | T. D. Gillespie, *Fundamentals of Vehicle Dynamics*, SAE | `references/pdf/`; conversão em `references/md/gillespie-fvd/livro.md` | digitalização; edição a confirmar (o PDF não tem a página de créditos). Folhas PDF 54 a 222 têm duas páginas: p na folha (p + 70)/2 |
 | D. Seward, *Race Car Design*, Palgrave, 2014 | `references/pdf/`; conversão em `references/md/seward-rcd/livro.md` | digitalização; página PDF = p + 11 (conferido em p. 89 e 132) |
