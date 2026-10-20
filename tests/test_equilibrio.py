@@ -3,10 +3,12 @@ Testes do módulo equilibrio (análise de par, Milliken §7.1; V4.0, incremento 
 TC-EQ-001..003 (IDs autorizados pelo usuário): caso, cargas e camber por roda.
 TC-EQ-004..008 (idem): curva do eixo, capacidade, borda da grade, faixa do pneu e sinal do toe.
 TC-EQ-009..015 (idem): análise de par (força exigida, saturação, veredito e C_N, Milliken §7.1 e §8.4).
+TC-EQ-016..018 (idem): robustez do veredito ao pneu, nomes de fator e texto do veredito (spec 7.3 e 7.6).
 Roda como script: uv run python -X utf8 tests/test_equilibrio.py
 O veículo e os números de camber abaixo são entradas de teste, não do carro.
 """
 
+import copy
 import dataclasses
 import math
 import os
@@ -310,6 +312,49 @@ erros = [raises(lambda: eq.analise_par(caso0, ay_max_g=0)),
          raises(lambda: eq.analise_par(caso0, passo_g=-0.05)),
          raises(lambda: eq.analise_par(caso0, n_alfa=2))]
 check("TC-EQ-015: ay_max_g=0, passo_g=-0,05 e n_alfa=2 -> ValueError cada um", all(erros), f"{erros}")
+
+# ---------------- TC-EQ-016 : robustez ao pneu (spec 7.6) ----------------
+_M = "mesmo sinal na varredura exploratória do pneu"
+_dep = (eq.NAO_CONCLUSIVO, "o sinal depende do pneu")
+ok_016 = (eq.veredito_robusto([eq.PUSH, eq.PUSH]) == (eq.PUSH, _M)
+          and eq.veredito_robusto([eq.LOOSE, eq.LOOSE]) == (eq.LOOSE, _M)
+          and eq.veredito_robusto([eq.PUSH, eq.LOOSE]) == _dep
+          and eq.veredito_robusto([eq.PUSH, eq.NEUTRO]) == _dep
+          and eq.veredito_robusto([eq.PUSH, eq.NA]) == _dep
+          and eq.veredito_robusto([eq.NA, eq.NA]) == (eq.NA, "N/A em toda a varredura")
+          and eq.veredito_robusto([]) == (eq.NA, "robustez ao pneu não avaliada"))
+check("TC-EQ-016: veredito_robusto (PUSH/PUSH, LOOSE/LOOSE, inversão, NEUTRO, N/A misto, N/A, vazio)", ok_016)
+
+# ---------------- TC-EQ-017 : varredura do pneu ----------------
+# Grade reduzida e fatores abaixo são só de teste, não são amplitudes do EDR-055.
+_kw = dict(ay_max_g=1.0, passo_g=0.1, n_alfa=9)
+v1 = eq.varredura_pneu(caso0, {"LMUY": [1.0]}, **_kw)
+ok_017a = (len(v1) == 1 and v1[0][0] == {"LMUY": 1.0} and v1[0][1] == eq.analise_par(caso0, **_kw))
+p_antes = copy.deepcopy(ds.p)
+v4 = eq.varredura_pneu(caso0, {"LFZO": [0.9, 1.1], "LKY": [0.9, 1.1]}, **_kw)
+ok_017b = len(v4) == 4 and ds.p == p_antes and caso0.ds is ds
+ok_017c = eq.varredura_pneu(caso0, {}, **_kw) == []
+check("TC-EQ-017: fator 1,0 reproduz analise_par; 4 combinações; ds.p intacto; dict vazio -> []",
+      ok_017a and ok_017b and ok_017c, f"{ok_017a}/{ok_017b}/{ok_017c}")
+
+# ---------------- TC-EQ-018 : nomes de fator e texto do veredito ----------------
+erros_018 = [raises(lambda: eq.com_fatores(ds, {"PDY2": 1.1})),
+             raises(lambda: eq.com_fatores(ds, {"LMUX ": 1.0})),
+             raises(lambda: eq.com_fatores(ds, {"LXYZ": 1.0}))]
+ds_f = eq.com_fatores(ds, {"LMUY": 0.5})
+ok_018a = all(erros_018) and ds_f.p["LMUY"] == ds.p["LMUY"] * 0.5 and ds.p == p_antes
+_r = lambda v, m=None: eq.ResultadoPar(linhas=(), passo_ms2=0.0, ay_sat_f=None, ay_sat_r=None,
+                                       ay_lim=None, veredito=v, motivo=m, c_n=None)
+TX, T09 = "● Dado do TX", "◐ Dado do T09"
+ok_018b = (eq.texto_veredito(_r(eq.PUSH), T09) == "DEMONSTRATIVO · ▲ PUSH: sai de frente (final understeer)"
+           and eq.texto_veredito(_r(eq.LOOSE), TX) == "▼ LOOSE: sai de traseira (final oversteer)"
+           and eq.texto_veredito(_r(eq.NEUTRO), TX) == "● NEUTRO no limite"
+           and eq.texto_veredito(_r(eq.NA, "motivo x"), TX) == "N/A: motivo x"
+           and eq.texto_veredito(_r(eq.PUSH), TX, (eq.PUSH, "mesmo")) == "▲ PUSH: sai de frente (final understeer)"
+           and eq.texto_veredito(_r(eq.PUSH), T09, _dep)
+           == "DEMONSTRATIVO · ? NÃO CONCLUSIVO: o sinal depende do pneu")
+check("TC-EQ-018: nome de fator inválido -> ValueError; textos exatos de 7.3 e prefixo DEMONSTRATIVO",
+      ok_018a and ok_018b, f"{ok_018a}/{ok_018b}")
 
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
