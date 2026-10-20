@@ -16,9 +16,9 @@
     "angle": "radians"
   },
   "tire_description": "Hoosier R25B 177.8/53.6R13, aro 13x7, 12 psi, 25 mph (cabecalho do .tir)",
-  "convention_status": "USER_ASSERTED",
-  "convention_evidence": "Declarado pelo usuario (2026-10-14): dados baixados direto do TTC, que usa a convencao SAE. Fonte secundaria (tese UNCC 2015, dado bruto TTC): alpha>0 = curva a esquerda; Fy<0 e Mz<0 para alpha>0; Fz negativo. O .tir tem Fz positivo (processado). NAO confirmado pela documentacao do TTC. Sinais do arquivo por avaliacao (referencial do arquivo): Fy<0 para alpha>0, Fy<0 para camber>0, Fx>0 para kappa>0. A afirmacao anterior 'compativel com ISO' foi retirada: alpha e Fy trocam de sinal juntos entre SAE e ISO, entao o pareamento nao discrimina.",
-  "mirroring_rule_for_left_wheels": "aplicada ANTES da transformacao: alpha_R=-alpha_L; Fy_L=-Fy_R_ISO; camber do projeto (+ = topo para fora) igual nos dois lados (hipotese H4, decisao de projeto provisoria)",
+  "convention_status": "CONFIRMED",
+  "convention_evidence": "EDR-039 reaberto (usuario, 2026-10-19): o arquivo e PAC2002 do Adams (TIRE_VERSION PAC2002 2018, COMPATIBILITY Adams Tire 2018); o help do Adams 2024.1 'Using the PAC2002 Tire Model', p. 7, diz que os parametros do arquivo valem sempre no eixo W do TYDEX (orientacao ISO). Confere com a avaliacao do arquivo: Fy<0 para alpha>0 e Fy<0 para camber>0 (Pacejka App. 1, p. 612: so no ISO o camber positivo desloca Fy para baixo). Ate a V2.4: SAE_CALSPAN declarado pelo usuario, com o sinal de camber inferido. Declarado pelo usuario (2026-10-14): dados baixados direto do TTC, que usa a convencao SAE. Fonte secundaria (tese UNCC 2015, dado bruto TTC): alpha>0 = curva a esquerda; Fy<0 e Mz<0 para alpha>0; Fz negativo. O .tir tem Fz positivo (processado). NAO confirmado pela documentacao do TTC. Sinais do arquivo por avaliacao (referencial do arquivo): Fy<0 para alpha>0, Fy<0 para camber>0, Fx>0 para kappa>0. A afirmacao anterior 'compativel com ISO' foi retirada: alpha e Fy trocam de sinal juntos entre SAE e ISO, entao o pareamento nao discrimina.",
+  "mirroring_rule_for_left_wheels": "aplicada ANTES da transformacao: alpha_R=-alpha_L; Fy_L=-Fy_R_ISO; camber do projeto (+ = topo para fora) igual nos dois lados (hipotese H4, decisao de projeto provisoria) (equivale ao espelhamento do Adams em relacao a alpha=0, help p. 73-74)",
   "pressure_effects": "omitidos (IP=IP_NOM e PP*=0 exigidos pelo loader)",
   "imported_sections": [
     "SCALING (L* usados)",
@@ -55,18 +55,18 @@
       0.25
     ]
   },
-  "source_axis_system": "SAE_CALSPAN",
+  "source_axis_system": "ISO_TYDEX",
   "transform_to_iso8855_right_wheel": {
-    "alpha_file": "-alpha_ISO",
-    "Fy_ISO": "-Fy_file",
-    "gamma_file": "-gamma_project (INFERENCIA: empuxo de camber aponta para o lado da inclinacao; definicao de IA do TTC nao verificada)",
+    "alpha_file": "alpha_ISO",
+    "Fy_ISO": "Fy_file",
+    "gamma_file": "gamma_project (roda direita; topo para fora = gamma ISO positivo)",
     "Fx": "igual",
     "kappa": "igual",
     "Fz": "positivo"
   },
   "open_items": [
-    "definicao de IA (inclinacao) e de SA no documento do TTC",
     "comparacao da grade tire_comparison_grid_V2_3.csv com OptimumTire 2/Adams",
-    "dataset real"
+    "dataset real",
+    "origem confirmada: TTC Round 6, Hoosier R25B 20.5x7-13 em aro de 7 in, 12 psi (pacote do forum do TTC, 2026-10-19)"
   ]
 }

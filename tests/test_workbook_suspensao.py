@@ -4,6 +4,9 @@ Recalcula CÓPIAS pelo Excel (COM) ou pelo LibreOffice (EDR-044; recalculo_plani
 Uso: uv run python -X utf8 tests/test_workbook_suspensao.py [<V3_0.xlsx>]   (padrão: excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx)
 Namespace TC-WB30-xxx. "Passou" = Excel reproduz o suspension_model/kinematics_model (tol. 1e-9 relativa), não validação física.
 TC-WB30-010 a 013 (1ª rodada de feedback): origem de cada entrada, lista, cores e avisos (EDR-035) e valores derivados como fórmula (EDR-050).
+TC-WB30-013 estendido na 2ª rodada da revisão metodológica: razão h_ns / raio como entrada (05 B35/B36) e 07 B14 separado do CG não suspenso.
+TC-WB30-014 (2ª rodada da revisão metodológica, ID autorizado pelo usuário em 2026-10-19): pior origem ao vivo no 14_DASHBOARD (FB-03 fase 2).
+TC-WB30-015: bloco de direção da 07_KINEMATICS (SUS-414, SUS-415, SUS-601; EDR-052) contra o kinematics_model.
 """
 import csv, math, os, random, shutil, sys, tempfile, warnings
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
@@ -35,13 +38,15 @@ ENTRADAS = {
     "KarbF": ("06_SUSPENSION", "B10"), "KarbR": ("06_SUSPENSION", "B11"), "zF": ("06_SUSPENSION", "B14"), "zR": ("06_SUSPENSION", "B15"),
     "FBf": ("06_SUSPENSION", "B36"), "TFr": ("06_SUSPENSION", "B37"), "KTF": ("06_SUSPENSION", "B47"), "KTR": ("06_SUSPENSION", "B48"),
     "zICF": ("07_KINEMATICS", "B10"), "dxF": ("07_KINEMATICS", "B11"), "zICR": ("07_KINEMATICS", "B12"), "dxR": ("07_KINEMATICS", "B13"),
+    "zWR": ("07_KINEMATICS", "B14"),
     "ax": ("08_VEHICLE_STATE", "B4"), "ay": ("08_VEHICLE_STATE", "B5"), "DF": ("08_VEHICLE_STATE", "B8"), "bal": ("08_VEHICLE_STATE", "B9"),
     "fF": ("11_DESIGN", "B4"), "fR": ("11_DESIGN", "B5"), "lam": ("11_DESIGN", "B18"),
 }
 # EDR-050: estas entradas são calculadas na V3.0 a partir das parcelas abaixo; o teste lê o valor, mas só escreve as parcelas.
-DERIVADAS = {"m", "a", "b", "huF", "huR", "ay"}
+DERIVADAS = {"m", "a", "b", "huF", "huR", "ay", "zWR"}
 PARCELAS = {"m_med": ("05_VEHICLE", "B30"), "m_pil": ("05_VEHICLE", "B31"), "f": ("05_VEHICLE", "B32"),
-            "D_F": ("05_VEHICLE", "B33"), "D_R": ("05_VEHICLE", "B34"), "ay_g": ("08_VEHICLE_STATE", "B11")}
+            "D_F": ("05_VEHICLE", "B33"), "D_R": ("05_VEHICLE", "B34"), "ay_g": ("08_VEHICLE_STATE", "B11"),
+            "rF": ("05_VEHICLE", "B35"), "rR": ("05_VEHICLE", "B36")}   # razão h_ns / raio (2ª rodada da revisão metodológica)
 SAIDAS = {   # nome -> (aba, célula)
     "msF": ("05_VEHICLE", "B25"), "msR": ("05_VEHICLE", "B26"), "a_s": ("05_VEHICLE", "B27"), "hs": ("05_VEHICLE", "B24"),
     "KwF": ("06_SUSPENSION", "B18"), "KwR": ("06_SUSPENSION", "B19"), "KphiF": ("06_SUSPENSION", "B22"), "KphiR": ("06_SUSPENSION", "B23"),
@@ -78,7 +83,7 @@ def python_ref(x):
         "KwF": KwF, "KwR": KwR, "KphiF": KphiF, "KphiR": KphiR, "lamF": KphiF / (KphiF + KphiR), "mcF": mc["FL"], "mcR": mc["RL"],
         "fnF": sm.natural_frequency(KRF, mc["FL"]), "fnR": sm.natural_frequency(KRR, mc["RL"]), "KRF": KRF, "KRR": KRR,
         "AD": km.anti_dive_percent_signed(x["zICF"] / x["dxF"], x["FBf"], x["L"], x["h"]),
-        "AS": km.anti_squat_percent_signed((x["zICR"] - x["huR"]) / x["dxR"], x["TFr"], x["L"], x["h"]),
+        "AS": km.anti_squat_percent_signed((x["zICR"] - x["zWR"]) / x["dxR"], x["TFr"], x["L"], x["h"]),
         "zs": lat["z_s"], "dFzF": lat["front_axle"], "dFzR": lat["rear_axle"], "phi": lat["roll_angle_rad"], **fz,
         "KwFd": KwFd, "KwRd": KwRd, "KsFd": sm.spring_rate_from_wheel_rate(KwFd, x["MRF"]), "KsRd": sm.spring_rate_from_wheel_rate(KwRd, x["MRR"]),
         "KphiFd": KphiFd, "KarbFd": sm.arb_required(KphiFd, KwF, x["tF"], x["KTF"]),
@@ -127,16 +132,24 @@ check("TC-WB30-004: K_T de 06_SUSPENSION é o VERTICAL_STIFFNESS do .tir provis�
 # ---------- EDR-050: valores derivados como fórmula, com as parcelas como entrada ----------
 wbf = openpyxl.load_workbook(V30)
 DERIV = {("05_VEHICLE", "B4"): ("$B$30", "$B$31"), ("05_VEHICLE", "B9"): ("$B$6", "$B$32"), ("05_VEHICLE", "B10"): ("$B$6", "$B$32"),
-         ("05_VEHICLE", "B16"): ("$B$33",), ("05_VEHICLE", "B17"): ("$B$34",), ("08_VEHICLE_STATE", "B5"): ("$B$11",)}
+         ("05_VEHICLE", "B16"): ("$B$33", "$B$35"), ("05_VEHICLE", "B17"): ("$B$34", "$B$36"), ("08_VEHICLE_STATE", "B5"): ("$B$11",),
+         ("07_KINEMATICS", "B14"): ("'05_VEHICLE'!$B$34",)}
 eh_formula = all(str(wbf[a][c].value).startswith("=") and all(r in wbf[a][c].value for r in refs) for (a, c), refs in DERIV.items())
+eh_formula = eh_formula and "$B$17" not in wbf["07_KINEMATICS"]["B14"].value   # centro da roda ≠ CG não suspenso (2ª rodada da revisão metodológica)
 v5, v8 = wbv["05_VEHICLE"], wbv["08_VEHICLE_STATE"]
 esperado = {"B4": 316.5, "B9": 1.594 * (1 - 0.4843), "B10": 1.594 * 0.4843, "B16": 0.254, "B17": 0.254}
-dif = max([abs(v5[k].value - e_) for k, e_ in esperado.items()] + [abs(v8["B5"].value - 11.772)])
-parcelas = [v5["B30"].value, v5["B31"].value, v5["B32"].value, v5["B33"].value, v5["B34"].value, v8["B11"].value]
-check("TC-WB30-013: B4, B9, B10, B16, B17 (05) e B5 (08) são fórmula das parcelas e reproduzem os valores digitados antes "
-      "(a e b só diferem pelo arredondamento antigo, < 1e-5 m)",
-      eh_formula and dif < 1e-12 and parcelas == [248.5, 68, 0.4843, 20, 20, 1.2]
-      and abs(v5["B9"].value - 0.82203) < 1e-5 and abs(v5["B10"].value - 0.77197) < 1e-5, f"dif={dif:.1e}; parcelas={parcelas}")
+dif = max([abs(v5[k].value - e_) for k, e_ in esperado.items()] + [abs(v8["B5"].value - 11.772)]
+          + [abs(wbv["07_KINEMATICS"]["B14"].value - 0.254)])
+parcelas = [v5["B30"].value, v5["B31"].value, v5["B32"].value, v5["B33"].value, v5["B34"].value, v8["B11"].value,
+            v5["B35"].value, v5["B36"].value]
+# Mudar a razão h_ns / raio move o CG não suspenso e não move o centro da roda (07 B14).
+_, wbr = scenario({("05_VEHICLE", "B35"): 0.8, ("05_VEHICLE", "B36"): 0.9})
+sep = (abs(wbr["05_VEHICLE"]["B16"].value - 0.8 * 0.254) < 1e-12 and abs(wbr["05_VEHICLE"]["B17"].value - 0.9 * 0.254) < 1e-12
+       and abs(wbr["07_KINEMATICS"]["B14"].value - 0.254) < 1e-12)
+check("TC-WB30-013: B4, B9, B10, B16, B17 (05), B5 (08) e 07 B14 são fórmula das parcelas e reproduzem os valores digitados antes "
+      "(a e b só diferem pelo arredondamento antigo, < 1e-5 m); a razão h_ns / raio (B35/B36) move só o CG não suspenso",
+      eh_formula and dif < 1e-12 and sep and parcelas == [248.5, 68, 0.4843, 20, 20, 1.2, 1, 1]
+      and abs(v5["B9"].value - 0.82203) < 1e-5 and abs(v5["B10"].value - 0.77197) < 1e-5, f"dif={dif:.1e}; sep={sep}; parcelas={parcelas}")
 
 # ---------- perturbações aleatórias de todas as entradas ----------
 rnd = random.Random(20261019)
@@ -253,6 +266,74 @@ check("TC-WB30-012: cores e avisos da Origem (E) e da Fonte (F) nas 5 abas, G/H 
       "semântica: valor mudou com a mesma origem -> aviso; origem trocada -> sem aviso; Dado do TX sem fonte -> aviso",
       regras_ok and ocultas_ok and copia_ok and z == [True, False, False, False, True, False] and info["total_errors"] == 0,
       f"regras={regras_ok}; ocultas={ocultas_ok}; G/H={copia_ok}; avaliação={z}")
+
+# ---------- FB-03 fase 2: pior origem ao vivo no 14_DASHBOARD (2ª rodada da revisão metodológica) ----------
+import raizes
+PIOR = [CONF, ARB, EST, TTC, T09, TX]          # ordem aprovada pelo usuário (2026-10-19), escrita aqui de novo de propósito
+LINHAS_DASH = (7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 33, 34, 35, 36, 37)
+g = raizes.Grafo(wbf)
+dsh = wbf["14_DASHBOARD"]
+cobertura, esperado_dash = [], {}
+for r in LINHAS_DASH:
+    f_ = str(dsh[f"E{r}"].value)
+    lidas = set(raizes.referencias(f_, "14_DASHBOARD", nomes=g.nomes)) - {("00_README", f"A{k}") for k in range(43, 49)}
+    devidas = set(g.celulas_origem(("14_DASHBOARD", f"B{r}")))
+    if not f_.startswith("=") or lidas != devidas:
+        cobertura.append((r, sorted(devidas - lidas), sorted(lidas - devidas)))
+    orig = [wbf[a][c].value for a, c in devidas]
+    esperado_dash[r] = next(o for o in PIOR if o in orig or (o == CONF and any(v not in ROTULOS for v in orig)))
+info, wbd = scenario({})
+base_dash = {r: wbd["14_DASHBOARD"][f"E{r}"].value for r in LINHAS_DASH}
+# Semântica ao vivo: troca de origem numa entrada muda o resultado; origem apagada conta como "? A confirmar".
+info2, wbd2 = scenario({("05_VEHICLE", "E5"): CONF,                                   # altura do CG (TX) -> ? A confirmar
+                        ("06_SUSPENSION", "E4"): None,                                # mola dianteira: origem apagada
+                        ("06_SUSPENSION", "E5"): TX, ("06_SUSPENSION", "E7"): TX,     # wheel rate traseiro: só TX
+                        ("07_KINEMATICS", "E31"): TX})                                # curso dianteiro: única raiz do REQ-004 F
+v2 = {r: wbd2["14_DASHBOARD"][f"E{r}"].value for r in (7, 13, 14, 22, 23)}
+check("TC-WB30-014: 14_DASHBOARD E (19 resultados) = pior origem das entradas, ao vivo: fórmulas cobrem todas as raízes "
+      "com Origem; base = pior origem do grafo; trocar/apagar origens muda o resultado",
+      not cobertura and base_dash == esperado_dash and info["total_errors"] == 0 and info2["total_errors"] == 0
+      and v2 == {7: CONF, 13: CONF, 14: TX, 22: CONF, 23: TX},
+      f"cobertura={cobertura[:3]}; base≠={[(r, base_dash[r], esperado_dash[r]) for r in LINHAS_DASH if base_dash[r] != esperado_dash[r]]}; ao vivo={v2}")
+
+# ---------- direção (SUS-414, SUS-415, SUS-601; EDR-052): Excel == kinematics_model ----------
+def direcao_py(wv):
+    k, v5 = wv["07_KINEMATICS"], wv["05_VEHICLE"]
+    L_, t_ = v5["B6"].value, v5["B7"].value
+    do, di = k["B72"].value, k["B73"].value
+    phi, ayg = wv["09_LOADS"]["B21"].value, wv["08_VEHICLE_STATE"]["B11"].value
+    grad = math.degrees(phi) / ayg if isinstance(phi, (int, float)) and ayg != 0 else "N/A"
+    return {"B74": km.ackermann_inner_ideal_deg(do, L_, t_), "B75": km.ackermann_percent(di, do, L_, t_),
+            "B76": km.turn_radius_outer_m(do, L_), "B80": km.steering_ratio_rack_approx(k["B78"].value, k["B79"].value),
+            "B84": grad, "B85": km.roll_steer_understeer_deg_per_g(k["B82"].value, k["B83"].value, grad) if grad != "N/A" else "N/A"}
+
+
+def dif_dir(wv):
+    ref, k = direcao_py(wv), wv["07_KINEMATICS"]
+    pior, ruins = 0.0, []
+    for c, pv in ref.items():
+        ev = k[c].value
+        if pv == "N/A" or ev == "N/A":
+            if pv != ev:
+                ruins.append((c, ev, pv))
+            continue
+        pior = max(pior, abs(ev - pv) / max(1.0, abs(pv)))
+    return pior, ruins
+
+
+info, wb_d0 = scenario({})
+p0d, r0d = dif_dir(wb_d0)
+info1, wb_d1 = scenario({("07_KINEMATICS", "B72"): 15.0, ("07_KINEMATICS", "B73"): 16.2, ("07_KINEMATICS", "B78"): 0.0476,
+                         ("07_KINEMATICS", "B79"): 0.085, ("07_KINEMATICS", "B82"): 0.12, ("07_KINEMATICS", "B83"): 0.03})
+p1d, r1d = dif_dir(wb_d1)
+info2, wb_d2 = scenario({("08_VEHICLE_STATE", "B11"): 0.0})
+form_ok = all(str(wbf["07_KINEMATICS"][c].value).startswith("=") for c in ("B74", "B75", "B76", "B80", "B84", "B85"))
+check("TC-WB30-015: direção na 07_KINEMATICS (Ackermann, % Ackermann, raio, SR pela cremalheira, gradiente de rolagem, roll steer) "
+      "== kinematics_model na base e com entradas trocadas; a_y = 0 -> N/A; base paralela = 0 % Ackermann",
+      form_ok and p0d < 1e-9 and p1d < 1e-9 and not r0d and not r1d and wb_d2["07_KINEMATICS"]["B84"].value == "N/A"
+      and wb_d2["07_KINEMATICS"]["B85"].value == "N/A" and abs(wb_d0["07_KINEMATICS"]["B75"].value) < 1e-12
+      and info["total_errors"] == info1["total_errors"] == info2["total_errors"] == 0,
+      f"pior dif base={p0d:.1e}, trocada={p1d:.1e}; {r0d + r1d}")
 
 print("\n--- Resumo ---"); p = sum(1 for _, s in results if s == "PASS"); f = len(results) - p
 print(f"{p} PASS, {f} FAIL, de {len(results)} testes")

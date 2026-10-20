@@ -123,11 +123,11 @@ def ref_forces(P, Fz, al, ga, ka):
     # Fy0
     gy = ga * P["LGAY"]
     Ky = P["PKY1"] * Fz0 * sin(2 * atan(Fz / (P["PKY2"] * Fz0))) * (1 - P["PKY3"] * abs(gy)) * P["LKY"]   # EDR-049
-    Shy = (P["PHY1"] + P["PHY2"] * d) * P["LHY"] + P["PHY3"] * gy; ay = al + Shy
+    Shy = (P["PHY1"] + P["PHY2"] * d) * P["LHY"] + P["PHY3"] * gy * P["LKYG"]; ay = al + Shy   # λKyγ: Adams eq. 41
     Cy = P["PCY1"] * P["LCY"]; muy = (P["PDY1"] + P["PDY2"] * d) * (1 - P["PDY3"] * gy ** 2) * P["LMUY"]; Dy = muy * Fz
     Ey = (P["PEY1"] + P["PEY2"] * d) * (1 - (P["PEY3"] + P["PEY4"] * gy) * sg(ay)) * P["LEY"]; Ey = Ey if Ey < 1 else 1.0
     By = Ky / (Cy * Dy + 1e-6)
-    Svy = Fz * ((P["PVY1"] + P["PVY2"] * d) * P["LVY"] + (P["PVY3"] + P["PVY4"] * d) * gy) * P["LMUY"]
+    Svy = Fz * ((P["PVY1"] + P["PVY2"] * d) * P["LVY"] + (P["PVY3"] + P["PVY4"] * d) * gy * P["LKYG"]) * P["LMUY"]   # Adams eq. 42
     v = By * ay; Fy0 = Dy * sin(Cy * atan(v - Ey * (v - atan(v)))) + Svy
     # combinação
     Shxa = P["RHX1"]; Bxa = P["RBX1"] * cos(atan(P["RBX2"] * ka)) * P["LXAL"]; Cxa = P["RCX1"]
@@ -152,7 +152,7 @@ for fz_, a_, g_, k_ in rand_pts(400):
 check("TC-TIRE-009a: módulo == segunda transcrição independente em 400 pontos aleatórios (dataset original), dif < 1e-9 N", dev < 1e-9, f"dif máx={dev:.2e} N")
 # escalas e FNOMIN/LFZO distintos de 1 (os L* do arquivo são todos 1: mutações neles seriam equivalentes sem este teste)
 p2 = dict(p)
-for i, k in enumerate(("LFZO", "LCX", "LMUX", "LEX", "LKX", "LHX", "LVX", "LGAX", "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY", "LXAL", "LYKA", "LVYKA")):
+for i, k in enumerate(("LFZO", "LCX", "LMUX", "LEX", "LKX", "LHX", "LVX", "LGAX", "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY", "LXAL", "LYKA", "LVYKA", "LKYG")):
     p2[k] = 1.0 + 0.03 * (i + 1) * (1 if i % 2 == 0 else -1)
 ds2 = t.TireDataset(p=p2, strings=ds.strings)
 dev2 = 0.0
@@ -161,8 +161,8 @@ for fz_, a_, g_, k_ in rand_pts(400):
     fx_r, fy_r = ref_forces(p2, fz_, a_, g_, k_)
     dev2 = max(dev2, abs(fx_m - fx_r), abs(fy_m - fy_r))
 check("TC-TIRE-009b: idem com todos os fatores L* e LFZO ≠ 1 (distintos), dif < 1e-9 N", dev2 < 1e-9, f"dif máx={dev2:.2e} N")
-sens = sum(1 for k in ("LMUX", "LKY", "LVYKA", "LYKA", "LXAL", "LVX", "LGAY") if abs(t.combined_forces(t.TireDataset(p={**p, k: p[k] * 1.1}, strings=ds.strings), 700, 0.05, 0.03, 0.08)[0] - t.combined_forces(ds, 700, 0.05, 0.03, 0.08)[0]) + abs(t.combined_forces(t.TireDataset(p={**p, k: p[k] * 1.1}, strings=ds.strings), 700, 0.05, 0.03, 0.08)[1] - t.combined_forces(ds, 700, 0.05, 0.03, 0.08)[1]) > 1e-9)
-check("TC-TIRE-009c: sensibilidade — alterar cada L* testado muda Fx ou Fy (nenhum fator ignorado)", sens == 7, f"{sens}/7")
+sens = sum(1 for k in ("LMUX", "LKY", "LVYKA", "LYKA", "LXAL", "LVX", "LGAY", "LKYG") if abs(t.combined_forces(t.TireDataset(p={**p, k: p[k] * 1.1}, strings=ds.strings), 700, 0.05, 0.03, 0.08)[0] - t.combined_forces(ds, 700, 0.05, 0.03, 0.08)[0]) + abs(t.combined_forces(t.TireDataset(p={**p, k: p[k] * 1.1}, strings=ds.strings), 700, 0.05, 0.03, 0.08)[1] - t.combined_forces(ds, 700, 0.05, 0.03, 0.08)[1]) > 1e-9)
+check("TC-TIRE-009c: sensibilidade — alterar cada L* testado muda Fx ou Fy (nenhum fator ignorado)", sens == 8, f"{sens}/8")
 
 
 # --- TC-TIRE-010: sistema de eixos do arquivo (V2.4): transformação SAE_CALSPAN -> ISO, invariantes físicos ---

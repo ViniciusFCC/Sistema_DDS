@@ -179,3 +179,83 @@ entre IC cinemático e eixos de pivô (TC-011).
   escopo no EDR-033).
 - Definição α* = tan α (Pacejka eq. 4.E3) contra α (Seward; módulo atual): depende de como o
   OptimumTire ajustou o arquivo (EDR-040).
+
+## 7. 2ª rodada: conferência contra a documentação dos programas (2026-10-19)
+
+Documentos recebidos do usuário em 2026-10-19 (em `references/`, fora do Git; ver `references/INDEX.md`): help do
+OptimumKinematics (REFERENCE de cinemática, EDR-004), help do OptimumT 1.0.14, help do Adams 2024.1 "Using the PAC2002
+Tire Model" (o `.tir` provisório declara `PAC2002 2018`, `COMPATIBILITY: Adams Tire 2018`, feito pela Stackpole para o
+TTC) e o pacote do TTC Round 6 (R25B; o `.tir` de 12 psi é o provisório). Equações conferidas na imagem da página.
+
+### 7.1 Convenções
+
+| Convenção do projeto | Documento | Situação |
+|---|---|---|
+| Eixos ISO 8855 (X frente, Y esquerda, Z cima) | OptimumKinematics §5.1, fig. 15 (p. 31): X para a frente, Z para cima, Y para a esquerda pela figura (a tabela diz só "front or rear"); Adams: eixos C e W do TYDEX com orientação ISO (p. 6-7) | mantém |
+| Camber + = topo para fora; toe + = toe-out (EDR-002) | OptimumKinematics §7.3.3.5 e 7.3.3.6 (p. 88-89): mesmas definições | mantém |
+| MR = Δroda/Δmola (EDR, nome `MR [wheel/spring]`) | OptimumKinematics §7.3.3.7 (p. 89): "Wheel Displacement / Spring Displacement" | mantém |
+| Anti-dive pelo contact patch (freio no cubo); anti-squat pelo centro da roda (motor no chassi) (EDR-048) | OptimumKinematics §7.3.3.1-7.3.3.3 (p. 84-86): anti-dive com o ângulo a partir do contact patch; anti-squat com o torque aplicado no centro da roda; anti-lift traseiro pelo contact patch com freio fora do chassi e pelo centro da roda com freio dentro | mantém; reforça o escopo do EDR-033 (regeneração pelo motor no chassi reage pelo centro da roda) |
+| Scrub radius + com o eixo de esterço cortando o solo entre a linha de centro e o contact patch | OptimumKinematics §7.3.3.12 (p. 92) | mantém (pela expressão de `kinematics_model`, com `side` = +1 à esquerda) |
+| Sistema de eixos do `.tir`: SAE_CALSPAN (EDR-039) | Adams p. 7: "the parameters in the tire property file must always be valid for the TYDEX W-axis system (ISO oriented)". Avaliação do arquivo: Fy(α > 0) < 0 e Fy(γ = 2°, α = 0) = −160 N (+27 N com γ = 0); Pacejka App. 1 (p. 612) e OptimumT fig. 8.2: γ > 0 desloca Fy para baixo só no ISO | **não se mantinha**: o arquivo é ISO (TYDEX W). Corrigido em 2026-10-19 (usuário): EDR-039 reaberto, dataset declarado `ISO_TYDEX` (identidade, sem o s_γ inferido); efeito medido no registro de versões V3.0 |
+| Espelhamento das rodas esquerdas (H4) | Adams p. 73-74: com TYRESIDE, o pneu do outro lado é espelhado em relação a α = 0 (troca o sinal de PEY3, PHY1, PHY2, PVY1, PVY2, RHX1, RBY3, RVY1, RVY2 e de termos de Mz/Mx) | mantém (espelhar α, γ e Fy em ISO equivale a trocar o sinal desses termos ímpares) |
+
+### 7.2 Métodos
+
+| Método | Documento | Situação |
+|---|---|---|
+| Fy0 puro (SUS-501) | Adams eq. 30-44 (p. 30-31) | confere termo a termo, menos o fator λKyγ (`LKYG`) nos termos de camber de S_Hy e S_Vy, que o código não aplicava. Corrigido em 2026-10-20 (EDR-042): o código e a 10_TIRE (B177) aplicam o LKYG; com `LKYG = 1` no arquivo, nenhum valor muda |
+| Ky com um único λFz0 (EDR-049) | Adams eq. 38: K_y0 = p_Ky1·F_z0·sin[2·atan(F_z/(p_Ky2·F'_z0))]·λ_Fz0·λ_Ky, com F'_z0 = λ_Fz0·F_z0 | mantém (idêntico à forma do código) |
+| Fx0 puro e combinados (G_xα, G_yκ, S_Vyκ) | Adams eq. 18-29 e 80-99 (p. 27-28, 43-45) | conferem termo a termo |
+| α ou tan α (EDR-040) | Adams eq. 4 define α por tan α = V_sy/\|V_x\| e as equações usam α (eq. 32); OptimumT (p. 141) e Pacejka 2006 (eq. 4.E3) usam tan α em outras versões do modelo | mantém α para arquivos PAC2002 (forma do programa para o qual o `.tir` foi feito). A dúvida do EDR-040 sobre "como o OptimumTire ajustou" não se aplica a este arquivo (foi ajustado pela Stackpole, não no OptimumTire) |
+| Rigidez vertical K_T = `VERTICAL_STIFFNESS` (SUS-211, EDR-045) | Adams p. 10-14: `VERTICAL_STIFFNESS` só vale com QFZ1 = 0; com QFZ1 ≠ 0, C_z = q_Fz1·F_z0/R_0 | mantém: o arquivo tem QFZ1 = 29,7127 e QFZ2 = 0, e 29,7127 × 1054 / 0,2603 = 120 312 N/m, o mesmo valor. Modelo linear, como no Adams com QFZ2 = 0 |
+| IC frontal e lateral cinemáticos (SUS-412) | OptimumKinematics §7.3.3.13, 7.3.3.16 e 7.3.3.20 (p. 93-95): eixo instantâneo do conjunto não suspenso (pequeno deslocamento da roda, com a barra de direção); IC = interseção desse eixo com o plano vertical que passa pelos contact patches (transversal na vista frontal, longitudinal na lateral) | **diferente na construção**: o código projeta as velocidades de dois ball joints no plano da vista e cruza as normais. As duas coincidem quando o eixo instantâneo é perpendicular ao plano da vista; com caster, anti e esterço, não. Diferença não quantificada |
+| RC cinemático (SUS-412) | OptimumKinematics §6.10 e §7.3.3.23 (p. 62 e 97): RC = interseção dos planos (eixo instantâneo + contact patch) esquerdo e direito com o plano vertical central; difere do RC geométrico | mesma observação do IC: equivale ao do código só no caso plano |
+| Barra anti-rolagem como rigidez pronta | OptimumKinematics §7.3.3.7: MR da barra = ângulo de rolagem / deslocamento angular da barra | simplificação continua válida; com o OptimumKinematics, a rigidez da barra na roda pode sair da geometria |
+
+### 7.3 Pendências da 1ª rodada (seção 6), situação em 2026-10-19
+
+| Pendência | Situação |
+|---|---|
+| Cap. 19 da Milliken contra SUS-405/408/413 | aberta |
+| Modelo de bicicleta e gradiente de subesterço | aberta (só se a planilha ganhar o bloco) |
+| Forma exata do Fy0 e dos fatores λ no PAC2002 | **resolvida** (7.2); a lacuna do `LKYG` foi corrigida em 2026-10-20 |
+| Sinal do IA do TTC (EDR-039) | **resolvida**: o arquivo é ISO (Adams p. 7); trocado para ISO_TYDEX em 2026-10-19 (EDR-039 revisto) |
+| Anti-lift com regeneração (EDR-033) | método confirmado pelo OptimumKinematics; faltam os dados de divisão de frenagem da equipe |
+| α* = tan α (EDR-040) | **resolvida para PAC2002**: α. A escolha do formato do pneu real (R60A) continua aberta |
+| Ressalvas: limiar de MR | sem fonte (nenhum dos documentos dá limiar); decisão da equipe |
+| Ressalvas: IC em 3D | definição da REFERENCE conhecida (7.2); falta implementar o método dela e medir a diferença |
+| Ressalvas: simplificações (RC fixo, superposição, barra pronta, aero, taxa geométrica do MR) | continuam aceitas; nenhum documento as contradiz |
+| K_T do pneu real, hardpoints do CAD, comparação com OptimumKinematics/OptimumTire | dependem de dados |
+
+## 8. 2ª rodada: cap. 19 da Milliken (direção) e definição do IC/RC (2026-10-19)
+
+### 8.1 Cap. 19 da Milliken (p. 709-727), com Gillespie cap. 6 e 8 e Seward 6.3
+
+O capítulo é quase todo qualitativo. As equações vêm do Gillespie e do Seward; a Milliken dá definições, sinais e
+recomendações. Decisão: EDR-052 (fichas novas SUS-414, 415 e 416).
+
+| Seção | O que o livro diz | Situação no projeto |
+|---|---|---|
+| 19.1 Geometria do pino mestre (p. 709-713) | Fig. 19.1: KPI, scrub, spindle length (pino mestre ao plano da roda, na altura do eixo), caster e trail. KPI com spindle positivo levanta o carro nos dois sentidos; caster levanta de um lado e baixa do outro (peso diagonal); caster positivo dá camber negativo na roda externa | Convenções da SUS-410 conferidas (também Gillespie Fig. 8.8). Spindle length acrescentado (TC-KIN-121). Efeitos de camber e elevação: SUS-416 nova (`steer_effects`, TC-KIN-127a/b) |
+| 19.2 Ackermann (p. 713-716) | Ackermann = trajetórias com centro comum; para corrida, paralelo ou um pouco de reverso; a compliance pode superar o efeito | Não havia nada no projeto (nem no carro anterior). SUS-414 nova: `cot δo − cot δi = t/L` (Gillespie eq. 8-1/8-2), % Ackermann e raio externo; Tab. 6.2 do Seward reproduzida (TC-KIN-122a); Ackermann da geometria (TC-KIN-123); planilha 07 B72:B76 |
+| 19.3 Caixa de direção (p. 716-719) | Razão total = ângulo do volante / ângulo da roda; com cremalheira, SR ≈ função de c e do braço de direção (p. 718) | SUS-601 e SUS-413 revistas: razão total pela média das rodas (SAE J670 9.4.6); aproximação da cremalheira com **errata**: a p. 718 imprime asin(c/braço)/360, inverso da razão da p. 716; adotado 360/asin(c/braço) (conferido na imagem; TC-KIN-124b). Planilha 07 B78:B80 |
+| 19.4 Ride e roll steer (p. 721-725) | Ride steer em °/in, curvas lineares são aceitáveis, curvas são "a evitar"; sinal: na frente, esterçar para fora da curva = subesterço | SUS-408 revista (`ride_steer`: inclinação, curvatura, desvio da reta; TC-KIN-125). Roll steer: SUS-415 nova, ε e K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57, conferida na imagem; TC-KIN-126). Planilha 07 B82:B85 |
+| 19.5 Alinhamento (p. 726-727) | Procedimento de medição de toe e camber; regra de bolso camber/esterço | Fora do modelo (procedimento de oficina) |
+
+### 8.2 IC e RC: definição primária no MODEL (EDR-053)
+
+Conselho de 4 lentes com revisão anônima (veredito completo na conversa de 2026-10-19). Conclusão: a grandeza que a
+planilha usa é a linha de força, e a definição exata dela é a do trabalho virtual (SAE J670, Gillespie Apêndice A): a
+linha passa pelo ponto de reação e é perpendicular à velocidade dele por unidade de curso. Na geometria sintética (FL):
+
+| Método | RC do canto [mm] | Inclinação da linha do anti-dive | %AD (L 1,55; h 0,315; FB 0,6) |
+|---|---|---|---|
+| Linha de força pelo trabalho virtual (primária) | 17,7 | −0,1307 | 38,6 |
+| Ball joints (método anterior, legado) | 14,8 | −0,1230 | 36,3 |
+| Leitura literal do help do OptimumKinematics (eixo ∩ plano, passo −0,47 m/rad) | −142,6 | −0,314 | cerca de 93 |
+
+O método anterior depende do par de pontos escolhido (o RC vai de −98,6 a +36,0 mm conforme o par), porque os ball
+joints não estão no plano da vista. A leitura literal ignora a translação ao longo do eixo (o passo). As três coincidem
+no mecanismo plano (TC-KIN-120a, 128). O que o OptimumKinematics faz de fato com o passo é desconhecido: a comparação,
+quando houver dados, começa por curvas que não dependem da definição de IC e por digitar a geometria sintética no
+programa (EDR-053).

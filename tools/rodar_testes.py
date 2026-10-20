@@ -34,18 +34,18 @@ TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
     ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V3_0.md"),
-    ("cinemática", "tests/test_kinematics_model.py", 54, "registro-de-versoes-V3_0.md"),
+    ("cinemática", "tests/test_kinematics_model.py", 74, "registro-de-versoes-V3_0.md"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
-MUTACAO = ("tests/mutation_tire.py", 24)
-AUTOTESTE = ("tools/test_comparar_planilhas.py", 10)
+MUTACAO = ("tests/mutation_tire.py", 25)
+AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
 PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de-versoes-V3_0.md"),
-             ("tests/test_workbook_suspensao.py", 13, "suspensão da V3.0 (13 com a 1ª rodada de feedback); registro-de-versoes-V3_0.md")]
+             ("tests/test_workbook_suspensao.py", 15, "suspensão da V3.0 (15 com a 2ª rodada da revisão metodológica); registro-de-versoes-V3_0.md")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
@@ -112,6 +112,21 @@ def git(*args: str) -> str:
     return r.stdout.strip() if r.returncode == 0 else f"indisponível ({r.stderr.strip()})"
 
 
+TAG_V30 = "v3.0"
+CAMINHO_V30 = "excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx"
+
+
+def referencia_v30(pasta: Path) -> tuple[Path, str]:
+    """EDR-051 (fechamento da V3.0): a referência da V3.0 é o arquivo gravado na tag v3.0, que não muda; a planilha da
+    árvore passa a ser o arquivo vivo da equipe. Antes de a tag existir, a referência é o próprio arquivo da árvore."""
+    if subprocess.run(["git", "rev-parse", "-q", "--verify", f"refs/tags/{TAG_V30}"], cwd=RAIZ, capture_output=True).returncode == 0:
+        blob = subprocess.run(["git", "show", f"{TAG_V30}:{CAMINHO_V30}"], cwd=RAIZ, capture_output=True, check=True).stdout
+        destino = pasta / "V3_0_referencia_tag.xlsx"
+        destino.write_bytes(blob)
+        return destino, f"tag `{TAG_V30}`"
+    return RAIZ / CAMINHO_V30, f"arquivo da árvore (a tag `{TAG_V30}` ainda não existe)"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--saida", type=Path, default=RAIZ / "build" / "verificacao-ultima.md")
@@ -120,6 +135,8 @@ def main() -> None:
 
     md: list[str] = []
     resumo: list[tuple[str, str, str]] = []  # (CA, item, status)
+    pasta_ref = tempfile.TemporaryDirectory(prefix="dds_ref_", ignore_cleanup_errors=True)
+    REF30, ORIGEM_REF30 = referencia_v30(Path(pasta_ref.name))
 
     commit = git("rev-parse", "--short", "HEAD")
     sujo = git("status", "--porcelain", "--untracked-files=no")
@@ -210,14 +227,20 @@ def main() -> None:
         r25 = rodar(["python/atualizar_planilha.py", str(out), str(out25), "--layout", str(lay)]) if out.exists() else None
         md.append(f"- V3.0: `python/atualizar_planilha.py <tmp>/V2_4.xlsx <tmp>/V3_0.xlsx`, código {r25.returncode if r25 else 'não rodou'}")
         if r25 is not None and r25.returncode == 0 and out25.exists():
-            ok7b, r7b = comparar_planilhas.comparar_xlsx(out25, comparar_planilhas.ENTREGUE_XLSX_V30,
-                                                         comparar_planilhas.FORMULAS_ESPERADAS_V30)
+            ok7b, r7b = comparar_planilhas.comparar_xlsx(out25, REF30, comparar_planilhas.FORMULAS_ESPERADAS_V30)
         else:
             ok7b, r7b = False, ["CA-07 FAIL: atualizar_planilha não gerou a V3.0"] + ([cauda(r25.stderr)] if r25 else [])
     resumo.append(("CA-07", "planilha vs V2.4 entregue", "PASS" if ok7 else "FAIL"))
     resumo.append(("CA-08", "layout vs entregue", "PASS" if ok8 else "FAIL"))
-    resumo.append(("CA-07", "planilha vs V3.0 entregue", "PASS" if ok7b else "FAIL"))
-    md += ["```text", *r7, *r8, "--- V3.0 ---", *r7b, "```", ""]
+    resumo.append(("CA-07", "planilha vs V3.0 de referência", "PASS" if ok7b else "FAIL"))
+    # CA-07 da planilha viva (EDR-051): tudo igual à referência menos as células de entrada (atualizar_planilha.celulas_de_entrada)
+    sys.path.insert(0, str(RAIZ / "python"))
+    import atualizar_planilha  # noqa: E402
+    ok7v, r7v = comparar_planilhas.comparar_viva(RAIZ / CAMINHO_V30, REF30, atualizar_planilha.celulas_de_entrada())
+    resumo.append(("CA-07", "planilha viva vs referência (só entradas mudam)", "PASS" if ok7v else "FAIL"))
+    md += [f"- Referência da V3.0: {ORIGEM_REF30}. A regeneração e os testes CA-09 usam a referência; a planilha da árvore "
+           "é o arquivo vivo e só passa pela verificação de estrutura.", "",
+           "```text", *r7, *r8, "--- V3.0 (regeneração vs referência) ---", *r7b, "--- V3.0 viva ---", *r7v, "```", ""]
 
     # --- Versão gravada na planilha (fase B, passo 3) ---
     ok_ver, linhas_ver = versao_planilhas()
@@ -229,7 +252,10 @@ def main() -> None:
     # --- Teste da planilha, Excel x Python (CA-09, EDR-044) ---
     md += ["## Teste da planilha (CA-09)", ""]
     for script, esperado, fonte in PLANILHAS:
-        r = rodar([script])
+        args = [str(REF30)] if script.endswith("suspensao.py") else [
+            str(REF30), str(RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"), str(RAIZ / "data" / "layout_V2_4.json"),
+            str(RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir")]
+        r = rodar([script, *args])
         linhas = r.stdout.splitlines()
         motor = next((l for l in linhas if l.startswith(("MOTOR:", "NÃO EXECUTÁVEL:"))), "MOTOR: (não informado)")
         resumos = [m for m in map(RE_RESUMO.match, linhas) if m]

@@ -1,5 +1,6 @@
-"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049) e 1ª rodada de feedback
-(feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051).
+"""Gera a planilha V3.0 a partir da V2.4: revisão metodológica contra a literatura (EDR-045 a EDR-049), 1ª rodada de feedback
+(feedback da equipe: origem de cada entrada, valores derivados como fórmula, guia de preenchimento; EDR-035, EDR-050, EDR-051)
+e 2ª rodada da revisão metodológica (hipótese do CG não suspenso como entrada, centro da roda separado, N/A e TBD no guia; EDR-050, EDR-035).
 
 Uso:
     uv run python -X utf8 python/atualizar_planilha.py [ORIGEM_V2_4.xlsx] [SAIDA_V3_0.xlsx] [--registro ARQ.md]
@@ -14,6 +15,7 @@ para mudança de fórmula. Referências: docs/revisao-metodologica.md.
 """
 import argparse
 import copy
+import re
 from pathlib import Path
 
 import openpyxl
@@ -156,7 +158,7 @@ def alteracoes(ky_row: int) -> list[dict]:
     a.append(_a("10_TIRE", f"A{ky_row}", "Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)", "EDR-049"))
     for c in "BCDEF":
         a.append(_a("10_TIRE", f"{c}{ky_row}", None, "EDR-049; Pacejka (2006) eq. 4.E25; Seward eq. 5.9"))
-    return a + _rodada2()
+    return a + _rodada2() + _feedback2() + _eixo_iso() + _direcao()
 
 
 # =====================================================================================================================
@@ -357,6 +359,348 @@ def _rodada2() -> list[dict]:
     return a
 
 
+# =====================================================================================================================
+# 2ª rodada da revisão metodológica da V3.0 (decisões do usuário em 2026-10-19): EDR-050 estendido.
+# =====================================================================================================================
+# A hipótese "CG não suspenso na altura do centro da roda" vira entrada (razão h_ns / raio), e a altura do centro da roda
+# traseira (07 B14, ponto de reação do anti-squat) deixa de passar pelo CG não suspenso: são grandezas diferentes que a V3.0
+# fazia coincidir na mesma célula (05 B17).
+_RAZAO_HNS = ("Estimativa: Milliken p. 672 (cap. 18, altura do CG suspenso) toma a altura do centro da roda como \"boa primeira "
+              "aproximação\" da altura do CG não suspenso e usa o raio carregado (R_LF, R_LR); razão 1 = essa aproximação. Aqui o "
+              "raio é o sem carga (diâmetro / 2), sem a deflexão estática do pneu. Trocar pela medição do conjunto não suspenso quando houver.")
+ORIGENS_FB2 = [   # mesmo formato de ORIGENS; processadas junto com elas na formatação (lista, cores, avisos)
+    ("05_VEHICLE", 35, EST, _RAZAO_HNS),
+    ("05_VEHICLE", 36, EST, _RAZAO_HNS),
+    ("05_VEHICLE", 16, None, "Calculada (EDR-050): raio do pneu (B33 × 0,0254 / 2) × razão h_ns / raio (B35). Estimativa: a hipótese "
+                             "está na razão (B35), não é medição da equipe."),
+    ("05_VEHICLE", 17, None, "Calculada (EDR-050): raio do pneu (B34 × 0,0254 / 2) × razão h_ns / raio (B36). Estimativa: a hipótese "
+                             "está na razão (B36), não é medição da equipe."),
+    ("07_KINEMATICS", 14, None, "Calculada: raio sem carga do pneu traseiro (05_VEHICLE B34 × 0,0254 / 2), sem a deflexão estática. "
+                                "Placeholder: substituir pela altura do centro da roda do CAD."),
+]
+
+
+def celulas_de_entrada() -> set[tuple[str, str]]:
+    """Células que a equipe preenche na planilha viva (EDR-051, fechamento da V3.0). Derivadas das mesmas listas que
+    geram a planilha (nada mantido à mão em paralelo): valor, Origem e Fonte de cada entrada com origem; casos de carga,
+    metadados e coeficientes do pneu; metas da 03_TARGETS; identificação e revisões do setup. Todo o resto é estrutura
+    e só muda pelo script (com aprovação)."""
+    out = {(aba, f"{c}{r}") for aba, r, org, _ in _todas_origens() if org is not None for c in "BEF"}
+    out |= {("10_TIRE", f"{c}{r}") for r, _, _ in TIRE_ORIGENS for c in "BCDEIJ" if r != 84}   # F = caso VERIF fixo
+    out |= {("10_TIRE", f"{c}84") for c in "IJ"}
+    out |= {("10_TIRE", f"B{r}") for r in list(range(86, 176)) + [LINHA_LKYG]}
+    out |= {("10_TIRE", f"B{r}") for r in (5, 6, 7, 9, 10, 11)}
+    out |= {("03_TARGETS", f"{c}{r}") for r in range(5, 10) for c in "CDEFG"}
+    out |= {("01_SETUP", f"B{r}") for r in (4, 5, 6, 9, 10, 11, 12)}
+    return out
+
+
+def _todas_origens() -> list[tuple]:
+    return ORIGENS + ORIGENS_FB2 + ORIGENS_DIR
+
+
+def _feedback2() -> list[dict]:
+    a = []
+    ref = "EDR-050 (2ª rodada da revisão metodológica, usuário 2026-10-19)"
+    for r, rot, sid in ((35, "Razão h_ns / raio do pneu dianteiro", "SUS-010"), (36, "Razão h_ns / raio do pneu traseiro", "SUS-011")):
+        a += [_a("05_VEHICLE", f"A{r}", rot, ref, ("05_VEHICLE", 14, "A")),
+              _a("05_VEHICLE", f"B{r}", 1.0, ref + "; Milliken p. 672", ("05_VEHICLE", 14, "B")),
+              _a("05_VEHICLE", f"C{r}", "-", ref, ("05_VEHICLE", 14, "C")),
+              _a("05_VEHICLE", f"D{r}", sid, ref, ("05_VEHICLE", 14, "D"))]
+    calc = ("05_VEHICLE", 23, "B")
+    a += [_a("05_VEHICLE", "B16", f"={V}$B$33*0.0254/2*{V}$B$35", ref, calc),
+          _a("05_VEHICLE", "B17", f"={V}$B$34*0.0254/2*{V}$B$36", ref, calc),
+          _a("07_KINEMATICS", "B14", f"={V}$B$34*0.0254/2", ref + ": centro da roda separado do CG não suspenso (EDR-048)",
+             ("07_KINEMATICS", 12, "B"))]
+    for aba, r, org, fonte in ORIGENS_FB2:
+        st = (aba, r, "C")
+        if org is not None:
+            a += [_a(aba, f"E{r}", org, "EDR-035", st),
+                  _a(aba, f"G{r}", ("COPIA", f"B{r}"), "EDR-035: valor da geração (oculto; aviso de desatualização)", st),
+                  _a(aba, f"H{r}", org, "EDR-035: origem da geração (oculto; aviso de desatualização)", st)]
+        a.append(_a(aba, f"F{r}", fonte, ref, st))
+    # Item 7 do guia: significado de N/A e TBD (EDR-035, parte de N/A e TBD aprovada pelo usuário em 2026-10-19).
+    a.append(_a("00_README", f"A{LINHA_NA_TBD}",
+                "7. N/A = não se aplica, ou não dá para calcular na configuração atual (falta dado, valor fora da faixa do pneu, "
+                "instabilidade): a célula nunca mostra número inventado. TBD = falta um dado, uma meta ou uma decisão (equivale a "
+                "OPEN). \"? A confirmar\" (coluna Origem) é outra coisa: há valor, mas a origem dele não está registrada.",
+                "EDR-035 (N/A e TBD; usuário, 2026-10-19)", ("00_README", 23, "A")))
+    # Kinematics REV ainda não definida = pendência (TBD), como a Geometry REV em 07 B68 (auditoria dos usos; usuário, 2026-10-19).
+    a.append(_a("01_SETUP", "B10", "TBD (Fase 2)", "EDR-035 (N/A e TBD; troca aprovada pelo usuário, 2026-10-19)"))
+    return a
+
+
+LINHA_NA_TBD = LINHAS_ORIGENS.stop + 4   # 00_README: logo depois do item 6 do guia
+
+# Direção (cap. 19 da Milliken; Gillespie cap. 6 e 8; Seward 6.3): EDR-052, fichas SUS-414 e SUS-415 (usuário, 2026-10-19:
+# "crie as fichas, implemente os cálculos e metodologias de acordo com a literatura"). Bloco novo na 07_KINEMATICS.
+_REF52 = "EDR-052 (direção, cap. 19 da Milliken; usuário 2026-10-19)"
+DIR_CABECALHOS = {71: "Direção — Ackermann (SUS-414) — entradas PLACEHOLDER até haver a medição ou a geometria do TX",
+                  77: "Direção — relação de direção pela cremalheira (SUS-601, Milliken p. 718)",
+                  81: "Direção — roll steer e gradiente de subesterço (SUS-415, Gillespie eq. 6-57)"}
+_ACK = f"{K}$B$72"
+DIR_LINHAS = [   # (linha, rótulo, valor ou fórmula, unidade, ID, origem ou None, fonte)
+    (72, "Ângulo da roda dianteira externa (δo)", 20.0, "°", "SUS-414", EST,
+     "Estimativa: carros de FSAE precisam de pouco mais de 20° de esterço na roda externa (Seward p. 162-163, Tab. 6.2). "
+     "Não é o batente do TX."),
+    (73, "Ângulo da roda dianteira interna (δi) no mesmo esterço", 20.0, "°", "SUS-414", ARB,
+     "Placeholder: igual a δo (direção paralela, 0 % Ackermann) até haver a medição do TX ou a geometria (Python: "
+     "kinematics_model.ackermann_from_kinematics)."),
+    (74, "δi para Ackermann exato", f"=DEGREES(ATAN(1/(1/TAN(RADIANS({_ACK}))-{V}$B$7/{V}$B$6)))", "°", "SUS-414", None,
+     "Calculada: cot δo − cot δi = t/L (Gillespie eq. 8-1 e 8-2, p. 277-278), com t = 05 B7 e L = 05 B6. Reproduz a Tab. 6.2 do Seward."),
+    (75, "% Ackermann", f"=({K}$B$73-{_ACK})/({K}$B$74-{_ACK})*100", "%", "SUS-414", None,
+     "Calculada: 100 % = Ackermann exato; 0 % = paralelo; < 0 = reverso (Milliken p. 714-716; Seward, glossário). A razão "
+     "entre os dois extremos é a forma adotada pelo projeto (EDR-052)."),
+    (76, "Raio da trajetória da roda dianteira externa", f"={V}$B$6/SIN(RADIANS({_ACK}))", "m", "SUS-414", None,
+     "Calculada: L / sin δo (Seward, Tab. 6.2)."),
+    (78, "Curso da cremalheira por volta do pinhão (c-factor)", 0.0508, "m/volta", "SUS-601", ARB,
+     "Placeholder: o exemplo de \"2-inch rack\" do Milliken p. 718; não é a cremalheira do TX."),
+    (79, "Comprimento do braço de direção (pino mestre à barra)", 0.10, "m", "SUS-601", ARB,
+     "Placeholder: valor do caso de teste TC-KIN-109 (e = 0,10 m); não é o braço do TX."),
+    (80, "Relação de direção estimada pela cremalheira", f"=360/DEGREES(ASIN({K}$B$78/{K}$B$79))", "-", "SUS-601", None,
+     "Calculada: SR ≈ 360 / asin(c/braço), Milliken p. 718 (o livro imprime asin(c/braço)/360, que é o inverso da razão "
+     "definida na p. 716; EDR-052). Vale com a barra quase perpendicular ao braço. Compare com 06_SUSPENSION B44."),
+    (82, "Roll steer dianteiro (ε_f)", 0.0, "°/°", "SUS-415", ARB,
+     "Placeholder: sem hardpoints reais. ε > 0 esterça para a direita numa rolagem para a direita (Gillespie p. 220). "
+     "Python: kinematics_model.roll_steer_coefficient (na geometria sintética, −0,125 °/°)."),
+    (83, "Roll steer traseiro (ε_r)", 0.0, "°/°", "SUS-415", ARB, "Placeholder: sem hardpoints reais (ver B82)."),
+    (84, "Gradiente de rolagem ∂φ/∂a_y", f"=IF(AND(ISNUMBER({L}$B$21),{E}$B$11<>0),DEGREES({L}$B$21)/{E}$B$11,\"N/A\")",
+     "°/g", "SUS-415", None,
+     "Calculada: φ (09_LOADS B21) / a_y em g (08 B11). O φ do modelo é linear em a_y (SUS-103), então a razão é o gradiente."),
+    (85, "Contribuição do roll steer ao gradiente de subesterço", f"=IF(ISNUMBER({K}$B$84),({K}$B$82-{K}$B$83)*{K}$B$84,\"N/A\")",
+     "°/g", "SUS-415", None, "Calculada: K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57); K > 0 = subesterço."),
+]
+ORIGENS_DIR = [("07_KINEMATICS", r, org, fonte) for r, _, _, _, _, org, fonte in DIR_LINHAS]
+
+
+def _direcao() -> list[dict]:
+    a = []
+    for r, txt in DIR_CABECALHOS.items():
+        a.append(_a("07_KINEMATICS", f"A{r}", txt, _REF52, ("07_KINEMATICS", 30, "A")))
+    for r, rot, val, un, sid, org, fonte in DIR_LINHAS:
+        st_b = ("07_KINEMATICS", 10, "B") if org is not None else ("05_VEHICLE", 23, "B")
+        a += [_a("07_KINEMATICS", f"A{r}", rot, _REF52, ("07_KINEMATICS", 10, "A")),
+              _a("07_KINEMATICS", f"B{r}", val, _REF52, st_b),
+              _a("07_KINEMATICS", f"C{r}", un, _REF52, ("07_KINEMATICS", 10, "C")),
+              _a("07_KINEMATICS", f"D{r}", sid, _REF52, ("07_KINEMATICS", 10, "D")),
+              _a("07_KINEMATICS", f"F{r}", fonte, _REF52, ("07_KINEMATICS", 10, "C"))]
+        if org is not None:
+            st = ("07_KINEMATICS", 10, "C")
+            a += [_a("07_KINEMATICS", f"E{r}", org, "EDR-035", st),
+                  _a("07_KINEMATICS", f"G{r}", ("COPIA", f"B{r}"), "EDR-035: valor da geração (oculto)", st),
+                  _a("07_KINEMATICS", f"H{r}", org, "EDR-035: origem da geração (oculto)", st)]
+    # IC lateral (entradas do anti-dive/anti-squat): a definição que gerou o IC tem de ficar dita na Fonte (EDR-053).
+    contrato = (" Ao preencher, diga na Fonte de que definição veio o IC: linha de força pelo trabalho virtual (Python, "
+                "kinematics_model.force_lines_vw; EDR-053) ou tela do OptimumKinematics (definição a confirmar). Na geometria "
+                "sintética as duas dão 38,6 % e cerca de 93 % de anti-dive.")
+    fontes = {10: "Placeholder geométrico para testar a fórmula; não é hardpoint real. Fase 2: REFERENCE do OptimumKinematics.",
+              11: _KIN, 12: _KIN, 13: _KIN}
+    a += [_a("07_KINEMATICS", f"F{r}", txt + contrato, "EDR-053 (conselho de 2026-10-19; usuário seguiu a recomendação)")
+          for r, txt in fontes.items()]
+    return a
+
+
+# EDR-039 reaberto (usuário, 2026-10-19): o .tir é PAC2002 do Adams, cujos parâmetros "must always be valid for the TYDEX
+# W-axis system (ISO oriented)" (Adams 2024.1, Using the PAC2002 Tire Model, p. 7). Sistema de eixos declarado = ISO_TYDEX.
+EIXO_TIR = "ISO_TYDEX"
+TIR_PROVISORIO = AQUI.parent / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
+_REF39 = "EDR-039 reaberto (usuário, 2026-10-19): .tir PAC2002 = TYDEX W (ISO), help do Adams p. 7"
+
+
+def _eixo_iso() -> list[dict]:
+    """10_TIRE declara ISO_TYDEX; referências do Python do caso VERIF recalculadas no mesmo eixo; textos que diziam SAE."""
+    import math
+    import tire_model as tm
+    ds = tm.load_dataset(TIR_PROVISORIO, source_axis_system=EIXO_TIR)
+    fx, fy, _ = tm.wheel_forces(ds, "FR", 700.0, math.radians(3), math.radians(1.5), 0.05)   # caso VERIF (build_workbook)
+    mu = tm.mu_effective(fx, fy, 700.0)
+    return [
+        _a("10_TIRE", "B11", EIXO_TIR, _REF39, comentario=(
+            "Palavra-chave lida pelas fórmulas. ISO_TYDEX: identidade (o .tir PAC2002 vale no eixo W do TYDEX, orientação ISO: "
+            "help do Adams 2024.1, PAC2002, p. 7). SAE_CALSPAN: α_arquivo = −α_ISO; Fy_ISO = −Fy_arquivo; γ_arquivo = −γ_projeto, "
+            "para dado bruto em SAE. Qualquer outro texto => dataset INVÁLIDO. Ver tire_model.AXIS_TRANSFORMS e EDR-039.")),
+        _a("10_TIRE", "B10", "CONFIRMED — .tir PAC2002 em TYDEX W (ISO), help do Adams p. 7", _REF39, comentario=(
+            "V3.0 (EDR-039 reaberto, 2026-10-19): o arquivo declara TIRE_VERSION PAC2002 2018 e compatibilidade com Adams Tire; o "
+            "help do Adams diz que os parâmetros do arquivo valem sempre no eixo W do TYDEX (orientação ISO). Confere com a "
+            "avaliação do arquivo: Fy < 0 para α > 0 e Fy < 0 para γ > 0 (Pacejka, App. 1, p. 612: só no ISO o camber positivo "
+            "desloca Fy para baixo). Até a V2.4 o arquivo era declarado SAE_CALSPAN, com o sinal do camber inferido.")),
+        _a("13_VALIDATION", "B37", fx, _REF39 + "; tire_model.wheel_forces(ISO_TYDEX, FR, 700 N, 3°, 1,5°, 0,05)"),
+        _a("13_VALIDATION", "B38", fy, _REF39 + "; idem"),
+        _a("13_VALIDATION", "B39", mu, _REF39 + "; idem"),
+        _a("14_DASHBOARD", "B38", "ISO (TYDEX W, help do Adams PAC2002); EDR-039", _REF39),
+    ]
+# FB-03, fase 2 (aprovada pelo usuário em 2026-10-19): pior origem ao vivo nos resultados principais do 14_DASHBOARD.
+DASH_RESULTADOS = (7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 33, 34, 35, 36, 37)
+DASH_CABECALHOS = (5,)             # linha vazia acima da 1ª seção (as linhas de seção são mescladas A:E)
+
+
+def _formula_pior_origem(celulas: list[tuple[str, str]]) -> str:
+    """Maior índice na lista 'Origens' entre as células de origem; origem vazia ou fora da lista conta como '? A confirmar'.
+
+    A lista 'Origens' (00_README) está na ordem inversa da pior origem (raizes.PIOR_PRIMEIRO), então pior = maior índice.
+    """
+    n = len(ORIGENS_LISTA)
+    termos = [f"IFERROR(MATCH('{aba}'!${re.sub(r'[0-9]', '', c)}${re.sub(r'[A-Z]', '', c)},{NOME_LISTA},0),{n})"
+              for aba, c in celulas]
+    return f"=INDEX({NOME_LISTA},MAX({','.join(termos)}))"
+
+
+def _feedback2_pior_origem(wb, registro: list[dict]) -> None:
+    """Coluna E do 14_DASHBOARD: pior origem das entradas de cada resultado, calculada ao vivo pela coluna Origem.
+
+    As células de origem de cada resultado saem do grafo de fórmulas na geração (python/raizes.py); a fórmula lê os
+    rótulos ao vivo, mas a lista de células é a da geração (TC-WB30-014 confere que ela cobre todas as raízes).
+    """
+    from openpyxl.formatting.rule import FormulaRule
+    from openpyxl.styles import PatternFill
+    from raizes import PIOR_PRIMEIRO, Grafo
+    assert tuple(reversed(PIOR_PRIMEIRO)) == ORIGENS_LISTA, "ordem da lista 'Origens' deixou de ser a inversa da pior origem"
+    ref = "FB-03 fase 2 / EDR-035 (usuário, 2026-10-19)"
+    d = wb["14_DASHBOARD"]
+    g = Grafo(wb)
+    for r in DASH_CABECALHOS:
+        d[f"E{r}"]._style = copy.copy(d["A6"]._style)
+        d[f"E{r}"].value = "Coluna E: pior origem das entradas (ao vivo)"
+        registro.append({"aba": "14_DASHBOARD", "cel": f"E{r}", "antes": None, "novo": d[f"E{r}"].value, "ref": ref})
+    for r in DASH_RESULTADOS:
+        celulas = g.celulas_origem(("14_DASHBOARD", f"B{r}"))
+        if not celulas:
+            raise RuntimeError(f"14_DASHBOARD B{r}: nenhuma raiz com coluna Origem")
+        d[f"E{r}"]._style = copy.copy(d[f"D{r}"]._style)
+        d[f"E{r}"].value = _formula_pior_origem(celulas)
+        registro.append({"aba": "14_DASHBOARD", "cel": f"E{r}", "antes": None, "novo": d[f"E{r}"].value, "ref": ref})
+    d.column_dimensions["E"].width = 30
+    faixa = f"E{DASH_RESULTADOS[0]}:E{DASH_RESULTADOS[-1]}"
+    for simb, cor in COR_ORIGEM.items():
+        d.conditional_formatting.add(faixa, FormulaRule(formula=[f'LEFT($E{DASH_RESULTADOS[0]},1)="{simb}"'],
+                                                        fill=PatternFill("solid", start_color=cor, end_color=cor)))
+    registro.append({"aba": "14_DASHBOARD", "cel": f"{faixa} (formatação)", "antes": None, "novo": "cores por origem",
+                     "ref": ref})
+
+
+LINHA_LKYG = 177   # 10_TIRE: logo abaixo do ε (176); B86:B175 são os coeficientes da V2.4
+
+
+def _lkyg(wb, layout: dict, registro: list[dict]) -> None:
+    """λKyγ (LKYG) nos termos de camber de SHy e SVy (Adams 2024.1, PAC2002, eq. 41-42; EDR-042; usuário, 2026-10-20:
+    "Pode corrigir"). Com LKYG = 1 no .tir provisório, nenhum valor muda."""
+    import tire_model as tm
+    ref = "EDR-042 (LKYG, Adams PAC2002 eq. 41-42; usuário 2026-10-20)"
+    t = wb["10_TIRE"]
+    prow, rows = layout["prow"], layout["rows"]
+    lkyg = tm.load_dataset(TIR_PROVISORIO, source_axis_system=EIXO_TIR).p["LKYG"]
+    r = LINHA_LKYG
+    for col, val, src in (("A", "LKYG", "A175"), ("B", lkyg, "B175"), ("G", "-", "G175"), ("H", "SUS-501", "H175"),
+                          ("I", "Escala da rigidez de camber Kyγ0 (termos de camber de SHy e SVy)", "I175")):
+        c = t[f"{col}{r}"]
+        c._style = copy.copy(t[src]._style)
+        registro.append({"aba": "10_TIRE", "cel": f"{col}{r}", "antes": c.value, "novo": val, "ref": ref})
+        c.value = val
+    L = f"$B${r}"
+    phy3, lmuy = f"$B${prow['PHY3']}", f"$B${prow['LMUY']}"
+    for col in "BCDEF":
+        gy = f"{col}${rows['gy']}"
+        for linha, velho, novo in ((rows["SHy"], f"{phy3}*{gy})", f"{phy3}*{gy}*{L})"),
+                                   (rows["SVy"], f"*{gy})*{lmuy})", f"*{gy}*{L})*{lmuy})")):
+            c = t[f"{col}{linha}"]
+            antes = c.value
+            if antes.count(velho) != 1:
+                raise RuntimeError(f"10_TIRE {col}{linha}: fórmula inesperada {antes!r}")
+            c.value = antes.replace(velho, novo)
+            registro.append({"aba": "10_TIRE", "cel": f"{col}{linha}", "antes": antes, "novo": c.value, "ref": ref})
+    j = t["J84"]
+    antes = j.value
+    j.value = antes.replace("(B86:B175)", "(B86:B175 e o LKYG em B177)")
+    registro.append({"aba": "10_TIRE", "cel": "J84", "antes": antes, "novo": j.value, "ref": ref})
+
+
+def _fechamento(wb, registro: list[dict]) -> None:
+    """Fechamento da V3.0 (usuário, 2026-10-20: "Vamos fechar a V3.0"; EDR-051): a planilha vira o arquivo vivo da equipe.
+    Muda só texto: versão (00_README A3), item 5 do guia e linha do changelog."""
+    ref = "EDR-051 (fechamento da V3.0, 2026-10-20)"
+    m = wb["00_README"]
+    antes = m["A3"].value
+    velho = "V3.0 (em desenvolvimento até concluir as correções de feedback;"
+    assert velho in antes, "texto da versão em 00_README!A3 mudou"
+    m["A3"].value = antes.replace(velho, "V3.0 (fechada em 2026-10-20: arquivo vivo da equipe, EDR-051;")
+    registro.append({"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V3.0 (em desenvolvimento ...",
+                     "novo": "Versão do workbook: V3.0 (fechada em 2026-10-20 ...", "ref": ref})
+    r5 = LINHAS_ORIGENS.stop + 2
+    c = m[f"A{r5}"]
+    assert str(c.value).startswith("5. "), "item 5 do guia mudou de linha"
+    antes = c.value
+    c.value = ("5. Esta é a planilha da equipe (V3.0 fechada, EDR-051). Preencha só as entradas (valor, Origem e Fonte), as "
+               "metas da 03_TARGETS e o setup da 01_SETUP. Não insira nem apague linhas, colunas ou abas, não troque fórmula "
+               "por valor e não salve pelo LibreOffice. Mudança de fórmula ou de estrutura só pelo script do repositório, "
+               "com aprovação. Resultado calculado com dado novo não é validado (NOT_VALIDATED) até alguém conferir.")
+    registro.append({"aba": "00_README", "cel": f"A{r5}", "antes": antes, "novo": c.value, "ref": ref})
+    ch = wb["15_CHANGELOG"]
+    for col in "ABCDE":
+        ch[f"{col}19"]._style = copy.copy(ch[f"{col}15"]._style)
+    ch["A19"].value = "2026-10"
+    ch["B19"].value = ("V3.0 fechada (2026-10-20): a planilha vira o arquivo vivo da equipe; a referencia imutavel e o arquivo da tag "
+                       "v3.0. FB-04 passa para a V3.1.")
+    ch["C19"].value = ("EDR-051 (fechamento; tratamento do CA-07 decidido por conselho, a pedido do usuario). Verificacao: "
+                       "tools/rodar_testes.py (CA-07 regeneracao e viva; CA-09 sobre a referencia).")
+    registro.append({"aba": "15_CHANGELOG", "cel": "A19:C19", "antes": None, "novo": "(linha do fechamento da V3.0)", "ref": ref})
+
+
+def _eixo_iso_textos(wb, registro: list[dict]) -> None:
+    """Textos e comentários que diziam SAE (EDR-039 reaberto); nenhum valor nem fórmula muda aqui."""
+    def troca(aba, cel, velho, novo_txt):
+        c = wb[aba][cel]
+        assert velho in c.value, f"{aba}!{cel}: texto esperado não encontrado"
+        antes = c.value
+        c.value = c.value.replace(velho, novo_txt)
+        registro.append({"aba": aba, "cel": cel, "antes": antes, "novo": c.value, "ref": _REF39})
+    troca("00_README", "A37", "arquivo em SAE (TTC, declarado) transformado para ISO, sinal de camber não confirmado",
+          "arquivo em ISO (eixo W do TYDEX, como manda o help do Adams para o PAC2002; EDR-039)")
+    troca("04_DECISION_REGISTER", "E17",
+          "Sistema de eixos do arquivo = SAE (Calspan/TTC), DECLARADO pelo usuario (dados baixados do TTC), transformado para ISO "
+          "(alpha_arq=-alpha, Fy_ISO=-Fy_arq; camber: empuxo para o lado da inclinacao, INFERIDO: IA do TTC nao verificado).",
+          "Sistema de eixos do arquivo = ISO (eixo W do TYDEX): o .tir e PAC2002 do Adams, cujos parametros valem sempre no "
+          "TYDEX W (help do Adams 2024.1, p. 7; EDR-039 reaberto na V3.0). Ate a V2.4 era declarado SAE (Calspan/TTC), com o "
+          "sinal do camber inferido.")
+    c = wb["10_TIRE"]["B21"]
+    antes = c.comment.text if c.comment else None
+    texto = ("Dataset é de pneu Right (TYRESIDE). Rodas L usam espelhamento (H4; equivale ao espelhamento do Adams em relação "
+             "a α = 0, help p. 73-74): α_R=−α e Fy_L=−Fy_R; o camber do projeto (+ = topo para fora) vale nos dois lados. "
+             "Depois, transformação de eixos do arquivo (ISO_TYDEX = identidade). VERIF = pneu direito, caso fixo de verificação "
+             "contra Python.")
+    cm = Comment(texto, AUTOR); cm.width, cm.height = 340, 130
+    c.comment = cm
+    registro.append({"aba": "10_TIRE", "cel": "B21 (comentário)", "antes": antes, "novo": texto, "ref": _REF39})
+
+
+def _feedback2_formatacao(wb, registro: list[dict]) -> None:
+    """Parte da 2ª rodada da revisão metodológica que não é valor de célula: mesclagem do item 7 do guia, versão e changelog."""
+    m = wb["00_README"]
+    m.merge_cells(f"A{LINHA_NA_TBD}:E{LINHA_NA_TBD}")
+    for r in DIR_CABECALHOS:
+        wb["07_KINEMATICS"].merge_cells(f"A{r}:E{r}")
+    marca = "EDR-035, EDR-050, EDR-051)"
+    assert marca in m["A3"].value, "texto da versão em 00_README!A3 mudou"
+    m["A3"].value = m["A3"].value.replace(marca, marca[:-1] + "; 2ª rodada da revisão metodológica: hipótese do CG não suspenso como "
+                                          "entrada, centro da roda separado, significado de N/A e TBD)")
+    c = wb["15_CHANGELOG"]
+    for col in "ABCDE":
+        c[f"{col}18"]._style = copy.copy(c[f"{col}15"]._style)
+    c["A18"].value = "2026-10"
+    c["B18"].value = ("V3.0, 2a rodada da revisao metodologica: razao h_ns / raio do pneu como entrada (05_VEHICLE B35/B36, Milliken p. 672); "
+                      "05 B16/B17 = raio x razao; 07_KINEMATICS B14 (centro da roda traseira) = raio do pneu, sem passar pelo CG nao "
+                      "suspenso; item 7 do guia (N/A e TBD); 14_DASHBOARD coluna E: pior origem das entradas de cada resultado, "
+                      "ao vivo (FB-03 fase 2); 10_TIRE: eixo do .tir = ISO_TYDEX (EDR-039 reaberto, help do Adams PAC2002); 07_KINEMATICS "
+                      "l.71-85: direcao (Ackermann, relacao pela cremalheira, roll steer; SUS-414, SUS-415, SUS-601; EDR-052).")
+    c["C18"].value = ("Decisoes do usuario (2026-10-19). EDR-050 (estendido), EDR-035 (N/A e TBD). Registro celula a celula: "
+                      "docs/registro-de-versoes-V3_0.md. Validation: test_workbook_suspensao (TC-WB30-013 estendido). NOT_VALIDATED fisicamente.")
+    registro += [
+        {"aba": "00_README", "cel": f"A{LINHA_NA_TBD}:E{LINHA_NA_TBD} (mesclagem)", "antes": None, "novo": "A:E", "ref": "EDR-035"},
+        {"aba": "00_README", "cel": "A3", "antes": "Versão do workbook: V3.0 ...", "novo": "(acrescenta a 2ª rodada da revisão metodológica)",
+         "ref": "EDR-035/050"},
+        {"aba": "15_CHANGELOG", "cel": "A18:C18", "antes": None, "novo": "(linha V3.0, 2ª rodada da revisão metodológica)", "ref": "EDR-035/050"},
+    ]
+
+
 def _ky_formula(antiga: str, lfzo: str, lky: str) -> str:
     """Remove o segundo λFz0 ('*LFZO*LKY' -> '*LKY') sem tocar no resto da fórmula."""
     alvo = f"*{lfzo}*{lky})"
@@ -426,6 +770,11 @@ def aplicar(src: Path, out: Path, layout: dict) -> list[dict]:
     registro.append({"aba": "15_CHANGELOG", "cel": "A16:C16", "antes": None, "novo": "(linha V3.0)", "ref": "EDR-043"})
 
     _rodada2_formatacao(wb, registro)
+    _lkyg(wb, layout, registro)
+    _feedback2_formatacao(wb, registro)
+    _feedback2_pior_origem(wb, registro)
+    _eixo_iso_textos(wb, registro)
+    _fechamento(wb, registro)
     wb.calculation.fullCalcOnLoad = True
     out.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out)
@@ -454,7 +803,7 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
                     c.fill = PatternFill(fill_type=None)
                     reg(ws.title, f"{c.coordinate} (estilo)", "fundo amarelo (hipótese-chave)", "sem fundo", "FB-02 (usuário, 2026-10-19)")
     # FB-03: o texto dos comentários das entradas passou para a coluna Fonte; o comentário sai para não haver duas cópias.
-    migrados = [(aba, f"B{r}") for aba, r, _, _ in ORIGENS] + [("10_TIRE", "B23"), ("10_TIRE", "B24"), ("10_TIRE", "B86")]
+    migrados = [(aba, f"B{r}") for aba, r, _, _ in _todas_origens()] + [("10_TIRE", "B23"), ("10_TIRE", "B24"), ("10_TIRE", "B86")]
     for aba, cel in migrados:
         c = wb[aba][cel]
         if c.comment is not None:
@@ -481,8 +830,8 @@ def _rodada2_formatacao(wb, registro: list[dict]) -> None:
 
     for aba in ABAS_ORIGEM:
         ws = wb[aba]
-        linhas = [r for a_, r, org, _ in ORIGENS if a_ == aba and org is not None]
-        todas = [r for a_, r, _, _ in ORIGENS if a_ == aba]
+        linhas = [r for a_, r, org, _ in _todas_origens() if a_ == aba and org is not None]
+        todas = [r for a_, r, _, _ in _todas_origens() if a_ == aba]
         r0, r1 = 3, max(ws.max_row, max(todas))
         ws.column_dimensions["E"].width, ws.column_dimensions["F"].width = 30, 80
         ws.column_dimensions["G"].hidden = ws.column_dimensions["H"].hidden = True
@@ -557,6 +906,9 @@ def main() -> None:
     a = ap.parse_args()
     if Path(a.out).resolve() == Path(a.src).resolve():
         raise SystemExit("saída igual à origem: recusado (nunca sobrescrever a planilha entregue)")
+    viva = (AQUI.parent / "excel" / "FSAE_EV_Suspension_Fase1_V3_0.xlsx").resolve()
+    if Path(a.out).resolve() == viva:
+        raise SystemExit("saída = planilha viva da equipe (V3.0 fechada, EDR-051): recusado; gere em build/ ou numa pasta temporária")
     layout = json.loads(Path(a.layout).read_text(encoding="utf-8"))
     reg = aplicar(Path(a.src), Path(a.out), layout)
     if a.registro:
