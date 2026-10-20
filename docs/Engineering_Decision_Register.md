@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 54 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
+Total: 55 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
 
 | ID | Título | Status |
 |---|---|---|
@@ -91,6 +91,7 @@ Total: 54 registros. APPROVED: 18 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DEC
 | EDR-052 | Direção pela literatura: Ackermann, relação de direção, ride steer, roll steer e efeitos do pino mestre (SUS-414 a 416) | VERIFIED |
 | EDR-053 | Linha de força pelo trabalho virtual como definição primária do IC/RC no MODEL (SUS-412) | VERIFIED |
 | EDR-054 | Roadmap V0-V5 como plano do projeto; etapas E0-E5 e "V" só para revisão de artefatos | APPROVED_WITH_CONDITIONS |
+| EDR-055 | Amplitude exploratória da varredura do pneu (LFZO, LMUY, LKY × 0,8/1,0/1,2) | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1201,6 +1202,26 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-017, EDR-019, EDR-034, EDR-043.
 - **Source_Conversation_or_Document:** Conversa de 2026-10-20 (lista consolidada da V4.0, decisão B8; conselho rigoroso de 7 assentos).
 
+### EDR-055 — Amplitude exploratória da varredura do pneu (LFZO, LMUY, LKY × 0,8/1,0/1,2)
+
+- **Date:** 2026-10-20
+- **Status:** APPROVED
+- **Context:** A análise de par no limite (`python/equilibrio.py`, incremento 1 da V4.0) precisa saber se o veredito (sub/sobreesterçante) resiste a uma mudança nas propriedades do pneu (spec `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md` §7.6, D15; plano `docs/superpowers/plans/2026-10-20-v4-0-inc1-viabilidade-robustez.md`, Task 7). O pneu é o dataset TTC provisório (EDR-038) e não há faixa de incerteza do pneu registrada (EDR-022). Os fatores de escala do PAC2002 existem, segundo o help do Adams 2024.1 (pp. 23-24, "User Scaling Factors"), "to easily examine the influence of changing tire properties without the need to change one of the real Magic Formula coefficients": LFZO (escala da carga nominal), LMUY (escala do coeficiente de atrito de pico de Fy) e LKY (escala da rigidez de curva de Fy). Medição da Task 6 (commit a732c39, `tests/exp_viabilidade_par.py`): no caso da planilha viva, a análise de par fica N/A a partir de 1,55 g porque a roda traseira externa passa de FZMAX (Fz_RR = 1526 N contra 1521 N); em 1,50 g cada eixo usa cerca de 53% da capacidade. Os fatores λ não alteram a faixa FZMIN/FZMAX.
+- **Question:** Quais fatores e quais multiplicadores a varredura exploratória do pneu usa?
+- **Alternatives:** (a) LFZO, LMUY e LKY × {0,8; 1,0; 1,2}, produto cartesiano (27 combinações); (b) os mesmos fatores × {0,5; 0,75; 1,0; 1,25; 1,5} (125 combinações); (c) só LFZO e LKY × {0,8; 1,0; 1,2}. LKYG fica fora em todas: a cambagem do caso atual é 0, sem efeito.
+- **Decision:** (a) (usuário, 2026-10-20, aceitando a recomendação do assistente). Fatores LFZO, LMUY e LKY, cada um × {0,8; 1,0; 1,2}, em produto cartesiano (27 combinações). Os valores são exploratórios, origem "○ Arbitrário / demonstrativo", e nunca uma faixa do pneu (EDR-022). Ficam em `data/varredura_pneu_exploratoria.json`.
+- **Rationale:** Três níveis por fator bastam para ver se o veredito muda de sinal e custam 27 casos, contra 125 da alternativa (b), sem faixa de pneu que justifique a amplitude maior. LFZO muda a sensibilidade à carga (a diferença entre eixos); LMUY escala os dois eixos por igual, com pouco efeito no sinal, mas desloca a saturação; LKY muda a rigidez de curva. A alternativa (c) deixaria de testar o LMUY, que é o fator que move a saturação. A decisão não valida nenhum valor do pneu.
+- **Evidence:** Help do Adams 2024.1 PAC2002, pp. 23-24 (conferido na imagem do PDF). Task 6 do incremento 1 (commit a732c39, `tests/exp_viabilidade_par.py`).
+- **Assumptions:** Os multiplicadores 0,8/1,0/1,2 são arbitrários e não representam a incerteza real do R60A. Para o caso da planilha viva (N/A por FZMAX a partir de 1,55 g), espera-se "N/A em toda a varredura" nessa região, porque os λ não mudam a faixa FZMIN/FZMAX; isso ainda não foi medido com os λ aplicados.
+- **Consequences:** `varredura_pneu` aplica os 27 casos e relata se o veredito muda; o resultado é apenas robustez a uma perturbação demonstrativa, nunca incerteza do carro. Um veredito "robusto" aqui não vale como validação do pneu.
+- **Affected_Artifacts:** `python/equilibrio.py` (`varredura_pneu`); `data/varredura_pneu_exploratoria.json`; `tools/relatorio_inc1.py` (futuro).
+- **Affected_Tests:** TC-EQ-016, TC-EQ-017, TC-EQ-018.
+- **Dependencies:** EDR-022, EDR-038, EDR-039.
+- **Approval_Conditions:** —
+- **Reopening_Criteria:** Pneu real (R60A) ou dataset do OptimumTire disponível; mudança da política de faixa do pneu (EDR-022).
+- **Related_Decisions:** EDR-015, EDR-022, EDR-038, EDR-049.
+- **Source_Conversation_or_Document:** Conversa de 2026-10-20 (incremento 1 da V4.0, Task 7); help do Adams 2024.1 PAC2002, pp. 23-24.
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1259,6 +1280,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-052 | SUS-408, SUS-410, SUS-413, SUS-414, SUS-415, SUS-416, SUS-601 | kinematics_model; planilha V3.0 (07 l. 71-85); Standard. | TC-KIN-121..127, TC-WB30-015 |
 | EDR-053 | SUS-301, SUS-302, SUS-412 | kinematics_model; Standard; planilha V3.0 (07 F10:F13). | TC-KIN-120, TC-KIN-128 |
 | EDR-054 | — | docs/arquitetura-planejada.md; especificação da V4.0. | — |
+| EDR-055 | — | python/equilibrio.py (varredura_pneu); data/varredura_pneu_exploratoria.json. | TC-EQ-016..018 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
