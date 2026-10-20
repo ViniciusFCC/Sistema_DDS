@@ -1,10 +1,13 @@
 """
 Testes do módulo equilibrio (análise de par, Milliken §7.1; V4.0, incremento 1).
 TC-EQ-001..003 (IDs autorizados pelo usuário): caso, cargas e camber por roda.
+TC-EQ-004..008 (idem): curva do eixo, capacidade, borda da grade, faixa do pneu e sinal do toe.
 Roda como script: uv run python -X utf8 tests/test_equilibrio.py
 O veículo e os números de camber abaixo são entradas de teste, não do carro.
 """
 
+import dataclasses
+import math
 import os
 
 import equilibrio as eq
@@ -83,6 +86,66 @@ dif = max(abs(gam[c] - (estatico[c] + ganho[c] * phi)) for c in eq.CANTOS)
 erro_toe = raises(lambda: eq.CasoEquilibrio(cfg=cfg, ds=ds, toe_rad={"FL": 0.0}), ValueError, "toe_rad")
 check("TC-EQ-003: camber = estático + ganho·φ (φ de lateral_dfz); toe_rad com cantos faltando -> ValueError",
       dif < 1e-15 and phi != 0.0 and erro_toe, f"phi={phi:.6f} rad, max dif={dif:.2e}")
+
+# ---------------- TC-EQ-004 : fy_eixo = soma das duas rodas ----------------
+caso0 = eq.CasoEquilibrio(cfg=cfg, ds=ds)
+fz0 = eq.cargas(caso0, 0.0)
+dif = 0.0
+for a in eq.grade_alfa(caso0, 25):
+    esperado = (tm.wheel_forces(ds, "FL", fz0["FL"], a, 0.0, 0.0)[1]
+                + tm.wheel_forces(ds, "FR", fz0["FR"], a, 0.0, 0.0)[1])
+    dif = max(dif, abs(eq.fy_eixo(caso0, "F", 0.0, a) - esperado))
+check("TC-EQ-004: fy_eixo = Fy(FL) + Fy(FR) em cada alfa da grade (a_y=0, toe e camber 0)",
+      dif < TOL, f"max dif={dif:.2e} N")
+
+# ---------------- TC-EQ-005 : máximo numérico = forma fechada |Dy| + SVy ----------------
+fnom = ds.p["FNOMIN"]
+info = tm.pure_fy0(ds.p, fnom, 0.0, 0.0)[1]
+fechada = abs(info["Dy"]) + info["SVy"]
+N = 4001
+alfas = [i * ds.p["ALPMIN"] / (N - 1) for i in range(N)]
+fys = [tm.wheel_forces(ds, "FR", fnom, a, 0.0, 0.0)[1] for a in alfas]
+fmax = max(fys)
+i_pico = fys.index(fmax)
+rel = abs(fmax - fechada) / fechada
+check("TC-EQ-005: max numérico de Fy (FR, FNOMIN, gamma=0) = |Dy|+SVy (erro rel < 1e-4); pico fora da borda",
+      rel < 1e-4 and i_pico < N - 1,
+      f"num={fmax:.3f} N, fechada={fechada:.3f} N, rel={rel:.2e}, idx={i_pico}, "
+      f"alfa={math.degrees(alfas[i_pico]):.2f} deg")
+
+# ---------------- TC-EQ-006 : pico na borda da grade ----------------
+# Dataset de teste (PKY1 x 0,05): pneu pouco rígido, pico além da faixa de alfa. Não é pneu.
+ds_mole = dataclasses.replace(ds, p={**ds.p, "PKY1": ds.p["PKY1"] * 0.05})
+caso_mole = eq.CasoEquilibrio(cfg=cfg, ds=ds_mole)
+cap_mole = eq.capacidade_eixo(caso_mole, "F", 0.0, 200)
+check("TC-EQ-006: pneu pouco rígido -> motivo 'pico na borda da grade de α' (valor mantido)",
+      cap_mole.motivo == "pico na borda da grade de α" and cap_mole.fy_max_N is not None,
+      f"motivo={cap_mole.motivo!r}, fy_max={cap_mole.fy_max_N}")
+
+# ---------------- TC-EQ-007 : Fz fora da faixa -> None com motivo, sem exceção ----------------
+fz2 = eq.cargas(caso0, 2.0 * G)
+try:
+    cap_fora = eq.capacidade_eixo(caso0, "F", 2.0 * G, 25)
+    sem_excecao = True
+except Exception:  # o check precisa registrar qualquer exceção como falha
+    cap_fora = None
+    sem_excecao = False
+check("TC-EQ-007: FL com Fz < FZMIN em 2,0 g -> fy_max None e motivo 'fora da faixa do pneu', sem exceção",
+      fz2["FL"] < ds.p["FZMIN"] and sem_excecao and cap_fora.fy_max_N is None
+      and cap_fora.alfa_pico_rad is None and "fora da faixa do pneu" in (cap_fora.motivo or ""),
+      f"Fz_FL={fz2['FL']:.1f} N, FZMIN={ds.p['FZMIN']}, motivo={getattr(cap_fora, 'motivo', None)!r}")
+
+# ---------------- TC-EQ-008 : sinal do toe (EDR-002) ----------------
+um_grau = math.radians(1.0)
+caso_toe = eq.CasoEquilibrio(cfg=cfg, ds=ds, toe_rad={"FL": um_grau, "FR": um_grau, "RL": 0.0, "RR": 0.0})
+fzt = eq.cargas(caso_toe, 0.0)
+dal = eq.deriva_toe(caso_toe)
+fy_fl = tm.wheel_forces(ds, "FL", fzt["FL"], dal["FL"], 0.0, 0.0)[1]
+fy_fr = tm.wheel_forces(ds, "FR", fzt["FR"], dal["FR"], 0.0, 0.0)[1]
+fy_ax = eq.fy_eixo(caso_toe, "F", 0.0, 0.0)
+check("TC-EQ-008: toe-out simétrico de 1 grau -> Fy(FL) > 0, Fy(FR) < 0, soma ~ 0",
+      dal["FL"] < 0 < dal["FR"] and fy_fl > 0 and fy_fr < 0 and abs(fy_ax) < TOL,
+      f"FL={fy_fl:.3f} N, FR={fy_fr:.3f} N, soma={fy_ax:.2e}")
 
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
