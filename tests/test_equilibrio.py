@@ -2,6 +2,7 @@
 Testes do módulo equilibrio (análise de par, Milliken §7.1; V4.0, incremento 1).
 TC-EQ-001..003 (IDs autorizados pelo usuário): caso, cargas e camber por roda.
 TC-EQ-004..008 (idem): curva do eixo, capacidade, borda da grade, faixa do pneu e sinal do toe.
+TC-EQ-009..015 (idem): análise de par (força exigida, saturação, veredito e C_N, Milliken §7.1 e §8.4).
 Roda como script: uv run python -X utf8 tests/test_equilibrio.py
 O veículo e os números de camber abaixo são entradas de teste, não do carro.
 """
@@ -164,6 +165,151 @@ fy_ax = eq.fy_eixo(caso_toe, "F", 0.0, 0.0)
 check("TC-EQ-008: toe-out simétrico de 1 grau -> Fy(FL) > 0, Fy(FR) < 0, soma ~ 0",
       dal["FL"] < 0 < dal["FR"] and fy_fl > 0 and fy_fr < 0 and abs(fy_ax) < TOL,
       f"FL={fy_fl:.3f} N, FR={fy_fr:.3f} N, soma={fy_ax:.2e}")
+
+
+# ---------------- Análise de par (TC-EQ-009..015) ----------------
+def _par_sem_excecao(caso_x, **kw):
+    try:
+        return eq.analise_par(caso_x, **kw), None
+    except Exception as e:  # o check precisa registrar qualquer exceção como falha
+        return None, f"{type(e).__name__}: {e}"
+
+
+def _folga_em(linhas, eixo, ay):
+    """Folga cap − req do eixo ('f' ou 'r') interpolada linearmente em ay, entre as linhas vizinhas."""
+    for la, lb in zip(linhas, linhas[1:]):
+        if la.ay_ms2 <= ay <= lb.ay_ms2:
+            ma = getattr(la, f"cap_{eixo}").fy_max_N - getattr(la, f"req_{eixo}")
+            mb = getattr(lb, f"cap_{eixo}").fy_max_N - getattr(lb, f"req_{eixo}")
+            return ma + (mb - ma) * (ay - la.ay_ms2) / (lb.ay_ms2 - la.ay_ms2)
+    raise AssertionError(f"a_y={ay} fora das linhas")
+
+
+def _resumo(r):
+    if r is None:
+        return "sem resultado"
+    return (f"veredito={r.veredito}, sat_f={r.ay_sat_f}, sat_r={r.ay_sat_r}, "
+            f"lim={r.ay_lim}, c_n={r.c_n}, motivo={r.motivo!r}")
+
+
+# Dataset de teste: LMUY = 0,5. Escala só de teste, não é pneu ("Risco conhecido" do plano: com o
+# .tir sem escala, a roda interna sai da faixa de Fz antes de o eixo saturar).
+ds_teste = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.5})
+W = cfg.mass_total * G
+
+# ---------------- TC-EQ-009 : força lateral exigida por eixo ----------------
+cfg_ab = veiculo_base(cg_to_front=0.85, cg_to_rear=0.70)
+caso_ab = eq.CasoEquilibrio(cfg=cfg_ab, ds=ds)
+try:
+    req = eq.forca_exigida(caso_ab, 9.81)
+except Exception as e:  # o check precisa registrar qualquer exceção como falha
+    req = (math.nan, math.nan)
+esp = (cfg_ab.mass_total * 9.81 * 0.70 / cfg_ab.wheelbase, cfg_ab.mass_total * 9.81 * 0.85 / cfg_ab.wheelbase)
+check("TC-EQ-009: forca_exigida = (m·a_y·b/L, m·a_y·a/L) com a != b",
+      abs(req[0] - esp[0]) < TOL and abs(req[1] - esp[1]) < TOL,
+      f"obtido={req}, esperado={esp}")
+
+# ---------------- TC-EQ-010 : carro simétrico -> NEUTRO ----------------
+k_soma = cfg.roll_stiffness_front + cfg.roll_stiffness_rear
+
+
+def veiculo_simetrico(lambda_f=0.5):
+    L = cfg.wheelbase
+    return veiculo_base(cg_to_front=L / 2, cg_to_rear=L / 2, track_rear=cfg.track_front,
+                        roll_stiffness_front=lambda_f * k_soma, roll_stiffness_rear=(1 - lambda_f) * k_soma,
+                        roll_center_rear=cfg.roll_center_front, unsprung_mass_rear=cfg.unsprung_mass_front,
+                        unsprung_cg_height_rear=cfg.unsprung_cg_height_front)
+
+
+r_sim, err_sim = _par_sem_excecao(eq.CasoEquilibrio(cfg=veiculo_simetrico(0.5), ds=ds_teste))
+check("TC-EQ-010: carro simétrico (LMUY 0,5) -> as duas saturações existem, NEUTRO, c_n None",
+      r_sim is not None and r_sim.ay_sat_f is not None and r_sim.ay_sat_r is not None
+      and r_sim.veredito == eq.NEUTRO and abs(r_sim.ay_sat_f - r_sim.ay_sat_r) < r_sim.passo_ms2
+      and r_sim.c_n is None,
+      err_sim or _resumo(r_sim))
+
+# ---------------- TC-EQ-011 : distribuição de rolagem (Gillespie p. 214) ----------------
+# Com LMUY = 0,5 a roda interna sai da faixa de Fz antes de o eixo saturar; por isso LMUY = 0,45
+# (escala só de teste, não é pneu) e passo de 0,01 g.
+# Com este pneu, o efeito de lambda_f 0,5 -> 0,7 é ~0,03-0,04 g, abaixo do passo padrão de 0,05 g.
+ds_teste_011 = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.45})
+PASSO_011 = 0.01
+r_push, err_push = _par_sem_excecao(eq.CasoEquilibrio(cfg=veiculo_simetrico(0.7), ds=ds_teste_011),
+                                    passo_g=PASSO_011)
+r_loose, err_loose = _par_sem_excecao(eq.CasoEquilibrio(cfg=veiculo_simetrico(0.3), ds=ds_teste_011),
+                                      passo_g=PASSO_011)
+
+
+def _pre_saturacoes(r):
+    """As duas saturações existem e nenhuma roda sai da faixa (nos dois eixos) antes delas."""
+    if r is None or r.ay_sat_f is None or r.ay_sat_r is None:
+        return False
+    ate = max(r.ay_sat_f, r.ay_sat_r)
+    return all(ln.cap_f.motivo is None and ln.cap_r.motivo is None for ln in r.linhas if ln.ay_ms2 <= ate)
+
+
+def _sat_g(r):
+    if r is None or r.ay_sat_f is None or r.ay_sat_r is None:
+        return "sat indisponível"
+    return f"sat_f={r.ay_sat_f / G:.4f} g, sat_r={r.ay_sat_r / G:.4f} g"
+
+
+pre_011 = _pre_saturacoes(r_push) and _pre_saturacoes(r_loose)
+check("TC-EQ-011: lambda_f = 0,7 -> PUSH; lambda_f = 0,3 -> LOOSE (LMUY 0,45, passo 0,01 g; "
+      "pré-condição: duas saturações, sem roda fora da faixa antes delas)",
+      pre_011 and r_push.veredito == eq.PUSH and r_loose.veredito == eq.LOOSE,
+      f"0,7: {_sat_g(r_push)}; {err_push or _resumo(r_push)} | "
+      f"0,3: {_sat_g(r_loose)}; {err_loose or _resumo(r_loose)}")
+
+# ---------------- TC-EQ-012 : sinal e recomposição de C_N ----------------
+ok_012, det_012 = False, "pré-condição do TC-EQ-011 falhou"
+if pre_011 and r_push.veredito == eq.PUSH and r_loose.veredito == eq.LOOSE:
+    cs = veiculo_simetrico(0.7)
+    a_s, b_s, L_s = cs.cg_to_front, cs.cg_to_rear, cs.wheelbase
+    cn_push = _folga_em(r_push.linhas, "r", r_push.ay_lim) * b_s / (W * L_s)
+    cn_loose = -_folga_em(r_loose.linhas, "f", r_loose.ay_lim) * a_s / (W * L_s)
+    ok_012 = (r_push.c_n > 0 and r_loose.c_n < 0
+              and abs(r_push.c_n - cn_push) < 1e-12 and abs(r_loose.c_n - cn_loose) < 1e-12)
+    det_012 = (f"PUSH c_n={r_push.c_n:.6f} (recomp. {cn_push:.6f}); "
+               f"LOOSE c_n={r_loose.c_n:.6f} (recomp. {cn_loose:.6f})")
+check("TC-EQ-012: C_N > 0 em PUSH, < 0 em LOOSE e igual à recomposição pelas linhas", ok_012, det_012)
+
+# ---------------- TC-EQ-013 : pneu sem escala -> roda sai da faixa antes de saturar ----------------
+r_base, err_base = _par_sem_excecao(caso0)
+ok_013, det_013 = False, err_base or _resumo(r_base)
+if r_base is not None:
+    if r_base.veredito == eq.NA:
+        ok_013 = "fora da faixa do pneu" in (r_base.motivo or "") and r_base.c_n is None
+        ramo = "N/A"
+    elif r_base.veredito in (eq.PUSH, eq.LOOSE):
+        nao_sat = "r" if r_base.veredito == eq.PUSH else "f"
+        validas = [ln.ay_ms2 for ln in r_base.linhas if getattr(ln, f"cap_{nao_sat}").motivo is None]
+        ok_013 = r_base.ay_lim is not None and any(a > r_base.ay_lim for a in validas)
+        ramo = r_base.veredito
+    else:
+        ramo = r_base.veredito
+    # nos dois ramos: as saturações conhecidas caem dentro da parte válida da grade de cada eixo
+    for eixo, sat in (("f", r_base.ay_sat_f), ("r", r_base.ay_sat_r)):
+        if sat is not None:
+            ate = [ln for ln in r_base.linhas if ln.ay_ms2 <= sat + 1e-12]
+            seguinte = [ln for ln in r_base.linhas if ln.ay_ms2 > sat][:1]
+            ok_013 = ok_013 and all(getattr(ln, f"cap_{eixo}").motivo is None for ln in ate + seguinte)
+    det_013 = f"ramo={ramo}; {_resumo(r_base)}"
+check("TC-EQ-013: ds sem escala -> N/A 'fora da faixa do pneu', ou PUSH/LOOSE com o eixo não saturado válido "
+      "além de ay_lim; nenhuma capacidade inválida usada", ok_013, det_013)
+
+# ---------------- TC-EQ-014 : grade curta -> não satura ----------------
+r_curta, err_curta = _par_sem_excecao(caso0, ay_max_g=0.3)
+check("TC-EQ-014: ay_max_g = 0,3 -> N/A 'não satura até 0.3 g'",
+      r_curta is not None and r_curta.veredito == eq.NA and "não satura até 0.3 g" in (r_curta.motivo or "")
+      and r_curta.c_n is None and r_curta.ay_lim is None,
+      err_curta or _resumo(r_curta))
+
+# ---------------- TC-EQ-015 : parâmetros inválidos ----------------
+erros = [raises(lambda: eq.analise_par(caso0, ay_max_g=0)),
+         raises(lambda: eq.analise_par(caso0, passo_g=-0.05)),
+         raises(lambda: eq.analise_par(caso0, n_alfa=2))]
+check("TC-EQ-015: ay_max_g=0, passo_g=-0,05 e n_alfa=2 -> ValueError cada um", all(erros), f"{erros}")
 
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
