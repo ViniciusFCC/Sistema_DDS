@@ -183,7 +183,7 @@ TLLTD não adotado por ser target sem decisão da equipe).
 |---|---|---|---|
 | Pneus + transferência lateral | K = D_f − D_r, com D_eixo = W_eixo / C_eixo e C_eixo = Ky(Fz_ext, γ_ext) + Ky(Fz_int, γ_int) | 202, 213, 215-217 | Calcular, forma exata pelo PAC2002 |
 | Decomposição | K_tires = mesma conta no Fz estático; K_llt = (pneus + transferência) − K_tires | 202, 217 | Calcular, para explicar |
-| Deslocamento do pneu (conicidade e ply steer; PHY/PVY do PAC2002 dependentes da carga) | −(dF0_f/da_y)/C_αf + (dF0_r/da_y)/C_αr, com F0 = Fy do eixo em α = 0 (Conicity and ply steer, conferida na imagem) | 367 | Calcular; a parcela entra para que K seja igual à inclinação do passo 2 (EDR-057, 2026-10-21) |
+| Deslocamento do pneu (conicidade e ply steer; PHY/PVY do PAC2002 dependentes da carga) | −(dF0_f/da_y)/C_αf + (dF0_r/da_y)/C_αr, com F0 = Fy do eixo em α_ref = α_0, o ângulo exigido em a_y = 0 (0 no carro simétrico) (Conicity and ply steer, conferida na imagem) | 367 | Calcular; a parcela entra para que K seja igual à inclinação do passo 2 (EDR-057, 2026-10-21). F0 leva o Δα do toe e do Ackermann e o γ da linha fixo: a parcela contém também o toe × ΔFz e a variação, com a carga, do empuxo do camber estático (EDR-057, 2026-10-21) |
 | Camber | (C_γf/C_αf·∂γ_f/∂φ − C_γr/C_αr·∂γ_r/∂φ)·∂φ/∂a_y | 218-219 | Calcular; sinal amarrado ao EDR-002 por teste (γ_solo = γ_carroceria + φ, eq. 6-50) |
 | Roll steer | (ε_f − ε_r)·∂φ/∂a_y | 220 | Já existe (SUS-415) |
 | Torque de alinhamento | W·(p/L)·(C_αf + C_αr)/(C_αf·C_αr) | 222 | N/A: Mz não verificado |
@@ -195,6 +195,12 @@ TLLTD não adotado por ser target sem decisão da equipe).
   Na primeira linha, K é estimado por Richardson, 2·S(0,005 g) − S(0,01 g), porque o gradiente é a derivada
   (Gillespie p. 227; EDR-057, 2026-10-21).
 - **K do passo 1 = inclinação inicial das curvas de eixo do passo 2** (seção 7). Um teste exige igualdade.
+  A rigidez de eixo das parcelas é a inclinação da curva do eixo do passo 2 no ângulo exigido em a_y = 0, com o
+  toe, o Ackermann, o cos δ_ref e a limitação do EDR-056 (EDR-057, 2026-10-21). As parcelas seguem a forma
+  secante do Gillespie (K_llt como W/C(a_y) − W/C(0), pp. 216-217), e a coluna de inclinação é a tangente
+  (gradiente da SAE, p. 227): a igualdade só é exigida na primeira linha; acima dela, k_total e k_inclinacao
+  diferem por definição. O roll steer só existe no passo 1 (o passo 2 não esterça a traseira), e a igualdade vale
+  sem ele (EDR-057, 2026-10-21).
 - **Exibição:** "K = +x °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; sem compliance,
   torque de alinhamento e tração)" (EDR-057, 2026-10-21), nunca "K total" com parcela faltando; parcelas lado a
   lado com porcentagem; rótulo Subesterço /
