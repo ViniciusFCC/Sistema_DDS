@@ -626,12 +626,31 @@ ok_042d = (d42 is not None and d42["pior"] == "direita"
            and d42["direita"].ay_lim <= d42["esquerda"].ay_lim)
 _det42 = e42 or (f"esquerda: {_resumo(d42['esquerda'])}, res={d42['esquerda'].resolucao_ms2} | "
                  f"direita: {_resumo(d42['direita'])}, res={d42['direita'].resolucao_ms2} | pior={d42['pior']}")
+
+# 042d: tabela_linear (1ª linha) com o carro assimétrico (fix round 1 da Task 6). Veículo base e .tir real.
+# y_cg = −0,02 m (só de teste): a Fy do eixo em α = 0 já passa da exigência em a_y = 0, o ângulo necessário é > 0 e
+# angulos_necessarios precisa achá-lo; a 1ª linha tem k_inclinacao numérico. y_cg = 0: o ângulo em a_y = 0 é (0, 0)
+# e a 1ª linha é a de antes da correção: igual à Richardson das secantes sem desconto (forma anterior, recalculada
+# aqui) e ao valor de e2e3130 neste .tir (−6.1009286892091e-05 rad/(m/s²)).
+import equilibrio_linear as el
+
+tab_m = el.tabela_linear(eq.CasoEquilibrio(cfg=cfg, ds=ds, cg_lateral_m=-Y_TESTE), ay_max_g=0.05)
+ok_042e = tab_m[0]["k_inclinacao"] is not None and math.isfinite(tab_m[0]["k_inclinacao"])
+caso_42z = eq.CasoEquilibrio(cfg=cfg, ds=ds)
+tab_z = el.tabela_linear(caso_42z, ay_max_g=0.05)
+_sec = [-(a[0] - a[1]) / h for h, a in ((h, el.angulos_necessarios(caso_42z, h)) for h in (0.005 * G, 0.01 * G))]
+ok_042f = (el.angulos_necessarios(caso_42z, 0.0) == (0.0, 0.0)
+           and tab_z[0]["k_inclinacao"] == 2.0 * _sec[0] - _sec[1]
+           and tab_z[0]["k_inclinacao"] == -6.1009286892091e-05)
 check("TC-EQ-042: simétrico com y_cg = 0 -> esquerda == direita (ResultadoPar inteiro) e espelhar(caso) == caso; "
       "y_cg = +0,02 m (só de teste) -> soma estática igual, esquerda ganha W_eixo·y/t por eixo, cargas(a_y=0) = "
-      "estática deslocada; dois sentidos (LMUY 0,45) -> pior = direita",
-      ok_042a and ok_042a2 and ok_042b and ok_042c and ok_042d,
-      f"({ok_042a}/{ok_042a2}/{ok_042b}/{ok_042c}/{ok_042d}) sim: {e42s or _resumo(d42s['esquerda'])} | "
-      f"ΔFz_F = {dzf:.3f} N, ΔFz_R = {dzr:.3f} N | {_det42}")
+      "estática deslocada; dois sentidos (LMUY 0,45) -> pior = direita; tabela_linear: y_cg = −0,02 m -> 1ª linha "
+      "com k_inclinacao numérico, y_cg = 0 -> 1ª linha igual à de antes",
+      ok_042a and ok_042a2 and ok_042b and ok_042c and ok_042d and ok_042e and ok_042f,
+      f"({ok_042a}/{ok_042a2}/{ok_042b}/{ok_042c}/{ok_042d}/{ok_042e}/{ok_042f}) sim: "
+      f"{e42s or _resumo(d42s['esquerda'])} | ΔFz_F = {dzf:.3f} N, ΔFz_R = {dzr:.3f} N | {_det42} | "
+      f"k_incl(y=−0,02) = {tab_m[0]['k_inclinacao']!r} ({tab_m[0]['motivo_inclinacao']}), "
+      f"k_incl(y=0) = {tab_z[0]['k_inclinacao']!r}")
 
 # ---------------- TC-EQ-043 : aero com V = √(a_y·R) ----------------
 CZA_TESTE, RHO_TESTE, BAL_TESTE = 3.0, 1.2, 0.45   # entradas de teste rotuladas (CzA, ρ, balanço "a confirmar")
