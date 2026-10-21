@@ -183,6 +183,7 @@ TLLTD não adotado por ser target sem decisão da equipe).
 |---|---|---|---|
 | Pneus + transferência lateral | K = D_f − D_r, com D_eixo = W_eixo / C_eixo e C_eixo = Ky(Fz_ext, γ_ext) + Ky(Fz_int, γ_int) | 202, 213, 215-217 | Calcular, forma exata pelo PAC2002 |
 | Decomposição | K_tires = mesma conta no Fz estático; K_llt = (pneus + transferência) − K_tires | 202, 217 | Calcular, para explicar |
+| Deslocamento do pneu (conicidade e ply steer; PHY/PVY do PAC2002 dependentes da carga) | −(dF0_f/da_y)/C_αf + (dF0_r/da_y)/C_αr, com F0 = Fy do eixo em α = 0 (Conicity and ply steer, conferida na imagem) | 367 | Calcular; a parcela entra para que K seja igual à inclinação do passo 2 (EDR-057, 2026-10-21) |
 | Camber | (C_γf/C_αf·∂γ_f/∂φ − C_γr/C_αr·∂γ_r/∂φ)·∂φ/∂a_y | 218-219 | Calcular; sinal amarrado ao EDR-002 por teste (γ_solo = γ_carroceria + φ, eq. 6-50) |
 | Roll steer | (ε_f − ε_r)·∂φ/∂a_y | 220 | Já existe (SUS-415) |
 | Torque de alinhamento | W·(p/L)·(C_αf + C_αr)/(C_αf·C_αr) | 222 | N/A: Mz não verificado |
@@ -191,13 +192,19 @@ TLLTD não adotado por ser target sem decisão da equipe).
 
 - **Definição:** a SAE define o gradiente como derivada (Gillespie p. 227). Tabela de a_y de 0 a 0,4 g (faixa
   linear, Milliken p. 315): K em a_y → 0 e K tangente por diferença entre linhas. Acima disso vale o passo 2.
+  Na primeira linha, K é estimado por Richardson, 2·S(0,005 g) − S(0,01 g), porque o gradiente é a derivada
+  (Gillespie p. 227; EDR-057, 2026-10-21).
 - **K do passo 1 = inclinação inicial das curvas de eixo do passo 2** (seção 7). Um teste exige igualdade.
-- **Exibição:** "K = +x °/g (pneus + transferência + camber + roll steer; sem compliance, torque de alinhamento e
-  tração)", nunca "K total" com parcela faltando; parcelas lado a lado com porcentagem; rótulo Subesterço /
+- **Exibição:** "K = +x °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; sem compliance,
+  torque de alinhamento e tração)" (EDR-057, 2026-10-21), nunca "K total" com parcela faltando; parcelas lado a
+  lado com porcentagem; rótulo Subesterço /
   Sobresterço pelo sinal (banda de neutro só por EDR); velocidade característica (K > 0) e crítica (K < 0)
   (Gillespie p. 203-204); pior origem ao lado.
 - **Verificação cruzada pela forma do livro:** ajustar o polinômio C_α = a·Fz − b·Fz² ao Ky do PAC2002 e
-  conferir o K_llt aproximado do Gillespie contra o exato onde C_α ≫ 2b·ΔFz².
+  conferir o K_llt aproximado do Gillespie (eq. 6-49, p. 217; a eq. 6-47 é só a aproximação 1/(C − 2b·ΔFz²))
+  contra o exato onde C_α ≫ 2b·ΔFz². O b é o local, −½·d²C_α/dFz² na carga estática de cada eixo, porque o
+  Gillespie deduz a forma por Taylor em torno da estática; o ajuste global fica como informação (EDR-057,
+  2026-10-21).
 
 ## 7. Passo 2: equilíbrio no limite
 
@@ -261,7 +268,7 @@ como teste do máximo numérico.
 | 6 | Termo gravitacional da rolagem | EDR-046 | Sim | Sim | — |
 | 7 | CG lateral, dois sentidos de curva | §7.2 | Sim (entrada, 0 até medir) | Sim | Um sentido piora |
 | 8 | Aero com V = √(a_y·R) | Milliken cap. 3; EDR-013 | Sim (CzA, balanço, R; 0 ou a confirmar) | Sim | Subestima a_y em alta velocidade |
-| 9 | Força de tração na traseira | Gillespie p. 222; §7.1 | Elipse de atrito (Milliken §2.7), Fx por arrasto, rolamento e Fy_f·sen δ; CdA e Crr a confirmar | PAC2002 combinado | Superestima a traseira (puxa para push) |
+| 9 | Força de tração na traseira | Gillespie p. 222; §7.1 | Elipse de atrito normalizada, com semieixos nos picos puros do PAC2002 (Gillespie pp. 364-365; Milliken p. 59; a fórmula normalizada não está impressa em nenhum dos dois, e é a simplificação adotada); Fx por arrasto, rolamento e arrasto do pneu dianteiro F_yf·tan δ_ref; CdA e Crr a confirmar (EDR-057, 2026-10-21) | PAC2002 combinado | Superestima a traseira (puxa para push) |
 | 10 | Diferencial | Milliken cap. 20 | Aberto, declarado; tipo real a confirmar | Aberto, autoblocante, travado | Travado puxa para push |
 | 11 | Transferência longitudinal pela tração | cap. 18 | Não (limite declarado) | Sim | Pequena; medida |
 | 12 | Jacking | Milliken p. 615 | Não | Sim (linha de força, EDR-053) | Altura e camber |
