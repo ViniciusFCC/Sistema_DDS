@@ -154,12 +154,16 @@ def _valores(caminho: Path) -> tuple[list[str], dict[tuple[str, str], object]]:
         wb.close()
 
 
+class AbasDiferentes(ValueError):
+    """A viva e a V3.0 da tag não têm as mesmas abas."""
+
+
 def celulas_alteradas(viva: Path, v30: Path) -> set[tuple[str, str]]:
     """Células (aba, célula) em que `viva` difere de `v30` (a V3.0 da tag), comparando os valores crus. Aba que só
-    existe numa das duas levanta ValueError. Para a migração, estas células têm de ter nome de dado na tabela."""
+    existe numa das duas levanta AbasDiferentes. Para a migração, estas células têm de ter nome de dado na tabela."""
     abas_v, vv = _valores(viva)
     abas_t, vt = _valores(v30)
     if set(abas_v) != set(abas_t):
-        raise ValueError(f"abas diferentes entre a viva e a V3.0: só na viva {sorted(set(abas_v) - set(abas_t))}, "
-                         f"só na V3.0 {sorted(set(abas_t) - set(abas_v))}")
+        raise AbasDiferentes(f"só na viva {sorted(set(abas_v) - set(abas_t))}, "
+                             f"só na V3.0 {sorted(set(abas_t) - set(abas_v))}")
     return {k for k in set(vv) | set(vt) if not iguais(vv.get(k), vt.get(k))}

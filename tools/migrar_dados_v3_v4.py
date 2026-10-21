@@ -12,8 +12,9 @@ Passos:
    conflitos é, por padrão, a V3.0 da tag lida pelos endereços (igual à V4.0 de referência lida pelos nomes, TC-WB40-004);
    `--base` usa os dados de outra V4.0, lidos pelos nomes;
 4. escreve o relatório em Markdown (contagens, conflitos com base, destino e novo, faltas e escritas).
-Sai com código 1 se houver conflito ou falta, 0 se não houver. Só lê a viva e a V4.0 de origem; grava só a cópia e o
-relatório; nunca recalcula.
+Sai com código 1 se houver conflito ou falta, 0 se não houver. Erro de dado (abas diferentes da tag, célula fora da
+tabela, entrada com fórmula…) sai com código 2 e reescreve o relatório com o erro, sem gravar a saída. Só lê a viva e
+a V4.0 de origem; grava só a cópia e o relatório; nunca recalcula.
 """
 from __future__ import annotations
 
@@ -93,6 +94,32 @@ def relatorio(a: argparse.Namespace, rel: dp.RelatorioInjecao, celula: dict[str,
     return "\n".join(linhas) + "\n"
 
 
+def _escrever(caminho: Path, texto: str) -> None:
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    with open(caminho, "w", encoding="utf-8", newline="\n") as f:
+        f.write(texto)
+
+
+def _falhar(a: argparse.Namespace, msg: str) -> int:
+    """Erro de dado (código 2): escreve o relatório com o erro, por cima de qualquer relatório antigo no mesmo caminho,
+    para que nenhum relatório anterior pareça o resultado desta execução. A saída .xlsx não é gravada."""
+    print(msg, file=sys.stderr)
+    _escrever(a.relatorio, "\n".join([
+        "# Migração de dados V3.0 → V4.0 (por nome)",
+        "",
+        f"- Viva (V3.0): `{a.viva}`",
+        f"- V4.0 de origem: `{a.v40}`",
+        f"- Saída: `{a.saida}` (não gravada nesta execução)",
+        "",
+        "Resultado: **ERRO** (código 2). Nada foi migrado.",
+        "",
+        "## Erro",
+        "",
+        msg.replace("\n", " "),
+    ]) + "\n")
+    return 2
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Migra os dados da V3.0 viva para uma cópia da V4.0, por nome.")
     p.add_argument("viva", type=Path, help="V3.0 preenchida pela equipe (só leitura)")
@@ -106,27 +133,33 @@ def main() -> int:
     try:
         _recusar_caminhos(a)
     except SystemExit as e:
+        # Recusa de caminho: nada é aberto nem escrito (o relatório pode ser justamente o caminho recusado).
         print(e, file=sys.stderr)
         return 2
-    tabela = ler_tabela(a.nomes)
-    celula = {n.nome: f"{n.aba}!{n.celula}" for n in tabela}
-    so_dados = [n for n in tabela if n.papel in dp.PAPEIS_DADOS]
-    with tempfile.TemporaryDirectory() as tmp:
-        v30 = extrair_v30(Path(tmp))
-        try:
-            verificar_cobertura(so_dados, dp.celulas_alteradas(a.viva, v30))
-        except ValueError as e:
-            print(f"viva com células alteradas fora dos dados da V4.0: {e}", file=sys.stderr)
-            return 2
-        if a.base is None:
-            base, base_txt = dp.ler_por_endereco(v30, tabela), "V3.0 da tag v3.0 (por endereço)"
-        else:
-            base, base_txt = dp.ler_por_nome(a.base), f"`{a.base}` (por nome)"
-    dados = dp.ler_por_endereco(a.viva, tabela)
-    rel = dp.injetar(a.v40, dados, a.saida, base=base)
-    a.relatorio.parent.mkdir(parents=True, exist_ok=True)
-    with open(a.relatorio, "w", encoding="utf-8", newline="\n") as f:
-        f.write(relatorio(a, rel, celula, dados, base_txt))
+    # Daqui em diante, todo erro de dado (ValueError) sai com código 2 e reescreve o relatório com o erro (_falhar).
+    try:
+        tabela = ler_tabela(a.nomes)
+        celula = {n.nome: f"{n.aba}!{n.celula}" for n in tabela}
+        so_dados = [n for n in tabela if n.papel in dp.PAPEIS_DADOS]
+        with tempfile.TemporaryDirectory() as tmp:
+            v30 = extrair_v30(Path(tmp))
+            try:
+                alteradas = dp.celulas_alteradas(a.viva, v30)
+            except dp.AbasDiferentes as e:
+                return _falhar(a, f"abas da viva diferentes das da V3.0 da tag: {e}")
+            try:
+                verificar_cobertura(so_dados, alteradas)
+            except ValueError as e:
+                return _falhar(a, f"viva com células alteradas fora dos dados da V4.0: {e}")
+            if a.base is None:
+                base, base_txt = dp.ler_por_endereco(v30, tabela), "V3.0 da tag v3.0 (por endereço)"
+            else:
+                base, base_txt = dp.ler_por_nome(a.base), f"`{a.base}` (por nome)"
+        dados = dp.ler_por_endereco(a.viva, tabela)
+        rel = dp.injetar(a.v40, dados, a.saida, base=base)
+    except ValueError as e:
+        return _falhar(a, f"erro de dado na migração: {e}")
+    _escrever(a.relatorio, relatorio(a, rel, celula, dados, base_txt))
     print(f"escritas {len(rel.escritas)}, iguais {len(rel.iguais)}, conflitos {len(rel.conflitos)}, "
           f"faltando {len(rel.faltando)} -> {a.saida}; relatório: {a.relatorio}")
     return 1 if rel.conflitos or rel.faltando else 0
