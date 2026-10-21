@@ -462,8 +462,9 @@ def main() -> int:
         w("")
     else:
         w("Linhas válidas em que o pneu foi avaliado no limite da faixa do `.tir`, e não no valor real. É a "
-          "convenção do PAC2002 (help do Adams 2024.1, p. 83; EDR-056). Entram as linhas usadas no veredito (até "
-          f"a_y_lim = {g_de(res.ay_lim, 4)}, incluída a linha que fecha o intervalo da interpolação). "
+          "convenção do PAC2002 (help do Adams 2024.1, p. 83; EDR-056). Entram as linhas usadas no veredito ("
+          + (f"até a_y_lim = {g_de(res.ay_lim, 4)}, incluída a linha que fecha o intervalo da interpolação"
+             if res.ay_lim is not None else "sem a_y_lim, todas as linhas da grade") + "). "
           "Limitar Fz ao FZMAX **subestima** a força da roda externa, porque a carga real é maior que a usada; "
           "o excesso mostra o tamanho do efeito.")
         w("")
@@ -487,6 +488,17 @@ def main() -> int:
     if fx is None:
         w("Todas as linhas da grade têm capacidade válida: o domínio não termina dentro da grade.")
         w("")
+        if res.veredito == eq.NA:
+            lv, fr = res.linhas[-1], {"F": res.linhas[-1].req_f / res.linhas[-1].cap_f.fy_max_N,
+                                      "R": res.linhas[-1].req_r / res.linhas[-1].cap_r.fy_max_N}
+            w(f"Sem saturação, a fração da capacidade usada por eixo na última linha da grade ({g_de(lv.ay_ms2, 2)}), "
+              "req/cap, mostra a folga que sobra. **Não é veredito.**")
+            w("")
+            w("| Eixo | Força exigida [N] | Capacidade [N] | req/cap |")
+            w("|---|---|---|---|")
+            w(f"| Dianteiro | {n(lv.req_f, 1)} | {n(lv.cap_f.fy_max_N, 1)} | {pct(fr['F'])} |")
+            w(f"| Traseiro | {n(lv.req_r, 1)} | {n(lv.cap_r.fy_max_N, 1)} | {pct(fr['R'])} |")
+            w("")
     else:
         ln = fx["linha"]
         w(f"Primeira a_y com linha inválida: **{g_de(ln.ay_ms2, 2)}**. Motivo: "
@@ -672,12 +684,13 @@ def main() -> int:
       "(7.6, item 4) prevê a alternativa de o Python gerar o relatório da varredura e a planilha mostrar só o "
       "veredito nominal com o aviso \"robustez ao pneu: ver relatório\".")
     r3 = (f"3. Com os dados demonstrativos atuais e o `.tir` provisório, o veredito do caso da planilha é "
-          f"{txt_nominal} no nominal e {txt_robusto} na varredura de {len(varr)} combinações. ")
+          f"{txt_nominal} no nominal e {txt_robusto} na varredura de {len(varr)} combinações "
+          f"({', '.join(f'{k} = {v}' for k, v in sorted(contagem.items()))}). ")
     if fx is not None:
         r3 += (f"O domínio da grade termina em {g_de(fx['linha'].ay_ms2, 2)} ("
                + "; ".join(f"{e}: {m}" for e, m in fx["motivos"]) + "). ")
     if res.limitacoes:
-        r3 += (f"O veredito usa {len(res.limitacoes)} entrada(s) do pneu limitada(s) à faixa (seção 3); onde Fz foi "
+        r3 += (f"O resultado nominal usa {len(res.limitacoes)} entrada(s) do pneu limitada(s) à faixa (seção 3); onde Fz foi "
                "limitado ao FZMAX, a força da roda externa está subestimada. ")
     r3 += ("Antes de usar o veredito para decidir algo do carro, é preciso o pneu do carro (hoje o .tir é o R25B "
            "provisório, EDR-022) e dados do TX no lugar dos demonstrativos.")
