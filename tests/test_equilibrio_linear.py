@@ -1,6 +1,6 @@
 """
 Testes do equilíbrio linear (V4.0, incremento 2).
-TC-EQ-021..023 (IDs autorizados pelo usuário): rigidez de deriva e de camber do PAC2002.
+TC-EQ-021..023: rigidez de deriva e de camber do PAC2002. TC-EQ-024..030: oráculos do Gillespie cap. 6 (IDs autorizados pelo usuário).
 Roda como script: uv run python -X utf8 tests/test_equilibrio_linear.py
 O dataset sem deslocamentos (ds0) é só de teste; não representa o pneu do carro.
 """
@@ -56,6 +56,64 @@ razao_cai = (c_nom / FZ0) < (c_meio / (0.5 * FZ0))
 check("TC-EQ-023: C_alpha cresce de 0,5*FNOMIN para FNOMIN e C_alpha/Fz cai (Gillespie p. 215; conferido no .tir atual)",
       cresce and razao_cai,
       f"C(0,5Fn)={c_meio:.1f} C(Fn)={c_nom:.1f} N/rad; C/Fz: {c_meio/(0.5*FZ0):.3f} -> {c_nom/FZ0:.3f} rad^-1")
+
+# ---------------- Oráculos do Gillespie cap. 6 (exemplos resolvidos, pp. 231-235) ----------------
+# Valores do livro em lb, in, ft e lb/deg; a conversão para SI é feita aqui, no teste.
+import equilibrio_linear as el
+import kinematics_model as km
+from suspension_model import G
+
+LB = 4.4482216
+IN = 0.0254
+FT = 0.3048
+LBDEG = LB * 57.29578  # lb/deg -> N/rad
+
+# TC-EQ-024: exemplo 1, K = 0,11 deg/g (eq. 6-15), com C de eixo = 2 x C por pneu
+K1 = el.gradiente_pneus(1901 * LB, 1552 * LB, 2 * 232 * LBDEG, 2 * 195 * LBDEG)
+K1_dpg = el.para_graus_por_g(K1)
+check("TC-EQ-024: exemplo 1 do Gillespie (p. 231), K = W_f/C_f - W_r/C_r = 0,11 deg/g +- 0,005",
+      abs(K1_dpg - 0.11) < 0.005,
+      f"K={K1_dpg:.4f} deg/g ({K1:.3e} rad/(m/s^2)); livro 0,11")
+
+# TC-EQ-025: velocidade característica (eq. 6-18) e errata da p. 232
+K_book = 0.11 * math.pi / 180 / G  # 0,11 deg/g em rad/(m/s^2)
+v_impressa = el.velocidade_caracteristica(110.6 * IN, K_book) / FT
+v_problema = el.velocidade_caracteristica(100.6 * IN, K_book) / FT
+check("TC-EQ-025: V_char = 393 ft/s com L = 110,6 in (conta impressa) e 375 ft/s com L = 100,6 in, +- 1",
+      abs(v_impressa - 393) < 1 and abs(v_problema - 375) < 1,
+      f"errata do Gillespie p. 232: V_char usa 110,6 in; o problema dá 100,6 in. "
+      f"L=110,6 in: {v_impressa:.1f} ft/s; L=100,6 in: {v_problema:.1f} ft/s")
+
+# TC-EQ-026: ponto neutro (p. 233)
+c_neutro_ft = el.ponto_neutro_ate_traseiro(8.38 * FT, 232, 195) / FT
+check("TC-EQ-026: ponto neutro a 4,55 ft do eixo traseiro (c' = L C_f/(C_f+C_r), p. 233) +- 0,01",
+      abs(c_neutro_ft - 4.55) < 0.01,
+      f"c'={c_neutro_ft:.3f} ft; livro 4,55")
+
+# TC-EQ-027: exemplo 2, gradiente de rolagem (eq. 6-32), K_phi em in.lb/deg -> N.m/rad
+KPHI = LB * IN * 57.29578
+dphi = el.para_graus_por_g(el.gradiente_rolagem(2750 * LB, 10 * IN, 1500 * KPHI, 1606 * KPHI))
+check("TC-EQ-027: exemplo 2 (p. 234), dphi/da_y = W h1/(K_phi_f + K_phi_r - W h1) = 10,5 deg/g +- 0,05",
+      abs(dphi - 10.5) < 0.05,
+      f"dphi/da_y={dphi:.3f} deg/g; livro 10,5")
+
+# TC-EQ-028: parcela de camber (eq. 6-56), Cg/Ca = 0,1, dgamma/dphi = 1 na frente
+k_cam = el.parcela_camber(0.1, 1.0, 1.0, 0.1, 1.0, 0.0, 10.5)
+check("TC-EQ-028: K_camber = (0,1 x 1,0 - 0,1 x 0) x 10,5 = 1,05 deg/g +- 0,005 (p. 234)",
+      abs(k_cam - 1.05) < 0.005, f"K_camber={k_cam:.4f} deg/g; livro 1,05")
+
+# TC-EQ-029: roll steer traseiro (eq. 6-57), eps_r = +0,122 rad/rad (SAE)
+k_rs = km.roll_steer_understeer_deg_per_g(0.0, 0.122, 10.5)
+check("TC-EQ-029: roll steer = (eps_f - eps_r) dphi/da_y = -1,281 +- 0,001 deg/g (SUS-415)",
+      abs(k_rs - (-1.281)) < 0.001,
+      f"K_rs={k_rs:.4f} deg/g; o livro imprime 1,28 e diz sobresterço (p. 235), coerente com o sinal negativo")
+
+# TC-EQ-030: velocidade crítica vs característica
+L_t, K_t = 2.5, 0.0021
+check("TC-EQ-030: V_crit(L, -|K|) = V_char(L, |K|); V_char(L, -|K|) e V_crit(L, +|K|) = None",
+      math.isclose(el.velocidade_critica(L_t, -K_t), el.velocidade_caracteristica(L_t, K_t), rel_tol=1e-12)
+      and el.velocidade_caracteristica(L_t, -K_t) is None and el.velocidade_critica(L_t, K_t) is None,
+      f"V={el.velocidade_caracteristica(L_t, K_t):.3f} m/s")
 
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
