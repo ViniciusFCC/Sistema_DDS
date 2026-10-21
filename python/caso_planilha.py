@@ -6,7 +6,7 @@ entre as raízes das entradas e o pneu (origem lida da 10_TIRE, I84); `pior_orig
 pneu. Nenhuma função salva ou recalcula a planilha; a viva só é aberta para leitura.
 
 ENTRADAS_CASO é uma cópia consciente do `ENTRADAS` de tests/test_workbook_suspensao.py (só as chaves usadas aqui).
-O incremento 3 troca as duas pelos nomes definidos da planilha.
+O incremento 4 (V4.1) troca as duas pelos nomes definidos da planilha.
 Toe, camber estático e ganho de camber ficam em 0: não há dado do carro (EDR-036).
 """
 from __future__ import annotations
