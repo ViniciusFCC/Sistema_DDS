@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21; EDR-057 acrescentado em 2026-10-21, incremento 2 da V4.0). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 56 registros. APPROVED: 20 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
+Total: 57 registros. APPROVED: 20 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-21)
 
 | ID | Título | Status |
 |---|---|---|
@@ -93,6 +93,7 @@ Total: 56 registros. APPROVED: 20 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DEC
 | EDR-054 | Roadmap V0-V5 como plano do projeto; etapas E0-E5 e "V" só para revisão de artefatos | APPROVED_WITH_CONDITIONS |
 | EDR-055 | Amplitude exploratória da varredura do pneu (LFZO, LMUY, LKY × 0,8/1,0/1,2) | APPROVED |
 | EDR-056 | Regras do veredito no limite: entrada do pneu limitada à faixa (convenção PAC2002), neutro pelo momento desbalanceado e eixo que satura primeiro | APPROVED |
+| EDR-057 | Método do equilíbrio no Python (incremento 2 da V4.0) | APPROVED_WITH_CONDITIONS |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1246,6 +1247,32 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-004, EDR-015, EDR-037, EDR-041, EDR-055.
 - **Source_Conversation_or_Document:** Conversa de 2026-10-21 (decisões pendentes do PR #12); help do Adams 2024.1 PAC2002, p. 83; Milliken, p. 320.
 
+### EDR-057 — Método do equilíbrio no Python (incremento 2 da V4.0)
+
+- **Date:** 2026-10-21
+- **Status:** APPROVED_WITH_CONDITIONS
+- **Context:** O incremento 2 da V4.0 (plano `docs/superpowers/plans/2026-10-21-v4-0-inc2-equilibrio-linear-e-hipoteses.md`) leva ao Python o passo 1 da especificação (gradiente de subesterço K pelas parcelas do Gillespie cap. 6) e as hipóteses do limite que a planilha do incremento 4 vai implementar (spec `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md`, §6 e §7.4). As escolhas de método foram feitas pelo controlador da implementação, por delegação do usuário (2026-10-21: "siga uma metodologia coerente com a literatura e as convenções dos softwares"). O usuário autorizou este registro em 2026-10-21.
+- **Question:** Que método o Python usa para K (passo 1) e para as hipóteses do limite (passo 2) neste incremento?
+- **Alternatives:** Os itens da decisão são as escolhas feitas; as alternativas de cada uma estão no plano `docs/superpowers/plans/2026-10-21-v4-0-inc2-equilibrio-linear-e-hipoteses.md`.
+- **Decision:**
+  1. **K pelas parcelas do Gillespie cap. 6:** C_α do eixo = soma das rigidezes de deriva do PAC2002 das duas rodas, com a definição de sinal C_α = −∂Fy_ISO/∂α na roda FR. A parcela de transferência é a diferença entre o K na carga da linha e o K na carga estática. O camber segue a eq. 6-56, com o gradiente de eixo (R − L)/2. O roll steer segue a eq. 6-57 (SUS-415). A rigidez de eixo (C_α e C_γ) é a inclinação da curva do eixo do passo 2 no ponto de operação, −∂Fy_eixo/∂α_ref em α_ref = α_0 (ângulo exigido em a_y = 0), com o Δα do toe e do Ackermann, o cos δ_ref e a limitação do EDR-056; no carro simétrico, sem toe, raio e Ackermann, é a soma das rigidezes das duas rodas. As parcelas seguem a forma secante do Gillespie: a de transferência é W/C(a_y) − W/C(0) (K_llt, pp. 216-217). A coluna de inclinação da tabela é a tangente, o gradiente da SAE (p. 227). A igualdade entre a soma das parcelas e a inclinação só é exigida na primeira linha (a_y → 0); acima dela, k_total e k_inclinacao diferem por definição. O roll steer só existe no passo 1, porque o passo 2 não esterça a traseira nem soma o roll steer ao α das rodas; por isso a igualdade do passo 1 com o passo 2 vale sem o roll steer.
+  2. **Parcela nova "deslocamento do pneu"** (conicidade e ply steer, Gillespie p. 367): aparece porque os termos PHY/PVY do PAC2002 dependem da carga. No veículo de teste ela vale −0,004 °/g; sem ela, o K do passo 1 difere da inclinação inicial do passo 2 em cerca de 13 %. A parcela é calculada sobre a Fy do eixo em α_0, com o Δα do toe e do Ackermann e o γ da linha fixo; por isso contém também o toe × ΔFz (a força do toe muda com a carga de cada roda) e a variação, com a carga, do empuxo do camber estático. Só a variação do γ com a_y fica fora dela (é a parcela de camber).
+  3. **b local e Richardson:** na verificação cruzada pela forma do livro, b é o local, −½·d²C_α/dFz² na carga estática de cada eixo, porque o Gillespie deduz a forma aproximada por Taylor em torno da estática (eq. 6-49, p. 217); o ajuste global do polinômio fica como informação. Na primeira linha da tabela, K é estimado por Richardson, 2·S(0,005 g) − S(0,01 g), porque o gradiente é a derivada (Gillespie p. 227).
+  4. **Exemplos resolvidos do Gillespie como oráculos (pp. 231-234):** a V_char da p. 232 foi calculada com L = 110,6 in, mas o problema dá 100,6 in (errata); o K de 0,11 °/g impresso é a diferença dos termos já arredondados (4,09 − 3,98), e a conta sem arredondar dá 0,1153 °/g; o roll steer traseiro dá −1,28 °/g, sobresterçante, como o texto do livro diz.
+  5. **Hipóteses do limite no Python, desligadas por padrão:** h2 Ackermann (SUS-414) e h3 cos δ_ref (spec 7.1), com δ_ref = L/R; h7 CG lateral, com os dois sentidos de curva pelo espelho (no espelho, o ganho de camber troca de lado e de sinal); h8 aero com V² = a_y·R, que substitui o downforce fixo do EDR-013 só quando CzA é dado (ρ e CzA "a confirmar"); h9 tração com elipse de atrito normalizada (simplificação da planilha; a referência na escada de modelos, no incremento 6, é o modelo combinado do PAC2002) e arrasto do pneu dianteiro F_yf·tan δ_ref; h10 diferencial aberto (Fx igual nas duas rodas traseiras).
+  6. **Fora do Python neste incremento** (spec 7.4): as hipóteses 11 a 16, o diferencial autoblocante ou travado e o MMM (incremento 6).
+- **Rationale:** Cada escolha segue a fonte citada no item. A parcela de deslocamento do pneu entra para que o K do passo 1 seja igual à inclinação inicial das curvas de eixo do passo 2 (spec §6). A elipse normalizada, (Fx/Fx_max)² + (Fy/Fy_max)² ≤ 1 com semieixos nos picos puros do PAC2002, é a elipse com esses dois eixos: o Gillespie (pp. 364-365) diz que, com limites lateral e longitudinal diferentes, o limite é uma elipse, e o Milliken (§2.7, p. 59) dá o círculo de atrito; nenhum dos dois imprime a fórmula normalizada. O arrasto do pneu dianteiro é F_yf·tan δ_ref porque F_yf é a componente da força do pneu na direção lateral do carro (F_pneu·cos δ_ref, o mesmo cos δ_ref da h3).
+- **Evidence:** Gillespie, *Fundamentals of Vehicle Dynamics*: eq. 6-15 (p. 202), pp. 215-217 (eq. 6-49), eqs. 6-56 e 6-57 (pp. 218-220), p. 227, exemplos resolvidos (pp. 231-234; p. 235 para o sobresterço), pp. 364-365 (elipse), p. 367 (conicity and ply steer); Milliken & Milliken, *Race Car Vehicle Dynamics*, §2.7, p. 59. Achados físicos com o `.tir` do TTC (valores de teste, rotulados; não são do carro): o efeito de λ_f de 0,5 para 0,7 é de cerca de 0,04 g; a tração empurra para LOOSE (S_r −0,01 g, C_N à metade) sem inverter o veredito do caso de teste; o gradiente de camber do eixo dianteiro sintético é 0,81 rad/rad.
+- **Assumptions:** Os achados físicos acima são de um veículo de teste, com o pneu provisório (EDR-038) e a geometria sintética; não valem como resultado do carro (EDR-022). As entradas novas (R, % Ackermann, CG lateral, CzA, ρ, CdA, Crr, ε_f/ε_r) têm padrão "sem dado" e não mudam o resultado atual.
+- **Consequences:** O Python passa a ter o K do passo 1 e as hipóteses do limite que a planilha do incremento 4 vai implementar, como referência para ela. A especificação recebe as emendas da §6 e da §7.4 marcadas "(EDR-057, 2026-10-21)".
+- **Affected_Artifacts:** `python/equilibrio.py`; `python/equilibrio_linear.py`; `python/tire_model.py`; `python/kinematics_model.py`; `python/suspension_model.py`; especificação da V4.0, §6 e §7.4.
+- **Affected_Tests:** TC-EQ-021 a TC-EQ-048.
+- **Dependencies:** EDR-002, EDR-004, EDR-013, EDR-022, EDR-039, EDR-052, EDR-055, EDR-056.
+- **Approval_Conditions:** O usuário confere as escolhas quando o relatório do incremento 2 sair (as escolhas foram do controlador, por delegação de método).
+- **Reopening_Criteria:** O usuário discorda de alguma escolha ao conferir o relatório do incremento 2.
+- **Related_Decisions:** EDR-002, EDR-004, EDR-013, EDR-022, EDR-038, EDR-039, EDR-052, EDR-055, EDR-056.
+- **Source_Conversation_or_Document:** Conversa de 2026-10-21 (incremento 2 da V4.0; autorização do EDR-057); plano do incremento 2; Gillespie, cap. 6 e pp. 364-367; Milliken, §2.7.
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1306,6 +1333,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-054 | — | docs/arquitetura-planejada.md; especificação da V4.0. | — |
 | EDR-055 | — | python/equilibrio.py (varredura_pneu); data/varredura_pneu_exploratoria.json. | TC-EQ-016..018 |
 | EDR-056 | — | python/equilibrio.py (capacidade_eixo, analise_par); tools/relatorio_inc1.py; especificação da V4.0. | TC-EQ-007, TC-EQ-010..014 |
+| EDR-057 | SUS-414, SUS-415 | python/equilibrio.py; python/equilibrio_linear.py; python/tire_model.py; python/kinematics_model.py; python/suspension_model.py; especificação da V4.0 (§6, §7.4). | TC-EQ-021..048 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 

@@ -11,7 +11,7 @@ import math, os, random
 import tire_model as t
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ds = t.load_dataset(os.path.join(HERE, "..", "data", "Hoosier_R25B_13x7_TTC_provisional.tir"), source_axis_system="SAE_CALSPAN"); p = ds.p
+ds = t.load_dataset(os.path.join(HERE, "..", "data", "Hoosier_R25B_13x7_TTC_provisional.tir"), source_axis_system="ISO_TYDEX"); p = ds.p
 results = []
 
 

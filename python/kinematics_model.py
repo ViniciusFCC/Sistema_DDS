@@ -747,6 +747,30 @@ def roll_steer_coefficient(corner_left: Corner, corner_right: Corner, track, dph
     return float(-math.radians(d))                         # rad/rad = °/°
 
 
+def camber_gradient_from_body(dgamma_body_dz_left, dgamma_body_dz_right, track):
+    """V4.0 inc. 2 (Gillespie eq. 6-50, p. 218; eq. 6-51; exemplo resolvido, p. 234): gradiente de camber no solo por
+    rolagem, ∂γ/∂φ [rad/rad], a partir de dγ_corpo/dz [rad/m] de cada roda (camber do projeto, topo para fora +).
+    Rolagem φ para a direita: curso da roda direita = +(t/2)·φ, da esquerda = −(t/2)·φ (como em
+    `roll_steer_coefficient`). A eq. 6-50, γ_solo = γ_corpo + φ, vale com o sinal de cada lado na convenção do projeto:
+    γ_R,solo = γ_R,corpo + φ e γ_L,solo = γ_L,corpo − φ. Logo ∂γ_R/∂φ = (t/2)·dγ_R/dz + 1 e
+    ∂γ_L/∂φ = −(t/2)·dγ_L/dz − 1. Gradiente do eixo = (R − L)/2; braços paralelos iguais (dγ_corpo/dz = 0) dão 1,0
+    (Gillespie p. 234)."""
+    half = 0.5 * track
+    g_r = half * dgamma_body_dz_right + 1.0
+    g_l = -half * dgamma_body_dz_left - 1.0
+    return {"L": float(g_l), "R": float(g_r), "eixo": float((g_r - g_l) / 2.0)}
+
+
+def camber_gradient(corner_left: Corner, corner_right: Corner, track, dphi=1e-3):
+    """V4.0 inc. 2: gradiente de camber no solo do eixo (ver `camber_gradient_from_body`), com dγ_corpo/dz de cada canto
+    por diferença central na `sweep` (curso ±(t/2)·dphi; `metrics["camber_deg"]` em graus, convertido para rad)."""
+    def dg_dz(corner, z):
+        a = sweep(corner, [-z, z])
+        return math.radians(a[1][1]["camber_deg"] - a[0][1]["camber_deg"]) / (2.0 * z)
+    z = 0.5 * track * dphi
+    return camber_gradient_from_body(dg_dz(corner_left, z), dg_dz(corner_right, z), track)
+
+
 def roll_steer_understeer_deg_per_g(eps_front, eps_rear, roll_gradient_deg_per_g):
     """SUS-415: contribuição do roll steer ao gradiente de subesterço, K = (ε_f − ε_r)·∂φ/∂a_y (Gillespie eq. 6-57).
     K > 0 = subesterço."""
