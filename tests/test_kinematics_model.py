@@ -540,9 +540,15 @@ check("TC-KIN-129d: roll steer traseiro ε_r = b·t/2 (eixo simétrico, inclina�
 
 # ---- TC-EQ-047/048: gradiente de camber no solo por rolagem (V4.0, inc. 2; Gillespie eq. 6-50 p. 218, exemplo p. 234) ----
 g_par = km.camber_gradient_from_body(0.0, 0.0, 1.2)
-check("TC-EQ-047: braços paralelos iguais (dγ_corpo/dz = 0): gradiente do eixo = 1,0, R = +1, L = −1 (Gillespie p. 234)",
-      abs(g_par["eixo"] - 1.0) < 1e-12 and abs(g_par["R"] - 1.0) < 1e-12 and abs(g_par["L"] + 1.0) < 1e-12,
-      f"eixo={g_par['eixo']:.6f}, R={g_par['R']:.6f}, L={g_par['L']:.6f}")
+# caso feito à mão que cobre o termo (t/2)·dγ_corpo/dz: dγ/dz = −0,5 rad/m nos dois lados, t = 1,2 m ->
+# R = 0,6·(−0,5) + 1 = 0,7; L = −0,6·(−0,5) − 1 = −0,7; eixo = (0,7 + 0,7)/2 = 0,7
+g_mao = km.camber_gradient_from_body(-0.5, -0.5, 1.2)
+check("TC-EQ-047: braços paralelos iguais (dγ_corpo/dz = 0): gradiente do eixo = 1,0, R = +1, L = −1 (Gillespie p. 234); "
+      "dγ_corpo/dz = −0,5 rad/m nos dois lados, t = 1,2 m (à mão): R = 0,7, L = −0,7, eixo = 0,7",
+      abs(g_par["eixo"] - 1.0) < 1e-12 and abs(g_par["R"] - 1.0) < 1e-12 and abs(g_par["L"] + 1.0) < 1e-12
+      and abs(g_mao["R"] - 0.7) < 1e-12 and abs(g_mao["L"] + 0.7) < 1e-12 and abs(g_mao["eixo"] - 0.7) < 1e-12,
+      f"eixo={g_par['eixo']:.6f}, R={g_par['R']:.6f}, L={g_par['L']:.6f}; à mão: eixo={g_mao['eixo']:.6f}, "
+      f"R={g_mao['R']:.6f}, L={g_mao['L']:.6f}")
 FL_, FR_ = Corner(hs4, "FL"), Corner(hs4, "FR")
 tr_f = float(FL_.p0["CONTACT_PATCH"][1] - FR_.p0["CONTACT_PATCH"][1])
 h_eq = 0.5 * tr_f * 1e-3   # m, mesmo passo de curso da função (dphi = 1e-3): derivadas centrais com passos diferentes diferem pela curvatura
