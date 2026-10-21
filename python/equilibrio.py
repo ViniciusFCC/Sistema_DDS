@@ -25,7 +25,8 @@ import dataclasses
 from dataclasses import dataclass, field
 
 from kinematics_model import ackermann_inner_ideal_deg
-from suspension_model import G, VehicleConfig, combined_fz_corner, lateral_dfz
+from suspension_model import (G, VehicleConfig, combined_fz_corner, downforce_por_velocidade, lateral_dfz,
+                              static_fz_corner, static_fz_corner_cg_lateral)
 from tire_model import AXIS_TRANSFORMS, TireDataset, wheel_forces
 
 CANTOS = ("FL", "FR", "RL", "RR")
@@ -47,6 +48,12 @@ class CasoEquilibrio:
     δ_ref = L/R e a força do eixo dianteiro na direção do carro leva cos δ_ref (spec 7.1, item 3).
     ackermann_pct é o % Ackermann da geometria (SUS-414; 100 = Ackermann exato, 0 = paralelo, < 0 =
     reverso); None desliga a hipótese 2 (spec 7.4). Exige raio_m.
+    cg_lateral_m é o deslocamento lateral do CG [m] (+ = para a esquerda, ISO; spec 7.4, hipótese 7). Padrão 0 =
+    "sem dado" (0 até medir). Entra na carga estática (suspension_model.static_fz_corner_cg_lateral).
+    cza_m2 [m²] e rho_kg_m3 [kg/m³] ligam a hipótese 8 (aero com V = √(a_y·R)): a downforce de cada a_y passa a
+    ser 0,5·ρ·CzA·a_y·R, no lugar de downforce_N, com o mesmo aero_balance_front. None = sem dado (EDR-013: aero
+    fixo por Setup). cza_m2 exige raio_m e rho_kg_m3, e não aceita downforce_N ≠ 0 junto (a downforce contaria
+    duas vezes).
     """
     cfg: VehicleConfig
     ds: TireDataset
@@ -58,6 +65,9 @@ class CasoEquilibrio:
     roll_steer: dict = field(default_factory=lambda: {"F": 0.0, "R": 0.0})
     raio_m: float | None = None
     ackermann_pct: float | None = None
+    cg_lateral_m: float = 0.0
+    cza_m2: float | None = None
+    rho_kg_m3: float | None = None
 
     def __post_init__(self):
         for nome in ("toe_rad", "camber_estatico_rad", "ganho_camber"):
@@ -71,24 +81,50 @@ class CasoEquilibrio:
             raise ValueError(f"roll_steer exige exatamente as chaves ('F', 'R'); recebido {sorted(rs)}.")
         if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in rs.values()):
             raise ValueError(f"roll_steer exige valores numéricos finitos; recebido {rs}.")
-        for nome in ("raio_m", "ackermann_pct"):
+        for nome in ("raio_m", "ackermann_pct", "cza_m2", "rho_kg_m3"):
             v = getattr(self, nome)
             if v is not None and not (isinstance(v, (int, float)) and math.isfinite(v)):
                 raise ValueError(f"{nome} exige número finito ou None; recebido {v!r}.")
+        if not (isinstance(self.cg_lateral_m, (int, float)) and math.isfinite(self.cg_lateral_m)):
+            raise ValueError(f"cg_lateral_m exige número finito; recebido {self.cg_lateral_m!r}.")
         if self.raio_m is not None and self.raio_m <= 0.0:
             raise ValueError(f"raio_m deve ser > 0; recebido {self.raio_m!r}.")
-        # Entradas que só têm sentido com o raio da curva (spec 7.1 e 7.4). As Tasks 6 e 7 acrescentam
-        # cza_m2 e cda_m2 a esta lista.
+        if self.rho_kg_m3 is not None and self.rho_kg_m3 <= 0.0:
+            raise ValueError(f"rho_kg_m3 deve ser > 0; recebido {self.rho_kg_m3!r}.")
+        # Entradas que só têm sentido com o raio da curva (spec 7.1 e 7.4). A Task 7 acrescenta cda_m2 a esta lista.
         if self.raio_m is None:
-            falta = [nome for nome in ("ackermann_pct",) if getattr(self, nome) is not None]
+            falta = [nome for nome in ("ackermann_pct", "cza_m2") if getattr(self, nome) is not None]
             if falta:
                 raise ValueError(f"{', '.join(falta)} exige(m) raio_m (raio do skidpad), que está faltando.")
+        if self.cza_m2 is not None:
+            if self.rho_kg_m3 is None:
+                raise ValueError("cza_m2 exige rho_kg_m3 (densidade do ar), que está faltando.")
+            if self.downforce_N != 0.0:
+                raise ValueError(f"cza_m2 substitui downforce_N (hipótese 8); recebido downforce_N = "
+                                 f"{self.downforce_N!r} junto: a downforce contaria duas vezes.")
+
+
+def downforce(caso: CasoEquilibrio, ay_ms2: float) -> float:
+    """Downforce total [N] em a_y: downforce_N fixo (EDR-013) ou, com cza_m2, 0,5·ρ·CzA·V² com V = √(|a_y|·R)
+    (spec 7.4, hipótese 8; curva em regime de raio R)."""
+    if caso.cza_m2 is None:
+        return caso.downforce_N
+    return downforce_por_velocidade(caso.rho_kg_m3, caso.cza_m2, math.sqrt(abs(ay_ms2) * caso.raio_m))
 
 
 def cargas(caso: CasoEquilibrio, ay_ms2: float) -> dict:
-    """Fz [N] por roda em a_y [m/s²] (a_x = 0), com a aerodinâmica do caso."""
-    return combined_fz_corner(caso.cfg, 0.0, ay_ms2, caso.downforce_N,
-                              caso.aero_balance_front, warn=False)
+    """Fz [N] por roda em a_y [m/s²] (a_x = 0), com a aerodinâmica do caso (`downforce`) e o CG lateral.
+
+    O CG lateral (hipótese 7) soma à estática a parcela de static_fz_corner_cg_lateral; a transferência lateral
+    por a_y (SUS-103) não muda. Com cg_lateral_m = 0 e sem cza_m2 o resultado é o de combined_fz_corner.
+    """
+    fz = combined_fz_corner(caso.cfg, 0.0, ay_ms2, downforce(caso, ay_ms2),
+                            caso.aero_balance_front, warn=False)
+    if caso.cg_lateral_m != 0.0:
+        st = static_fz_corner(caso.cfg)
+        st_y = static_fz_corner_cg_lateral(caso.cfg, caso.cg_lateral_m)
+        fz = {c: fz[c] + (st_y[c] - st[c]) for c in CANTOS}
+    return fz
 
 
 def camber(caso: CasoEquilibrio, ay_ms2: float) -> dict:
@@ -558,6 +594,55 @@ def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.
     return ResultadoPar(linhas=linhas, passo_ms2=passo_ms2, ay_sat_f=S_f, ay_sat_r=S_r, ay_lim=ay_lim,
                         veredito=veredito, motivo=motivo, c_n=c_n, resolucao_ms2=res,
                         limitacoes=_limitacoes(caso, linhas, ay_lim))
+
+
+# ---------------------------------------------------------------------------
+# Dois sentidos de curva (spec 7.4, hipótese 7)
+# ---------------------------------------------------------------------------
+
+_TROCA_LR = {"FL": "FR", "FR": "FL", "RL": "RR", "RR": "RL"}
+
+
+def espelhar(caso: CasoEquilibrio) -> CasoEquilibrio:
+    """Caso espelhado no plano XZ: a curva à direita do carro real vista como curva à esquerda.
+
+    - toe e camber estático: trocados entre L e R (as convenções toe-out + e topo para fora + valem por roda e são
+      simétricas no espelho, EDR-002);
+    - ganho de camber: trocado entre L e R e com o sinal invertido. O ganho é dγ/dφ com φ > 0 rolando para a direita
+      (ISO); no espelho a rolagem troca de sinal (φ_espelho = −φ_real), então ganho_espelho[FR] = −ganho[FL]. Um eixo
+      de braços simétricos (FL = −g, FR = +g; gradiente de eixo (g_R − g_L)/2 = g) fica igual ao espelhar, como
+      deve. Só trocar, sem o sinal, inverteria o gradiente de eixo;
+    - roll steer: igual (coeficiente por eixo; ε·φ troca de sinal junto com φ e o esterço também espelha);
+    - CG lateral: y → −y. Ackermann, raio e aero ficam (geometria simétrica; a roda interna da análise é sempre FL).
+    """
+    def troca(d: dict) -> dict:
+        return {c: d[_TROCA_LR[c]] for c in CANTOS}
+
+    return dataclasses.replace(caso, toe_rad=troca(caso.toe_rad),
+                               camber_estatico_rad=troca(caso.camber_estatico_rad),
+                               ganho_camber={c: -v for c, v in troca(caso.ganho_camber).items()},
+                               cg_lateral_m=-caso.cg_lateral_m)
+
+
+def _chave_pior(r: ResultadoPar) -> float:
+    """a_y_lim para ordenar do pior ao melhor; N/A (ou sem a_y_lim) conta como pior (−inf)."""
+    return -math.inf if (r.veredito == NA or r.ay_lim is None) else r.ay_lim
+
+
+def analise_par_dois_sentidos(caso: CasoEquilibrio, **kw) -> dict:
+    """analise_par nos dois sentidos de curva (spec 7.4, hipótese 7: com CG lateral ou assimetria, um sentido piora).
+
+    Devolve {"esquerda": ResultadoPar, "direita": ResultadoPar, "pior": str}. A direita é analise_par(espelhar(caso)),
+    uma curva à esquerda do carro espelhado; os cantos dela estão no referencial espelhado (FR do espelho = FL real).
+    "pior" é o sentido de menor a_y_lim; N/A conta como pior. "empate" quando os dois a_y_lim são iguais
+    (bit a bit) ou os dois são N/A; a diferença dentro da resolução numérica não vira empate, e quem lê compara com
+    resolucao_ms2. **kw vai para analise_par.
+    """
+    esq = analise_par(caso, **kw)
+    dir_ = analise_par(espelhar(caso), **kw)
+    ke, kd = _chave_pior(esq), _chave_pior(dir_)
+    pior = "empate" if ke == kd else ("esquerda" if ke < kd else "direita")
+    return {"esquerda": esq, "direita": dir_, "pior": pior}
 
 
 # ---------------------------------------------------------------------------

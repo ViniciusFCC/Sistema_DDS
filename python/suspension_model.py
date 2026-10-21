@@ -138,6 +138,23 @@ def static_fz_corner(cfg: VehicleConfig) -> dict:
     return {"FL": Wf / 2, "FR": Wf / 2, "RL": Wr / 2, "RR": Wr / 2}
 
 
+def static_fz_corner_cg_lateral(cfg: VehicleConfig, y_cg_m: float) -> dict:
+    """SUS-101 com o CG deslocado lateralmente y_cg_m [m] (+ = para a esquerda, ISO 8855; spec V4.0 7.4, hipótese 7).
+
+    Equilíbrio de momento em X por eixo, com as rodas em ±t/2: F_L − F_R = 2·W_eixo·y/t e F_L + F_R = W_eixo.
+    Cada roda esquerda ganha ΔFz = W_eixo·y/t_eixo e a direita perde o mesmo; a soma e a divisão por eixo ficam
+    iguais às de static_fz_corner. y = 0 devolve exatamente static_fz_corner. Fz ≤ 0 (|y| ≥ t/2) não é bloqueado
+    aqui: é descolamento, tratado por quem usa (SUS-104).
+    """
+    _req(isinstance(y_cg_m, (int, float)) and math.isfinite(y_cg_m), f"y_cg_m deve ser número finito (recebido {y_cg_m!r}).")
+    st = static_fz_corner(cfg)
+    if y_cg_m == 0.0:
+        return st
+    dF = (st["FL"] + st["FR"]) * y_cg_m / cfg.track_front
+    dR = (st["RL"] + st["RR"]) * y_cg_m / cfg.track_rear
+    return {"FL": st["FL"] + dF, "FR": st["FR"] - dF, "RL": st["RL"] + dR, "RR": st["RR"] - dR}
+
+
 # ---------- SUS-102 : transferência longitudinal ----------
 
 def longitudinal_dfz(cfg: VehicleConfig, ax: float) -> dict:
@@ -196,6 +213,19 @@ def aero_fz_corner(downforce_total: float, aero_balance_front: float) -> dict:
     fz_aero_r = downforce_total * (1 - aero_balance_front)
     return {"FL": fz_aero_f / 2, "FR": fz_aero_f / 2,
             "RL": fz_aero_r / 2, "RR": fz_aero_r / 2}
+
+
+def downforce_por_velocidade(rho_kg_m3: float, cza_m2: float, v_ms: float) -> float:
+    """Downforce [N] = 0,5·ρ·CzA·V² (Milliken cap. 3; spec V4.0 7.4, hipótese 8).
+
+    ρ [kg/m³] > 0, CzA [m²] (coeficiente de sustentação negativa vezes área; + = downforce) e V [m/s], finitos.
+    Na curva de raio R em regime, V² = a_y·R (equilibrio.cargas). EDR-013 fixa a downforce por Setup; esta
+    função só entra com CzA informado (hipótese 8, sem dado = desligada).
+    """
+    for nome, v in (("rho_kg_m3", rho_kg_m3), ("cza_m2", cza_m2), ("v_ms", v_ms)):
+        _req(isinstance(v, (int, float)) and math.isfinite(v), f"SUS-701 {nome} deve ser número finito (recebido {v!r}).")
+    _req(rho_kg_m3 > 0, f"SUS-701 rho_kg_m3 deve ser > 0 (recebido {rho_kg_m3!r}).")
+    return 0.5 * rho_kg_m3 * cza_m2 * v_ms ** 2
 
 
 # ---------- SUS-104 : Fz combinado por canto ----------
