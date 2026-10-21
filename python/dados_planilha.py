@@ -6,6 +6,8 @@ nome, não pelo endereço:
 - `ler_por_nome`: lê a V4.0 resolvendo os nomes definidos da própria planilha;
 - `injetar`: escreve os dados numa cópia da V4.0, com detecção de conflito contra uma base;
 - `celulas_alteradas`: células em que a viva difere da V3.0 da tag (para `verificar_cobertura`).
+- `objetos_alterados`: comentários, hiperlinks, imagens e gráficos em que a viva difere da V3.0 da tag (a migração
+  não os leva; a CLI sai com código 2 e os lista).
 Os nomes `res` (fórmulas) nunca são lidos nem escritos como dado.
 
 Os valores são comparados crus, como o openpyxl os devolve (sem recálculo): None é igual a None; números (int e
@@ -15,6 +17,8 @@ e nunca recalcula.
 """
 from __future__ import annotations
 
+import re
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -167,3 +171,46 @@ def celulas_alteradas(viva: Path, v30: Path) -> set[tuple[str, str]]:
         raise AbasDiferentes(f"só na viva {sorted(set(abas_v) - set(abas_t))}, "
                              f"só na V3.0 {sorted(set(abas_t) - set(abas_v))}")
     return {k for k in set(vv) | set(vt) if not iguais(vv.get(k), vt.get(k))}
+
+
+# Partes do pacote que guardam desenhos, imagens e gráficos. Sem o Pillow, o openpyxl descarta as imagens ao ler
+# (`ws._images` fica vazio) e as formas de desenho também se perdem; a contagem pelo pacote cobre esses casos. Os VML
+# de comentário (`xl/drawings/*.vml`) ficam de fora: os comentários são comparados pelo texto.
+_PARTES_OBJETOS = {
+    "partes de desenho": re.compile(r"xl/drawings/drawing\d+\.xml"),
+    "arquivos de imagem": re.compile(r"xl/media/[^/]+"),
+    "partes de gráfico": re.compile(r"xl/charts/chart\d+\.xml"),
+}
+
+
+def _objetos(caminho: Path) -> dict[tuple[str, str, str], object]:
+    """(aba, célula, tipo) -> conteúdo dos objetos que não são valor de célula: texto do comentário, destino do
+    hiperlink (target e location), número de imagens e de gráficos por aba (célula "-") e número de partes de desenho,
+    imagem e gráfico do pacote (aba "(arquivo)", célula "-")."""
+    out: dict[tuple[str, str, str], object] = {}
+    wb = openpyxl.load_workbook(caminho)
+    try:
+        for ws in wb.worksheets:
+            for lin in ws.iter_rows():
+                for c in lin:
+                    if c.comment is not None:
+                        out[(ws.title, c.coordinate, "comentário")] = c.comment.text
+                    if c.hyperlink is not None:
+                        out[(ws.title, c.coordinate, "hiperlink")] = (c.hyperlink.target, c.hyperlink.location)
+            out[(ws.title, "-", "imagens")] = len(ws._images)
+            out[(ws.title, "-", "gráficos")] = len(ws._charts)
+    finally:
+        wb.close()
+    with zipfile.ZipFile(caminho) as z:
+        nomes = z.namelist()
+    for tipo, rx in _PARTES_OBJETOS.items():
+        out[("(arquivo)", "-", tipo)] = sum(1 for n in nomes if rx.fullmatch(n))
+    return out
+
+
+def objetos_alterados(viva: Path, v30: Path) -> list[tuple[str, str, str]]:
+    """(aba, célula, tipo) em que `viva` difere de `v30` (a V3.0 da tag) em comentários (texto), hiperlinks (destino),
+    número de imagens e de gráficos por aba e partes de desenho, imagem e gráfico do pacote. A migração por chave não
+    leva nenhum deles para a V4.0: cada diferença tem de ser levada à mão ou aprovada (a CLI sai com código 2)."""
+    ov, ot = _objetos(viva), _objetos(v30)
+    return sorted(k for k in set(ov) | set(ot) if ov.get(k) != ot.get(k))
