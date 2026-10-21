@@ -54,6 +54,8 @@ SPEC = RAIZ / "docs" / "superpowers" / "specs" / "2026-10-20-v4-0-metas-equilibr
 MOTORES = ("excel", "libreoffice")
 CASOS_EXP = ("teste_LMUY045", "teste_LMUY045_toe_camber", "teste_LMUY045_LKY023_borda", "planilha_viva")
 PREFIXO = "DEMONSTRATIVO · "
+GRADE = {"ay_max_g": 2.0, "passo_g": 0.05, "n_alfa": 25}   # grade passada a analise_par e varredura_pneu
+ORIGEM_TESTE = "○ Arbitrário / demonstrativo"           # dataset de teste (LMUY 0,45): nunca é dado do TX
 
 # Hipóteses da tabela 7.4 da spec que o incremento 1 implementa (número -> o que o código faz).
 # 2 e 8 entram em parte: o resto delas vai para a lista das não incluídas.
@@ -274,14 +276,14 @@ def main() -> int:
         return 1
 
     # --- nominal ---
-    res = eq.analise_par(caso)
+    res = eq.analise_par(caso, **GRADE)
     txt_nominal = eq.texto_veredito(res, pior_caso)
     fx = faixa(res)
 
     # --- varredura (EDR-055) ---
     pior_var = pior(pior_caso, var["origem"])
     t0 = time.perf_counter()
-    varr = eq.varredura_pneu(caso, fatores)
+    varr = eq.varredura_pneu(caso, fatores, **GRADE)
     t_varr = time.perf_counter() - t0
     robusto = eq.veredito_robusto([r.veredito for _, r in varr])
     txt_robusto = eq.texto_veredito(res, pior_var, robusto)
@@ -292,9 +294,10 @@ def main() -> int:
     for lf in (0.5, 0.7):
         for passo in (0.05, 0.01):
             r011[(lf, passo)] = eq.analise_par(eq.CasoEquilibrio(cfg=veiculo_teste_011(lf), ds=ds_011),
-                                               passo_g=passo)
+                                               **{**GRADE, "passo_g": passo})
 
     textos = [txt_nominal, txt_robusto] + [eq.texto_veredito(r, pior_var) for _, r in varr]
+    textos += [eq.texto_veredito(r, pior(ORIGEM_TESTE)) for r in r011.values()]
 
     md: list[str] = []
     w = md.append
@@ -353,7 +356,9 @@ def main() -> int:
     w(f"- Pneu: FZMIN = {n(p['FZMIN'], 0)} N, FZMAX = {n(p['FZMAX'], 0)} N, ALPMIN/ALPMAX = "
       f"{n(p['ALPMIN'], 4)}/{n(p['ALPMAX'], 4)} rad, CAMMIN/CAMMAX = {n(p['CAMMIN'], 4)}/{n(p['CAMMAX'], 4)} rad, "
       f"FNOMIN = {n(p['FNOMIN'], 0)} N, LFZO = {n(p['LFZO'], 2)}, LMUY = {n(p['LMUY'], 2)}, LKY = {n(p['LKY'], 2)}")
-    w("- Grade da análise de par: a_y de 0 a 2,0 g em passos de 0,05 g; 25 valores de α por eixo; κ = 0 (sem tração)")
+    w(f"- Grade da análise de par (valores passados a `analise_par`): a_y de 0 a {n(res.linhas[-1].ay_ms2 / G, 2)} g em "
+      f"passos de {n(res.passo_ms2 / G, 2)} g ({len(res.linhas)} linhas); {GRADE['n_alfa']} valores de α por eixo; "
+      "κ = 0 (sem tração)")
     w("")
     t74 = tabela_74()
     w("### Hipóteses incluídas no incremento 1 (spec, tabela 7.4)")
@@ -424,8 +429,10 @@ def main() -> int:
                 w(f"A roda que sai da faixa é uma roda **externa**, por excesso de carga. A roda interna mais "
                   f"leve tem {n(interna_min, 1)} N nessa linha, acima de FZMIN = {n(p['FZMIN'], 0)} N.")
                 w("")
-                w("**Correção do plano.** O \"Risco conhecido\" do plano previa que a roda interna cairia abaixo de "
-                  "FZMIN antes de o eixo saturar (medido no veículo de teste de `tests/test_suspension_model.py`). "
+                w("**Correção do plano.** Segundo o plano (`docs/superpowers/plans/2026-10-20-v4-0-inc1-viabilidade-"
+                  "robustez.md`, seção \"Risco conhecido\"), a roda RL do veículo de teste fica abaixo de 100 N perto de "
+                  "1,55 g e o resultado mais provável é N/A por faixa do pneu, também no caso da planilha; e a "
+                  "decisão (c) do plano é sobre a roda interna abaixo de FZMIN (texto do plano, não reverificado aqui). "
                   f"No caso da planilha viva a causa é outra: {', '.join(c for c, _, _ in fora)} "
                   f"({'externa' if all(c in ('FR', 'RR') for c, _, _ in fora) else 'ver tabela'}) passa de FZMAX.")
             w("")
@@ -471,7 +478,7 @@ def main() -> int:
     for (lf, passo), r in r011.items():
         dif = (abs(r.ay_sat_f - r.ay_sat_r) / G) if (r.ay_sat_f is not None and r.ay_sat_r is not None) else None
         w(f"| {n(lf, 1)} | {n(passo, 2)} | {g_de(r.ay_sat_f, 4)} | {g_de(r.ay_sat_r, 4)} | "
-          f"{'—' if dif is None else n(dif, 4) + ' g'} | {r.veredito} |")
+          f"{'—' if dif is None else n(dif, 4) + ' g'} | {eq.texto_veredito(r, pior(ORIGEM_TESTE))} |")
     r5, r7 = r011[(0.5, 0.01)], r011[(0.7, 0.01)]
     if None not in (r5.ay_sat_f, r5.ay_sat_r, r7.ay_sat_f, r7.ay_sat_r):
         w("")
@@ -584,14 +591,21 @@ def main() -> int:
     w(f"2. A varredura em fórmulas multiplicaria o protótipo por {len(varr)} (estimativa acima, não medida). A spec "
       "(7.6, item 4) prevê a alternativa de o Python gerar o relatório da varredura e a planilha mostrar só o "
       "veredito nominal com o aviso \"robustez ao pneu: ver relatório\".")
-    if res.veredito == eq.NA and robusto[0] == eq.NA:
-        w("3. Com os dados demonstrativos atuais e o `.tir` provisório, o incremento 1 não produz veredito de "
-          "equilíbrio no limite para o caso da planilha: o resultado é N/A no nominal e nas "
-          f"{len(varr)} combinações, porque uma roda sai da faixa de carga do pneu antes de qualquer eixo saturar. "
-          "A fração req/cap na última linha válida mostra o quanto falta, sem dar o sinal de push ou loose. "
-          "Antes de usar o veredito, o usuário precisa decidir a política da faixa do pneu (incluindo o lado de "
-          "FZMAX, que a opção (1) do plano não cobre) ou usar o pneu do carro quando houver dado dele "
-          "(hoje o .tir é o R25B provisório, EDR-022).")
+    if res.veredito == eq.NA and robusto[0] == eq.NA and fx is not None:
+        lims = sorted({lim for _, _, lim in rodas_fora(fx["linha"], p)})
+        rodas = ", ".join(f"Fz_{c} ({lim})" for c, _, lim in rodas_fora(fx["linha"], p))
+        sem_sat = res.ay_sat_f is None and res.ay_sat_r is None
+        w(f"3. Com os dados demonstrativos atuais e o `.tir` provisório, o incremento 1 não produz veredito de "
+          f"equilíbrio no limite para o caso da planilha: o resultado é N/A no nominal e nas {len(varr)} combinações. "
+          f"No nominal, a primeira a_y fora da faixa é {g_de(fx['linha'].ay_ms2, 2)}, por {rodas}"
+          + (", e nenhum eixo saturou nas linhas válidas anteriores. " if sem_sat else ". ")
+          + ("A fração req/cap na última linha válida mostra o quanto falta, sem dar o sinal de push ou loose. "
+             if fx["fracao"] else "")
+          + ("A causa é o limite FZMAX; a opção (1) do plano, que só trata Fz ≤ 0, não muda esse resultado. "
+             if lims == ["FZMAX"] else
+             "A opção (1) do plano só trata Fz ≤ 0; confira na tabela da seção 3 se ela cobre essa causa. ")
+          + "Antes de usar o veredito, o usuário precisa decidir a política da faixa do pneu, ou usar o pneu do "
+            "carro quando houver dado dele (hoje o .tir é o R25B provisório, EDR-022).")
     w("")
     w("A decisão de seguir, ajustar ou parar é do usuário.")
     w("")
