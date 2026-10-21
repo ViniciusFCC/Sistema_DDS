@@ -287,10 +287,13 @@ def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401) -> tuple[float, 
     """(α_f, α_r) [rad, ISO]: α de referência de cada eixo em que fy_eixo iguala a força exigida em a_y.
 
     Mesmo modelo do passo 2 (equilibrio.capacidade_eixo): Fy do eixo com Fz e γ limitados à faixa (EDR-056) e o
-    toe estático em cada roda. Bissecção entre α = 0 e o α do pico na grade de n_alfa pontos, até
-    |ΔF| < 1e-9·força exigida (1e-9 N se a força for nula). Curva à esquerda (a_y >= 0): α <= 0.
-    Devolve None se algum eixo não tiver capacidade (descolamento, toe), se a exigência passar da capacidade,
-    ou se a raiz não estiver entre 0 e o pico (Fy do eixo em α = 0 já acima da exigência).
+    toe estático em cada roda. Bissecção até |ΔF| < 1e-9·força exigida (1e-9 N se a força for nula), entre α = 0 e
+    o α do pico na grade de n_alfa pontos quando a Fy do eixo em α = 0 fica abaixo da exigência (o caso normal da
+    curva à esquerda, α < 0), ou entre 0 e +A quando ela já passa da exigência (carro assimétrico em L/R: CG
+    lateral, toe ou camber assimétricos e os deslocamentos do pneu variando com Fz), com A a amplitude de
+    `equilibrio.grade_alfa` (faixa de α do pneu menos o maior |Δα| de toe e Ackermann; a grade vai de 0 a −A).
+    Devolve None se algum eixo não tiver capacidade (descolamento, toe), se a exigência passar da capacidade
+    (α < 0), ou se a Fy do eixo em +A ainda passar da exigência.
     """
     if not (ay_ms2 >= 0.0 and math.isfinite(ay_ms2)):
         raise ValueError(f"angulos_necessarios cobre a curva à esquerda (a_y >= 0); recebido {ay_ms2!r}.")
@@ -306,23 +309,30 @@ def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401) -> tuple[float, 
             return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, a) - req
 
         tol = 1e-9 * abs(req) if req != 0.0 else 1e-9
-        lo, hi = 0.0, cap.alfa_pico_rad
-        f_lo = folga(lo)
-        if abs(f_lo) < tol:
+        f_0 = folga(0.0)
+        if abs(f_0) < tol:
             saida.append(0.0)
             continue
-        if f_lo > 0.0:
-            return None
-        meio = lo
+        if f_0 < 0.0:
+            # raiz em α < 0, entre 0 (falta força) e o pico (já checado: capacidade >= exigência)
+            neg, pos = 0.0, cap.alfa_pico_rad
+        else:
+            # Fy em α = 0 já passa da exigência (deslocamentos do pneu com carro assimétrico em L/R): raiz em α > 0,
+            # até +A, o simétrico da borda da grade (mesma faixa de α do pneu, com o Δα de toe e Ackermann)
+            a_max = -_eq.grade_alfa(caso, 3)[-1]
+            if folga(a_max) > 0.0:
+                return None
+            neg, pos = a_max, 0.0
+        meio = pos
         for _ in range(200):
-            meio = 0.5 * (lo + hi)
+            meio = 0.5 * (neg + pos)
             f_m = folga(meio)
-            if abs(f_m) < tol or meio in (lo, hi):
+            if abs(f_m) < tol or meio in (neg, pos):
                 break
             if f_m < 0.0:
-                lo = meio
+                neg = meio
             else:
-                hi = meio
+                pos = meio
         saida.append(meio)
     return saida[0], saida[1]
 
