@@ -122,6 +122,192 @@ check("TC-EQ-030: V_crit(L, -|K|) = V_char(L, |K|); V_char(L, -|K|) e V_crit(L, 
       and el.velocidade_caracteristica(L_t, -K_t) is None and el.velocidade_critica(L_t, K_t) is None,
       f"V={el.velocidade_caracteristica(L_t, K_t):.3f} m/s")
 
+# ---------------- Parcelas de K de um caso e tabela linear (TC-EQ-031..038) ----------------
+# Veículos de teste copiados de tests/test_equilibrio.py (números plausíveis, NÃO são setup do carro). Ganhos de
+# camber, roll steer, escalas LMUY e geometrias extremas abaixo são entradas de teste rotuladas.
+import equilibrio as eq
+import suspension_model as sm
+from suspension_model import VehicleConfig
+
+
+def veiculo_base(**over) -> VehicleConfig:
+    """Veículo de teste (cópia do tests/test_equilibrio.py; números plausíveis, NÃO é setup real)."""
+    base = dict(
+        mass_total=250.0, cg_height=0.300, wheelbase=1.550, track_front=1.200, track_rear=1.150,
+        cg_to_front=0.837, cg_to_rear=0.713, unsprung_mass_front=15.0, unsprung_mass_rear=18.0,
+        unsprung_cg_height_front=0.230, unsprung_cg_height_rear=0.230, roll_center_front=0.030,
+        roll_center_rear=0.050, roll_stiffness_front=20826.4, roll_stiffness_rear=26450.0,
+    )
+    base.update(over)
+    return VehicleConfig(**base)
+
+
+cfg_b = veiculo_base()
+_k_soma = cfg_b.roll_stiffness_front + cfg_b.roll_stiffness_rear
+
+
+def veiculo_simetrico(lambda_f=0.5, **over):
+    """Carro simétrico do TC-EQ-010 (cópia do tests/test_equilibrio.py; só de teste)."""
+    L = cfg_b.wheelbase
+    return veiculo_base(**{**dict(cg_to_front=L / 2, cg_to_rear=L / 2, track_rear=cfg_b.track_front,
+                                  roll_stiffness_front=lambda_f * _k_soma,
+                                  roll_stiffness_rear=(1 - lambda_f) * _k_soma,
+                                  roll_center_rear=cfg_b.roll_center_front,
+                                  unsprung_mass_rear=cfg_b.unsprung_mass_front,
+                                  unsprung_cg_height_rear=cfg_b.unsprung_cg_height_front), **over})
+
+
+def _sem_excecao(fn):
+    try:
+        return fn(), None
+    except Exception as e:  # o check precisa registrar qualquer exceção como falha
+        return None, f"{type(e).__name__}: {e}"
+
+
+def _gpg(k):
+    return "None" if k is None else f"{el.para_graus_por_g(k):+.5f}"
+
+
+def _resumo_p(p):
+    if p is None:
+        return "sem resultado"
+    return (f"a_y={p.ay_ms2 / G:.3f} g: pneus={_gpg(p.k_pneus)} transf={_gpg(p.k_transferencia)} "
+            f"desl={_gpg(p.k_deslocamento)} camber={_gpg(p.k_camber)} rs={_gpg(p.k_roll_steer)} total={_gpg(p.k_total)} °/g, "
+            f"dphi/day={_gpg(p.dphi_day)} °/g, motivo={p.motivo!r}")
+
+
+ds_sim = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.5})      # escala só de teste (TC-EQ-010)
+ds_045 = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.45})     # escala só de teste (TC-EQ-011)
+
+# ---------------- TC-EQ-031 : carro simétrico -> K = 0 ----------------
+caso_sim = eq.CasoEquilibrio(cfg=veiculo_simetrico(0.5), ds=ds_sim)
+p031, e031 = _sem_excecao(lambda: el.parcelas_k(caso_sim, 0.3 * G))
+ok_031 = False
+if p031 is not None and p031.k_total is not None:
+    t031 = el.texto_k(p031, "● Dado do TX")
+    if p031.k_total == 0.0:
+        sinal_ok = t031.endswith(" · Neutro")
+    elif p031.k_total > 0.0:
+        sinal_ok = t031.endswith(" · Subesterço")
+    else:
+        sinal_ok = t031.endswith(" · Sobresterço")
+    ok_031 = abs(p031.k_pneus) < 1e-12 and abs(p031.k_total) < 1e-12 and sinal_ok
+else:
+    t031 = None
+check("TC-EQ-031: carro simétrico (TC-EQ-010) em 0,3 g -> k_pneus = 0 e k_total ~ 0 (|.| < 1e-12); "
+      "'Neutro' só com k_total == 0 exato, senão o sinal manda",
+      ok_031, (e031 or _resumo_p(p031)) + f"; k_total={getattr(p031, 'k_total', None)!r}; texto={t031!r}")
+
+# ---------------- TC-EQ-032 : mais rigidez de rolagem na frente -> mais K de transferência ----------------
+p05, e05 = _sem_excecao(lambda: el.parcelas_k(eq.CasoEquilibrio(cfg=veiculo_simetrico(0.5), ds=ds_045), 0.3 * G))
+p07, e07 = _sem_excecao(lambda: el.parcelas_k(eq.CasoEquilibrio(cfg=veiculo_simetrico(0.7), ds=ds_045), 0.3 * G))
+check("TC-EQ-032: lambda_f 0,7 contra 0,5 (LMUY 0,45, só de teste) -> k_transferencia em 0,3 g maior com 0,7 "
+      "(Gillespie p. 214)",
+      p05 is not None and p07 is not None and p05.k_transferencia is not None
+      and p07.k_transferencia is not None and p07.k_transferencia > p05.k_transferencia,
+      f"0,5: {e05 or _resumo_p(p05)} | 0,7: {e07 or _resumo_p(p07)}")
+
+# ---------------- TC-EQ-033 : roda descolada -> parcela N/A, sem exceção ----------------
+# Bitolas de 0,20 m: geometria só de teste, para a roda interna descolar em 0,4 g.
+caso_desc = eq.CasoEquilibrio(cfg=veiculo_base(track_front=0.20, track_rear=0.20), ds=ds)
+fz_desc = eq.cargas(caso_desc, 0.4 * G)
+p033, e033 = _sem_excecao(lambda: el.parcelas_k(caso_desc, 0.4 * G))
+check("TC-EQ-033: roda interna descolada em 0,4 g (bitola de teste) -> k_transferencia e k_total None, motivo com "
+      "'descolamento', sem exceção",
+      min(fz_desc.values()) <= 0.0 and p033 is not None and p033.k_transferencia is None
+      and p033.k_total is None and "descolamento" in (p033.motivo or ""),
+      (e033 or _resumo_p(p033)) + f"; Fz={ {c: round(v, 1) for c, v in fz_desc.items()} }")
+
+# ---------------- TC-EQ-034 : passo 1 = inclinação inicial do passo 2 ----------------
+GANHO_TESTE = {"FL": -0.8, "FR": 0.8, "RL": -0.6, "RR": 0.6}   # gradientes de eixo 0,8 e 0,6: só de teste
+ok_034, det_034 = [], []
+
+
+def _comparar_034(dset, ganho):
+    """(rel, detalhe) de |k_inclinacao(1ª linha) − (pneus + deslocamento + camber)| / |...|, ou (None, erro)."""
+    caso34 = eq.CasoEquilibrio(cfg=cfg_b, ds=dset, ganho_camber=ganho)
+    tab, e34 = _sem_excecao(lambda: el.tabela_linear(caso34, ay_max_g=0.05))
+    if (tab is None or tab[0]["k_inclinacao"] is None
+            or any(x is None for x in (tab[0]["parcelas"].k_pneus, tab[0]["parcelas"].k_deslocamento,
+                                       tab[0]["parcelas"].k_camber))):
+        return None, None, e34 or "k_inclinacao ou parcela None"
+    p0 = tab[0]["parcelas"]
+    soma = p0.k_pneus + p0.k_deslocamento + p0.k_camber
+    rel = abs(tab[0]["k_inclinacao"] - soma) / abs(soma)
+    return rel, p0, (f"inclinação={_gpg(tab[0]['k_inclinacao'])}, pneus+desl+camber={_gpg(soma)} °/g "
+                     f"(pneus={_gpg(p0.k_pneus)}, desl={_gpg(p0.k_deslocamento)}, camber={_gpg(p0.k_camber)}), "
+                     f"rel={rel:.2e}")
+
+
+for rotulo, ganho in (("sem ganho de camber", {c: 0.0 for c in eq.CANTOS}), ("com ganho de teste", GANHO_TESTE)):
+    rel34, _, d34 = _comparar_034(ds, ganho)
+    ok_034.append(rel34 is not None and rel34 < 1e-3)
+    det_034.append(f"{rotulo}: {d34}")
+# Registro (não decide o check): no ds0 (sem PHY/PVY/RHY, só de teste) o deslocamento do pneu some.
+_, p34_0, d34_0 = _comparar_034(ds0, {c: 0.0 for c in eq.CANTOS})
+det_034.append(f"ds0 (sem deslocamentos): {d34_0}")
+check("TC-EQ-034: k_inclinacao da 1ª linha (passo 2, Richardson das secantes de 0,005 e 0,01 g) = k_pneus + k_deslocamento + k_camber "
+      "(passo 1), rel < 1e-3, com e sem ganho de camber (veículo de teste, .tir real, sem roll steer)",
+      len(ok_034) == 2 and all(ok_034), " | ".join(det_034))
+
+# ---------------- TC-EQ-035 : sinal do camber (EDR-002) ----------------
+# Braços paralelos iguais na frente (gradiente de eixo +1, Gillespie p. 234): só de teste.
+caso35 = eq.CasoEquilibrio(cfg=cfg_b, ds=ds, ganho_camber={"FL": -1.0, "FR": 1.0, "RL": 0.0, "RR": 0.0})
+p035, e035 = _sem_excecao(lambda: el.parcelas_k(caso35, 0.0))
+check("TC-EQ-035: gradiente de camber de eixo +1 na frente (só de teste) -> k_camber > 0 (subesterço, exemplo 2 "
+      "do Gillespie, p. 234; EDR-002)",
+      p035 is not None and p035.k_camber is not None and p035.k_camber > 0.0, e035 or _resumo_p(p035))
+
+# ---------------- TC-EQ-036 : K_llt aproximado (eq. 6-49) x exato ----------------
+caso36 = eq.CasoEquilibrio(cfg=cfg_b, ds=ds)
+x36, e36 = _sem_excecao(lambda: el.cruzamento_transferencia(caso36, 0.2 * G))
+ok_036, det_036 = False, e36 or ""
+if x36 is not None and x36["b_f"] is not None and x36["b_r"] is not None:
+    info_global = (f"ajuste global (só informação): a={x36['a_global']:.4f} 1/rad, b={x36['b_global']:.4e} "
+                   f"1/(rad·N), r={x36['r']:.3e}")
+    if x36["b_f"] > 0 and x36["b_r"] > 0:
+        ap, ex = x36["aprox"], x36["exato"]
+        tol = 2.0 * x36["eps"] if x36["eps"] is not None else -1.0
+        rel36 = abs(ap - ex) / abs(ex) if (ap is not None and ex) else math.inf
+        ok_036 = (ap is not None and ex is not None and ap * ex > 0 and rel36 <= tol and x36["motivo"] is None)
+        det_036 = (f"b local: F={x36['b_f']:.4e}, R={x36['b_r']:.4e} 1/(rad·N); aprox={_gpg(ap)} exato={_gpg(ex)} °/g; "
+                   f"dif. rel.={rel36:.3e} <= 2·eps={tol:.3e} (eps_f={x36['eps_f']:.3e}, eps_r={x36['eps_r']:.3e}, "
+                   f"eixo mais carregado); {info_global}")
+    else:
+        ok_036 = x36["motivo"] == "polinômio sem sensibilidade à carga no trecho"
+        det_036 = f"b local F={x36['b_f']:.4e}, R={x36['b_r']:.4e}; motivo={x36['motivo']!r}; {info_global}"
+check("TC-EQ-036: K_llt aproximado (Gillespie eq. 6-49, b = −½·d²C_α/dFz² local no Fz estático de cada eixo) x "
+      "exato em 0,2 g: mesmo sinal e diferença <= 2·eps do eixo mais carregado; b local <= 0 -> motivo "
+      "'sem sensibilidade'",
+      ok_036, det_036)
+
+# ---------------- TC-EQ-037 : texto exato de K ----------------
+k037 = math.radians(0.123) / G   # +0,123 °/g em rad/(m/s²); ParcelasK só de teste
+t037, e037 = _sem_excecao(lambda: el.texto_k(
+    el.ParcelasK(ay_ms2=0.0, k_pneus=k037, k_transferencia=0.0, k_deslocamento=0.0, k_camber=0.0,
+                 k_roll_steer=0.0, k_total=k037, dphi_day=0.0, motivo=None), "◐ Dado do T09"))
+esp037 = ("DEMONSTRATIVO · K = +0,12 °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; "
+          "sem compliance, torque de alinhamento e tração) · Subesterço")
+check("TC-EQ-037: texto_k com pior origem '◐ Dado do T09' e K = +0,123 °/g é o texto exato da spec §6",
+      t037 == esp037, e037 or f"obtido={t037!r}")
+
+# ---------------- TC-EQ-038 : tabela linear e roll steer linha a linha ----------------
+RS_TESTE = {"F": 0.05, "R": -0.03}   # ε em rad/rad (SUS-415): só de teste
+caso38 = eq.CasoEquilibrio(cfg=cfg_b, ds=ds, roll_steer=RS_TESTE)
+tab38, e38 = _sem_excecao(lambda: el.tabela_linear(caso38))
+ok_038 = False
+if tab38 is not None:
+    ays = [ln["ay_ms2"] for ln in tab38]
+    rs_ok = all(ln["parcelas"].k_roll_steer is not None and ln["parcelas"].dphi_day is not None
+                and abs(ln["parcelas"].k_roll_steer
+                        - (RS_TESTE["F"] - RS_TESTE["R"]) * ln["parcelas"].dphi_day) < 1e-15 for ln in tab38)
+    ok_038 = (len(tab38) == int(0.4 / 0.05) + 1 and all(b > a for a, b in zip(ays, ays[1:])) and rs_ok)
+    det_038 = f"{len(tab38)} linhas, a_y [g]={[round(a / G, 3) for a in ays]}; " + _resumo_p(tab38[-1]["parcelas"])
+else:
+    det_038 = e38
+check("TC-EQ-038: tabela_linear tem int(0,4/0,05)+1 linhas, a_y crescente, k_roll_steer = (eps_f − eps_r)·dphi_day "
+      "linha a linha (eps de teste)", ok_038, det_038)
+
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")
