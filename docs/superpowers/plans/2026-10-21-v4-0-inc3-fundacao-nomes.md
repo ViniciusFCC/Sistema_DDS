@@ -42,11 +42,19 @@ A V4.0 cobre os incrementos 1 a 3. Este incremento entrega o arquivo `excel/FSAE
 - SI e textos sem mudança. Planilhas abertas pelo openpyxl em leitura, salvo o gerador e o injetor (que gravam cópias).
 - Fim de linha LF nos arquivos de texto. Branch `feat/v4-0-inc3-fundacao`, criada da ponta de `feat/v4-0-inc2-equilibrio-linear`. Commits separados por propósito, com `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Push e PR só com pedido.
 
-## Contagem de testes (fim)
-| Script | Testes | IDs |
+## Contagem de testes (fim): revisada pelo usuário em 2026-10-21 ("tente reduzir a quantidade de testes")
+Os 12 checks descritos nas tarefas viram **6 checks**, com os mesmos asserts. Cada propriedade continua conferida, como asserção dentro de um check só. Os IDs autorizados são **TC-WB40-001 a 006**.
+
+| Check | Junta (numeração das tarefas abaixo) | Script |
 |---|---|---|
-| `tests/test_v4_0.py` (novo, sem motor) | 9 | TC-WB40-001..009 |
-| `tests/test_workbook_v4_0.py` (novo, motor; NÃO EXECUTÁVEL sem Excel ou LibreOffice) | 3 | TC-WB40-010..012 |
+| TC-WB40-001 | 001 + 009 (tabela válida e completa; `verificar_cobertura`) | `tests/test_v4_0.py` |
+| TC-WB40-002 | 002 + 003 + 008 do gerador (nomes, fórmulas idênticas, recusas) | `tests/test_v4_0.py` |
+| TC-WB40-003 | 004 (CA-07 da V4.0) | `tests/test_v4_0.py` |
+| TC-WB40-004 | 005 + 006 + 007 + 008 do injetor (equivalência por chave, ida e volta, conflito, recusa) | `tests/test_v4_0.py` |
+| TC-WB40-005 | 010 + 011 (0 erros; equivalência por valor) | `tests/test_workbook_v4_0.py` |
+| TC-WB40-006 | 012 (nomes válidos no motor) | `tests/test_workbook_v4_0.py` |
+
+Esperados: `tests/test_v4_0.py` com 4 checks e `tests/test_workbook_v4_0.py` com 2. Onde as tarefas abaixo citam 001..012 ou contagens intermediárias, vale esta tabela.
 
 ## Review Focus
 1. **Rótulo da coluna A vazio ou repetido** (linhas sem texto, ou rótulos iguais na 10_TIRE). Esperado: o nome cai na regra de colisão, sempre único e determinístico, nunca vazio (Task 1, TC-WB40-001).
