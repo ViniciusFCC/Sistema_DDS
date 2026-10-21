@@ -177,10 +177,14 @@ for cn in corners:
             fy = t.wheel_forces(dsx, cn, 700.0, _m.radians(a_deg), 0.0, 0.0)[1]
             ok &= (fy * a_deg < 0)
 check("TC-TIRE-010a: |α|≥3°, γ=0: Fy (ISO, projeto) tem sinal oposto a α_ISO nos 4 cantos, nos dois modos de eixo (SAE_CALSPAN e ISO_TYDEX)", ok)
-fyR = t.wheel_forces(dsS, "FR", 700.0, 0.0, _m.radians(3), 0.0)[1]; fyL = t.wheel_forces(dsS, "FL", 700.0, 0.0, _m.radians(3), 0.0)[1]
-fyR_n = t.wheel_forces(dsS, "FR", 700.0, 0.0, _m.radians(-3), 0.0)[1]; fyL_n = t.wheel_forces(dsS, "FL", 700.0, 0.0, _m.radians(-3), 0.0)[1]
-check("TC-TIRE-010b: empuxo de camber aponta para o lado da inclinação: roda direita γ>0 (topo p/ direita=fora) -> Fy<0 (direita); roda esquerda γ>0 (topo p/ esquerda=fora) -> Fy>0; inverte com γ<0",
-      fyR < 0 and fyL > 0 and fyR_n > 0 and fyL_n < 0, f"R+={fyR:.0f} L+={fyL:.0f} R-={fyR_n:.0f} L-={fyL_n:.0f}")
+ok_010b, det_010b = True, []
+for nome_dx, dx in (("SAE_CALSPAN", dsS), ("ISO_TYDEX", dsI)):
+    fyR = t.wheel_forces(dx, "FR", 700.0, 0.0, _m.radians(3), 0.0)[1]; fyL = t.wheel_forces(dx, "FL", 700.0, 0.0, _m.radians(3), 0.0)[1]
+    fyR_n = t.wheel_forces(dx, "FR", 700.0, 0.0, _m.radians(-3), 0.0)[1]; fyL_n = t.wheel_forces(dx, "FL", 700.0, 0.0, _m.radians(-3), 0.0)[1]
+    ok_010b = ok_010b and fyR < 0 and fyL > 0 and fyR_n > 0 and fyL_n < 0
+    det_010b.append(f"{nome_dx}: R+={fyR:.0f} L+={fyL:.0f} R-={fyR_n:.0f} L-={fyL_n:.0f}")
+check("TC-TIRE-010b: empuxo de camber aponta para o lado da inclinação: roda direita γ>0 (topo p/ direita=fora) -> Fy<0 (direita); roda esquerda γ>0 (topo p/ esquerda=fora) -> Fy>0; inverte com γ<0, nos dois modos de eixo (SAE_CALSPAN e ISO_TYDEX)",
+      ok_010b, "; ".join(det_010b))
 f0_file = t.combined_forces(ds, 700.0, 0.0, 0.0, 0.0)[1]
 check("TC-TIRE-010c: offset de Fy em zero slip: SAE_CALSPAN -> Fy_ISO = −Fy_arquivo; ISO_TYDEX -> = +Fy_arquivo (roda direita)",
       abs(t.wheel_forces(dsS, "FR", 700.0, 0, 0, 0)[1] + f0_file) < 1e-9 and abs(t.wheel_forces(dsI, "FR", 700.0, 0, 0, 0)[1] - f0_file) < 1e-9, f"Fy_arquivo(0,0,0)={f0_file:.2f} N")
