@@ -534,6 +534,50 @@ ok_020 = _pior in raizes.PIOR_PRIMEIRO and _pior != "● Dado do TX" and _h0 == 
 check("TC-EQ-020: pior origem da viva é rótulo conhecido e não é TX; arquivo intacto (SHA-256)",
       ok_020, f"pior = {_pior}")
 
+
+# ---------------- TC-EQ-039..041 : Ackermann e cos δ (V4.0, inc. 2; spec 7.1 item 3 e 7.4 hipóteses 2 e 3) ----------------
+import kinematics_model as km
+
+R_TESTE = 8.0  # entrada de teste rotulada (R do skidpad "a confirmar"); não é dado do carro
+ok_039a = raises(lambda: eq.CasoEquilibrio(cfg=cfg, ds=ds, ackermann_pct=100.0), ValueError, "raio_m")
+ok_039b = not raises(lambda: eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, ackermann_pct=100.0))
+ok_039c = raises(lambda: eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=-1.0), ValueError, "raio_m")
+check("TC-EQ-039: ackermann_pct sem raio_m -> ValueError citando raio_m; com raio_m é aceito",
+      ok_039a and ok_039b and ok_039c, f"{ok_039a}/{ok_039b}/{ok_039c}")
+
+# 040: só o cos δ_ref (sem Ackermann) multiplica a capacidade dianteira
+caso_r = eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE)
+cap0 = eq.capacidade_eixo(caso0, "F", 0.0, 25)
+cap_r = eq.capacidade_eixo(caso_r, "F", 0.0, 25)
+cosd = math.cos(cfg.wheelbase / R_TESTE)
+erro_f = abs(cap_r.fy_max_N / (cap0.fy_max_N * cosd) - 1.0)
+cap0_t = eq.capacidade_eixo(caso0, "R", 0.0, 25)
+cap_r_t = eq.capacidade_eixo(caso_r, "R", 0.0, 25)
+check("TC-EQ-040: R = 8 m sem Ackermann -> capacidade dianteira × cos(L/R) (erro < 1e-12); traseira igual",
+      erro_f < 1e-12 and cap_r_t.fy_max_N == cap0_t.fy_max_N and cap_r_t.alfa_pico_rad == cap0_t.alfa_pico_rad,
+      f"erro rel F = {erro_f:.2e}, cos = {cosd:.6f}")
+
+# 041: δ das rodas e Δα extra
+d_ref = cfg.wheelbase / R_TESTE
+d0 = eq.esterco_rodas(eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, ackermann_pct=0.0))
+ok_041a = abs(d0["FL"] - d_ref) < 1e-12 and abs(d0["FR"] - d_ref) < 1e-12
+da0 = eq.deriva_ackermann(eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, ackermann_pct=0.0))
+ok_041b = all(abs(v) < 1e-12 for v in da0.values())
+caso_a = eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, ackermann_pct=100.0)
+d100 = eq.esterco_rodas(caso_a)
+d_o, d_i = d100["FR"], d100["FL"]
+ideal_i = math.radians(km.ackermann_inner_ideal_deg(math.degrees(d_o), cfg.wheelbase, cfg.track_front))
+ok_041c = (abs(d_i - ideal_i) < 1e-9 and abs((d_o + d_i) / 2.0 - d_ref) < 1e-9 and d_i > d_o)
+da = eq.deriva_ackermann(caso_a)
+ok_041d = da["FL"] < 0.0 < da["FR"] and da["RL"] == 0.0 and da["RR"] == 0.0
+ok_041e = (abs(da["FL"] + (d_i - d_ref)) < 1e-12 and abs(da["FR"] + (d_o - d_ref)) < 1e-12)
+check("TC-EQ-041: Ackermann 0 % -> δ = δ_ref e Δα extra nulo; 100 % -> δ_i = ideal (1e-9), média δ_ref, "
+      "Δα de FL e FR com sinais opostos",
+      ok_041a and ok_041b and ok_041c and ok_041d and ok_041e,
+      f"δ_ref = {math.degrees(d_ref):.4f}°, δ_o = {math.degrees(d_o):.4f}°, δ_i = {math.degrees(d_i):.4f}° "
+      f"({ok_041a}/{ok_041b}/{ok_041c}/{ok_041d}/{ok_041e})")
+
+
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")

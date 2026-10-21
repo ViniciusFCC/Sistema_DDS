@@ -18,11 +18,13 @@ satura primeiro (Milliken, §8.6, p. 320).
 from __future__ import annotations
 
 import copy
+import functools
 import itertools
 import math
 import dataclasses
 from dataclasses import dataclass, field
 
+from kinematics_model import ackermann_inner_ideal_deg
 from suspension_model import G, VehicleConfig, combined_fz_corner, lateral_dfz
 from tire_model import AXIS_TRANSFORMS, TireDataset, wheel_forces
 
@@ -41,6 +43,10 @@ class CasoEquilibrio:
     roll_steer é o coeficiente de roll steer de cada eixo, ε [rad/rad], chaves "F" e "R", na convenção do
     SUS-415 (kinematics_model.roll_steer_coefficient: ε > 0 esterça para a direita numa rolagem para a
     direita). Padrão 0 = "sem dado"; só entra na parcela de roll steer do gradiente K (V4.0, inc. 2).
+    raio_m é o raio R do skidpad [m] ("a confirmar"; None = sem dado). Com ele, a dianteira esterça
+    δ_ref = L/R e a força do eixo dianteiro na direção do carro leva cos δ_ref (spec 7.1, item 3).
+    ackermann_pct é o % Ackermann da geometria (SUS-414; 100 = Ackermann exato, 0 = paralelo, < 0 =
+    reverso); None desliga a hipótese 2 (spec 7.4). Exige raio_m.
     """
     cfg: VehicleConfig
     ds: TireDataset
@@ -50,6 +56,8 @@ class CasoEquilibrio:
     camber_estatico_rad: dict = field(default_factory=_zeros)
     ganho_camber: dict = field(default_factory=_zeros)
     roll_steer: dict = field(default_factory=lambda: {"F": 0.0, "R": 0.0})
+    raio_m: float | None = None
+    ackermann_pct: float | None = None
 
     def __post_init__(self):
         for nome in ("toe_rad", "camber_estatico_rad", "ganho_camber"):
@@ -63,6 +71,18 @@ class CasoEquilibrio:
             raise ValueError(f"roll_steer exige exatamente as chaves ('F', 'R'); recebido {sorted(rs)}.")
         if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in rs.values()):
             raise ValueError(f"roll_steer exige valores numéricos finitos; recebido {rs}.")
+        for nome in ("raio_m", "ackermann_pct"):
+            v = getattr(self, nome)
+            if v is not None and not (isinstance(v, (int, float)) and math.isfinite(v)):
+                raise ValueError(f"{nome} exige número finito ou None; recebido {v!r}.")
+        if self.raio_m is not None and self.raio_m <= 0.0:
+            raise ValueError(f"raio_m deve ser > 0; recebido {self.raio_m!r}.")
+        # Entradas que só têm sentido com o raio da curva (spec 7.1 e 7.4). As Tasks 6 e 7 acrescentam
+        # cza_m2 e cda_m2 a esta lista.
+        if self.raio_m is None:
+            falta = [nome for nome in ("ackermann_pct",) if getattr(self, nome) is not None]
+            if falta:
+                raise ValueError(f"{', '.join(falta)} exige(m) raio_m (raio do skidpad), que está faltando.")
 
 
 def cargas(caso: CasoEquilibrio, ay_ms2: float) -> dict:
@@ -100,22 +120,102 @@ def deriva_toe(caso: CasoEquilibrio) -> dict:
     return {c: sinal[c] * caso.toe_rad[c] for c in CANTOS}
 
 
+@functools.lru_cache(maxsize=256)
+def _esterco_ackermann(L: float, t: float, raio: float, pct: float) -> tuple[float, float]:
+    """(δ_interna, δ_externa) [rad] de uma curva à esquerda com δ_ref = L/R e Ackermann pct % (SUS-414).
+
+    δ_i = δ_o + pct/100·(δ_i,Ack(δ_o) − δ_o), com δ_i,Ack de kinematics_model.ackermann_inner_ideal_deg
+    (cot δ_o − cot δ_i = t/L). δ_o sai de (δ_o + δ_i)/2 = δ_ref por bissecção; o lado esquerdo cresce
+    com δ_o, então a raiz é única. pct = 0 é paralelo: δ_i = δ_o = δ_ref, sem iteração.
+    """
+    d_ref = L / raio
+    if pct == 0.0:
+        return d_ref, d_ref
+
+    def interna(d_o: float) -> float:
+        ideal = math.radians(ackermann_inner_ideal_deg(math.degrees(d_o), L, t))
+        return d_o + pct / 100.0 * (ideal - d_o)
+
+    lo = 1e-12
+    hi = math.atan(L / t) * (1.0 - 1e-9)   # além disso cot δ_i ≤ 0: Ackermann sem solução
+    if (hi + interna(hi)) / 2.0 < d_ref:
+        raise ValueError(f"L/R = {math.degrees(d_ref):.2f}° está fora do que a geometria de Ackermann "
+                         f"(L = {L} m, t = {t} m) alcança; revise o raio.")
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if (mid + interna(mid)) / 2.0 < d_ref:
+            lo = mid
+        else:
+            hi = mid
+    d_o = 0.5 * (lo + hi)
+    return interna(d_o), d_o
+
+
+def esterco_rodas(caso: CasoEquilibrio) -> dict:
+    """δ [rad] das rodas dianteiras em curva à esquerda ({"FL": interna, "FR": externa}); {} sem raio_m.
+
+    Sem ackermann_pct (hipótese 2 desligada) as duas valem δ_ref = L/R. Com ele, a interna e a externa
+    seguem o % Ackermann da geometria (spec 7.4, hipótese 2; SUS-414) com média δ_ref.
+    """
+    if caso.raio_m is None:
+        return {}
+    cfg = caso.cfg
+    if caso.ackermann_pct is None:
+        d_ref = cfg.wheelbase / caso.raio_m
+        return {"FL": d_ref, "FR": d_ref}
+    d_i, d_o = _esterco_ackermann(cfg.wheelbase, cfg.track_front, caso.raio_m, float(caso.ackermann_pct))
+    return {"FL": d_i, "FR": d_o}
+
+
+def deriva_ackermann(caso: CasoEquilibrio) -> dict:
+    """Δα [rad] por roda do esterçamento além de δ_ref: Δα = −(δ_roda − δ_ref) nas rodas dianteiras.
+
+    Esterço a mais que o da condição média reduz o α da roda (curva à esquerda, ISO). Zero atrás, sem
+    ackermann_pct e sem raio_m (spec 7.4, hipótese 2).
+    """
+    saida = _zeros()
+    if caso.raio_m is None or caso.ackermann_pct is None:
+        return saida
+    d_ref = caso.cfg.wheelbase / caso.raio_m
+    for c, d in esterco_rodas(caso).items():
+        saida[c] = -(d - d_ref)
+    return saida
+
+
+def deriva_total(caso: CasoEquilibrio) -> dict:
+    """Δα [rad] por roda: toe estático (deriva_toe) + Ackermann (deriva_ackermann)."""
+    toe = deriva_toe(caso)
+    if caso.raio_m is None or caso.ackermann_pct is None:
+        return toe
+    ack = deriva_ackermann(caso)
+    return {c: toe[c] + ack[c] for c in CANTOS}
+
+
+def _cos_dianteira(caso: CasoEquilibrio, rodas: tuple) -> float:
+    """cos δ_ref para o eixo dianteiro com raio_m (spec 7.1, item 3); 1 no traseiro e sem raio_m."""
+    if caso.raio_m is None or rodas != _RODAS_DO_EIXO["F"]:
+        return 1.0
+    return math.cos(caso.cfg.wheelbase / caso.raio_m)
+
+
 def grade_alfa(caso: CasoEquilibrio, n_alfa: int) -> list:
     """n_alfa valores de α_ref [rad], igualmente espaçados de 0 a −A (curva à esquerda: α ≤ 0).
 
-    A = min(|ALPMIN|, ALPMAX) − max|Δα|, para que nenhuma roda saia da faixa de α do pneu.
+    A = min(|ALPMIN|, ALPMAX) − max|Δα| (toe + Ackermann), para que nenhuma roda saia da faixa de α do pneu.
     """
     if n_alfa < 2:
         raise ValueError(f"n_alfa deve ser >= 2; recebido {n_alfa}.")
     p = caso.ds.p
-    amplitude = min(abs(p["ALPMIN"]), p["ALPMAX"]) - max(abs(v) for v in deriva_toe(caso).values())
+    amplitude = min(abs(p["ALPMIN"]), p["ALPMAX"]) - max(abs(v) for v in deriva_total(caso).values())
     if amplitude <= 0.0:
         raise ValueError("toe consome toda a faixa de α do pneu; a grade de α ficaria vazia.")
     return [-amplitude * i / (n_alfa - 1) for i in range(n_alfa)]
 
 
 def fy_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, alfa_ref: float) -> float:
-    """Σ Fy [N, ISO] das duas rodas do eixo ('F' ou 'R'), com α_roda = α_ref + Δα_toe (κ = 0).
+    """Σ Fy [N, ISO] das duas rodas do eixo ('F' ou 'R'), com α_roda = α_ref + Δα (toe + Ackermann; κ = 0).
+
+    Com raio_m, a soma da dianteira leva cos δ_ref (força na direção do carro; spec 7.1, item 3).
 
     Lança TireRangeError se alguma roda sair da faixa do pneu; quem quer um resultado sem
     exceção usa capacidade_eixo.
@@ -123,8 +223,9 @@ def fy_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, alfa_ref: float) -> 
     rodas = _rodas(eixo)
     fz = cargas(caso, ay_ms2)
     gam = camber(caso, ay_ms2)
-    dal = deriva_toe(caso)
-    return sum(wheel_forces(caso.ds, c, fz[c], alfa_ref + dal[c], gam[c], 0.0)[1] for c in rodas)
+    dal = deriva_total(caso)
+    soma = sum(wheel_forces(caso.ds, c, fz[c], alfa_ref + dal[c], gam[c], 0.0)[1] for c in rodas)
+    return soma * _cos_dianteira(caso, rodas)
 
 
 @dataclass(frozen=True)
@@ -196,8 +297,9 @@ def _entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -
 
 def _fy_eixo_limitado(caso: CasoEquilibrio, rodas: tuple, fz_u: dict, gam_u: dict, alfa_ref: float) -> float:
     """Σ Fy [N, ISO] do eixo com Fz e γ já limitados à faixa (uso interno de capacidade_eixo)."""
-    dal = deriva_toe(caso)
-    return sum(wheel_forces(caso.ds, c, fz_u[c], alfa_ref + dal[c], gam_u[c], 0.0)[1] for c in rodas)
+    dal = deriva_total(caso)
+    soma = sum(wheel_forces(caso.ds, c, fz_u[c], alfa_ref + dal[c], gam_u[c], 0.0)[1] for c in rodas)
+    return soma * _cos_dianteira(caso, rodas)
 
 
 def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int) -> Capacidade:
