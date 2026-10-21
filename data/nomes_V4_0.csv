@@ -6,31 +6,31 @@ ent_01_geometry_rev,01_SETUP,B9,ent,,Geometry REV
 ent_01_kinematics_rev,01_SETUP,B10,ent,,Kinematics REV
 ent_01_tire_rev,01_SETUP,B11,ent,,Tire REV
 ent_01_dynamics_script_version,01_SETUP,B12,ent,,Dynamics Script Version
-ent_03_target_001_c5,03_TARGETS,C5,ent,,TARGET-001
-ent_03_target_001_d5,03_TARGETS,D5,ent,,TARGET-001
-ent_03_target_001_e5,03_TARGETS,E5,ent,,TARGET-001
-ent_03_target_001_f5,03_TARGETS,F5,ent,,TARGET-001
-ent_03_target_001_g5,03_TARGETS,G5,ent,,TARGET-001
-ent_03_target_002_c6,03_TARGETS,C6,ent,,TARGET-002
-ent_03_target_002_d6,03_TARGETS,D6,ent,,TARGET-002
-ent_03_target_002_e6,03_TARGETS,E6,ent,,TARGET-002
-ent_03_target_002_f6,03_TARGETS,F6,ent,,TARGET-002
-ent_03_target_002_g6,03_TARGETS,G6,ent,,TARGET-002
-ent_03_target_003_c7,03_TARGETS,C7,ent,,TARGET-003
-ent_03_target_003_d7,03_TARGETS,D7,ent,,TARGET-003
-ent_03_target_003_e7,03_TARGETS,E7,ent,,TARGET-003
-ent_03_target_003_f7,03_TARGETS,F7,ent,,TARGET-003
-ent_03_target_003_g7,03_TARGETS,G7,ent,,TARGET-003
-ent_03_target_004_c8,03_TARGETS,C8,ent,,TARGET-004
-ent_03_target_004_d8,03_TARGETS,D8,ent,,TARGET-004
-ent_03_target_004_e8,03_TARGETS,E8,ent,,TARGET-004
-ent_03_target_004_f8,03_TARGETS,F8,ent,,TARGET-004
-ent_03_target_004_g8,03_TARGETS,G8,ent,,TARGET-004
-ent_03_target_005_c9,03_TARGETS,C9,ent,,TARGET-005
-ent_03_target_005_d9,03_TARGETS,D9,ent,,TARGET-005
-ent_03_target_005_e9,03_TARGETS,E9,ent,,TARGET-005
-ent_03_target_005_f9,03_TARGETS,F9,ent,,TARGET-005
-ent_03_target_005_g9,03_TARGETS,G9,ent,,TARGET-005
+ent_03_target_001_c5,03_TARGETS,C5,ent,SUS-205,TARGET-001
+ent_03_target_001_d5,03_TARGETS,D5,ent,SUS-205,TARGET-001
+ent_03_target_001_e5,03_TARGETS,E5,ent,SUS-205,TARGET-001
+ent_03_target_001_f5,03_TARGETS,F5,ent,SUS-205,TARGET-001
+ent_03_target_001_g5,03_TARGETS,G5,ent,SUS-205,TARGET-001
+ent_03_target_002_c6,03_TARGETS,C6,ent,SUS-205,TARGET-002
+ent_03_target_002_d6,03_TARGETS,D6,ent,SUS-205,TARGET-002
+ent_03_target_002_e6,03_TARGETS,E6,ent,SUS-205,TARGET-002
+ent_03_target_002_f6,03_TARGETS,F6,ent,SUS-205,TARGET-002
+ent_03_target_002_g6,03_TARGETS,G6,ent,SUS-205,TARGET-002
+ent_03_target_003_c7,03_TARGETS,C7,ent,SUS-208,TARGET-003
+ent_03_target_003_d7,03_TARGETS,D7,ent,SUS-208,TARGET-003
+ent_03_target_003_e7,03_TARGETS,E7,ent,SUS-208,TARGET-003
+ent_03_target_003_f7,03_TARGETS,F7,ent,SUS-208,TARGET-003
+ent_03_target_003_g7,03_TARGETS,G7,ent,SUS-208,TARGET-003
+ent_03_target_004_c8,03_TARGETS,C8,ent,SUS-301,TARGET-004
+ent_03_target_004_d8,03_TARGETS,D8,ent,SUS-301,TARGET-004
+ent_03_target_004_e8,03_TARGETS,E8,ent,SUS-301,TARGET-004
+ent_03_target_004_f8,03_TARGETS,F8,ent,SUS-301,TARGET-004
+ent_03_target_004_g8,03_TARGETS,G8,ent,SUS-301,TARGET-004
+ent_03_target_005_c9,03_TARGETS,C9,ent,SUS-302,TARGET-005
+ent_03_target_005_d9,03_TARGETS,D9,ent,SUS-302,TARGET-005
+ent_03_target_005_e9,03_TARGETS,E9,ent,SUS-302,TARGET-005
+ent_03_target_005_f9,03_TARGETS,F9,ent,SUS-302,TARGET-005
+ent_03_target_005_g9,03_TARGETS,G9,ent,SUS-302,TARGET-005
 res_05_massa_total_com_piloto,05_VEHICLE,B4,res,SUS-001,Massa total (com piloto)
 ent_05_altura_do_cg_total,05_VEHICLE,B5,ent,SUS-002,Altura do CG (total)
 org_05_altura_do_cg_total,05_VEHICLE,E5,org,SUS-002,Altura do CG (total)
