@@ -34,9 +34,10 @@ TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
     ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V3_0.md"),
-    ("cinemática", "tests/test_kinematics_model.py", 74, "registro-de-versoes-V3_0.md"),
+    ("cinemática", "tests/test_kinematics_model.py", 76, "registro-de-versoes-V3_0.md; plano do incremento 2 da V4.0"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
-    ("equilíbrio", "tests/test_equilibrio.py", 20, "plano do incremento 1 da V4.0"),
+    ("equilíbrio", "tests/test_equilibrio.py", 28, "planos dos incrementos 1 e 2 da V4.0"),
+    ("equilíbrio linear", "tests/test_equilibrio_linear.py", 18, "plano do incremento 2 da V4.0"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6)]
