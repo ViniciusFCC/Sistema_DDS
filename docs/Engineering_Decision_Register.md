@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 56 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
+Total: 56 registros. APPROVED: 20 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
 
 | ID | Título | Status |
 |---|---|---|
@@ -92,7 +92,7 @@ Total: 56 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-053 | Linha de força pelo trabalho virtual como definição primária do IC/RC no MODEL (SUS-412) | VERIFIED |
 | EDR-054 | Roadmap V0-V5 como plano do projeto; etapas E0-E5 e "V" só para revisão de artefatos | APPROVED_WITH_CONDITIONS |
 | EDR-055 | Amplitude exploratória da varredura do pneu (LFZO, LMUY, LKY × 0,8/1,0/1,2) | APPROVED |
-| EDR-056 | Regras do veredito no limite: entrada do pneu limitada à faixa (convenção PAC2002), neutro pelo momento desbalanceado e eixo que satura primeiro | APPROVED_WITH_CONDITIONS |
+| EDR-056 | Regras do veredito no limite: entrada do pneu limitada à faixa (convenção PAC2002), neutro pelo momento desbalanceado e eixo que satura primeiro | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1226,7 +1226,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-056 — Regras do veredito no limite: entrada do pneu limitada à faixa (convenção PAC2002), neutro pelo momento desbalanceado e eixo que satura primeiro
 
 - **Date:** 2026-10-21
-- **Status:** APPROVED_WITH_CONDITIONS
+- **Status:** APPROVED (2026-10-21; antes APPROVED_WITH_CONDITIONS)
 - **Context:** O incremento 1 da V4.0 (PR #12, `docs/v4-0/inc1-viabilidade-e-robustez.md`) deixou três regras da análise de par para decisão do usuário. (1) Pneu fora da faixa: o incremento 1 devolvia N/A quando Fz, γ ou α saíam da faixa do `.tir`; no caso da planilha viva isso dá N/A a partir de 1,55 g porque a roda externa traseira passa de FZMAX (1526 N > 1521 N), com cada eixo usando cerca de 53 % da capacidade. (2) Neutro: o critério era \|S_f − S_r\| < passo da grade, mas as saturações são interpoladas e saem quase iguais com passo 0,05 e 0,01 g; o veredito mudava com um parâmetro de exibição (λ_f 0,7: NEUTRO com 0,05 g, PUSH com 0,01 g). (3) PUSH/LOOSE com o outro eixo sem saturar: a regra aceitava o outro eixo conhecido até uma linha depois da saturação, o que podia contradizer o critério de neutro (revisão final do PR #12).
 - **Question:** Que regras a análise de par usa nesses três pontos?
 - **Alternatives:** (1) manter N/A fora da faixa; limitar a entrada ao valor do limite com aviso (convenção do PAC2002); Fy = 0 só para Fz ≤ 0. (2) manter o passo como banda; banda de engenharia por EDR da equipe; neutro só quando a diferença de saturação está abaixo da resolução numérica medida. (3) manter a regra; exigir que o outro eixo siga válido e com folga além da saturação do primeiro por mais que a resolução numérica.
@@ -1241,7 +1241,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Affected_Artifacts:** `python/equilibrio.py` (`capacidade_eixo`, `analise_par`); `tools/relatorio_inc1.py`; relatório novo do incremento 1; especificação da V4.0 (7.3, item 4; 7.6).
 - **Affected_Tests:** TC-EQ-007, TC-EQ-010 a TC-EQ-014.
 - **Dependencies:** EDR-022, EDR-038, EDR-039, EDR-055.
-- **Approval_Conditions:** O usuário confere a aplicação no relatório regenerado do incremento 1 (a instrução foi de método, não de cada regra).
+- **Approval_Conditions:** O usuário confere a aplicação no relatório regenerado do incremento 1 (a instrução foi de método, não de cada regra). **Cumprida em 2026-10-21:** o usuário conferiu `docs/v4-0/inc1-viabilidade-e-robustez-edr056.md` e aprovou a aplicação ("Conferi o relatório … e aprovo a aplicação do EDR-056").
 - **Reopening_Criteria:** Pneu real (R60A) ou OptimumTire com outra convenção de faixa; banda de neutro de engenharia definida pela equipe; modelo de transferência de carga com descolamento.
 - **Related_Decisions:** EDR-004, EDR-015, EDR-037, EDR-041, EDR-055.
 - **Source_Conversation_or_Document:** Conversa de 2026-10-21 (decisões pendentes do PR #12); help do Adams 2024.1 PAC2002, p. 83; Milliken, p. 320.
