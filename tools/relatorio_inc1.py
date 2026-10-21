@@ -246,7 +246,7 @@ def linhas_veredito(res: eq.ResultadoPar) -> list[str]:
     return [
         f"- a_y de saturação do eixo dianteiro (S_f): {g_de(res.ay_sat_f, 4)}",
         f"- a_y de saturação do eixo traseiro (S_r): {g_de(res.ay_sat_r, 4)}",
-        f"- S_r − S_f: {pequeno(delta) + ' g' if delta is not None else '— (um dos eixos não satura)'}",
+        f"- S_r − S_f (positivo = a frente satura primeiro = PUSH; negativo = LOOSE): {pequeno(delta) + ' g' if delta is not None else '— (um dos eixos não satura)'}",
         f"- Resolução numérica medida (grade pedida contra grade refinada): "
         f"{pequeno(None if res.resolucao_ms2 is None else res.resolucao_ms2 / G)}"
         f"{' g' if res.resolucao_ms2 is not None else ' (nenhum eixo satura em nenhuma das grades)'}",
@@ -465,8 +465,9 @@ def main() -> int:
           "convenção do PAC2002 (help do Adams 2024.1, p. 83; EDR-056). Entram as linhas usadas no veredito ("
           + (f"até a_y_lim = {g_de(res.ay_lim, 4)}, incluída a linha que fecha o intervalo da interpolação"
              if res.ay_lim is not None else "sem a_y_lim, todas as linhas da grade") + "). "
-          "Limitar Fz ao FZMAX **subestima** a força da roda externa, porque a carga real é maior que a usada; "
-          "o excesso mostra o tamanho do efeito.")
+          "Limitar Fz ao FZMAX **subestima** a força da roda externa (a carga real é maior que a usada); "
+          "limitar ao FZMIN **superestima** a força da roda interna (a carga real é menor que a usada). "
+          "O excesso mostra o tamanho do efeito.")
         w("")
         w("| Roda | Grandeza | Limite aplicado | Primeira a_y | a_y do maior excesso | Valor real | Valor usado | "
           "Excesso (% do limite) |")
@@ -546,6 +547,9 @@ def main() -> int:
       "(`veiculo_simetrico`, NÃO é setup real) com LMUY = 0,45 (escala só de teste, não é pneu). Mostra o que o "
       "veredito faz quando o passo da grade muda de 0,05 g para 0,01 g.")
     w("")
+    w("Convenção: S_r − S_f > 0 quando a frente satura primeiro (PUSH); < 0 quando a traseira satura primeiro "
+      "(LOOSE).")
+    w("")
     w("| λ_f | Passo [g] | S_f | S_r | S_r − S_f [g] | Resolução [g] | Veredito |")
     w("|---|---|---|---|---|---|---|")
     for (lf, passo), r in r011.items():
@@ -591,6 +595,8 @@ def main() -> int:
         contagem[r.veredito] = contagem.get(r.veredito, 0) + 1
     w("Contagem: " + ", ".join(f"{k} = {v}" for k, v in sorted(contagem.items())) + ".")
     w("")
+    w("S_r − S_f > 0: a frente satura primeiro (PUSH); < 0: a traseira satura primeiro (LOOSE).")
+    w("")
     w("\"Limitações\" é o número de avisos de entrada limitada (`ResultadoPar.limitacoes`) usados no veredito de "
       "cada combinação.")
     w("")
@@ -609,6 +615,10 @@ def main() -> int:
       f"Tolerância da comparação: {exp['tolerancia']:g} (a mesma da CA-09). Casos `teste_*` usam o veículo de teste "
       "e escalas só de teste (não são o carro).")
     w("")
+    w("**O experimento usa a regra anterior ao EDR-056** (faixa do pneu = N/A). Ele mediu o tempo de recálculo e a "
+      "exatidão das fórmulas da grade do PAC2002 sob essa regra. Ele **não exercitou** a limitação da entrada do "
+      "pneu à faixa, a grade refinada da resolução numérica nem a verificação do outro eixo até S + resolução.")
+    w("")
     w("| Motor | Caso | Linhas | Células de fórmula | Base [s] | Recálculo [s] | Leitura openpyxl [s] | Erros | "
       "Dif. rel. máx. capacidade | Dif. a_y sat. F | Dif. a_y sat. R | Picos na borda (planilha/Python) | Aprovado |")
     w("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
@@ -625,17 +635,30 @@ def main() -> int:
               f"{x['pico_na_borda']}/{x['pico_na_borda_python']} | {'sim' if x['aprovado'] else 'NÃO'} |")
     w("")
     viva_exp = [next(e for e in execs if e["motor"] == m and e["caso"] == "planilha_viva") for m in MOTORES]
-    coincide = all(e["veredito_python"] == res.veredito and e["motivo_python"] == res.motivo for e in viva_exp)
-    w("Conferência: o JSON da Task 6 foi gerado com a regra **anterior ao EDR-056** (faixa do pneu = N/A). Ele "
-      "prova o tempo de recálculo e a exatidão das fórmulas, que não dependem da regra de faixa; o veredito e o "
-      "motivo que ele registra para `planilha_viva` são os da regra antiga. Com a regra nova, o veredito e o "
-      "motivo do caso `planilha_viva` no JSON "
-      + ("**coincidem**" if coincide else "**NÃO coincidem**")
-      + f" com a análise deste relatório (JSON: {viva_exp[0]['veredito_python']}; {viva_exp[0]['motivo_python']}. "
-      f"Este relatório: {res.veredito}; {res.motivo}). "
-      + ("" if coincide else "A diferença é esperada e não indica erro das fórmulas. ")
-      + "Levar a regra nova para as fórmulas é mudança de fórmula e fica para o incremento que gerar a aba "
-        "(aprovação própria).")
+    v_json = {e["veredito_python"] for e in viva_exp}
+    m_json = {e["motivo_python"] for e in viva_exp}
+    ver_igual = v_json == {res.veredito}
+    mot_igual = m_json == {res.motivo}
+    w("Conferência do caso `planilha_viva` (JSON da Task 6, regra anterior ao EDR-056, contra a análise deste "
+      "relatório):")
+    w("")
+    w(f"- Veredito: JSON {', '.join(sorted(v_json))}; relatório {res.veredito}: "
+      + ("**coincide**." if ver_igual else "**não coincide**."))
+    w(f"- Motivo: JSON \"{'; '.join(sorted(m_json))}\"; relatório \"{res.motivo}\": "
+      + ("**coincide**." if mot_igual else "**não coincide**."))
+    w("")
+    if ver_igual and not mot_igual:
+        w("Só o motivo difere, e o JSON é anterior ao EDR-056 (a regra antiga parava na faixa do pneu); a "
+          "diferença vem da mudança de regra e não indica por si só erro das fórmulas. Levar a regra nova para as "
+          "fórmulas é mudança de fórmula, a prototipar no incremento que gerar a aba (aprovação própria).")
+    elif not ver_igual:
+        w("O veredito difere. O JSON é anterior ao EDR-056, então a diferença pode vir da mudança de regra, mas "
+          "este relatório não demonstra isso: a regra nova não foi exercitada nas fórmulas. Levar a regra nova "
+          "para as fórmulas é mudança de fórmula, a prototipar no incremento que gerar a aba (aprovação própria).")
+    else:
+        w("Veredito e motivo coincidem, mas o JSON é anterior ao EDR-056 e não exercitou a regra nova nas fórmulas; "
+          "levar a regra nova para as fórmulas é mudança de fórmula, a prototipar no incremento que gerar a aba "
+          "(aprovação própria).")
     w("")
     t_rec = {m: [e["t_recalculo_s"] for e in execs if e["motor"] == m] for m in MOTORES}
 
@@ -663,9 +686,10 @@ def main() -> int:
           f"{sum(e['erros_formula'] for e in execs if e['motor'] == m)} erros; diferença relativa máxima da "
           f"capacidade {max(e['dif_rel_max_capacidade'] for e in execs if e['motor'] == m):.1e}")
     w(f"- Casos aprovados no experimento: {sum(e['aprovado'] for e in execs)} de {len(execs)}")
-    celulas = max(e["celulas_formula"] for e in execs)
-    w(f"- Estimativa linear, **não medida**: a varredura de {len(varr)} combinações em fórmulas teria da ordem de "
-      f"{len(varr)} × {celulas} = {len(varr) * celulas} células de fórmula.")
+    w(f"- Estimativa de células para a varredura em fórmulas: **não feita**. O protótipo tem uma análise "
+      f"(grade pedida) por caso; a resolução do EDR-056 exige uma segunda análise em grade refinada (passo/2, "
+      f"2·n_alfa − 1 valores de α) e a limitação da entrada, nenhuma medida. Multiplicar o protótipo por "
+      f"{len(varr)} subestimaria o tamanho.")
     w(f"- Varredura no Python: {n(t_varr, 1)} s para {len(varr)} análises")
     w("")
     w("### Recomendação (não é decisão)")
@@ -674,15 +698,20 @@ def main() -> int:
     w("")
     tudo_ok = all(e["aprovado"] and e["erros_formula"] == 0 for e in execs)
     if tudo_ok:
-        w(f"1. A análise de par cabe em fórmulas nos dois motores: as fórmulas reproduziram o Python em todos os "
-          f"casos, com 0 erros. O recálculo do protótipo levou cerca de {n(max(t_rec['excel']), 1)} s no Excel e "
-          f"{n(max(t_rec['libreoffice']), 1)} s no LibreOffice. Se esse tempo é aceitável é decisão da equipe.")
+        w(f"1. **Medido** (regra anterior ao EDR-056): as fórmulas da grade do PAC2002 reproduziram o Python em "
+          f"todos os casos do experimento, com 0 erros, em cerca de {n(max(t_rec['excel']), 1)} s no Excel e "
+          f"{n(max(t_rec['libreoffice']), 1)} s no LibreOffice por recálculo. **Não medido**: as regras do EDR-056 "
+          "em fórmulas (limitação da entrada à faixa, grade refinada para a resolução, verificação S + resolução "
+          "do outro eixo); a prototipagem delas fica para o incremento 4. Se o tempo é aceitável é decisão da "
+          "equipe.")
     else:
         w("1. O experimento não reproduziu o Python em todos os casos (ver a seção 5); antes de levar a análise "
-          "para a planilha, a divergência precisa ser investigada na ordem do CLAUDE.md.")
-    w(f"2. A varredura em fórmulas multiplicaria o protótipo por {len(varr)} (estimativa acima, não medida). A spec "
-      "(7.6, item 4) prevê a alternativa de o Python gerar o relatório da varredura e a planilha mostrar só o "
-      "veredito nominal com o aviso \"robustez ao pneu: ver relatório\".")
+          "para a planilha, a divergência precisa ser investigada na ordem do CLAUDE.md. As regras do EDR-056 em "
+          "fórmulas também não foram medidas (incremento 4).")
+    w(f"2. A varredura de {len(varr)} combinações em fórmulas não foi medida nem estimada: cada combinação exigiria "
+      "ao menos a análise da grade pedida e a da grade refinada. A spec (7.6, item 4) prevê a alternativa de o "
+      "Python gerar o relatório da varredura e a planilha mostrar só o veredito nominal com o aviso \"robustez "
+      "ao pneu: ver relatório\".")
     r3 = (f"3. Com os dados demonstrativos atuais e o `.tir` provisório, o veredito do caso da planilha é "
           f"{txt_nominal} no nominal e {txt_robusto} na varredura de {len(varr)} combinações "
           f"({', '.join(f'{k} = {v}' for k, v in sorted(contagem.items()))}). ")
@@ -691,7 +720,8 @@ def main() -> int:
                + "; ".join(f"{e}: {m}" for e, m in fx["motivos"]) + "). ")
     if res.limitacoes:
         r3 += (f"O resultado nominal usa {len(res.limitacoes)} entrada(s) do pneu limitada(s) à faixa (seção 3); onde Fz foi "
-               "limitado ao FZMAX, a força da roda externa está subestimada. ")
+               "limitado ao FZMAX, a força da roda externa está subestimada, e onde foi limitado ao FZMIN, a da "
+               "roda interna está superestimada. ")
     r3 += ("Antes de usar o veredito para decidir algo do carro, é preciso o pneu do carro (hoje o .tir é o R25B "
            "provisório, EDR-022) e dados do TX no lugar dos demonstrativos.")
     w(r3)
