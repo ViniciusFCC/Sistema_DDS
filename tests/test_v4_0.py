@@ -115,7 +115,11 @@ with tempfile.TemporaryDirectory() as tmp:
     regex_ok = all(nv.NOME_VALIDO.fullmatch(x) for x in ("a", "ent_05_x", "A" * 255)) and \
         not any(nv.NOME_VALIDO.fullmatch(x) for x in ("1a", "_a", "a-b", "a b", "ação", "A" * 256, ""))
     cont = {p: sum(1 for n in tabela if n.papel == p) for p in ("ent", "org", "fte", "res")}
-    ok_001 = all((unicos, not invalidos, not referencias, not inexistentes, not duplicadas, not ent_mal, not ent_sobra,
+    # Correção 1 (controlador): letras gregas transliteradas; sus_id só do rótulo e da coluna de ID, nunca da Fonte.
+    grego_ok = nv.slug("α [rad]") == "alfa_rad" and nv.slug("Δ Fz (μ, γ)") == "delta_fz_mu_gama" and         nv.slug("Kyγ0 ε") == "kygama0_epsilon" and nv.slug("ÿ Ж z") == "y_z"
+    sus_de = {(n.aba, n.celula): n.sus_id for n in tabela}
+    sus_rotulo_ok = sus_de.get(("05_VEHICLE", "B5")) == "SUS-002" and sus_de.get(("05_VEHICLE", "F5")) == "SUS-002"
+    ok_001 = all((grego_ok, sus_rotulo_ok, unicos, not invalidos, not referencias, not inexistentes, not duplicadas, not ent_mal, not ent_sobra,
                   not res_mal, not res_sobra, papeis_ok, not convencao, not sus_mal, ordem_ok, deterministica, csv_igual,
                   csv_lf, csv_cab, ida_volta, cob_ok, cob_erro, ref_ok, regex_ok))
     check("TC-WB40-001: tabela de nomes da V3.0 (tag) com nomes únicos, válidos e sem cara de referência; células "
@@ -126,7 +130,7 @@ with tempfile.TemporaryDirectory() as tmp:
           f"inexistentes={inexistentes[:3]} dup={duplicadas[:3]} ent={ent_mal[:3]}/{ent_sobra[:3]} "
           f"res={res_mal[:3]}/{res_sobra[:3]} papéis={papeis_ok} conv={convencao[:3]} sus={sus_mal[:3]} "
           f"ordem={ordem_ok} det={deterministica} csv={csv_igual}/{csv_lf}/{csv_cab} ida_volta={ida_volta} "
-          f"cobertura={cob_ok}/{cob_erro} ref={ref_ok} regex={regex_ok} | fórmulas={len(formulas)} entradas={len(entradas)}")
+          f"cobertura={cob_ok}/{cob_erro} ref={ref_ok} regex={regex_ok} grego={grego_ok} sus_rótulo={sus_rotulo_ok} | fórmulas={len(formulas)} entradas={len(entradas)}")
 
 
 # ---------------- Resumo ----------------
