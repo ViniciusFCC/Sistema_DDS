@@ -1,0 +1,10 @@
+{
+  "edr": "EDR-055",
+  "origem": "○ Arbitrário / demonstrativo",
+  "fatores": {
+    "LFZO": [0.8, 1.0, 1.2],
+    "LMUY": [0.8, 1.0, 1.2],
+    "LKY": [0.8, 1.0, 1.2]
+  },
+  "nota": "valores exploratórios; não são faixa do pneu (EDR-022)"
+}

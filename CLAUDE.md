@@ -34,7 +34,7 @@ Foco declarado: completar a planilha (EDR-019).
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
 - Esperado na V3.0: pneu 43, oráculos 5, suspensão 54, cinemática 74, hardpoints 35,
-  mutação 25/25, autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença.
+  equilíbrio 20 (V4.0, incremento 1), mutação 25/25, autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença.
   `tests/test_workbook.py` 19/19 (pneu) e `tests/test_workbook_suspensao.py` 15/15 (suspensão),
   ambos na V3.0 de referência (arquivo da tag `v3.0`; antes da tag, o da árvore): recalculam cópias pelo Excel via COM ou, sem Excel, pelo
   LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois eles
@@ -44,8 +44,11 @@ Foco declarado: completar a planilha (EDR-019).
   gerada da V2.4 por `python/atualizar_planilha.py` (toda célula alterada fica em `alteracoes()`, com fonte e EDR);
   o script recusa gravar por cima da planilha viva. CA-07: a regeneração bate com a referência, e a viva bate
   com a referência em tudo menos as células de entrada (`atualizar_planilha.celulas_de_entrada()`). Mudança
-  de fórmula ou estrutura (V3.1) entra por migração sobre um retrato da viva, com pré-condição em cada célula
-  escrita (procedimento no EDR-051), nunca editando a planilha à mão. Commit de dados da equipe é separado
+  de fórmula ou estrutura entra na próxima planilha, a **V4.0** (os textos da V3.0 que dizem "V3.1" se referem a
+  ela), nunca editando a planilha à mão. Pelo EDR-051, o caminho é migrar sobre um retrato da viva, com
+  pré-condição em cada célula escrita; a especificação da V4.0
+  (`docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md`) propõe gerar da tag `v3.0` e injetar
+  os dados por chave, o que reabre o EDR-051. Commit de dados da equipe é separado
   (`dados: ...`), com `tools/extrato_entradas.py` para o diff legível. A metodologia segue a literatura, principalmente o
   Milliken (usuário, 2026-10-19; `docs/revisao-metodologica.md`). Os livros e o OCR ficam
   em `references/` (fora do Git); busque no `.md`, mas confira a equação na imagem do PDF.
