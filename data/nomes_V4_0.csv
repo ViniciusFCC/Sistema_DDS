@@ -1,0 +1,699 @@
+nome,aba,celula,papel,sus_id,rotulo
+ent_01_setup_id,01_SETUP,B4,ent,,Setup ID
+ent_01_nome_do_setup,01_SETUP,B5,ent,,Nome do Setup
+ent_01_notas,01_SETUP,B6,ent,,Notas
+ent_01_geometry_rev,01_SETUP,B9,ent,,Geometry REV
+ent_01_kinematics_rev,01_SETUP,B10,ent,,Kinematics REV
+ent_01_tire_rev,01_SETUP,B11,ent,,Tire REV
+ent_01_dynamics_script_version,01_SETUP,B12,ent,,Dynamics Script Version
+ent_03_target_001_c5,03_TARGETS,C5,ent,SUS-205,TARGET-001
+ent_03_target_001_d5,03_TARGETS,D5,ent,SUS-205,TARGET-001
+ent_03_target_001_e5,03_TARGETS,E5,ent,SUS-205,TARGET-001
+ent_03_target_001_f5,03_TARGETS,F5,ent,SUS-205,TARGET-001
+ent_03_target_001_g5,03_TARGETS,G5,ent,SUS-205,TARGET-001
+ent_03_target_002_c6,03_TARGETS,C6,ent,SUS-205,TARGET-002
+ent_03_target_002_d6,03_TARGETS,D6,ent,SUS-205,TARGET-002
+ent_03_target_002_e6,03_TARGETS,E6,ent,SUS-205,TARGET-002
+ent_03_target_002_f6,03_TARGETS,F6,ent,SUS-205,TARGET-002
+ent_03_target_002_g6,03_TARGETS,G6,ent,SUS-205,TARGET-002
+ent_03_target_003_c7,03_TARGETS,C7,ent,SUS-208,TARGET-003
+ent_03_target_003_d7,03_TARGETS,D7,ent,SUS-208,TARGET-003
+ent_03_target_003_e7,03_TARGETS,E7,ent,SUS-208,TARGET-003
+ent_03_target_003_f7,03_TARGETS,F7,ent,SUS-208,TARGET-003
+ent_03_target_003_g7,03_TARGETS,G7,ent,SUS-208,TARGET-003
+ent_03_target_004_c8,03_TARGETS,C8,ent,SUS-301,TARGET-004
+ent_03_target_004_d8,03_TARGETS,D8,ent,SUS-301,TARGET-004
+ent_03_target_004_e8,03_TARGETS,E8,ent,SUS-301,TARGET-004
+ent_03_target_004_f8,03_TARGETS,F8,ent,SUS-301,TARGET-004
+ent_03_target_004_g8,03_TARGETS,G8,ent,SUS-301,TARGET-004
+ent_03_target_005_c9,03_TARGETS,C9,ent,SUS-302,TARGET-005
+ent_03_target_005_d9,03_TARGETS,D9,ent,SUS-302,TARGET-005
+ent_03_target_005_e9,03_TARGETS,E9,ent,SUS-302,TARGET-005
+ent_03_target_005_f9,03_TARGETS,F9,ent,SUS-302,TARGET-005
+ent_03_target_005_g9,03_TARGETS,G9,ent,SUS-302,TARGET-005
+res_05_massa_total_com_piloto,05_VEHICLE,B4,res,SUS-001,Massa total (com piloto)
+ent_05_altura_do_cg_total,05_VEHICLE,B5,ent,SUS-002;SUS-000,Altura do CG (total)
+org_05_altura_do_cg_total,05_VEHICLE,E5,org,SUS-002;SUS-000,Altura do CG (total)
+fte_05_altura_do_cg_total,05_VEHICLE,F5,fte,SUS-002;SUS-000,Altura do CG (total)
+ent_05_wheelbase_l,05_VEHICLE,B6,ent,SUS-003,Wheelbase (L)
+org_05_wheelbase_l,05_VEHICLE,E6,org,SUS-003,Wheelbase (L)
+fte_05_wheelbase_l,05_VEHICLE,F6,fte,SUS-003,Wheelbase (L)
+ent_05_front_track_t_f,05_VEHICLE,B7,ent,SUS-004,Front Track (t_F)
+org_05_front_track_t_f,05_VEHICLE,E7,org,SUS-004,Front Track (t_F)
+fte_05_front_track_t_f,05_VEHICLE,F7,fte,SUS-004,Front Track (t_F)
+ent_05_rear_track_t_r,05_VEHICLE,B8,ent,SUS-005,Rear Track (t_R)
+org_05_rear_track_t_r,05_VEHICLE,E8,org,SUS-005,Rear Track (t_R)
+fte_05_rear_track_t_r,05_VEHICLE,F8,fte,SUS-005,Rear Track (t_R)
+res_05_cg_eixo_dianteiro_a,05_VEHICLE,B9,res,SUS-006,CG -> eixo dianteiro (a)
+res_05_cg_eixo_traseiro_b,05_VEHICLE,B10,res,SUS-006,CG -> eixo traseiro (b)
+res_05_checagem_a_b_l_deve_ser_0,05_VEHICLE,B11,res,,Checagem: a + b = L (deve ser 0)
+ent_05_massa_nao_suspensa_dianteira,05_VEHICLE,B14,ent,SUS-007,Massa não-suspensa dianteira
+org_05_massa_nao_suspensa_dianteira,05_VEHICLE,E14,org,SUS-007,Massa não-suspensa dianteira
+fte_05_massa_nao_suspensa_dianteira,05_VEHICLE,F14,fte,SUS-007,Massa não-suspensa dianteira
+ent_05_massa_nao_suspensa_traseira,05_VEHICLE,B15,ent,SUS-008;SUS-007,Massa não-suspensa traseira
+org_05_massa_nao_suspensa_traseira,05_VEHICLE,E15,org,SUS-008;SUS-007,Massa não-suspensa traseira
+fte_05_massa_nao_suspensa_traseira,05_VEHICLE,F15,fte,SUS-008;SUS-007,Massa não-suspensa traseira
+res_05_altura_cg_nao_suspenso_dianteiro,05_VEHICLE,B16,res,SUS-010,Altura CG não-suspenso dianteiro
+res_05_altura_cg_nao_suspenso_traseiro,05_VEHICLE,B17,res,SUS-011,Altura CG não-suspenso traseiro
+ent_05_ground_plane_z_offset_origem_cad_solo,05_VEHICLE,B20,ent,SUS-000,Ground Plane Z (offset origem CAD -> solo)
+org_05_ground_plane_z_offset_origem_cad_solo,05_VEHICLE,E20,org,SUS-000,Ground Plane Z (offset origem CAD -> solo)
+fte_05_ground_plane_z_offset_origem_cad_solo,05_VEHICLE,F20,fte,SUS-000,Ground Plane Z (offset origem CAD -> solo)
+res_05_massa_suspensa_total,05_VEHICLE,B23,res,SUS-009,Massa suspensa total
+res_05_altura_do_cg_suspenso_h_s,05_VEHICLE,B24,res,SUS-012,Altura do CG suspenso (h_s)
+res_05_massa_suspensa_eixo_dianteiro_mb_l_m_uf,05_VEHICLE,B25,res,SUS-009,Massa suspensa - eixo dianteiro (m·b/L − m_uF)
+res_05_massa_suspensa_eixo_traseiro_ma_l_m_ur,05_VEHICLE,B26,res,SUS-009,Massa suspensa - eixo traseiro (m·a/L − m_uR)
+res_05_cg_suspenso_eixo_dianteiro_a_s_lm_s_r_m,05_VEHICLE,B27,res,SUS-009,"CG suspenso -> eixo dianteiro (a_s = L·m_s,R/m_s)"
+ent_05_massa_medida_sem_piloto,05_VEHICLE,B30,ent,SUS-001,Massa medida sem piloto
+org_05_massa_medida_sem_piloto,05_VEHICLE,E30,org,SUS-001,Massa medida sem piloto
+fte_05_massa_medida_sem_piloto,05_VEHICLE,F30,fte,SUS-001,Massa medida sem piloto
+ent_05_massa_do_piloto,05_VEHICLE,B31,ent,SUS-001,Massa do piloto
+org_05_massa_do_piloto,05_VEHICLE,E31,org,SUS-001,Massa do piloto
+fte_05_massa_do_piloto,05_VEHICLE,F31,fte,SUS-001,Massa do piloto
+ent_05_fracao_de_peso_no_eixo_dianteiro_f,05_VEHICLE,B32,ent,SUS-006,Fração de peso no eixo dianteiro (f)
+org_05_fracao_de_peso_no_eixo_dianteiro_f,05_VEHICLE,E32,org,SUS-006,Fração de peso no eixo dianteiro (f)
+fte_05_fracao_de_peso_no_eixo_dianteiro_f,05_VEHICLE,F32,fte,SUS-006,Fração de peso no eixo dianteiro (f)
+ent_05_diametro_do_pneu_dianteiro,05_VEHICLE,B33,ent,SUS-010,Diâmetro do pneu dianteiro
+org_05_diametro_do_pneu_dianteiro,05_VEHICLE,E33,org,SUS-010,Diâmetro do pneu dianteiro
+fte_05_diametro_do_pneu_dianteiro,05_VEHICLE,F33,fte,SUS-010,Diâmetro do pneu dianteiro
+ent_05_diametro_do_pneu_traseiro,05_VEHICLE,B34,ent,SUS-011,Diâmetro do pneu traseiro
+org_05_diametro_do_pneu_traseiro,05_VEHICLE,E34,org,SUS-011,Diâmetro do pneu traseiro
+fte_05_diametro_do_pneu_traseiro,05_VEHICLE,F34,fte,SUS-011,Diâmetro do pneu traseiro
+ent_05_razao_h_ns_raio_do_pneu_dianteiro,05_VEHICLE,B35,ent,SUS-010,Razão h_ns / raio do pneu dianteiro
+org_05_razao_h_ns_raio_do_pneu_dianteiro,05_VEHICLE,E35,org,SUS-010,Razão h_ns / raio do pneu dianteiro
+fte_05_razao_h_ns_raio_do_pneu_dianteiro,05_VEHICLE,F35,fte,SUS-010,Razão h_ns / raio do pneu dianteiro
+ent_05_razao_h_ns_raio_do_pneu_traseiro,05_VEHICLE,B36,ent,SUS-011,Razão h_ns / raio do pneu traseiro
+org_05_razao_h_ns_raio_do_pneu_traseiro,05_VEHICLE,E36,org,SUS-011,Razão h_ns / raio do pneu traseiro
+fte_05_razao_h_ns_raio_do_pneu_traseiro,05_VEHICLE,F36,fte,SUS-011,Razão h_ns / raio do pneu traseiro
+ent_06_spring_rate_dianteiro,06_SUSPENSION,B4,ent,SUS-203,Spring Rate dianteiro
+org_06_spring_rate_dianteiro,06_SUSPENSION,E4,org,SUS-203,Spring Rate dianteiro
+fte_06_spring_rate_dianteiro,06_SUSPENSION,F4,fte,SUS-203,Spring Rate dianteiro
+ent_06_spring_rate_traseiro,06_SUSPENSION,B5,ent,SUS-203,Spring Rate traseiro
+org_06_spring_rate_traseiro,06_SUSPENSION,E5,org,SUS-203,Spring Rate traseiro
+fte_06_spring_rate_traseiro,06_SUSPENSION,F5,fte,SUS-203,Spring Rate traseiro
+ent_06_motion_ratio_dianteiro_wheel_spring,06_SUSPENSION,B6,ent,SUS-201,Motion Ratio dianteiro [wheel/spring]
+org_06_motion_ratio_dianteiro_wheel_spring,06_SUSPENSION,E6,org,SUS-201,Motion Ratio dianteiro [wheel/spring]
+fte_06_motion_ratio_dianteiro_wheel_spring,06_SUSPENSION,F6,fte,SUS-201,Motion Ratio dianteiro [wheel/spring]
+ent_06_motion_ratio_traseiro_wheel_spring,06_SUSPENSION,B7,ent,SUS-201,Motion Ratio traseiro [wheel/spring]
+org_06_motion_ratio_traseiro_wheel_spring,06_SUSPENSION,E7,org,SUS-201,Motion Ratio traseiro [wheel/spring]
+fte_06_motion_ratio_traseiro_wheel_spring,06_SUSPENSION,F7,fte,SUS-201,Motion Ratio traseiro [wheel/spring]
+ent_06_k_arb_dianteiro,06_SUSPENSION,B10,ent,SUS-206,K_ARB dianteiro
+org_06_k_arb_dianteiro,06_SUSPENSION,E10,org,SUS-206,K_ARB dianteiro
+fte_06_k_arb_dianteiro,06_SUSPENSION,F10,fte,SUS-206,K_ARB dianteiro
+ent_06_k_arb_traseiro,06_SUSPENSION,B11,ent,SUS-207,K_ARB traseiro
+org_06_k_arb_traseiro,06_SUSPENSION,E11,org,SUS-207,K_ARB traseiro
+fte_06_k_arb_traseiro,06_SUSPENSION,F11,fte,SUS-207,K_ARB traseiro
+ent_06_roll_center_dianteiro_rh_estatico,06_SUSPENSION,B14,ent,SUS-401-F,Roll Center dianteiro (RH estático)
+org_06_roll_center_dianteiro_rh_estatico,06_SUSPENSION,E14,org,SUS-401-F,Roll Center dianteiro (RH estático)
+fte_06_roll_center_dianteiro_rh_estatico,06_SUSPENSION,F14,fte,SUS-401-F,Roll Center dianteiro (RH estático)
+ent_06_roll_center_traseiro_rh_estatico,06_SUSPENSION,B15,ent,SUS-401-R,Roll Center traseiro (RH estático)
+org_06_roll_center_traseiro_rh_estatico,06_SUSPENSION,E15,org,SUS-401-R,Roll Center traseiro (RH estático)
+fte_06_roll_center_traseiro_rh_estatico,06_SUSPENSION,F15,fte,SUS-401-R,Roll Center traseiro (RH estático)
+res_06_wheel_rate_dianteiro,06_SUSPENSION,B18,res,SUS-202,Wheel Rate dianteiro
+res_06_wheel_rate_traseiro,06_SUSPENSION,B19,res,SUS-202,Wheel Rate traseiro
+res_06_roll_stiffness_sem_arb_e_sem_pneu_k_wt_f,06_SUSPENSION,B20,res,SUS-206,Roll Stiffness sem ARB e sem pneu (K_W·t_F²/2) - dianteira
+res_06_roll_stiffness_sem_arb_e_sem_pneu_k_wt_r,06_SUSPENSION,B21,res,SUS-207,Roll Stiffness sem ARB e sem pneu (K_W·t_R²/2) - traseira
+res_06_roll_stiffness_dianteira_k_phif_k_wt2_2,06_SUSPENSION,B22,res,SUS-206,Roll Stiffness dianteira K_phiF = (K_W·t²/2 + K_ARB) em série com K_T·t²/2
+res_06_roll_stiffness_traseira_k_phir_k_wt2_2_k,06_SUSPENSION,B23,res,SUS-207,Roll Stiffness traseira K_phiR = (K_W·t²/2 + K_ARB) em série com K_T·t²/2
+res_06_distribuicao_de_rigidez_dianteira_lambda,06_SUSPENSION,B24,res,SUS-208,Distribuição de rigidez - dianteira (lambda_f)
+res_06_distribuicao_de_rigidez_traseira_lambda,06_SUSPENSION,B25,res,SUS-208,Distribuição de rigidez - traseira (lambda_r)
+res_06_massa_suspensa_por_canto_dianteira,06_SUSPENSION,B28,res,SUS-009,Massa suspensa por canto - dianteira
+res_06_massa_suspensa_por_canto_traseira,06_SUSPENSION,B29,res,SUS-009,Massa suspensa por canto - traseira
+res_06_frequencia_natural_dianteira,06_SUSPENSION,B32,res,SUS-205,Frequência Natural dianteira
+res_06_frequencia_natural_traseira,06_SUSPENSION,B33,res,SUS-205,Frequência Natural traseira
+ent_06_front_brake_force_fraction_fb_f,06_SUSPENSION,B36,ent,SUS-013,Front Brake Force Fraction (FB_f)
+org_06_front_brake_force_fraction_fb_f,06_SUSPENSION,E36,org,SUS-013,Front Brake Force Fraction (FB_f)
+fte_06_front_brake_force_fraction_fb_f,06_SUSPENSION,F36,fte,SUS-013,Front Brake Force Fraction (FB_f)
+ent_06_rear_traction_force_fraction_tf_r,06_SUSPENSION,B37,ent,SUS-014,Rear Traction Force Fraction (TF_r)
+org_06_rear_traction_force_fraction_tf_r,06_SUSPENSION,E37,org,SUS-014,Rear Traction Force Fraction (TF_r)
+fte_06_rear_traction_force_fraction_tf_r,06_SUSPENSION,F37,fte,SUS-014,Rear Traction Force Fraction (TF_r)
+res_06_inclinacao_dz_dx_da_linha_contact_patch,06_SUSPENSION,B38,res,SUS-406-F,Inclinação dz/dx da linha contact patch -> IC lateral dianteiro (com sinal; freio no cubo)
+res_06_inclinacao_dz_dx_da_linha_centro_da_roda,06_SUSPENSION,B39,res,SUS-406-R,Inclinação dz/dx da linha centro da roda -> IC lateral traseiro (com sinal; motor no chassi)
+res_06_anti_dive_fb_f_dz_dx_l_h100_anti_pro_div,06_SUSPENSION,B40,res,SUS-301,"Anti-Dive (%) = FB_f·(−dz/dx)·L/h·100 (+ = anti, − = pro-dive)"
+res_06_anti_squat_tf_r_dz_dx_l_h100_anti_pro_sq,06_SUSPENSION,B41,res,SUS-302,"Anti-Squat (%) = TF_r·(dz/dx)·L/h·100 (+ = anti, − = pro-squat)"
+ent_06_steering_ratio_sr,06_SUSPENSION,B44,ent,SUS-601,Steering Ratio (SR)
+org_06_steering_ratio_sr,06_SUSPENSION,E44,org,SUS-601,Steering Ratio (SR)
+fte_06_steering_ratio_sr,06_SUSPENSION,F44,fte,SUS-601,Steering Ratio (SR)
+ent_06_rigidez_vertical_do_pneu_dianteiro_k_t,06_SUSPENSION,B47,ent,SUS-211,Rigidez vertical do pneu - dianteiro (K_T)
+org_06_rigidez_vertical_do_pneu_dianteiro_k_t,06_SUSPENSION,E47,org,SUS-211,Rigidez vertical do pneu - dianteiro (K_T)
+fte_06_rigidez_vertical_do_pneu_dianteiro_k_t,06_SUSPENSION,F47,fte,SUS-211,Rigidez vertical do pneu - dianteiro (K_T)
+ent_06_rigidez_vertical_do_pneu_traseiro_k_t,06_SUSPENSION,B48,ent,SUS-211,Rigidez vertical do pneu - traseiro (K_T)
+org_06_rigidez_vertical_do_pneu_traseiro_k_t,06_SUSPENSION,E48,org,SUS-211,Rigidez vertical do pneu - traseiro (K_T)
+fte_06_rigidez_vertical_do_pneu_traseiro_k_t,06_SUSPENSION,F48,fte,SUS-211,Rigidez vertical do pneu - traseiro (K_T)
+res_06_ride_rate_dianteiro_k_r_k_wk_t_k_w_k_t,06_SUSPENSION,B49,res,SUS-212,Ride rate dianteiro K_R = K_W·K_T/(K_W+K_T)
+res_06_ride_rate_traseiro_k_r_k_wk_t_k_w_k_t,06_SUSPENSION,B50,res,SUS-212,Ride rate traseiro K_R = K_W·K_T/(K_W+K_T)
+res_06_rigidez_de_rolagem_do_par_de_pneus_diant,06_SUSPENSION,B51,res,SUS-206,Rigidez de rolagem do par de pneus - dianteira (K_T·t_F²/2)
+res_06_rigidez_de_rolagem_do_par_de_pneus_trase,06_SUSPENSION,B52,res,SUS-207,Rigidez de rolagem do par de pneus - traseira (K_T·t_R²/2)
+ent_07_altura_do_ic_lateral_dianteiro_z_icf,07_KINEMATICS,B10,ent,SUS-406-F,Altura do IC lateral dianteiro (z_ICF)
+org_07_altura_do_ic_lateral_dianteiro_z_icf,07_KINEMATICS,E10,org,SUS-406-F,Altura do IC lateral dianteiro (z_ICF)
+fte_07_altura_do_ic_lateral_dianteiro_z_icf,07_KINEMATICS,F10,fte,SUS-406-F,Altura do IC lateral dianteiro (z_ICF)
+ent_07_x_do_ic_lateral_dianteiro_ao_contact_pat,07_KINEMATICS,B11,ent,SUS-406-F,Δx do IC lateral dianteiro ao contact patch (x_IC − x_CP; ISO: + = à frente)
+org_07_x_do_ic_lateral_dianteiro_ao_contact_pat,07_KINEMATICS,E11,org,SUS-406-F,Δx do IC lateral dianteiro ao contact patch (x_IC − x_CP; ISO: + = à frente)
+fte_07_x_do_ic_lateral_dianteiro_ao_contact_pat,07_KINEMATICS,F11,fte,SUS-406-F,Δx do IC lateral dianteiro ao contact patch (x_IC − x_CP; ISO: + = à frente)
+ent_07_altura_do_ic_lateral_traseiro_z_icr,07_KINEMATICS,B12,ent,SUS-406-R,Altura do IC lateral traseiro (z_ICR)
+org_07_altura_do_ic_lateral_traseiro_z_icr,07_KINEMATICS,E12,org,SUS-406-R,Altura do IC lateral traseiro (z_ICR)
+fte_07_altura_do_ic_lateral_traseiro_z_icr,07_KINEMATICS,F12,fte,SUS-406-R,Altura do IC lateral traseiro (z_ICR)
+ent_07_x_do_ic_lateral_traseiro_ao_centro_da_ro,07_KINEMATICS,B13,ent,SUS-406-R,Δx do IC lateral traseiro ao centro da roda (x_IC − x_WC; ISO: + = à frente)
+org_07_x_do_ic_lateral_traseiro_ao_centro_da_ro,07_KINEMATICS,E13,org,SUS-406-R,Δx do IC lateral traseiro ao centro da roda (x_IC − x_WC; ISO: + = à frente)
+fte_07_x_do_ic_lateral_traseiro_ao_centro_da_ro,07_KINEMATICS,F13,fte,SUS-406-R,Δx do IC lateral traseiro ao centro da roda (x_IC − x_WC; ISO: + = à frente)
+res_07_altura_do_centro_da_roda_traseira_ponto,07_KINEMATICS,B14,res,SUS-406-R,Altura do centro da roda traseira (ponto de reação do anti-squat)
+ent_07_y_do_ic_frontal_dianteiro,07_KINEMATICS,B17,ent,SUS-403-F,Y do IC frontal dianteiro
+org_07_y_do_ic_frontal_dianteiro,07_KINEMATICS,E17,org,SUS-403-F,Y do IC frontal dianteiro
+fte_07_y_do_ic_frontal_dianteiro,07_KINEMATICS,F17,fte,SUS-403-F,Y do IC frontal dianteiro
+ent_07_z_do_ic_frontal_dianteiro,07_KINEMATICS,B18,ent,SUS-403-F,Z do IC frontal dianteiro
+org_07_z_do_ic_frontal_dianteiro,07_KINEMATICS,E18,org,SUS-403-F,Z do IC frontal dianteiro
+fte_07_z_do_ic_frontal_dianteiro,07_KINEMATICS,F18,fte,SUS-403-F,Z do IC frontal dianteiro
+ent_07_y_do_ic_frontal_traseiro,07_KINEMATICS,B19,ent,SUS-403-R,Y do IC frontal traseiro
+org_07_y_do_ic_frontal_traseiro,07_KINEMATICS,E19,org,SUS-403-R,Y do IC frontal traseiro
+fte_07_y_do_ic_frontal_traseiro,07_KINEMATICS,F19,fte,SUS-403-R,Y do IC frontal traseiro
+ent_07_z_do_ic_frontal_traseiro,07_KINEMATICS,B20,ent,SUS-403-R,Z do IC frontal traseiro
+org_07_z_do_ic_frontal_traseiro,07_KINEMATICS,E20,org,SUS-403-R,Z do IC frontal traseiro
+fte_07_z_do_ic_frontal_traseiro,07_KINEMATICS,F20,fte,SUS-403-R,Z do IC frontal traseiro
+ent_07_camber_gain_dianteiro_dcamber_dz,07_KINEMATICS,B23,ent,SUS-404-F,Camber Gain dianteiro (dCamber/dz)
+org_07_camber_gain_dianteiro_dcamber_dz,07_KINEMATICS,E23,org,SUS-404-F,Camber Gain dianteiro (dCamber/dz)
+fte_07_camber_gain_dianteiro_dcamber_dz,07_KINEMATICS,F23,fte,SUS-404-F,Camber Gain dianteiro (dCamber/dz)
+ent_07_camber_gain_traseiro_dcamber_dz,07_KINEMATICS,B24,ent,SUS-404-R,Camber Gain traseiro (dCamber/dz)
+org_07_camber_gain_traseiro_dcamber_dz,07_KINEMATICS,E24,org,SUS-404-R,Camber Gain traseiro (dCamber/dz)
+fte_07_camber_gain_traseiro_dcamber_dz,07_KINEMATICS,F24,fte,SUS-404-R,Camber Gain traseiro (dCamber/dz)
+ent_07_toe_gain_dianteiro_dtoe_dz,07_KINEMATICS,B27,ent,SUS-405-F,Toe Gain dianteiro (dToe/dz)
+org_07_toe_gain_dianteiro_dtoe_dz,07_KINEMATICS,E27,org,SUS-405-F,Toe Gain dianteiro (dToe/dz)
+fte_07_toe_gain_dianteiro_dtoe_dz,07_KINEMATICS,F27,fte,SUS-405-F,Toe Gain dianteiro (dToe/dz)
+ent_07_toe_gain_traseiro_dtoe_dz,07_KINEMATICS,B28,ent,SUS-405-R,Toe Gain traseiro (dToe/dz)
+org_07_toe_gain_traseiro_dtoe_dz,07_KINEMATICS,E28,org,SUS-405-R,Toe Gain traseiro (dToe/dz)
+fte_07_toe_gain_traseiro_dtoe_dz,07_KINEMATICS,F28,fte,SUS-405-R,Toe Gain traseiro (dToe/dz)
+ent_07_curso_util_disponivel_dianteiro_bump_reb,07_KINEMATICS,B31,ent,,Curso útil disponível - dianteiro (bump+rebound)
+org_07_curso_util_disponivel_dianteiro_bump_reb,07_KINEMATICS,E31,org,,Curso útil disponível - dianteiro (bump+rebound)
+fte_07_curso_util_disponivel_dianteiro_bump_reb,07_KINEMATICS,F31,fte,,Curso útil disponível - dianteiro (bump+rebound)
+ent_07_curso_util_disponivel_traseiro_bump_rebo,07_KINEMATICS,B32,ent,,Curso útil disponível - traseiro (bump+rebound)
+org_07_curso_util_disponivel_traseiro_bump_rebo,07_KINEMATICS,E32,org,,Curso útil disponível - traseiro (bump+rebound)
+fte_07_curso_util_disponivel_traseiro_bump_rebo,07_KINEMATICS,F32,fte,,Curso útil disponível - traseiro (bump+rebound)
+ent_07_angulo_da_roda_dianteira_externa_o,07_KINEMATICS,B72,ent,SUS-414,Ângulo da roda dianteira externa (δo)
+org_07_angulo_da_roda_dianteira_externa_o,07_KINEMATICS,E72,org,SUS-414,Ângulo da roda dianteira externa (δo)
+fte_07_angulo_da_roda_dianteira_externa_o,07_KINEMATICS,F72,fte,SUS-414,Ângulo da roda dianteira externa (δo)
+ent_07_angulo_da_roda_dianteira_interna_i_no_me,07_KINEMATICS,B73,ent,SUS-414,Ângulo da roda dianteira interna (δi) no mesmo esterço
+org_07_angulo_da_roda_dianteira_interna_i_no_me,07_KINEMATICS,E73,org,SUS-414,Ângulo da roda dianteira interna (δi) no mesmo esterço
+fte_07_angulo_da_roda_dianteira_interna_i_no_me,07_KINEMATICS,F73,fte,SUS-414,Ângulo da roda dianteira interna (δi) no mesmo esterço
+res_07_i_para_ackermann_exato,07_KINEMATICS,B74,res,SUS-414,δi para Ackermann exato
+res_07_ackermann,07_KINEMATICS,B75,res,SUS-414,% Ackermann
+res_07_raio_da_trajetoria_da_roda_dianteira_ext,07_KINEMATICS,B76,res,SUS-414,Raio da trajetória da roda dianteira externa
+ent_07_curso_da_cremalheira_por_volta_do_pinhao,07_KINEMATICS,B78,ent,SUS-601,Curso da cremalheira por volta do pinhão (c-factor)
+org_07_curso_da_cremalheira_por_volta_do_pinhao,07_KINEMATICS,E78,org,SUS-601,Curso da cremalheira por volta do pinhão (c-factor)
+fte_07_curso_da_cremalheira_por_volta_do_pinhao,07_KINEMATICS,F78,fte,SUS-601,Curso da cremalheira por volta do pinhão (c-factor)
+ent_07_comprimento_do_braco_de_direcao_pino_mes,07_KINEMATICS,B79,ent,SUS-601,Comprimento do braço de direção (pino mestre à barra)
+org_07_comprimento_do_braco_de_direcao_pino_mes,07_KINEMATICS,E79,org,SUS-601,Comprimento do braço de direção (pino mestre à barra)
+fte_07_comprimento_do_braco_de_direcao_pino_mes,07_KINEMATICS,F79,fte,SUS-601,Comprimento do braço de direção (pino mestre à barra)
+res_07_relacao_de_direcao_estimada_pela_cremalh,07_KINEMATICS,B80,res,SUS-601,Relação de direção estimada pela cremalheira
+ent_07_roll_steer_dianteiro_f,07_KINEMATICS,B82,ent,SUS-415,Roll steer dianteiro (ε_f)
+org_07_roll_steer_dianteiro_f,07_KINEMATICS,E82,org,SUS-415,Roll steer dianteiro (ε_f)
+fte_07_roll_steer_dianteiro_f,07_KINEMATICS,F82,fte,SUS-415,Roll steer dianteiro (ε_f)
+ent_07_roll_steer_traseiro_r,07_KINEMATICS,B83,ent,SUS-415,Roll steer traseiro (ε_r)
+org_07_roll_steer_traseiro_r,07_KINEMATICS,E83,org,SUS-415,Roll steer traseiro (ε_r)
+fte_07_roll_steer_traseiro_r,07_KINEMATICS,F83,fte,SUS-415,Roll steer traseiro (ε_r)
+res_07_gradiente_de_rolagem_a_y,07_KINEMATICS,B84,res,SUS-415;SUS-103,Gradiente de rolagem ∂φ/∂a_y
+res_07_contribuicao_do_roll_steer_ao_gradiente,07_KINEMATICS,B85,res,SUS-415,Contribuição do roll steer ao gradiente de subesterço
+ent_08_aceleracao_longitudinal_a_x,08_VEHICLE_STATE,B4,ent,,Aceleração longitudinal (a_x)
+org_08_aceleracao_longitudinal_a_x,08_VEHICLE_STATE,E4,org,,Aceleração longitudinal (a_x)
+fte_08_aceleracao_longitudinal_a_x,08_VEHICLE_STATE,F4,fte,,Aceleração longitudinal (a_x)
+res_08_aceleracao_lateral_a_y,08_VEHICLE_STATE,B5,res,,Aceleração lateral (a_y)
+ent_08_downforce_total,08_VEHICLE_STATE,B8,ent,SUS-701,Downforce total
+org_08_downforce_total,08_VEHICLE_STATE,E8,org,SUS-701,Downforce total
+fte_08_downforce_total,08_VEHICLE_STATE,F8,fte,SUS-701,Downforce total
+ent_08_aero_balance_fracao_dianteira,08_VEHICLE_STATE,B9,ent,SUS-702,Aero Balance (fração dianteira)
+org_08_aero_balance_fracao_dianteira,08_VEHICLE_STATE,E9,org,SUS-702,Aero Balance (fração dianteira)
+fte_08_aero_balance_fracao_dianteira,08_VEHICLE_STATE,F9,fte,SUS-702,Aero Balance (fração dianteira)
+ent_08_aceleracao_lateral_em_g_entrada_de_a_y,08_VEHICLE_STATE,B11,ent,,Aceleração lateral em g (entrada de a_y)
+org_08_aceleracao_lateral_em_g_entrada_de_a_y,08_VEHICLE_STATE,E11,org,,Aceleração lateral em g (entrada de a_y)
+fte_08_aceleracao_lateral_em_g_entrada_de_a_y,08_VEHICLE_STATE,F11,fte,,Aceleração lateral em g (entrada de a_y)
+res_09_carga_estatica_eixo_dianteiro_w_f,09_LOADS,B4,res,SUS-101,Carga estática eixo dianteiro (W_f)
+res_09_carga_estatica_eixo_traseiro_w_r,09_LOADS,B5,res,SUS-101,Carga estática eixo traseiro (W_r)
+res_09_fz_estatico_fl,09_LOADS,B6,res,SUS-101,Fz estático FL
+res_09_fz_estatico_fr,09_LOADS,B7,res,SUS-101,Fz estático FR
+res_09_fz_estatico_rl,09_LOADS,B8,res,SUS-101,Fz estático RL
+res_09_fz_estatico_rr,09_LOADS,B9,res,SUS-101,Fz estático RR
+res_09_dfz_longitudinal_eixo_dianteiro,09_LOADS,B12,res,SUS-102,dFz longitudinal - eixo dianteiro
+res_09_dfz_longitudinal_eixo_traseiro,09_LOADS,B13,res,SUS-102,dFz longitudinal - eixo traseiro
+res_09_dfz_longitudinal_por_canto_dianteira,09_LOADS,B14,res,SUS-102,dFz longitudinal por canto - dianteira
+res_09_dfz_longitudinal_por_canto_traseira,09_LOADS,B15,res,SUS-102,dFz longitudinal por canto - traseira
+res_09_altura_do_roll_axis_no_cg_suspenso_z_s_e,09_LOADS,B18,res,,"Altura do roll axis no CG suspenso (z_s, em a_s)"
+res_09_dfz_lateral_eixo_dianteiro,09_LOADS,B19,res,SUS-103,dFz lateral - eixo dianteiro
+res_09_dfz_lateral_eixo_traseiro,09_LOADS,B20,res,SUS-103,dFz lateral - eixo traseiro
+res_09_angulo_de_rolagem_m_sa_yh2_k_f_k_r_m_sgh,09_LOADS,B21,res,SUS-103,Ângulo de rolagem φ = m_s·a_y·h2/(K_φF+K_φR − m_s·g·h2) (+ = para fora da curva)
+res_09_fz_aero_eixo_dianteiro,09_LOADS,B23,res,,Fz aero - eixo dianteiro
+res_09_fz_aero_eixo_traseiro,09_LOADS,B24,res,,Fz aero - eixo traseiro
+res_09_fz_aero_fl,09_LOADS,B25,res,,Fz aero FL
+res_09_fz_aero_fr,09_LOADS,B26,res,,Fz aero FR
+res_09_fz_aero_rl,09_LOADS,B27,res,,Fz aero RL
+res_09_fz_aero_rr,09_LOADS,B28,res,,Fz aero RR
+res_09_fz_fl,09_LOADS,B31,res,SUS-104,Fz FL
+res_09_fz_fr,09_LOADS,B32,res,SUS-104,Fz FR
+res_09_fz_rl,09_LOADS,B33,res,SUS-104,Fz RL
+res_09_fz_rr,09_LOADS,B34,res,SUS-104,Fz RR
+ent_10_arquivo_do_dataset,10_TIRE,B5,ent,,Arquivo do dataset
+ent_10_fonte_proveniencia,10_TIRE,B6,ent,,Fonte / proveniência
+ent_10_formato_do_modelo,10_TIRE,B7,ent,,Formato do modelo
+res_10_tire_rev_01_setup,10_TIRE,B8,res,,Tire REV (01_SETUP)
+ent_10_lado_do_arquivo_tyreside,10_TIRE,B9,ent,,Lado do arquivo (TYRESIDE)
+ent_10_convention_status_sinais_de,10_TIRE,B10,ent,,"convention_status (sinais de α, κ, γ)"
+ent_10_sistema_de_eixos_do_arquivo_declarado_sa,10_TIRE,B11,ent,,Sistema de eixos do arquivo (declarado): SAE_CALSPAN ou ISO_TYDEX
+res_10_s_arquivo_s_iso,10_TIRE,B12,res,,s_α  (α_arquivo = s_α · α_ISO)
+res_10_s_fy_fy_iso_s_fy_fy_arquivo,10_TIRE,B13,res,,s_Fy (Fy_ISO = s_Fy · Fy_arquivo)
+res_10_s_arquivo_s_projeto_inferencia_no_modo_s,10_TIRE,B14,res,,s_γ  (γ_arquivo = s_γ · γ_projeto) — INFERÊNCIA no modo SAE
+res_10_dataset_valido_ip_ip_nom_pp_0_faixas_coe,10_TIRE,B17,res,,"Dataset válido (IP = IP_NOM, PP* = 0, faixas coerentes, eixos declarados)?"
+res_10_fz_de_09_loads_sus_104_verif_valor_fixo_b,10_TIRE,B22,res,SUS-104,"Fz (de 09_LOADS, SUS-104; VERIF: valor fixo)"
+res_10_fz_de_09_loads_sus_104_verif_valor_fixo_c,10_TIRE,C22,res,SUS-104,"Fz (de 09_LOADS, SUS-104; VERIF: valor fixo)"
+res_10_fz_de_09_loads_sus_104_verif_valor_fixo_d,10_TIRE,D22,res,SUS-104,"Fz (de 09_LOADS, SUS-104; VERIF: valor fixo)"
+res_10_fz_de_09_loads_sus_104_verif_valor_fixo_e,10_TIRE,E22,res,SUS-104,"Fz (de 09_LOADS, SUS-104; VERIF: valor fixo)"
+ent_10_angulo_de_deriva_iso_8855_velocidade_p_e_b,10_TIRE,B23,ent,SUS-501,Ângulo de deriva α (ISO 8855: + = velocidade p/ esquerda)
+ent_10_angulo_de_deriva_iso_8855_velocidade_p_e_c,10_TIRE,C23,ent,SUS-501,Ângulo de deriva α (ISO 8855: + = velocidade p/ esquerda)
+ent_10_angulo_de_deriva_iso_8855_velocidade_p_e_d,10_TIRE,D23,ent,SUS-501,Ângulo de deriva α (ISO 8855: + = velocidade p/ esquerda)
+ent_10_angulo_de_deriva_iso_8855_velocidade_p_e_e,10_TIRE,E23,ent,SUS-501,Ângulo de deriva α (ISO 8855: + = velocidade p/ esquerda)
+org_10_angulo_de_deriva_iso_8855_velocidade_p_e,10_TIRE,I23,org,SUS-501,Ângulo de deriva α (ISO 8855: + = velocidade p/ esquerda)
+fte_10_angulo_de_deriva_iso_8855_velocidade_p_e,10_TIRE,J23,fte,SUS-501,Ângulo de deriva α (ISO 8855: + = velocidade p/ esquerda)
+ent_10_camber_projeto_topo_para_fora_b,10_TIRE,B24,ent,SUS-404,Camber γ (projeto: + = topo para fora)
+ent_10_camber_projeto_topo_para_fora_c,10_TIRE,C24,ent,SUS-404,Camber γ (projeto: + = topo para fora)
+ent_10_camber_projeto_topo_para_fora_d,10_TIRE,D24,ent,SUS-404,Camber γ (projeto: + = topo para fora)
+ent_10_camber_projeto_topo_para_fora_e,10_TIRE,E24,ent,SUS-404,Camber γ (projeto: + = topo para fora)
+org_10_camber_projeto_topo_para_fora,10_TIRE,I24,org,SUS-404,Camber γ (projeto: + = topo para fora)
+fte_10_camber_projeto_topo_para_fora,10_TIRE,J24,fte,SUS-404,Camber γ (projeto: + = topo para fora)
+ent_10_slip_ratio_iso_1_travada_em_frenagem_b,10_TIRE,B25,ent,SUS-502,Slip ratio κ (ISO: −1 = travada em frenagem)
+ent_10_slip_ratio_iso_1_travada_em_frenagem_c,10_TIRE,C25,ent,SUS-502,Slip ratio κ (ISO: −1 = travada em frenagem)
+ent_10_slip_ratio_iso_1_travada_em_frenagem_d,10_TIRE,D25,ent,SUS-502,Slip ratio κ (ISO: −1 = travada em frenagem)
+ent_10_slip_ratio_iso_1_travada_em_frenagem_e,10_TIRE,E25,ent,SUS-502,Slip ratio κ (ISO: −1 = travada em frenagem)
+org_10_slip_ratio_iso_1_travada_em_frenagem,10_TIRE,I25,org,SUS-502,Slip ratio κ (ISO: −1 = travada em frenagem)
+fte_10_slip_ratio_iso_1_travada_em_frenagem,10_TIRE,J25,fte,SUS-502,Slip ratio κ (ISO: −1 = travada em frenagem)
+res_10_status_do_ponto_de_operacao_faixa_do_dat_b,10_TIRE,B26,res,,Status do ponto de operação (faixa do dataset)
+res_10_status_do_ponto_de_operacao_faixa_do_dat_c,10_TIRE,C26,res,,Status do ponto de operação (faixa do dataset)
+res_10_status_do_ponto_de_operacao_faixa_do_dat_d,10_TIRE,D26,res,,Status do ponto de operação (faixa do dataset)
+res_10_status_do_ponto_de_operacao_faixa_do_dat_e,10_TIRE,E26,res,,Status do ponto de operação (faixa do dataset)
+res_10_status_do_ponto_de_operacao_faixa_do_dat_f,10_TIRE,F26,res,,Status do ponto de operação (faixa do dataset)
+res_10_fx_combinado_sus_502_gxfx0_b,10_TIRE,B29,res,SUS-502,Fx combinado (SUS-502) = Gxα·Fx0
+res_10_fx_combinado_sus_502_gxfx0_c,10_TIRE,C29,res,SUS-502,Fx combinado (SUS-502) = Gxα·Fx0
+res_10_fx_combinado_sus_502_gxfx0_d,10_TIRE,D29,res,SUS-502,Fx combinado (SUS-502) = Gxα·Fx0
+res_10_fx_combinado_sus_502_gxfx0_e,10_TIRE,E29,res,SUS-502,Fx combinado (SUS-502) = Gxα·Fx0
+res_10_fx_combinado_sus_502_gxfx0_f,10_TIRE,F29,res,SUS-502,Fx combinado (SUS-502) = Gxα·Fx0
+res_10_fy_combinado_sus_501_convencao_do_projet_b,10_TIRE,B30,res,SUS-501,"Fy combinado (SUS-501), convenção do projeto"
+res_10_fy_combinado_sus_501_convencao_do_projet_c,10_TIRE,C30,res,SUS-501,"Fy combinado (SUS-501), convenção do projeto"
+res_10_fy_combinado_sus_501_convencao_do_projet_d,10_TIRE,D30,res,SUS-501,"Fy combinado (SUS-501), convenção do projeto"
+res_10_fy_combinado_sus_501_convencao_do_projet_e,10_TIRE,E30,res,SUS-501,"Fy combinado (SUS-501), convenção do projeto"
+res_10_fy_combinado_sus_501_convencao_do_projet_f,10_TIRE,F30,res,SUS-501,"Fy combinado (SUS-501), convenção do projeto"
+res_10_efetivo_sus_503_fx2_fy2_fz_b,10_TIRE,B31,res,SUS-503,μ efetivo (SUS-503) = √(Fx²+Fy²)/Fz
+res_10_efetivo_sus_503_fx2_fy2_fz_c,10_TIRE,C31,res,SUS-503,μ efetivo (SUS-503) = √(Fx²+Fy²)/Fz
+res_10_efetivo_sus_503_fx2_fy2_fz_d,10_TIRE,D31,res,SUS-503,μ efetivo (SUS-503) = √(Fx²+Fy²)/Fz
+res_10_efetivo_sus_503_fx2_fy2_fz_e,10_TIRE,E31,res,SUS-503,μ efetivo (SUS-503) = √(Fx²+Fy²)/Fz
+res_10_efetivo_sus_503_fx2_fy2_fz_f,10_TIRE,F31,res,SUS-503,μ efetivo (SUS-503) = √(Fx²+Fy²)/Fz
+res_10_fy_no_referencial_do_arquivo_pneu_right_b,10_TIRE,B32,res,SUS-501,"Fy no referencial do arquivo (pneu Right, sem conversão)"
+res_10_fy_no_referencial_do_arquivo_pneu_right_c,10_TIRE,C32,res,SUS-501,"Fy no referencial do arquivo (pneu Right, sem conversão)"
+res_10_fy_no_referencial_do_arquivo_pneu_right_d,10_TIRE,D32,res,SUS-501,"Fy no referencial do arquivo (pneu Right, sem conversão)"
+res_10_fy_no_referencial_do_arquivo_pneu_right_e,10_TIRE,E32,res,SUS-501,"Fy no referencial do arquivo (pneu Right, sem conversão)"
+res_10_fy_no_referencial_do_arquivo_pneu_right_f,10_TIRE,F32,res,SUS-501,"Fy no referencial do arquivo (pneu Right, sem conversão)"
+res_10_fator_de_espelhamento_do_lado_l_1_r_1_b,10_TIRE,B35,res,,"Fator de espelhamento do lado (L=−1, R=+1)"
+res_10_fator_de_espelhamento_do_lado_l_1_r_1_c,10_TIRE,C35,res,,"Fator de espelhamento do lado (L=−1, R=+1)"
+res_10_fator_de_espelhamento_do_lado_l_1_r_1_d,10_TIRE,D35,res,,"Fator de espelhamento do lado (L=−1, R=+1)"
+res_10_fator_de_espelhamento_do_lado_l_1_r_1_e,10_TIRE,E35,res,,"Fator de espelhamento do lado (L=−1, R=+1)"
+res_10_fator_de_espelhamento_do_lado_l_1_r_1_f,10_TIRE,F35,res,,"Fator de espelhamento do lado (L=−1, R=+1)"
+res_10_rad_b_b36,10_TIRE,B36,res,SUS-501,α [rad]
+res_10_rad_c_c36,10_TIRE,C36,res,SUS-501,α [rad]
+res_10_rad_d_d36,10_TIRE,D36,res,SUS-501,α [rad]
+res_10_rad_e_e36,10_TIRE,E36,res,SUS-501,α [rad]
+res_10_rad_f_f36,10_TIRE,F36,res,SUS-501,α [rad]
+res_10_rad_b_b37,10_TIRE,B37,res,SUS-501,γ [rad]
+res_10_rad_c_c37,10_TIRE,C37,res,SUS-501,γ [rad]
+res_10_rad_d_d37,10_TIRE,D37,res,SUS-501,γ [rad]
+res_10_rad_e_e37,10_TIRE,E37,res,SUS-501,γ [rad]
+res_10_rad_f_f37,10_TIRE,F37,res,SUS-501,γ [rad]
+res_10_no_referencial_do_arquivo_rad_s_espelham_b,10_TIRE,B38,res,,α no referencial do arquivo [rad] = s_α · espelhamento · α
+res_10_no_referencial_do_arquivo_rad_s_espelham_c,10_TIRE,C38,res,,α no referencial do arquivo [rad] = s_α · espelhamento · α
+res_10_no_referencial_do_arquivo_rad_s_espelham_d,10_TIRE,D38,res,,α no referencial do arquivo [rad] = s_α · espelhamento · α
+res_10_no_referencial_do_arquivo_rad_s_espelham_e,10_TIRE,E38,res,,α no referencial do arquivo [rad] = s_α · espelhamento · α
+res_10_no_referencial_do_arquivo_rad_s_espelham_f,10_TIRE,F38,res,,α no referencial do arquivo [rad] = s_α · espelhamento · α
+res_10_no_referencial_do_arquivo_rad_s_b,10_TIRE,B39,res,,γ no referencial do arquivo [rad] = s_γ · γ
+res_10_no_referencial_do_arquivo_rad_s_c,10_TIRE,C39,res,,γ no referencial do arquivo [rad] = s_γ · γ
+res_10_no_referencial_do_arquivo_rad_s_d,10_TIRE,D39,res,,γ no referencial do arquivo [rad] = s_γ · γ
+res_10_no_referencial_do_arquivo_rad_s_e,10_TIRE,E39,res,,γ no referencial do arquivo [rad] = s_γ · γ
+res_10_no_referencial_do_arquivo_rad_s_f,10_TIRE,F39,res,,γ no referencial do arquivo [rad] = s_γ · γ
+res_10_dfz_fz_lfzofnomin_lfzofnomin_b,10_TIRE,B40,res,SUS-501,dfz = (Fz − LFZO·FNOMIN)/(LFZO·FNOMIN)
+res_10_dfz_fz_lfzofnomin_lfzofnomin_c,10_TIRE,C40,res,SUS-501,dfz = (Fz − LFZO·FNOMIN)/(LFZO·FNOMIN)
+res_10_dfz_fz_lfzofnomin_lfzofnomin_d,10_TIRE,D40,res,SUS-501,dfz = (Fz − LFZO·FNOMIN)/(LFZO·FNOMIN)
+res_10_dfz_fz_lfzofnomin_lfzofnomin_e,10_TIRE,E40,res,SUS-501,dfz = (Fz − LFZO·FNOMIN)/(LFZO·FNOMIN)
+res_10_dfz_fz_lfzofnomin_lfzofnomin_f,10_TIRE,F40,res,SUS-501,dfz = (Fz − LFZO·FNOMIN)/(LFZO·FNOMIN)
+res_10_shx_phx1_phx2dfz_lhx_b,10_TIRE,B43,res,SUS-502,SHx = (PHX1+PHX2·dfz)·LHX
+res_10_shx_phx1_phx2dfz_lhx_c,10_TIRE,C43,res,SUS-502,SHx = (PHX1+PHX2·dfz)·LHX
+res_10_shx_phx1_phx2dfz_lhx_d,10_TIRE,D43,res,SUS-502,SHx = (PHX1+PHX2·dfz)·LHX
+res_10_shx_phx1_phx2dfz_lhx_e,10_TIRE,E43,res,SUS-502,SHx = (PHX1+PHX2·dfz)·LHX
+res_10_shx_phx1_phx2dfz_lhx_f,10_TIRE,F43,res,SUS-502,SHx = (PHX1+PHX2·dfz)·LHX
+res_10_x_shx_b,10_TIRE,B44,res,SUS-502,κx = κ + SHx
+res_10_x_shx_c,10_TIRE,C44,res,SUS-502,κx = κ + SHx
+res_10_x_shx_d,10_TIRE,D44,res,SUS-502,κx = κ + SHx
+res_10_x_shx_e,10_TIRE,E44,res,SUS-502,κx = κ + SHx
+res_10_x_shx_f,10_TIRE,F44,res,SUS-502,κx = κ + SHx
+res_10_cx_pcx1lcx_b,10_TIRE,B45,res,SUS-502,Cx = PCX1·LCX
+res_10_cx_pcx1lcx_c,10_TIRE,C45,res,SUS-502,Cx = PCX1·LCX
+res_10_cx_pcx1lcx_d,10_TIRE,D45,res,SUS-502,Cx = PCX1·LCX
+res_10_cx_pcx1lcx_e,10_TIRE,E45,res,SUS-502,Cx = PCX1·LCX
+res_10_cx_pcx1lcx_f,10_TIRE,F45,res,SUS-502,Cx = PCX1·LCX
+res_10_x_pdx1_pdx2dfz_1pdx3_lgax_2_lmux_b,10_TIRE,B46,res,SUS-502,μx = (PDX1+PDX2·dfz)·(1−PDX3·(γ·LGAX)²)·LMUX
+res_10_x_pdx1_pdx2dfz_1pdx3_lgax_2_lmux_c,10_TIRE,C46,res,SUS-502,μx = (PDX1+PDX2·dfz)·(1−PDX3·(γ·LGAX)²)·LMUX
+res_10_x_pdx1_pdx2dfz_1pdx3_lgax_2_lmux_d,10_TIRE,D46,res,SUS-502,μx = (PDX1+PDX2·dfz)·(1−PDX3·(γ·LGAX)²)·LMUX
+res_10_x_pdx1_pdx2dfz_1pdx3_lgax_2_lmux_e,10_TIRE,E46,res,SUS-502,μx = (PDX1+PDX2·dfz)·(1−PDX3·(γ·LGAX)²)·LMUX
+res_10_x_pdx1_pdx2dfz_1pdx3_lgax_2_lmux_f,10_TIRE,F46,res,SUS-502,μx = (PDX1+PDX2·dfz)·(1−PDX3·(γ·LGAX)²)·LMUX
+res_10_dx_xfz_b,10_TIRE,B47,res,SUS-502,Dx = μx·Fz
+res_10_dx_xfz_c,10_TIRE,C47,res,SUS-502,Dx = μx·Fz
+res_10_dx_xfz_d,10_TIRE,D47,res,SUS-502,Dx = μx·Fz
+res_10_dx_xfz_e,10_TIRE,E47,res,SUS-502,Dx = μx·Fz
+res_10_dx_xfz_f,10_TIRE,F47,res,SUS-502,Dx = μx·Fz
+res_10_ex_min_1_pex1_pex2dfz_pex3dfz2_1pex4sgn_b,10_TIRE,B48,res,SUS-502,Ex = min(1; (PEX1+PEX2·dfz+PEX3·dfz²)·(1−PEX4·sgn κx)·LEX)
+res_10_ex_min_1_pex1_pex2dfz_pex3dfz2_1pex4sgn_c,10_TIRE,C48,res,SUS-502,Ex = min(1; (PEX1+PEX2·dfz+PEX3·dfz²)·(1−PEX4·sgn κx)·LEX)
+res_10_ex_min_1_pex1_pex2dfz_pex3dfz2_1pex4sgn_d,10_TIRE,D48,res,SUS-502,Ex = min(1; (PEX1+PEX2·dfz+PEX3·dfz²)·(1−PEX4·sgn κx)·LEX)
+res_10_ex_min_1_pex1_pex2dfz_pex3dfz2_1pex4sgn_e,10_TIRE,E48,res,SUS-502,Ex = min(1; (PEX1+PEX2·dfz+PEX3·dfz²)·(1−PEX4·sgn κx)·LEX)
+res_10_ex_min_1_pex1_pex2dfz_pex3dfz2_1pex4sgn_f,10_TIRE,F48,res,SUS-502,Ex = min(1; (PEX1+PEX2·dfz+PEX3·dfz²)·(1−PEX4·sgn κx)·LEX)
+res_10_kx_fz_pkx1_pkx2dfz_exp_pkx3dfz_lkx_b,10_TIRE,B49,res,SUS-502,Kx = Fz·(PKX1+PKX2·dfz)·exp(PKX3·dfz)·LKX
+res_10_kx_fz_pkx1_pkx2dfz_exp_pkx3dfz_lkx_c,10_TIRE,C49,res,SUS-502,Kx = Fz·(PKX1+PKX2·dfz)·exp(PKX3·dfz)·LKX
+res_10_kx_fz_pkx1_pkx2dfz_exp_pkx3dfz_lkx_d,10_TIRE,D49,res,SUS-502,Kx = Fz·(PKX1+PKX2·dfz)·exp(PKX3·dfz)·LKX
+res_10_kx_fz_pkx1_pkx2dfz_exp_pkx3dfz_lkx_e,10_TIRE,E49,res,SUS-502,Kx = Fz·(PKX1+PKX2·dfz)·exp(PKX3·dfz)·LKX
+res_10_kx_fz_pkx1_pkx2dfz_exp_pkx3dfz_lkx_f,10_TIRE,F49,res,SUS-502,Kx = Fz·(PKX1+PKX2·dfz)·exp(PKX3·dfz)·LKX
+res_10_bx_kx_cxdx_b,10_TIRE,B50,res,SUS-502,Bx = Kx/(Cx·Dx+ε)
+res_10_bx_kx_cxdx_c,10_TIRE,C50,res,SUS-502,Bx = Kx/(Cx·Dx+ε)
+res_10_bx_kx_cxdx_d,10_TIRE,D50,res,SUS-502,Bx = Kx/(Cx·Dx+ε)
+res_10_bx_kx_cxdx_e,10_TIRE,E50,res,SUS-502,Bx = Kx/(Cx·Dx+ε)
+res_10_bx_kx_cxdx_f,10_TIRE,F50,res,SUS-502,Bx = Kx/(Cx·Dx+ε)
+res_10_svx_fz_pvx1_pvx2dfz_lvxlmux_b,10_TIRE,B51,res,SUS-502,SVx = Fz·(PVX1+PVX2·dfz)·LVX·LMUX
+res_10_svx_fz_pvx1_pvx2dfz_lvxlmux_c,10_TIRE,C51,res,SUS-502,SVx = Fz·(PVX1+PVX2·dfz)·LVX·LMUX
+res_10_svx_fz_pvx1_pvx2dfz_lvxlmux_d,10_TIRE,D51,res,SUS-502,SVx = Fz·(PVX1+PVX2·dfz)·LVX·LMUX
+res_10_svx_fz_pvx1_pvx2dfz_lvxlmux_e,10_TIRE,E51,res,SUS-502,SVx = Fz·(PVX1+PVX2·dfz)·LVX·LMUX
+res_10_svx_fz_pvx1_pvx2dfz_lvxlmux_f,10_TIRE,F51,res,SUS-502,SVx = Fz·(PVX1+PVX2·dfz)·LVX·LMUX
+res_10_fx0_dxsin_cxatan_bxx_ex_bxx_atan_bxx_svx_b,10_TIRE,B52,res,SUS-502,Fx0 = Dx·sin(Cx·atan(Bx·κx − Ex·(Bx·κx − atan(Bx·κx)))) + SVx
+res_10_fx0_dxsin_cxatan_bxx_ex_bxx_atan_bxx_svx_c,10_TIRE,C52,res,SUS-502,Fx0 = Dx·sin(Cx·atan(Bx·κx − Ex·(Bx·κx − atan(Bx·κx)))) + SVx
+res_10_fx0_dxsin_cxatan_bxx_ex_bxx_atan_bxx_svx_d,10_TIRE,D52,res,SUS-502,Fx0 = Dx·sin(Cx·atan(Bx·κx − Ex·(Bx·κx − atan(Bx·κx)))) + SVx
+res_10_fx0_dxsin_cxatan_bxx_ex_bxx_atan_bxx_svx_e,10_TIRE,E52,res,SUS-502,Fx0 = Dx·sin(Cx·atan(Bx·κx − Ex·(Bx·κx − atan(Bx·κx)))) + SVx
+res_10_fx0_dxsin_cxatan_bxx_ex_bxx_atan_bxx_svx_f,10_TIRE,F52,res,SUS-502,Fx0 = Dx·sin(Cx·atan(Bx·κx − Ex·(Bx·κx − atan(Bx·κx)))) + SVx
+res_10_y_lgay_b,10_TIRE,B55,res,SUS-501,γy = γ·LGAY
+res_10_y_lgay_c,10_TIRE,C55,res,SUS-501,γy = γ·LGAY
+res_10_y_lgay_d,10_TIRE,D55,res,SUS-501,γy = γ·LGAY
+res_10_y_lgay_e,10_TIRE,E55,res,SUS-501,γy = γ·LGAY
+res_10_y_lgay_f,10_TIRE,F55,res,SUS-501,γy = γ·LGAY
+res_10_ky_pky1f_z0sin_2atan_fz_pky2f_z0_1pky3_y_b,10_TIRE,B56,res,SUS-501,"Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)"
+res_10_ky_pky1f_z0sin_2atan_fz_pky2f_z0_1pky3_y_c,10_TIRE,C56,res,SUS-501,"Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)"
+res_10_ky_pky1f_z0sin_2atan_fz_pky2f_z0_1pky3_y_d,10_TIRE,D56,res,SUS-501,"Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)"
+res_10_ky_pky1f_z0sin_2atan_fz_pky2f_z0_1pky3_y_e,10_TIRE,E56,res,SUS-501,"Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)"
+res_10_ky_pky1f_z0sin_2atan_fz_pky2f_z0_1pky3_y_f,10_TIRE,F56,res,SUS-501,"Ky = PKY1·F'z0·sin(2·atan(Fz/(PKY2·F'z0)))·(1−PKY3·|γy|)·LKY  (um λFz0, EDR-049)"
+res_10_shy_phy1_phy2dfz_lhy_phy3y_b,10_TIRE,B57,res,SUS-501,SHy = (PHY1+PHY2·dfz)·LHY + PHY3·γy
+res_10_shy_phy1_phy2dfz_lhy_phy3y_c,10_TIRE,C57,res,SUS-501,SHy = (PHY1+PHY2·dfz)·LHY + PHY3·γy
+res_10_shy_phy1_phy2dfz_lhy_phy3y_d,10_TIRE,D57,res,SUS-501,SHy = (PHY1+PHY2·dfz)·LHY + PHY3·γy
+res_10_shy_phy1_phy2dfz_lhy_phy3y_e,10_TIRE,E57,res,SUS-501,SHy = (PHY1+PHY2·dfz)·LHY + PHY3·γy
+res_10_shy_phy1_phy2dfz_lhy_phy3y_f,10_TIRE,F57,res,SUS-501,SHy = (PHY1+PHY2·dfz)·LHY + PHY3·γy
+res_10_y_eq_shy_b,10_TIRE,B58,res,SUS-501,αy = α_eq + SHy
+res_10_y_eq_shy_c,10_TIRE,C58,res,SUS-501,αy = α_eq + SHy
+res_10_y_eq_shy_d,10_TIRE,D58,res,SUS-501,αy = α_eq + SHy
+res_10_y_eq_shy_e,10_TIRE,E58,res,SUS-501,αy = α_eq + SHy
+res_10_y_eq_shy_f,10_TIRE,F58,res,SUS-501,αy = α_eq + SHy
+res_10_cy_pcy1lcy_b,10_TIRE,B59,res,SUS-501,Cy = PCY1·LCY
+res_10_cy_pcy1lcy_c,10_TIRE,C59,res,SUS-501,Cy = PCY1·LCY
+res_10_cy_pcy1lcy_d,10_TIRE,D59,res,SUS-501,Cy = PCY1·LCY
+res_10_cy_pcy1lcy_e,10_TIRE,E59,res,SUS-501,Cy = PCY1·LCY
+res_10_cy_pcy1lcy_f,10_TIRE,F59,res,SUS-501,Cy = PCY1·LCY
+res_10_y_pdy1_pdy2dfz_1pdy3y2_lmuy_b,10_TIRE,B60,res,SUS-501,μy = (PDY1+PDY2·dfz)·(1−PDY3·γy²)·LMUY
+res_10_y_pdy1_pdy2dfz_1pdy3y2_lmuy_c,10_TIRE,C60,res,SUS-501,μy = (PDY1+PDY2·dfz)·(1−PDY3·γy²)·LMUY
+res_10_y_pdy1_pdy2dfz_1pdy3y2_lmuy_d,10_TIRE,D60,res,SUS-501,μy = (PDY1+PDY2·dfz)·(1−PDY3·γy²)·LMUY
+res_10_y_pdy1_pdy2dfz_1pdy3y2_lmuy_e,10_TIRE,E60,res,SUS-501,μy = (PDY1+PDY2·dfz)·(1−PDY3·γy²)·LMUY
+res_10_y_pdy1_pdy2dfz_1pdy3y2_lmuy_f,10_TIRE,F60,res,SUS-501,μy = (PDY1+PDY2·dfz)·(1−PDY3·γy²)·LMUY
+res_10_dy_yfz_b,10_TIRE,B61,res,SUS-501,Dy = μy·Fz
+res_10_dy_yfz_c,10_TIRE,C61,res,SUS-501,Dy = μy·Fz
+res_10_dy_yfz_d,10_TIRE,D61,res,SUS-501,Dy = μy·Fz
+res_10_dy_yfz_e,10_TIRE,E61,res,SUS-501,Dy = μy·Fz
+res_10_dy_yfz_f,10_TIRE,F61,res,SUS-501,Dy = μy·Fz
+res_10_ey_min_1_pey1_pey2dfz_1_pey3_pey4y_sgn_y_b,10_TIRE,B62,res,SUS-501,Ey = min(1; (PEY1+PEY2·dfz)·(1−(PEY3+PEY4·γy)·sgn αy)·LEY)
+res_10_ey_min_1_pey1_pey2dfz_1_pey3_pey4y_sgn_y_c,10_TIRE,C62,res,SUS-501,Ey = min(1; (PEY1+PEY2·dfz)·(1−(PEY3+PEY4·γy)·sgn αy)·LEY)
+res_10_ey_min_1_pey1_pey2dfz_1_pey3_pey4y_sgn_y_d,10_TIRE,D62,res,SUS-501,Ey = min(1; (PEY1+PEY2·dfz)·(1−(PEY3+PEY4·γy)·sgn αy)·LEY)
+res_10_ey_min_1_pey1_pey2dfz_1_pey3_pey4y_sgn_y_e,10_TIRE,E62,res,SUS-501,Ey = min(1; (PEY1+PEY2·dfz)·(1−(PEY3+PEY4·γy)·sgn αy)·LEY)
+res_10_ey_min_1_pey1_pey2dfz_1_pey3_pey4y_sgn_y_f,10_TIRE,F62,res,SUS-501,Ey = min(1; (PEY1+PEY2·dfz)·(1−(PEY3+PEY4·γy)·sgn αy)·LEY)
+res_10_by_ky_cydy_b,10_TIRE,B63,res,SUS-501,By = Ky/(Cy·Dy+ε)
+res_10_by_ky_cydy_c,10_TIRE,C63,res,SUS-501,By = Ky/(Cy·Dy+ε)
+res_10_by_ky_cydy_d,10_TIRE,D63,res,SUS-501,By = Ky/(Cy·Dy+ε)
+res_10_by_ky_cydy_e,10_TIRE,E63,res,SUS-501,By = Ky/(Cy·Dy+ε)
+res_10_by_ky_cydy_f,10_TIRE,F63,res,SUS-501,By = Ky/(Cy·Dy+ε)
+res_10_svy_fz_pvy1_pvy2dfz_lvy_pvy3_pvy4dfz_y_l_b,10_TIRE,B64,res,SUS-501,SVy = Fz·((PVY1+PVY2·dfz)·LVY + (PVY3+PVY4·dfz)·γy)·LMUY
+res_10_svy_fz_pvy1_pvy2dfz_lvy_pvy3_pvy4dfz_y_l_c,10_TIRE,C64,res,SUS-501,SVy = Fz·((PVY1+PVY2·dfz)·LVY + (PVY3+PVY4·dfz)·γy)·LMUY
+res_10_svy_fz_pvy1_pvy2dfz_lvy_pvy3_pvy4dfz_y_l_d,10_TIRE,D64,res,SUS-501,SVy = Fz·((PVY1+PVY2·dfz)·LVY + (PVY3+PVY4·dfz)·γy)·LMUY
+res_10_svy_fz_pvy1_pvy2dfz_lvy_pvy3_pvy4dfz_y_l_e,10_TIRE,E64,res,SUS-501,SVy = Fz·((PVY1+PVY2·dfz)·LVY + (PVY3+PVY4·dfz)·γy)·LMUY
+res_10_svy_fz_pvy1_pvy2dfz_lvy_pvy3_pvy4dfz_y_l_f,10_TIRE,F64,res,SUS-501,SVy = Fz·((PVY1+PVY2·dfz)·LVY + (PVY3+PVY4·dfz)·γy)·LMUY
+res_10_fy0_dysin_cyatan_byy_ey_byy_atan_byy_svy_b,10_TIRE,B65,res,SUS-501,Fy0 = Dy·sin(Cy·atan(By·αy − Ey·(By·αy − atan(By·αy)))) + SVy
+res_10_fy0_dysin_cyatan_byy_ey_byy_atan_byy_svy_c,10_TIRE,C65,res,SUS-501,Fy0 = Dy·sin(Cy·atan(By·αy − Ey·(By·αy − atan(By·αy)))) + SVy
+res_10_fy0_dysin_cyatan_byy_ey_byy_atan_byy_svy_d,10_TIRE,D65,res,SUS-501,Fy0 = Dy·sin(Cy·atan(By·αy − Ey·(By·αy − atan(By·αy)))) + SVy
+res_10_fy0_dysin_cyatan_byy_ey_byy_atan_byy_svy_e,10_TIRE,E65,res,SUS-501,Fy0 = Dy·sin(Cy·atan(By·αy − Ey·(By·αy − atan(By·αy)))) + SVy
+res_10_fy0_dysin_cyatan_byy_ey_byy_atan_byy_svy_f,10_TIRE,F65,res,SUS-501,Fy0 = Dy·sin(Cy·atan(By·αy − Ey·(By·αy − atan(By·αy)))) + SVy
+res_10_shx_rhx1_b,10_TIRE,B68,res,SUS-502,SHxα = RHX1
+res_10_shx_rhx1_c,10_TIRE,C68,res,SUS-502,SHxα = RHX1
+res_10_shx_rhx1_d,10_TIRE,D68,res,SUS-502,SHxα = RHX1
+res_10_shx_rhx1_e,10_TIRE,E68,res,SUS-502,SHxα = RHX1
+res_10_shx_rhx1_f,10_TIRE,F68,res,SUS-502,SHxα = RHX1
+res_10_bx_rbx1cos_atan_rbx2_lxal_b,10_TIRE,B69,res,SUS-502,Bxα = RBX1·cos(atan(RBX2·κ))·LXAL
+res_10_bx_rbx1cos_atan_rbx2_lxal_c,10_TIRE,C69,res,SUS-502,Bxα = RBX1·cos(atan(RBX2·κ))·LXAL
+res_10_bx_rbx1cos_atan_rbx2_lxal_d,10_TIRE,D69,res,SUS-502,Bxα = RBX1·cos(atan(RBX2·κ))·LXAL
+res_10_bx_rbx1cos_atan_rbx2_lxal_e,10_TIRE,E69,res,SUS-502,Bxα = RBX1·cos(atan(RBX2·κ))·LXAL
+res_10_bx_rbx1cos_atan_rbx2_lxal_f,10_TIRE,F69,res,SUS-502,Bxα = RBX1·cos(atan(RBX2·κ))·LXAL
+res_10_cx_rcx1_b,10_TIRE,B70,res,SUS-502,Cxα = RCX1
+res_10_cx_rcx1_c,10_TIRE,C70,res,SUS-502,Cxα = RCX1
+res_10_cx_rcx1_d,10_TIRE,D70,res,SUS-502,Cxα = RCX1
+res_10_cx_rcx1_e,10_TIRE,E70,res,SUS-502,Cxα = RCX1
+res_10_cx_rcx1_f,10_TIRE,F70,res,SUS-502,Cxα = RCX1
+res_10_ex_min_1_rex1_rex2dfz_b,10_TIRE,B71,res,SUS-502,Exα = min(1; REX1+REX2·dfz)
+res_10_ex_min_1_rex1_rex2dfz_c,10_TIRE,C71,res,SUS-502,Exα = min(1; REX1+REX2·dfz)
+res_10_ex_min_1_rex1_rex2dfz_d,10_TIRE,D71,res,SUS-502,Exα = min(1; REX1+REX2·dfz)
+res_10_ex_min_1_rex1_rex2dfz_e,10_TIRE,E71,res,SUS-502,Exα = min(1; REX1+REX2·dfz)
+res_10_ex_min_1_rex1_rex2dfz_f,10_TIRE,F71,res,SUS-502,Exα = min(1; REX1+REX2·dfz)
+res_10_gx_numerador_cos_cxatan_bxs_ex_bxs_atan_b,10_TIRE,B72,res,SUS-502,"Gxα numerador = cos(Cxα·atan(Bxα·αs − Exα·(Bxα·αs − atan(Bxα·αs)))), αs = α_eq+SHxα"
+res_10_gx_numerador_cos_cxatan_bxs_ex_bxs_atan_c,10_TIRE,C72,res,SUS-502,"Gxα numerador = cos(Cxα·atan(Bxα·αs − Exα·(Bxα·αs − atan(Bxα·αs)))), αs = α_eq+SHxα"
+res_10_gx_numerador_cos_cxatan_bxs_ex_bxs_atan_d,10_TIRE,D72,res,SUS-502,"Gxα numerador = cos(Cxα·atan(Bxα·αs − Exα·(Bxα·αs − atan(Bxα·αs)))), αs = α_eq+SHxα"
+res_10_gx_numerador_cos_cxatan_bxs_ex_bxs_atan_e,10_TIRE,E72,res,SUS-502,"Gxα numerador = cos(Cxα·atan(Bxα·αs − Exα·(Bxα·αs − atan(Bxα·αs)))), αs = α_eq+SHxα"
+res_10_gx_numerador_cos_cxatan_bxs_ex_bxs_atan_f,10_TIRE,F72,res,SUS-502,"Gxα numerador = cos(Cxα·atan(Bxα·αs − Exα·(Bxα·αs − atan(Bxα·αs)))), αs = α_eq+SHxα"
+res_10_gx_denominador_mesmo_termo_com_s_shx_b,10_TIRE,B73,res,SUS-502,Gxα denominador (mesmo termo com αs = SHxα)
+res_10_gx_denominador_mesmo_termo_com_s_shx_c,10_TIRE,C73,res,SUS-502,Gxα denominador (mesmo termo com αs = SHxα)
+res_10_gx_denominador_mesmo_termo_com_s_shx_d,10_TIRE,D73,res,SUS-502,Gxα denominador (mesmo termo com αs = SHxα)
+res_10_gx_denominador_mesmo_termo_com_s_shx_e,10_TIRE,E73,res,SUS-502,Gxα denominador (mesmo termo com αs = SHxα)
+res_10_gx_denominador_mesmo_termo_com_s_shx_f,10_TIRE,F73,res,SUS-502,Gxα denominador (mesmo termo com αs = SHxα)
+res_10_gx_b,10_TIRE,B74,res,SUS-502,Gxα
+res_10_gx_c,10_TIRE,C74,res,SUS-502,Gxα
+res_10_gx_d,10_TIRE,D74,res,SUS-502,Gxα
+res_10_gx_e,10_TIRE,E74,res,SUS-502,Gxα
+res_10_gx_f,10_TIRE,F74,res,SUS-502,Gxα
+res_10_shy_rhy1_rhy2dfz_b,10_TIRE,B75,res,SUS-501,SHyκ = RHY1+RHY2·dfz
+res_10_shy_rhy1_rhy2dfz_c,10_TIRE,C75,res,SUS-501,SHyκ = RHY1+RHY2·dfz
+res_10_shy_rhy1_rhy2dfz_d,10_TIRE,D75,res,SUS-501,SHyκ = RHY1+RHY2·dfz
+res_10_shy_rhy1_rhy2dfz_e,10_TIRE,E75,res,SUS-501,SHyκ = RHY1+RHY2·dfz
+res_10_shy_rhy1_rhy2dfz_f,10_TIRE,F75,res,SUS-501,SHyκ = RHY1+RHY2·dfz
+res_10_by_rby1cos_atan_rby2_eqrby3_lyka_b,10_TIRE,B76,res,SUS-501,Byκ = RBY1·cos(atan(RBY2·(α_eq−RBY3)))·LYKA
+res_10_by_rby1cos_atan_rby2_eqrby3_lyka_c,10_TIRE,C76,res,SUS-501,Byκ = RBY1·cos(atan(RBY2·(α_eq−RBY3)))·LYKA
+res_10_by_rby1cos_atan_rby2_eqrby3_lyka_d,10_TIRE,D76,res,SUS-501,Byκ = RBY1·cos(atan(RBY2·(α_eq−RBY3)))·LYKA
+res_10_by_rby1cos_atan_rby2_eqrby3_lyka_e,10_TIRE,E76,res,SUS-501,Byκ = RBY1·cos(atan(RBY2·(α_eq−RBY3)))·LYKA
+res_10_by_rby1cos_atan_rby2_eqrby3_lyka_f,10_TIRE,F76,res,SUS-501,Byκ = RBY1·cos(atan(RBY2·(α_eq−RBY3)))·LYKA
+res_10_cy_rcy1_b,10_TIRE,B77,res,SUS-501,Cyκ = RCY1
+res_10_cy_rcy1_c,10_TIRE,C77,res,SUS-501,Cyκ = RCY1
+res_10_cy_rcy1_d,10_TIRE,D77,res,SUS-501,Cyκ = RCY1
+res_10_cy_rcy1_e,10_TIRE,E77,res,SUS-501,Cyκ = RCY1
+res_10_cy_rcy1_f,10_TIRE,F77,res,SUS-501,Cyκ = RCY1
+res_10_ey_min_1_rey1_rey2dfz_b,10_TIRE,B78,res,SUS-501,Eyκ = min(1; REY1+REY2·dfz)
+res_10_ey_min_1_rey1_rey2dfz_c,10_TIRE,C78,res,SUS-501,Eyκ = min(1; REY1+REY2·dfz)
+res_10_ey_min_1_rey1_rey2dfz_d,10_TIRE,D78,res,SUS-501,Eyκ = min(1; REY1+REY2·dfz)
+res_10_ey_min_1_rey1_rey2dfz_e,10_TIRE,E78,res,SUS-501,Eyκ = min(1; REY1+REY2·dfz)
+res_10_ey_min_1_rey1_rey2dfz_f,10_TIRE,F78,res,SUS-501,Eyκ = min(1; REY1+REY2·dfz)
+res_10_gy_numerador_s_shy_b,10_TIRE,B79,res,SUS-501,Gyκ numerador (κs = κ+SHyκ)
+res_10_gy_numerador_s_shy_c,10_TIRE,C79,res,SUS-501,Gyκ numerador (κs = κ+SHyκ)
+res_10_gy_numerador_s_shy_d,10_TIRE,D79,res,SUS-501,Gyκ numerador (κs = κ+SHyκ)
+res_10_gy_numerador_s_shy_e,10_TIRE,E79,res,SUS-501,Gyκ numerador (κs = κ+SHyκ)
+res_10_gy_numerador_s_shy_f,10_TIRE,F79,res,SUS-501,Gyκ numerador (κs = κ+SHyκ)
+res_10_gy_denominador_s_shy_b,10_TIRE,B80,res,SUS-501,Gyκ denominador (κs = SHyκ)
+res_10_gy_denominador_s_shy_c,10_TIRE,C80,res,SUS-501,Gyκ denominador (κs = SHyκ)
+res_10_gy_denominador_s_shy_d,10_TIRE,D80,res,SUS-501,Gyκ denominador (κs = SHyκ)
+res_10_gy_denominador_s_shy_e,10_TIRE,E80,res,SUS-501,Gyκ denominador (κs = SHyκ)
+res_10_gy_denominador_s_shy_f,10_TIRE,F80,res,SUS-501,Gyκ denominador (κs = SHyκ)
+res_10_gy_b,10_TIRE,B81,res,SUS-501,Gyκ
+res_10_gy_c,10_TIRE,C81,res,SUS-501,Gyκ
+res_10_gy_d,10_TIRE,D81,res,SUS-501,Gyκ
+res_10_gy_e,10_TIRE,E81,res,SUS-501,Gyκ
+res_10_gy_f,10_TIRE,F81,res,SUS-501,Gyκ
+res_10_dvy_yfz_rvy1_rvy2dfz_rvy3_cos_atan_rvy4_b,10_TIRE,B82,res,SUS-501,DVyκ = μy·Fz·(RVY1+RVY2·dfz+RVY3·γ)·cos(atan(RVY4·α_eq))
+res_10_dvy_yfz_rvy1_rvy2dfz_rvy3_cos_atan_rvy4_c,10_TIRE,C82,res,SUS-501,DVyκ = μy·Fz·(RVY1+RVY2·dfz+RVY3·γ)·cos(atan(RVY4·α_eq))
+res_10_dvy_yfz_rvy1_rvy2dfz_rvy3_cos_atan_rvy4_d,10_TIRE,D82,res,SUS-501,DVyκ = μy·Fz·(RVY1+RVY2·dfz+RVY3·γ)·cos(atan(RVY4·α_eq))
+res_10_dvy_yfz_rvy1_rvy2dfz_rvy3_cos_atan_rvy4_e,10_TIRE,E82,res,SUS-501,DVyκ = μy·Fz·(RVY1+RVY2·dfz+RVY3·γ)·cos(atan(RVY4·α_eq))
+res_10_dvy_yfz_rvy1_rvy2dfz_rvy3_cos_atan_rvy4_f,10_TIRE,F82,res,SUS-501,DVyκ = μy·Fz·(RVY1+RVY2·dfz+RVY3·γ)·cos(atan(RVY4·α_eq))
+res_10_svy_dvysin_rvy5atan_rvy6_lvyka_b,10_TIRE,B83,res,SUS-501,SVyκ = DVyκ·sin(RVY5·atan(RVY6·κ))·LVYKA
+res_10_svy_dvysin_rvy5atan_rvy6_lvyka_c,10_TIRE,C83,res,SUS-501,SVyκ = DVyκ·sin(RVY5·atan(RVY6·κ))·LVYKA
+res_10_svy_dvysin_rvy5atan_rvy6_lvyka_d,10_TIRE,D83,res,SUS-501,SVyκ = DVyκ·sin(RVY5·atan(RVY6·κ))·LVYKA
+res_10_svy_dvysin_rvy5atan_rvy6_lvyka_e,10_TIRE,E83,res,SUS-501,SVyκ = DVyκ·sin(RVY5·atan(RVY6·κ))·LVYKA
+res_10_svy_dvysin_rvy5atan_rvy6_lvyka_f,10_TIRE,F83,res,SUS-501,SVyκ = DVyκ·sin(RVY5·atan(RVY6·κ))·LVYKA
+org_10_i84,10_TIRE,I84,org,,
+fte_10_j84,10_TIRE,J84,fte,,
+ent_10_fnomin,10_TIRE,B86,ent,SUS-501,FNOMIN
+ent_10_fzmin,10_TIRE,B87,ent,SUS-501,FZMIN
+ent_10_fzmax,10_TIRE,B88,ent,SUS-501,FZMAX
+ent_10_alpmin,10_TIRE,B89,ent,SUS-501,ALPMIN
+ent_10_alpmax,10_TIRE,B90,ent,SUS-501,ALPMAX
+ent_10_cammin,10_TIRE,B91,ent,SUS-501,CAMMIN
+ent_10_cammax,10_TIRE,B92,ent,SUS-501,CAMMAX
+ent_10_kpumin,10_TIRE,B93,ent,SUS-501,KPUMIN
+ent_10_kpumax,10_TIRE,B94,ent,SUS-501,KPUMAX
+ent_10_ip,10_TIRE,B95,ent,SUS-501,IP
+ent_10_ip_nom,10_TIRE,B96,ent,SUS-501,IP_NOM
+ent_10_lfzo,10_TIRE,B97,ent,SUS-501,LFZO
+ent_10_lcx,10_TIRE,B98,ent,SUS-501,LCX
+ent_10_lmux,10_TIRE,B99,ent,SUS-501,LMUX
+ent_10_lex,10_TIRE,B100,ent,SUS-501,LEX
+ent_10_lkx,10_TIRE,B101,ent,SUS-501,LKX
+ent_10_lhx,10_TIRE,B102,ent,SUS-501,LHX
+ent_10_lvx,10_TIRE,B103,ent,SUS-501,LVX
+ent_10_lgax,10_TIRE,B104,ent,SUS-501,LGAX
+ent_10_lcy,10_TIRE,B105,ent,SUS-501,LCY
+ent_10_lmuy,10_TIRE,B106,ent,SUS-501,LMUY
+ent_10_ley,10_TIRE,B107,ent,SUS-501,LEY
+ent_10_lky,10_TIRE,B108,ent,SUS-501,LKY
+ent_10_lhy,10_TIRE,B109,ent,SUS-501,LHY
+ent_10_lvy,10_TIRE,B110,ent,SUS-501,LVY
+ent_10_lgay,10_TIRE,B111,ent,SUS-501,LGAY
+ent_10_lxal,10_TIRE,B112,ent,SUS-501,LXAL
+ent_10_lyka,10_TIRE,B113,ent,SUS-501,LYKA
+ent_10_lvyka,10_TIRE,B114,ent,SUS-501,LVYKA
+ent_10_pcx1,10_TIRE,B115,ent,SUS-501,PCX1
+ent_10_pdx1,10_TIRE,B116,ent,SUS-501,PDX1
+ent_10_pdx2,10_TIRE,B117,ent,SUS-501,PDX2
+ent_10_pdx3,10_TIRE,B118,ent,SUS-501,PDX3
+ent_10_pex1,10_TIRE,B119,ent,SUS-501,PEX1
+ent_10_pex2,10_TIRE,B120,ent,SUS-501,PEX2
+ent_10_pex3,10_TIRE,B121,ent,SUS-501,PEX3
+ent_10_pex4,10_TIRE,B122,ent,SUS-501,PEX4
+ent_10_pkx1,10_TIRE,B123,ent,SUS-501,PKX1
+ent_10_pkx2,10_TIRE,B124,ent,SUS-501,PKX2
+ent_10_pkx3,10_TIRE,B125,ent,SUS-501,PKX3
+ent_10_phx1,10_TIRE,B126,ent,SUS-501,PHX1
+ent_10_phx2,10_TIRE,B127,ent,SUS-501,PHX2
+ent_10_pvx1,10_TIRE,B128,ent,SUS-501,PVX1
+ent_10_pvx2,10_TIRE,B129,ent,SUS-501,PVX2
+ent_10_rbx1,10_TIRE,B130,ent,SUS-501,RBX1
+ent_10_rbx2,10_TIRE,B131,ent,SUS-501,RBX2
+ent_10_rcx1,10_TIRE,B132,ent,SUS-501,RCX1
+ent_10_rex1,10_TIRE,B133,ent,SUS-501,REX1
+ent_10_rex2,10_TIRE,B134,ent,SUS-501,REX2
+ent_10_rhx1,10_TIRE,B135,ent,SUS-501,RHX1
+ent_10_pcy1,10_TIRE,B136,ent,SUS-501,PCY1
+ent_10_pdy1,10_TIRE,B137,ent,SUS-501,PDY1
+ent_10_pdy2,10_TIRE,B138,ent,SUS-501,PDY2
+ent_10_pdy3,10_TIRE,B139,ent,SUS-501,PDY3
+ent_10_pey1,10_TIRE,B140,ent,SUS-501,PEY1
+ent_10_pey2,10_TIRE,B141,ent,SUS-501,PEY2
+ent_10_pey3,10_TIRE,B142,ent,SUS-501,PEY3
+ent_10_pey4,10_TIRE,B143,ent,SUS-501,PEY4
+ent_10_pky1,10_TIRE,B144,ent,SUS-501,PKY1
+ent_10_pky2,10_TIRE,B145,ent,SUS-501,PKY2
+ent_10_pky3,10_TIRE,B146,ent,SUS-501,PKY3
+ent_10_phy1,10_TIRE,B147,ent,SUS-501,PHY1
+ent_10_phy2,10_TIRE,B148,ent,SUS-501,PHY2
+ent_10_phy3,10_TIRE,B149,ent,SUS-501,PHY3
+ent_10_pvy1,10_TIRE,B150,ent,SUS-501,PVY1
+ent_10_pvy2,10_TIRE,B151,ent,SUS-501,PVY2
+ent_10_pvy3,10_TIRE,B152,ent,SUS-501,PVY3
+ent_10_pvy4,10_TIRE,B153,ent,SUS-501,PVY4
+ent_10_rby1,10_TIRE,B154,ent,SUS-501,RBY1
+ent_10_rby2,10_TIRE,B155,ent,SUS-501,RBY2
+ent_10_rby3,10_TIRE,B156,ent,SUS-501,RBY3
+ent_10_rcy1,10_TIRE,B157,ent,SUS-501,RCY1
+ent_10_rey1,10_TIRE,B158,ent,SUS-501,REY1
+ent_10_rey2,10_TIRE,B159,ent,SUS-501,REY2
+ent_10_rhy1,10_TIRE,B160,ent,SUS-501,RHY1
+ent_10_rhy2,10_TIRE,B161,ent,SUS-501,RHY2
+ent_10_rvy1,10_TIRE,B162,ent,SUS-501,RVY1
+ent_10_rvy2,10_TIRE,B163,ent,SUS-501,RVY2
+ent_10_rvy3,10_TIRE,B164,ent,SUS-501,RVY3
+ent_10_rvy4,10_TIRE,B165,ent,SUS-501,RVY4
+ent_10_rvy5,10_TIRE,B166,ent,SUS-501,RVY5
+ent_10_rvy6,10_TIRE,B167,ent,SUS-501,RVY6
+ent_10_ppx1,10_TIRE,B168,ent,SUS-501,PPX1
+ent_10_ppx2,10_TIRE,B169,ent,SUS-501,PPX2
+ent_10_ppx3,10_TIRE,B170,ent,SUS-501,PPX3
+ent_10_ppx4,10_TIRE,B171,ent,SUS-501,PPX4
+ent_10_ppy1,10_TIRE,B172,ent,SUS-501,PPY1
+ent_10_ppy2,10_TIRE,B173,ent,SUS-501,PPY2
+ent_10_ppy3,10_TIRE,B174,ent,SUS-501,PPY3
+ent_10_ppy4,10_TIRE,B175,ent,SUS-501,PPY4
+ent_10_lkyg,10_TIRE,B177,ent,SUS-501,LKYG
+ent_11_frequencia_alvo_dianteira,11_DESIGN,B4,ent,,Frequência-alvo dianteira
+org_11_frequencia_alvo_dianteira,11_DESIGN,E4,org,,Frequência-alvo dianteira
+fte_11_frequencia_alvo_dianteira,11_DESIGN,F4,fte,,Frequência-alvo dianteira
+ent_11_frequencia_alvo_traseira,11_DESIGN,B5,ent,,Frequência-alvo traseira
+org_11_frequencia_alvo_traseira,11_DESIGN,E5,org,,Frequência-alvo traseira
+fte_11_frequencia_alvo_traseira,11_DESIGN,F5,fte,,Frequência-alvo traseira
+res_11_wheel_rate_necessario_dianteira_k_r_alvo,11_DESIGN,B8,res,SUS-205,Wheel Rate necessário - dianteira (K_R alvo -> K_W = K_R·K_T/(K_T − K_R))
+res_11_wheel_rate_necessario_traseira_k_r_alvo,11_DESIGN,B9,res,SUS-205,Wheel Rate necessário - traseira (K_R alvo -> K_W = K_R·K_T/(K_T − K_R))
+res_11_spring_rate_necessario_dianteira,11_DESIGN,B10,res,SUS-202,Spring Rate necessário - dianteira
+res_11_spring_rate_necessario_traseira,11_DESIGN,B11,res,SUS-202,Spring Rate necessário - traseira
+res_11_diferenca_dianteira_necessario_atual,11_DESIGN,B14,res,,Diferença dianteira (necessário - atual)
+res_11_diferenca_traseira_necessario_atual,11_DESIGN,B15,res,,Diferença traseira (necessário - atual)
+ent_11_lambda_f_alvo,11_DESIGN,B18,ent,,lambda_f alvo
+org_11_lambda_f_alvo,11_DESIGN,E18,org,,lambda_f alvo
+fte_11_lambda_f_alvo,11_DESIGN,F18,fte,,lambda_f alvo
+res_11_roll_stiffness_dianteira_necessaria_k_ph,11_DESIGN,B19,res,SUS-208,Roll Stiffness dianteira necessária (K_phiF total)
+res_11_k_arb_dianteiro_necessario_com_o_pneu_em,11_DESIGN,B20,res,SUS-206,K_ARB dianteiro necessário (com o pneu em série)
+res_11_diferenca_k_arb_dianteiro_necessario_atu,11_DESIGN,B21,res,,Diferença K_ARB dianteiro (necessário - atual)
+res_13_tc_004_sum_fz_w_faero_deve_ser_0,13_VALIDATION,B4,res,,TC-004: Sum(Fz) - (W+Faero) [deve ser ~0]
+res_13_status_tc_004,13_VALIDATION,B5,res,,Status TC-004
+res_13_tc_005_t_f_dfzf_t_r_dfzr_m_ay_h_cg_m_s_g,13_VALIDATION,B6,res,,TC-005: t_F*dFzF + t_R*dFzR - m*ay*h_CG - m_s*g*h2*φ [deve ser ~0]
+res_13_status_tc_005,13_VALIDATION,B7,res,,Status TC-005
+res_13_checagem_lambda_f_lambda_r_1,13_VALIDATION,B8,res,SUS-208,Checagem: lambda_f + lambda_r = 1
+res_13_fz_fl_0,13_VALIDATION,B11,res,,Fz FL >= 0 ?
+res_13_fz_fr_0,13_VALIDATION,B12,res,,Fz FR >= 0 ?
+res_13_fz_rl_0,13_VALIDATION,B13,res,,Fz RL >= 0 ?
+res_13_fz_rr_0,13_VALIDATION,B14,res,,Fz RR >= 0 ?
+res_13_tan_angulo_de_tombamento_usa_a_menor_bit,13_VALIDATION,B17,res,,tan(ângulo de tombamento) — usa a MENOR bitola (pior caso)
+res_13_angulo_de_tombamento_graus,13_VALIDATION,B18,res,,Ângulo de tombamento (graus)
+res_13_status_req_003_tilt_test_minimo_60,13_VALIDATION,B19,res,,"Status REQ-003 (Tilt Test, mínimo 60°)"
+res_13_status_req_004_curso_dianteiro_minimo_50,13_VALIDATION,B21,res,,"Status REQ-004 (curso dianteiro, mínimo 50mm)"
+res_13_status_req_004_curso_traseiro_minimo_50m,13_VALIDATION,B22,res,,"Status REQ-004 (curso traseiro, mínimo 50mm)"
+res_13_wheelbase_mm_a_partir_de_05_vehicle_b6,13_VALIDATION,B29,res,,Wheelbase (mm) — a partir de 05_VEHICLE!B6
+res_13_status_req_001_wheelbase_minimo_1525_mm,13_VALIDATION,B30,res,,Status REQ-001 (wheelbase mínimo 1525 mm)
+res_13_razao_entre_bitolas_menor_maior_05_vehic,13_VALIDATION,B31,res,,Razão entre bitolas (menor/maior) — 05_VEHICLE!B7 e B8
+res_13_status_req_002_razao_de_bitolas_minima_0,13_VALIDATION,B32,res,,"Status REQ-002 (razão de bitolas mínima 0,75)"
+res_13_dataset_de_pneu_validade_formal_ip_ip_no,13_VALIDATION,B36,res,SUS-501,"Dataset de pneu: validade formal (IP=IP_NOM, PP*=0, faixas)"
+res_13_status_fx_excel_10_tire_f_vs_python_tol,13_VALIDATION,B40,res,SUS-502,Status: Fx Excel (10_TIRE!F) vs Python — tol. numérica 1e-6 relativa
+res_13_status_fy_excel_vs_python_tol_numerica_1,13_VALIDATION,B41,res,SUS-501,Status: Fy Excel vs Python — tol. numérica 1e-6 relativa
+res_13_status_eff_excel_vs_python_tol_numerica,13_VALIDATION,B42,res,SUS-503,Status: μ_eff Excel vs Python — tol. numérica 1e-6 relativa
+res_13_cantos_com_resultado_de_pneu_valido_de_4,13_VALIDATION,B43,res,SUS-501,"Cantos com resultado de pneu válido (de 4, 10_TIRE)"
+res_14_setup,14_DASHBOARD,B4,res,,Setup
+res_14_fz_fl_b7,14_DASHBOARD,B7,res,SUS-104,Fz FL
+res_14_fz_fl_e7,14_DASHBOARD,E7,res,SUS-104,Fz FL
+res_14_fz_fr_b8,14_DASHBOARD,B8,res,SUS-104,Fz FR
+res_14_fz_fr_e8,14_DASHBOARD,E8,res,SUS-104,Fz FR
+res_14_fz_rl_b9,14_DASHBOARD,B9,res,SUS-104,Fz RL
+res_14_fz_rl_e9,14_DASHBOARD,E9,res,SUS-104,Fz RL
+res_14_fz_rr_b10,14_DASHBOARD,B10,res,SUS-104,Fz RR
+res_14_fz_rr_e10,14_DASHBOARD,E10,res,SUS-104,Fz RR
+res_14_wheel_rate_dianteiro_b13,14_DASHBOARD,B13,res,SUS-202,Wheel Rate dianteiro
+res_14_wheel_rate_dianteiro_e13,14_DASHBOARD,E13,res,SUS-202,Wheel Rate dianteiro
+res_14_wheel_rate_traseiro_b14,14_DASHBOARD,B14,res,SUS-202,Wheel Rate traseiro
+res_14_wheel_rate_traseiro_e14,14_DASHBOARD,E14,res,SUS-202,Wheel Rate traseiro
+res_14_frequencia_natural_dianteira_b15,14_DASHBOARD,B15,res,SUS-205,Frequência Natural dianteira
+res_14_frequencia_natural_dianteira_e15,14_DASHBOARD,E15,res,SUS-205,Frequência Natural dianteira
+res_14_frequencia_natural_traseira_b16,14_DASHBOARD,B16,res,SUS-205,Frequência Natural traseira
+res_14_frequencia_natural_traseira_e16,14_DASHBOARD,E16,res,SUS-205,Frequência Natural traseira
+res_14_distribuicao_de_rigidez_dianteira_b17,14_DASHBOARD,B17,res,SUS-208,Distribuição de rigidez dianteira
+res_14_distribuicao_de_rigidez_dianteira_e17,14_DASHBOARD,E17,res,SUS-208,Distribuição de rigidez dianteira
+res_14_tc_004_conservacao_de_carga_b20,14_DASHBOARD,B20,res,,TC-004 (conservação de carga)
+res_14_tc_004_conservacao_de_carga_e20,14_DASHBOARD,E20,res,,TC-004 (conservação de carga)
+res_14_tc_005_conservacao_de_momento_lateral_b21,14_DASHBOARD,B21,res,,TC-005 (conservação de momento lateral)
+res_14_tc_005_conservacao_de_momento_lateral_e21,14_DASHBOARD,E21,res,,TC-005 (conservação de momento lateral)
+res_14_req_003_tilt_test_b22,14_DASHBOARD,B22,res,,REQ-003 (Tilt Test)
+res_14_req_003_tilt_test_e22,14_DASHBOARD,E22,res,,REQ-003 (Tilt Test)
+res_14_req_004_curso_dianteiro_b23,14_DASHBOARD,B23,res,,REQ-004 (curso dianteiro)
+res_14_req_004_curso_dianteiro_e23,14_DASHBOARD,E23,res,,REQ-004 (curso dianteiro)
+res_14_req_004_curso_traseiro_b24,14_DASHBOARD,B24,res,,REQ-004 (curso traseiro)
+res_14_req_004_curso_traseiro_e24,14_DASHBOARD,E24,res,,REQ-004 (curso traseiro)
+res_14_requirements_registrados,14_DASHBOARD,B27,res,,Requirements registrados
+res_14_targets_registrados,14_DASHBOARD,B28,res,,Targets registrados
+res_14_targets_em_open_sem_valor_real_definido,14_DASHBOARD,B29,res,,Targets em OPEN (sem valor real definido)
+res_14_decision_records_registrados,14_DASHBOARD,B30,res,,Decision Records registrados
+res_14_dataset_de_pneu_validade_formal_b33,14_DASHBOARD,B33,res,SUS-501,Dataset de pneu (validade formal)
+res_14_dataset_de_pneu_validade_formal_e33,14_DASHBOARD,E33,res,SUS-501,Dataset de pneu (validade formal)
+res_14_efetivo_fl_demonstrativo_b34,14_DASHBOARD,B34,res,SUS-503,μ efetivo FL (demonstrativo)
+res_14_efetivo_fl_demonstrativo_e34,14_DASHBOARD,E34,res,SUS-503,μ efetivo FL (demonstrativo)
+res_14_efetivo_fr_demonstrativo_b35,14_DASHBOARD,B35,res,SUS-503,μ efetivo FR (demonstrativo)
+res_14_efetivo_fr_demonstrativo_e35,14_DASHBOARD,E35,res,SUS-503,μ efetivo FR (demonstrativo)
+res_14_efetivo_rl_demonstrativo_b36,14_DASHBOARD,B36,res,SUS-503,μ efetivo RL (demonstrativo)
+res_14_efetivo_rl_demonstrativo_e36,14_DASHBOARD,E36,res,SUS-503,μ efetivo RL (demonstrativo)
+res_14_efetivo_rr_demonstrativo_b37,14_DASHBOARD,B37,res,SUS-503,μ efetivo RR (demonstrativo)
+res_14_efetivo_rr_demonstrativo_e37,14_DASHBOARD,E37,res,SUS-503,μ efetivo RR (demonstrativo)
