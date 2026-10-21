@@ -8,12 +8,17 @@ abas e as 387 fórmulas da V3.0 com texto idêntico, valores iguais fora das cé
 recusa saída em excel/ ou igual à origem antes de abrir qualquer arquivo.
 TC-WB40-003: CA-07 da V4.0: a regeneração a partir da tag é igual à excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx
 (células, fórmulas, nomes definidos, validações e formatação condicional).
+TC-WB40-004: dados por chave (python/dados_planilha.py e tools/migrar_dados_v3_v4.py): a V4.0 de referência lida
+pelos nomes é igual à V3.0 da tag lida pelos endereços; ida e volta de 5 entradas (valor, Origem e Fonte) de abas
+diferentes; conflito listado com base, destino e novo, sem sobrescrever, e a CLI sai com código 1; recusa de saída em
+excel/ ou igual à origem antes de abrir qualquer arquivo; célula alterada na viva fora da tabela é erro que a lista.
 Roda como script: uv run python -X utf8 tests/test_v4_0.py
 A V3.0 de partida é o arquivo da tag v3.0, extraído para uma pasta temporária (nunca a planilha viva).
 """
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -24,6 +29,7 @@ from openpyxl.utils import column_index_from_string
 from openpyxl.worksheet.formula import ArrayFormula
 
 import atualizar_planilha as ap
+import dados_planilha as dp
 import gerar_v4_0 as gv
 import nomes_v4_0 as nv
 
@@ -204,6 +210,107 @@ with tempfile.TemporaryDirectory() as tmp:
           "(células, 387 fórmulas, nomes definidos, validações, formatação condicional, colunas ocultas)",
           ok_ca07, " ; ".join(r for r in rel_ca07 if not r.startswith("  DIF"))[:400] +
           ("" if ok_ca07 else " | " + " ; ".join(rel_ca07[:8])))
+
+    # ---------------- TC-WB40-004 ----------------
+    # Dados por chave: equivalência (antigo 005), ida e volta (006), conflito (007) e recusas do injetor (008).
+
+
+    CLI = RAIZ / "tools" / "migrar_dados_v3_v4.py"
+    ref40 = entregue
+    dados_nomes = {n.nome for n in tabela if n.papel in dp.PAPEIS_DADOS}
+    por_end = dp.ler_por_endereco(v30, tabela)
+    por_nome = dp.ler_por_nome(ref40)
+    equiv = set(por_end) == set(por_nome) == dados_nomes and \
+        all(dp.iguais(por_end[k], por_nome[k]) for k in dados_nomes)
+    # 5 linhas de abas diferentes com valor, Origem e Fonte; valores de teste rotulados (sintéticos).
+    linhas: dict = {}
+    for n in tabela:
+        if n.papel in dp.PAPEIS_DADOS:
+            linhas.setdefault((n.aba, nv._partes(n.celula)[1]), {})[n.papel] = n
+    escolhidas, abas_usadas = [], set()
+    for (aba, _), g in sorted(linhas.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        if aba not in abas_usadas and set(g) == {"ent", "org", "fte"} and isinstance(por_end[g["ent"].nome], (int, float)):
+            escolhidas.append(g)
+            abas_usadas.add(aba)
+        if len(escolhidas) == 5:
+            break
+    novos = {}
+    for g in escolhidas:
+        e, o, f = g["ent"].nome, g["org"].nome, g["fte"].nome
+        novos[e] = por_end[e] + 1.25
+        novos[o] = "○ Arbitrário / demonstrativo" if por_end[o] != "○ Arbitrário / demonstrativo" else "? A confirmar"
+        novos[f] = "TESTE TC-WB40-004: valor sintético, não é dado do carro"
+    viva = Path(tmp) / "viva_teste.xlsx"
+    shutil.copy(v30, viva)
+    wbv = openpyxl.load_workbook(viva)
+    por_nome_tab = {n.nome: n for n in tabela}
+    for k, v in novos.items():
+        wbv[por_nome_tab[k].aba][por_nome_tab[k].celula].value = v
+    wbv.save(viva)
+    wbv.close()
+    dados_viva = dp.ler_por_endereco(viva, tabela)
+    saida_ok = Path(tmp) / "V4_0_com_dados.xlsx"
+    r1 = dp.injetar(ref40, dados_viva, saida_ok)
+    lido = dp.ler_por_nome(saida_ok)
+    ida_volta_ok = len(novos) == 15 and len(escolhidas) == 5 and sorted(r1.escritas) == sorted(novos) and \
+        not r1.conflitos and not r1.faltando and len(r1.iguais) == len(dados_nomes) - 15 and \
+        set(lido) == dados_nomes and all(dp.iguais(lido[k], novos.get(k, por_nome[k])) for k in dados_nomes)
+    # Diferença viva x tag: exatamente as 15 células; com uma célula fora da tabela, verificar_cobertura a lista.
+    alt_viva = dp.celulas_alteradas(viva, v30)
+    so_dados = [n for n in tabela if n.papel in dp.PAPEIS_DADOS]
+    alt_ok = alt_viva == {(por_nome_tab[k].aba, por_nome_tab[k].celula) for k in novos} and \
+        not raises(lambda: nv.verificar_cobertura(so_dados, alt_viva), Exception) and \
+        raises(lambda: nv.verificar_cobertura(so_dados, alt_viva | {("05_VEHICLE", "Z200")}), ValueError,
+               "05_VEHICLE!Z200")
+    # Conflito: numa cópia da V4.0, uma das 5 entradas já mudou para outro valor.
+    v40_mod = Path(tmp) / "V4_0_editada.xlsx"
+    shutil.copy(ref40, v40_mod)
+    alvo = escolhidas[0]["ent"]
+    outro = novos[alvo.nome] + 10.0
+    wbm = openpyxl.load_workbook(v40_mod)
+    wbm[alvo.aba][alvo.celula].value = outro
+    wbm.save(v40_mod)
+    wbm.close()
+    saida_conf = Path(tmp) / "V4_0_conflito.xlsx"
+    r2 = dp.injetar(v40_mod, dados_viva, saida_conf, base=por_nome)
+    lido2 = dp.ler_por_nome(saida_conf)
+    conflito_ok = r2.conflitos == [(alvo.nome, por_nome[alvo.nome], outro, novos[alvo.nome])] and \
+        sorted(r2.escritas) == sorted(k for k in novos if k != alvo.nome) and lido2[alvo.nome] == outro and \
+        all(dp.iguais(lido2[k], novos[k]) for k in novos if k != alvo.nome)
+    env = {**os.environ, "PYTHONUTF8": "1"}
+    rel_md = Path(tmp) / "migracao.md"
+    cli1 = subprocess.run([sys.executable, "-X", "utf8", str(CLI), str(viva), "--v40", str(v40_mod), "--saida",
+                           str(Path(tmp) / "cli_conf.xlsx"), "--relatorio", str(rel_md)],
+                          cwd=RAIZ, capture_output=True, text=True, env=env)
+    texto_md = rel_md.read_text(encoding="utf-8") if rel_md.exists() else ""
+    cli_conf_ok = cli1.returncode == 1 and alvo.nome in texto_md and "onflito" in texto_md
+    rel_md0 = Path(tmp) / "migracao0.md"
+    cli0 = subprocess.run([sys.executable, "-X", "utf8", str(CLI), str(viva), "--v40", str(ref40), "--saida",
+                           str(Path(tmp) / "cli_ok.xlsx"), "--relatorio", str(rel_md0)],
+                          cwd=RAIZ, capture_output=True, text=True, env=env)
+    cli_ok_ok = cli0.returncode == 0 and rel_md0.exists() and \
+        dp.ler_por_nome(Path(tmp) / "cli_ok.xlsx") == lido
+    # Recusas antes de abrir: origem inexistente + saída em excel/ dá SystemExit; saída = origem também.
+    fantasma = Path(tmp) / "nao_existe.xlsx"
+    saida_excel = RAIZ / "excel" / "_teste_recusa_injetor.xlsx"
+    bytes_ref = ref40.read_bytes()
+    rec_inj = raises(lambda: dp.injetar(fantasma, {}, saida_excel), SystemExit) and not saida_excel.exists() and \
+        raises(lambda: dp.injetar(ref40, {}, ref40), SystemExit) and ref40.read_bytes() == bytes_ref
+    cli_rec = subprocess.run([sys.executable, "-X", "utf8", str(CLI), str(fantasma), "--saida", str(saida_excel),
+                              "--relatorio", str(Path(tmp) / "rec.md")],
+                             cwd=RAIZ, capture_output=True, text=True, env=env)
+    rec_cli = cli_rec.returncode != 0 and "recusad" in (cli_rec.stdout + cli_rec.stderr) and \
+        not saida_excel.exists() and not (Path(tmp) / "rec.md").exists()
+    ok_004 = all((equiv, ida_volta_ok, alt_ok, conflito_ok, cli_conf_ok, cli_ok_ok, rec_inj, rec_cli))
+    check("TC-WB40-004: dados por chave: V4.0 lida por nome = V3.0 (tag) lida por endereço; ida e volta de 5 entradas "
+          "(15 nomes: valor, Origem, Fonte) sem tocar o resto; conflito listado (base, destino, novo) sem sobrescrever e "
+          "CLI com código 1 (0 sem conflito); célula da viva fora da tabela listada; recusa de saída em excel/ ou = origem",
+          ok_004,
+          f"equiv={equiv} ({len(por_end)} dados) ida_volta={ida_volta_ok} (escritas={len(r1.escritas)} "
+          f"iguais={len(r1.iguais)} conf={r1.conflitos[:2]} falt={r1.faltando[:3]}) alteradas={alt_ok} "
+          f"conflito={conflito_ok} ({r2.conflitos[:2]}) cli_conf={cli_conf_ok} (rc={cli1.returncode}) "
+          f"cli_ok={cli_ok_ok} (rc={cli0.returncode}) recusas={rec_inj}/{rec_cli}"
+          + ("" if cli_conf_ok and cli_ok_ok else f" | stderr: {(cli1.stderr + cli0.stderr)[-300:]}"))
 
 
 # ---------------- Resumo ----------------
