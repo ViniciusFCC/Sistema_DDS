@@ -7,12 +7,15 @@ Uso:
 Passos:
 1. recusa (código 2) saída ou relatório em excel/ ou por cima de um arquivo de entrada, antes de abrir qualquer arquivo;
 2. compara a viva com a V3.0 da tag v3.0 (extraída para uma pasta temporária): toda célula alterada tem de ter nome de
-   dado (`ent`, `org`, `fte`) na tabela `data/nomes_V4_0.csv`; senão, erro (código 2) que lista as células;
+   dado (`ent`, `org`, `fte`) na tabela `data/nomes_V4_0.csv`; senão, erro (código 2) que lista as células. Comentário
+   (texto), hiperlink (destino) e número de imagens e gráficos que diferem da tag também dão erro (código 2) com a lista
+   (aba, célula, tipo): a ferramenta não os migra (`dados_planilha.objetos_alterados`);
 3. lê a viva pelos endereços da tabela e injeta os dados numa cópia da V4.0 (`dados_planilha.injetar`). A base dos
    conflitos é, por padrão, a V3.0 da tag lida pelos endereços (igual à V4.0 de referência lida pelos nomes, TC-WB40-004);
    `--base` usa os dados de outra V4.0, lidos pelos nomes;
 4. escreve o relatório em Markdown (contagens, conflitos com base, destino e novo, faltas e escritas).
-Sai com código 1 se houver conflito ou falta, 0 se não houver. Erro de dado (abas diferentes da tag, célula fora da
+Sai com código 1 se houver conflito ou falta, 0 se não houver. Conflito se resolve na V3.0 viva ou na saída (passada
+depois como `--v40`, com outra `--saida`); a mesma `--saida` é sobrescrita a cada execução. Erro de dado (abas diferentes da tag, célula fora da
 tabela, entrada com fórmula…) sai com código 2 e reescreve o relatório com o erro, sem gravar a saída. Só lê a viva e
 a V4.0 de origem; grava só a cópia e o relatório; nunca recalcula.
 """
@@ -73,7 +76,10 @@ def relatorio(a: argparse.Namespace, rel: dp.RelatorioInjecao, celula: dict[str,
         f"| Total | {total} |",
         "",
         f"Resultado: **{'FAIL' if rel.conflitos or rel.faltando else 'PASS'}** "
-        "(conflito ou falta dão código 1; resolva à mão e rode de novo).",
+        "(conflito ou falta dão código 1). Para resolver um conflito, escolha o valor e acerte-o na V3.0 viva (pelo "
+        "Excel) ou na saída desta execução; no segundo caso, rode de novo passando essa saída como `--v40` e com outra "
+        "`--saida`. Rodar de novo com a mesma `--saida` sobrescreve a saída anterior, inclusive o que tiver sido "
+        "acertado nela.",
         "",
         "## Conflitos",
         "",
@@ -151,6 +157,12 @@ def main() -> int:
                 verificar_cobertura(so_dados, alteradas)
             except ValueError as e:
                 return _falhar(a, f"viva com células alteradas fora dos dados da V4.0: {e}")
+            objetos = dp.objetos_alterados(a.viva, v30)
+            if objetos:
+                lista = "; ".join(f"{aba}!{cel} ({tipo})" for aba, cel, tipo in objetos)
+                return _falhar(a, f"viva com comentários, hiperlinks, imagens ou gráficos diferentes dos da V3.0 da tag "
+                                  f"({len(objetos)}): {lista}. Estes objetos não são migrados por esta ferramenta: leve-os "
+                                  "à mão para a V4.0 ou obtenha aprovação para deixá-los de fora, e rode de novo.")
             if a.base is None:
                 base, base_txt = dp.ler_por_endereco(v30, tabela), "V3.0 da tag v3.0 (por endereço)"
             else:
@@ -162,6 +174,10 @@ def main() -> int:
     _escrever(a.relatorio, relatorio(a, rel, celula, dados, base_txt))
     print(f"escritas {len(rel.escritas)}, iguais {len(rel.iguais)}, conflitos {len(rel.conflitos)}, "
           f"faltando {len(rel.faltando)} -> {a.saida}; relatório: {a.relatorio}")
+    if rel.conflitos:
+        print("conflitos não escritos: acerte o valor na V3.0 viva (pelo Excel) ou na saída e, no segundo caso, rode de "
+              "novo com essa saída como --v40 e outra --saida; a mesma --saida é sobrescrita (veja o relatório).",
+              file=sys.stderr)
     return 1 if rel.conflitos or rel.faltando else 0
 
 

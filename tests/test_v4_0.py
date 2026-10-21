@@ -12,7 +12,8 @@ TC-WB40-004: dados por chave (python/dados_planilha.py e tools/migrar_dados_v3_v
 pelos nomes é igual à V3.0 da tag lida pelos endereços; ida e volta de 5 entradas (valor, Origem e Fonte) de abas
 diferentes; conflito listado com base, destino e novo, sem sobrescrever, e a CLI sai com código 1; recusa de saída em
 excel/ ou igual à origem antes de abrir qualquer arquivo; célula alterada na viva fora da tabela é erro que a lista;
-erro de dado na CLI (entrada com fórmula, abas diferentes da tag) sai com código 2 e reescreve o relatório com o erro.
+erro de dado na CLI (entrada com fórmula, abas diferentes da tag, comentário ou hiperlink novo na viva) sai com
+código 2 e reescreve o relatório com o erro, listando os objetos; a tag sem mudança passa pela CLI com código 0.
 Roda como script: uv run python -X utf8 tests/test_v4_0.py
 A V3.0 de partida é o arquivo da tag v3.0, extraído para uma pasta temporária (nunca a planilha viva).
 """
@@ -26,6 +27,7 @@ import tempfile
 from pathlib import Path
 
 import openpyxl
+from openpyxl.comments import Comment
 from openpyxl.utils import column_index_from_string
 from openpyxl.worksheet.formula import ArrayFormula
 
@@ -335,20 +337,45 @@ with tempfile.TemporaryDirectory() as tmp:
     ra, txt_a, base_a = cli_erro(viva_a, "abas")
     erro_abas_ok = base_a and "abas da viva diferentes das da V3.0 da tag" in ra.stderr and \
         "99_EXTRA_TESTE" in txt_a and raises(lambda: dp.celulas_alteradas(viva_a, v30), dp.AbasDiferentes)
+    # (4) viva com um comentário novo e um hiperlink novo (valores das células intactos): código 2 com os dois listados
+    # (aba!célula e tipo); a tag sem mudança passa (código 0).
+    viva_o = Path(tmp) / "viva_objetos.xlsx"
+    shutil.copy(v30, viva_o)
+    wbo = openpyxl.load_workbook(viva_o)
+    cel_link = wbo["00_README"]["A1"]
+    link_sem_mudar_valor = cel_link.value is not None and wbo["02_REQUIREMENTS"]["A1"].comment is None and \
+        cel_link.hyperlink is None
+    cel_link.hyperlink = "https://exemplo.invalid/teste-tc-wb40-004"
+    wbo["02_REQUIREMENTS"]["A1"].comment = Comment("TESTE TC-WB40-004: comentário sintético", "teste")
+    wbo.save(viva_o)
+    wbo.close()
+    ro, txt_o, base_o = cli_erro(viva_o, "objetos")
+    obj_lista = dp.objetos_alterados(viva_o, v30)
+    erro_obj_ok = base_o and link_sem_mudar_valor and \
+        obj_lista == [("00_README", "A1", "hiperlink"), ("02_REQUIREMENTS", "A1", "comentário")] and \
+        "00_README!A1 (hiperlink)" in txt_o and "02_REQUIREMENTS!A1 (comentário)" in txt_o and \
+        "não são migrados" in txt_o and not dp.celulas_alteradas(viva_o, v30)
+    md_tag, sai_tag = Path(tmp) / "migracao_tag.md", Path(tmp) / "cli_tag.xlsx"
+    cli_tag = subprocess.run([sys.executable, "-X", "utf8", str(CLI), str(v30), "--v40", str(ref40), "--saida",
+                              str(sai_tag), "--relatorio", str(md_tag)], cwd=RAIZ, capture_output=True, text=True, env=env)
+    tag_ok = cli_tag.returncode == 0 and sai_tag.exists() and dp.objetos_alterados(v30, v30) == []
     ok_004 = all((equiv, ida_volta_ok, alt_ok, conflito_ok, cli_conf_ok, cli_ok_ok, rec_inj, rec_cli, erro_formula_ok,
-                  erro_abas_ok))
+                  erro_abas_ok, erro_obj_ok, tag_ok))
     check("TC-WB40-004: dados por chave: V4.0 lida por nome = V3.0 (tag) lida por endereço; ida e volta de 5 entradas "
           "(15 nomes: valor, Origem, Fonte) sem tocar o resto; conflito listado (base, destino, novo) sem sobrescrever e "
           "CLI com código 1 (0 sem conflito); célula da viva fora da tabela listada; recusa de saída em excel/ ou = origem; "
-          "erro de dado (entrada com fórmula, abas diferentes) sai com 2 e reescreve o relatório",
+          "erro de dado (entrada com fórmula, abas diferentes, comentário e hiperlink novos, listados) sai com 2 e reescreve "
+          "o relatório; a tag sem mudança sai com 0",
           ok_004,
           f"equiv={equiv} ({len(por_end)} dados) ida_volta={ida_volta_ok} (escritas={len(r1.escritas)} "
           f"iguais={len(r1.iguais)} conf={r1.conflitos[:2]} falt={r1.faltando[:3]}) alteradas={alt_ok} "
           f"conflito={conflito_ok} ({r2.conflitos[:2]}) cli_conf={cli_conf_ok} (rc={cli1.returncode}) "
           f"cli_ok={cli_ok_ok} (rc={cli0.returncode}) recusas={rec_inj}/{rec_cli} "
-          f"erro_formula={erro_formula_ok} (rc={rf.returncode}) erro_abas={erro_abas_ok} (rc={ra.returncode})"
+          f"erro_formula={erro_formula_ok} (rc={rf.returncode}) erro_abas={erro_abas_ok} (rc={ra.returncode}) "
+          f"erro_objetos={erro_obj_ok} (rc={ro.returncode}, {obj_lista}) tag={tag_ok} (rc={cli_tag.returncode})"
           + ("" if cli_conf_ok and cli_ok_ok else f" | stderr: {(cli1.stderr + cli0.stderr)[-300:]}")
-          + ("" if erro_formula_ok and erro_abas_ok else f" | stderr: {(rf.stderr + ra.stderr)[-400:]}"))
+          + ("" if erro_formula_ok and erro_abas_ok else f" | stderr: {(rf.stderr + ra.stderr)[-400:]}")
+          + ("" if erro_obj_ok and tag_ok else f" | stderr: {(ro.stderr + cli_tag.stderr)[-400:]}"))
 
 
 # ---------------- Resumo ----------------
