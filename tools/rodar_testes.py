@@ -39,7 +39,8 @@ TESTES = [
     ("equilíbrio", "tests/test_equilibrio.py", 28, "planos dos incrementos 1 e 2 da V4.0"),
     ("equilíbrio linear", "tests/test_equilibrio_linear.py", 18, "plano do incremento 2 da V4.0"),
 ]
-MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
+MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
+           "equilibrio_linear", "caso_planilha"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6)]
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")

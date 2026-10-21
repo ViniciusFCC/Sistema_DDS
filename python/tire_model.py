@@ -273,7 +273,7 @@ def rigidez_camber(ds, fz):
 
     Definição de sinal: C_gamma = -dFy_ISO/dgamma_projeto, com alpha = 0 e kappa = 0, avaliada em
     gamma = 0. Camber com topo para fora na roda direita empurra o pneu para a direita (Fy_ISO < 0),
-    então C_gamma > 0 é o caso normal (Gillespie p. 215; empuxo de camber). Diferença
+    então C_gamma > 0 é o caso normal (Gillespie pp. 217-218, Fig. 6.14; empuxo de camber). Diferença
     central em gamma, passo 1e-6 rad. Fora da faixa levanta TireRangeError (como wheel_forces)."""
     h = _H_RIGIDEZ
     fy_p = wheel_forces(ds, "FR", fz, 0.0, +h, 0.0)[1]
