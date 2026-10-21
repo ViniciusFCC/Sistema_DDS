@@ -39,7 +39,7 @@ TESTES = [
     ("equilíbrio", "tests/test_equilibrio.py", 20, "plano do incremento 1 da V4.0"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha"]
-MUTACAO = ("tests/mutation_tire.py", 25)
+MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6)]
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
@@ -180,25 +180,26 @@ def main() -> None:
     md += [""] + detalhes
 
     # --- Mutação (CA-06) ---
-    script, esperado = MUTACAO
-    r = rodar([script])
-    linhas = r.stdout.splitlines()
-    pre = [l for l in linhas if l.startswith("PRE-CHECAGEM")]
-    pre_ok = any(l.startswith("PRE-CHECAGEM OK") for l in pre)
-    m = [x for x in map(RE_MUTACAO.match, linhas) if x]
-    det, tot = map(int, m[-1].groups()) if m else (None, None)
-    ok = pre_ok and det == tot == esperado and r.returncode == 0
-    resumo.append(("CA-06", "mutação", "PASS" if ok else "FAIL"))
-    md += [
-        "## Mutação (CA-06)", "",
-        f"- Esperado: {esperado}/{esperado} detectados, com a pré-checagem do original passando.",
-        f"- Pré-checagem: {pre[0] if pre else 'AUSENTE (o script não verifica o original)'}",
-        f"- Obtido: {det}/{tot} detectados; código de saída {r.returncode}",
-        f"- Status: **{'PASS' if ok else 'FAIL'}**",
-        "",
-    ]
-    md += bloco(f"{script}: saída", r.stdout.strip())
-    md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+    md += ["## Mutação (CA-06)", ""]
+    for script, esperado in MUTACAO:
+        r = rodar([script])
+        linhas = r.stdout.splitlines()
+        pre = [l for l in linhas if l.startswith("PRE-CHECAGEM")]
+        pre_ok = any(l.startswith("PRE-CHECAGEM OK") for l in pre)
+        m = [x for x in map(RE_MUTACAO.match, linhas) if x]
+        det, tot = map(int, m[-1].groups()) if m else (None, None)
+        ok = pre_ok and det == tot == esperado and r.returncode == 0
+        resumo.append(("CA-06", f"mutação ({Path(script).name})", "PASS" if ok else "FAIL"))
+        md += [
+            f"### `{script}`", "",
+            f"- Esperado: {esperado}/{esperado} detectados, com a pré-checagem do original passando.",
+            f"- Pré-checagem: {pre[0] if pre else 'AUSENTE (o script não verifica o original)'}",
+            f"- Obtido: {det}/{tot} detectados; código de saída {r.returncode}",
+            f"- Status: **{'PASS' if ok else 'FAIL'}**",
+            "",
+        ]
+        md += bloco(f"{script}: saída", r.stdout.strip())
+        md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
 
     # --- Build e comparação (CA-07, CA-08) ---
     md += ["## Planilha regenerada (CA-07, CA-08)", ""]
