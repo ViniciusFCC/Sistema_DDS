@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21; EDR-057 acrescentado em 2026-10-21, incremento 2 da V4.0). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21; EDR-057 acrescentado em 2026-10-21, incremento 2 da V4.0; EDR-058 acrescentado em 2026-10-21, incremento 3 da V4.0). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 57 registros. APPROVED: 20 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-21)
+Total: 58 registros. APPROVED: 21 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-21)
 
 | ID | Título | Status |
 |---|---|---|
@@ -94,6 +94,7 @@ Total: 57 registros. APPROVED: 20 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-055 | Amplitude exploratória da varredura do pneu (LFZO, LMUY, LKY × 0,8/1,0/1,2) | APPROVED |
 | EDR-056 | Regras do veredito no limite: entrada do pneu limitada à faixa (convenção PAC2002), neutro pelo momento desbalanceado e eixo que satura primeiro | APPROVED |
 | EDR-057 | Método do equilíbrio no Python (incremento 2 da V4.0) | APPROVED_WITH_CONDITIONS |
+| EDR-058 | Fonte de verdade da V4.0: gerada da tag v3.0, com nomes definidos e dados da equipe migrados por chave | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1273,6 +1274,33 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-002, EDR-004, EDR-013, EDR-022, EDR-038, EDR-039, EDR-052, EDR-055, EDR-056.
 - **Source_Conversation_or_Document:** Conversa de 2026-10-21 (incremento 2 da V4.0; autorização do EDR-057); plano do incremento 2; Gillespie, cap. 6 e pp. 364-367; Milliken, §2.7.
 
+### EDR-058 — Fonte de verdade da V4.0: gerada da tag v3.0, com nomes definidos e dados da equipe migrados por chave
+
+- **Date:** 2026-10-21
+- **Status:** APPROVED
+- **Context:** O incremento 3 da V4.0 (plano `docs/superpowers/plans/2026-10-21-v4-0-inc3-fundacao-nomes.md`; spec `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md`, §8.2 e §10) é a fundação da planilha nova: nomes definidos em todas as entradas e resultados e uma ponte de dados por chave entre a V3.0 viva e a V4.0. O EDR-051 fixou a V3.0 como arquivo vivo da equipe; a V4.0 precisa de uma fonte de verdade própria sem perder o preenchimento da equipe, que já começou. O usuário autorizou o plano que nomeia este registro em 2026-10-21 ("Execute as 5 tarefas").
+- **Question:** De onde a V4.0 é gerada, como os nomes são formados e como os dados da equipe passam da V3.0 viva para a V4.0?
+- **Alternatives:** As do plano do incremento 3 e da spec (§8.2): gerar a V4.0 sobre um retrato da viva (caminho do EDR-051) ou da tag `v3.0` com os dados injetados por chave; reescrever as fórmulas para nomes já neste incremento ou só acrescentar os nomes (D13).
+- **Decision:**
+  1. **Origem:** a V4.0 (`excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx`) é gerada por `python/gerar_v4_0.py` a partir do arquivo da tag `v3.0`, extraído para uma pasta temporária; a V3.0 da árvore não é usada.
+  2. **Nomes:** 698 nomes definidos no escopo do workbook (ent 195, org 58, fte 58, res 387), da tabela `data/nomes_V4_0.csv` (`python/nomes_v4_0.py`), pelas regras de nome do plano (`<papel>_<aba2>_<slug>`, letras gregas transliteradas, colisão resolvida com a célula); o `sus_id` vem das colunas de rótulo ou de ID, sem criar ID.
+  3. **Fórmulas:** as 387 fórmulas são idênticas às da V3.0 (decisão D13 do usuário; a reescrita para nomes fica para o incremento 7). Só mudam o A3 da 00_README e a linha 20 do 15_CHANGELOG (`docs/registro-de-versoes-V4_0-celulas.md`).
+  4. **Dados por chave:** `python/dados_planilha.py` e `tools/migrar_dados_v3_v4.py` levam os dados da V3.0 viva para uma cópia da V4.0 pelos nomes. Conflito é listado no relatório e nunca sobrescrito; célula alterada na viva fora dos nomes de dado aborta com código 2, e também comentário, hiperlink, imagem ou gráfico diferente da tag, que a ferramenta não migra; a saída nunca fica em `excel/`.
+  5. **Equivalência:** TC-WB40-005 (valor de cada resultado pelo nome igual ao da V3.0 pelo endereço, no Excel e no LibreOffice) e TC-WB40-006 (nomes válidos nos dois motores).
+  6. **Viva da equipe:** continua a V3.0, na pasta compartilhada da equipe (usuário, 2026-10-20). Caminho da pasta e responsável pelos retratos `dados:`: a informar (usuário, 2026-10-21). A migração roda quando o usuário fornecer o arquivo.
+  7. **Versão seguinte:** a partir do incremento 4 a versão é V4.1, numa conversa nova (usuário, 2026-10-21).
+- **Rationale:** Gerar da tag dá uma origem imutável e regenerável (CA-07), sem depender do estado da viva, que pode estar sendo preenchida. Manter as fórmulas iguais (D13) deixa o CA-07 por texto e a equivalência por valor com a V3.0 como prova de que nada mudou no cálculo. A migração por chave não depende de endereço, e por isso continua valendo quando a reescrita do incremento 7 mexer no layout.
+- **Evidence:** `tests/test_v4_0.py` (TC-WB40-001 a 004) e `tests/test_workbook_v4_0.py` (TC-WB40-005 e 006), registrados em `tools/rodar_testes.py`; `docs/registro-de-versoes-V4_0-celulas.md`. `tests/test_workbook_v4_0.py` 2/2 no Excel via COM, na suíte (`tools/rodar_testes.py`), e 2/2 no LibreOffice (`DDS_RECALC=libreoffice`, 2026-10-21, cerca de 57 s).
+- **Assumptions:** A V3.0 viva da equipe tem a mesma estrutura da tag `v3.0` (abas e fórmulas); a migração confere isso e sai com código 2 quando não tem.
+- **Consequences:** A V4.0 de referência passa a ser o arquivo de `excel/` regenerável da tag. Para a V4.0, este registro adota a alternativa já registrada no item (4) do EDR-051 (partir da tag `v3.0`, com os dados entrando por chave) em vez do retrato commitado da viva; o status do EDR-051 não muda, porque ele continua regendo a V3.0 viva. A troca da viva para a V4.0 depende de o usuário fornecer o arquivo da pasta compartilhada e decidir a troca.
+- **Affected_Artifacts:** `python/gerar_v4_0.py`; `python/nomes_v4_0.py`; `python/dados_planilha.py`; `tools/migrar_dados_v3_v4.py`; `tools/comparar_planilhas.py` (`comparar_v40`, estrutura no CA-07); `tools/rodar_testes.py`; `data/nomes_V4_0.csv`; `excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx`; `docs/registro-de-versoes-V4_0-celulas.md`; `docs/registro-de-versoes-V4_0.md`; CLAUDE.md.
+- **Affected_Tests:** TC-WB40-001 a TC-WB40-006.
+- **Dependencies:** EDR-043, EDR-044, EDR-051, EDR-054.
+- **Approval_Conditions:** —
+- **Reopening_Criteria:** O usuário decide trocar a viva para a V4.0 ou mudar a forma de migração; a reescrita das fórmulas (incremento 7) muda a regra de fórmulas idênticas.
+- **Related_Decisions:** EDR-043, EDR-044, EDR-050, EDR-051, EDR-054.
+- **Source_Conversation_or_Document:** Conversa de 2026-10-21 (incremento 3 da V4.0; "Execute as 5 tarefas"); decisão do usuário de 2026-10-20 (viva na pasta compartilhada); plano do incremento 3; spec da V4.0, §8.2 e §10 (D13).
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1334,6 +1362,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-055 | — | python/equilibrio.py (varredura_pneu); data/varredura_pneu_exploratoria.json. | TC-EQ-016..018 |
 | EDR-056 | — | python/equilibrio.py (capacidade_eixo, analise_par); tools/relatorio_inc1.py; especificação da V4.0. | TC-EQ-007, TC-EQ-010..014 |
 | EDR-057 | SUS-414, SUS-415 | python/equilibrio.py; python/equilibrio_linear.py; python/tire_model.py; python/kinematics_model.py; python/suspension_model.py; especificação da V4.0 (§6, §7.4). | TC-EQ-021..048 |
+| EDR-058 | — | python/gerar_v4_0.py; python/nomes_v4_0.py; python/dados_planilha.py; tools/migrar_dados_v3_v4.py; tools/comparar_planilhas.py; tools/rodar_testes.py; data/nomes_V4_0.csv; excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx; CLAUDE.md. | TC-WB40-001..006 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
