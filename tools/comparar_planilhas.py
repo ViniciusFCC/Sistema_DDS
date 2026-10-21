@@ -23,6 +23,9 @@ FORMULAS_ESPERADAS = 347  # SPEC CA-07
 # V3.0 (EDR-045 a EDR-049): gerada da V2.4 por python/atualizar_planilha.py; 9 fórmulas novas.
 ENTREGUE_XLSX_V30 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V3_0.xlsx"
 FORMULAS_ESPERADAS_V30 = 387  # 356 + 6 da 1ª rodada de feedback (EDR-050) + 19 (pior origem no 14_DASHBOARD) e 6 (direção, EDR-052) da 2ª rodada da revisão metodológica
+# V4.0 (incremento 3, EDR-058): gerada da tag v3.0 por python/gerar_v4_0.py; só acrescenta nomes definidos.
+ENTREGUE_XLSX_V40 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_0.xlsx"
+FORMULAS_ESPERADAS_V40 = FORMULAS_ESPERADAS_V30  # nenhuma fórmula muda na V4.0
 
 
 def _formula(v) -> str | None:
@@ -46,7 +49,9 @@ def celulas(caminho: Path) -> tuple[list[str], dict[tuple[str, str], object]]:
 
 
 def comparar_xlsx(gerada: Path, entregue: Path = ENTREGUE_XLSX,
-                  esperadas: int = FORMULAS_ESPERADAS) -> tuple[bool, list[str]]:
+                  esperadas: int = FORMULAS_ESPERADAS, estrutura: bool = False) -> tuple[bool, list[str]]:
+    """CA-07: gerada x entregue, célula a célula. Com `estrutura=True` (CA-07 da V4.0), compara também os nomes
+    definidos, as validações de dados, a formatação condicional e as colunas ocultas (`_estrutura`)."""
     rel = []
     abas_e, ent = celulas(entregue)
     abas_g, ger = celulas(gerada)
@@ -72,6 +77,8 @@ def comparar_xlsx(gerada: Path, entregue: Path = ENTREGUE_XLSX,
             if isinstance(ve, (int, float)) and isinstance(vg, (int, float)):
                 extra = f" (dif={vg - ve:.3e})"
             difs.append(f"{chave[0]}!{chave[1]} valor: entregue={ve!r} gerada={vg!r}{extra}")
+    if estrutura:
+        difs.extend(_difs_estrutura(_estrutura(entregue), _estrutura(gerada), "entregue", "gerada"))
     rel.append(f"células comparadas: {len(set(ent) | set(ger))} | diferenças: {len(difs)}")
     rel.extend(f"  DIF {d}" for d in difs)
     if difs:
@@ -97,6 +104,65 @@ def _estrutura(caminho: Path) -> dict:
                           for i in range(d.min or 1, (d.max or d.min or 1) + 1)})
         out[ws.title] = {"validação": dv, "formatação condicional": cf, "colunas ocultas": ocultas}
     return out
+
+
+def _difs_estrutura(ea: dict, eb: dict, rotulo_a: str, rotulo_b: str) -> list[str]:
+    """Diferenças entre duas saídas de `_estrutura`: nomes (um a um) e, por aba, cada campo que difere."""
+    difs = []
+    na, nb = ea.get("nomes", {}), eb.get("nomes", {})
+    for n in sorted(set(na) | set(nb)):
+        if na.get(n) != nb.get(n):
+            difs.append(f"nome definido {n}: {rotulo_a}={na.get(n)!r} {rotulo_b}={nb.get(n)!r}")
+    for k in sorted((set(ea) | set(eb)) - {"nomes"}):
+        if ea.get(k) != eb.get(k):
+            for campo in sorted(set(ea.get(k, {})) | set(eb.get(k, {}))):
+                if ea.get(k, {}).get(campo) != eb.get(k, {}).get(campo):
+                    difs.append(f"{k}: {campo} difere ({rotulo_a} x {rotulo_b})")
+    return difs
+
+
+def comparar_v40(v40: Path, v30: Path, alteradas: set[tuple[str, str]],
+                 nomes: dict[str, str] | None = None,
+                 esperadas: int = FORMULAS_ESPERADAS_V40) -> tuple[bool, list[str]]:
+    """V4.0 x V3.0 da tag (incremento 3, EDR-058): mesmas abas na mesma ordem; fórmulas com texto idêntico em todas as
+    células (`esperadas` nas duas); valores iguais fora de `alteradas` (as células de `gerar_v4_0.alteracoes_v4_0()`);
+    validações, formatação condicional e colunas ocultas iguais. Nomes definidos: os da V3.0 ficam iguais; com `nomes`
+    ({nome: destino}), a V4.0 tem exatamente os da V3.0 mais esses. Só lê os arquivos."""
+    rel, ok = [], True
+    abas_3, c3 = celulas(v30)
+    abas_4, c4 = celulas(v40)
+    if abas_3 != abas_4:
+        rel.append(f"FAIL: abas diferem\n  V3.0: {abas_3}\n  V4.0: {abas_4}")
+        ok = False
+    n3 = sum(1 for v in c3.values() if _formula(v) is not None)
+    n4 = sum(1 for v in c4.values() if _formula(v) is not None)
+    rel.append(f"fórmulas: V3.0 {n3} | V4.0 {n4} | esperado {esperadas}")
+    if n3 != esperadas or n4 != esperadas:
+        rel.append("FAIL: número de fórmulas diferente do esperado")
+        ok = False
+    difs = []
+    for chave in sorted(set(c3) | set(c4)):
+        v3, v4 = c3.get(chave), c4.get(chave)
+        f3, f4 = _formula(v3), _formula(v4)
+        if f3 is not None or f4 is not None:
+            if f3 != f4:
+                difs.append(f"{chave[0]}!{chave[1]} fórmula: V3.0={f3!r} V4.0={f4!r}")
+        elif chave not in alteradas and (v3 != v4 or type(v3) is not type(v4)):
+            difs.append(f"{chave[0]}!{chave[1]} valor (fora das alteradas): V3.0={v3!r} V4.0={v4!r}")
+    e3, e4 = _estrutura(v30), _estrutura(v40)
+    n_nomes = len(e4["nomes"])
+    if nomes is not None:
+        e3 = {**e3, "nomes": {**e3["nomes"], **nomes}}
+    else:
+        e4 = {**e4, "nomes": {k: v for k, v in e4["nomes"].items() if k in e3["nomes"]}}
+    difs.extend(_difs_estrutura(e3, e4, "esperado", "V4.0"))
+    rel.append(f"células comparadas: {len(set(c3) | set(c4))} (alteradas: {len(alteradas)}) | nomes na V4.0: "
+               f"{n_nomes} | diferenças: {len(difs)}")
+    rel.extend(f"  DIF {d}" for d in difs)
+    if difs:
+        ok = False
+    rel.append("V4.0 x V3.0 PASS" if ok else "V4.0 x V3.0 FAIL")
+    return ok, rel
 
 
 def comparar_viva(viva: Path, referencia: Path, entradas: set[tuple[str, str]],
