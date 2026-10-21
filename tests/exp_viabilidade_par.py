@@ -31,6 +31,13 @@ Uso (Git Bash, depois de export UV_SYSTEM_CERTS=1):
     DDS_RECALC=excel uv run python -X utf8 tests/exp_viabilidade_par.py
     DDS_RECALC=libreoffice uv run python -X utf8 tests/exp_viabilidade_par.py
 Sem motor: imprime NÃO EXECUTÁVEL e sai com 3. Saída 0 = critérios atendidos; 1 = divergência.
+
+Regra registrada: este experimento vale para a regra anterior ao EDR-056 (commit a732c39), em que Fz ou
+γ fora da faixa do pneu davam N/A e o neutro usava o passo da grade. Ele não é refeito (EDR-056,
+Consequences). O protótipo da aba do incremento 4 seguirá o EDR-056: entrada do pneu limitada à faixa
+com aviso (help do Adams PAC2002, p. 83), descolamento (Fz <= 0) como N/A e neutro pela resolução
+numérica (Milliken, p. 320). Com o equilibrio.py atual, a comparação com o Python pode divergir nas
+linhas fora da faixa.
 """
 
 import hashlib
