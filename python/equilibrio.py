@@ -38,6 +38,9 @@ class CasoEquilibrio:
     """Entradas da análise de par. Os dicionários por roda levam as quatro chaves de CANTOS.
 
     ganho_camber é dγ/dφ em rad/rad (γ por rad de rolagem), na convenção do projeto.
+    roll_steer é o coeficiente de roll steer de cada eixo, ε [rad/rad], chaves "F" e "R", na convenção do
+    SUS-415 (kinematics_model.roll_steer_coefficient: ε > 0 esterça para a direita numa rolagem para a
+    direita). Padrão 0 = "sem dado"; só entra na parcela de roll steer do gradiente K (V4.0, inc. 2).
     """
     cfg: VehicleConfig
     ds: TireDataset
@@ -46,6 +49,7 @@ class CasoEquilibrio:
     toe_rad: dict = field(default_factory=_zeros)
     camber_estatico_rad: dict = field(default_factory=_zeros)
     ganho_camber: dict = field(default_factory=_zeros)
+    roll_steer: dict = field(default_factory=lambda: {"F": 0.0, "R": 0.0})
 
     def __post_init__(self):
         for nome in ("toe_rad", "camber_estatico_rad", "ganho_camber"):
@@ -54,6 +58,11 @@ class CasoEquilibrio:
                 raise ValueError(f"{nome} exige exatamente as chaves {CANTOS}; recebido {sorted(d)}.")
             if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in d.values()):
                 raise ValueError(f"{nome} exige valores numéricos finitos; recebido {d}.")
+        rs = self.roll_steer
+        if set(rs) != {"F", "R"}:
+            raise ValueError(f"roll_steer exige exatamente as chaves ('F', 'R'); recebido {sorted(rs)}.")
+        if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in rs.values()):
+            raise ValueError(f"roll_steer exige valores numéricos finitos; recebido {rs}.")
 
 
 def cargas(caso: CasoEquilibrio, ay_ms2: float) -> dict:
