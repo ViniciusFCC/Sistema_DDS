@@ -1,5 +1,12 @@
 # Sistema_DDS — Documento de transferência (handoff) para o projeto no Claude Code
 
+> **Retrato histórico (nota de 2026-10-20).** Este documento descreve o projeto como chegou do claude.ai em
+> 2026-10-18 (planilha V2.4, nomes de arquivo com versão, testes descritos como pytest) e não é mais atualizado.
+> Estado atual: `CLAUDE.md` (planilha V3.0 fechada, tag `v3.0`; testes são scripts com `check()`) e
+> `docs/registro-de-versoes-V3_0.md`. A ordem das fontes de verdade que vale é a do `CLAUDE.md`
+> (`docs/Engineering_Decision_Register.md` primeiro); a frase abaixo que manda valer `importado-claude-ai/` era
+> a regra da migração.
+
 **Gerado em:** 2026-10-18, a partir do Projeto "Sistema_DDS" do claude.ai (conhecimento do projeto + arquivos gerados nas conversas "Estruturação Planilha DDS", "Implementação 07_Kinematics" e "Implementação 08_Tire").
 **Versão de trabalho mais recente encontrada:** **V2.4** (2026-10-14).
 **Fonte de verdade:** este documento **resume e indexa**; ele **não substitui** os originais. Em caso de divergência, valem os arquivos originais em `importado-claude-ai/`, nesta ordem: `Engineering_Decision_Register.md` (V2.4) → `engineering-standard-V2.0` → `arquitetura-consolidada-V2.0` → `data-contract-V2_4` → registros de versões.
