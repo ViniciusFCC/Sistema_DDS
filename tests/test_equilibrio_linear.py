@@ -223,9 +223,10 @@ GANHO_TESTE = {"FL": -0.8, "FR": 0.8, "RL": -0.6, "RR": 0.6}   # gradientes de e
 ok_034, det_034 = [], []
 
 
-def _comparar_034(dset, ganho):
-    """(rel, detalhe) de |k_inclinacao(1ª linha) − (pneus + deslocamento + camber)| / |...|, ou (None, erro)."""
-    caso34 = eq.CasoEquilibrio(cfg=cfg_b, ds=dset, ganho_camber=ganho)
+def _comparar_034(dset, ganho, **extra):
+    """(rel, detalhe) de |k_inclinacao(1ª linha) − (pneus + deslocamento + camber)| / |...|, ou (None, erro).
+    extra: outras entradas do CasoEquilibrio (toe, raio, Ackermann; valores de teste)."""
+    caso34 = eq.CasoEquilibrio(cfg=cfg_b, ds=dset, ganho_camber=ganho, **extra)
     tab, e34 = _sem_excecao(lambda: el.tabela_linear(caso34, ay_max_g=0.05))
     if (tab is None or tab[0]["k_inclinacao"] is None
             or any(x is None for x in (tab[0]["parcelas"].k_pneus, tab[0]["parcelas"].k_deslocamento,
@@ -243,12 +244,26 @@ for rotulo, ganho in (("sem ganho de camber", {c: 0.0 for c in eq.CANTOS}), ("co
     rel34, _, d34 = _comparar_034(ds, ganho)
     ok_034.append(rel34 is not None and rel34 < 1e-3)
     det_034.append(f"{rotulo}: {d34}")
+# Rigidez do eixo no ponto de operação (toe, raio e Ackermann entram no C do passo 1 como no passo 2). Valores de
+# teste, NÃO são setup do carro: toe dianteiro 0,25° nas duas rodas (toe-out, EDR-002), R = 8,0 m e Ackermann 100 %.
+TOE_TESTE = math.radians(0.25)
+EXTRAS_034 = (
+    ("toe dianteiro 0,25° (teste)", dict(toe_rad={"FL": TOE_TESTE, "FR": TOE_TESTE, "RL": 0.0, "RR": 0.0})),
+    ("R = 8,0 m (teste)", dict(raio_m=8.0)),
+    ("R = 8,0 m e Ackermann 100 % (teste)", dict(raio_m=8.0, ackermann_pct=100.0)),
+)
+for rotulo, extra in EXTRAS_034:
+    for rot_g, ganho in (("sem ganho", {c: 0.0 for c in eq.CANTOS}), ("ganho de teste", GANHO_TESTE)):
+        rel34, _, d34 = _comparar_034(ds, ganho, **extra)
+        ok_034.append(rel34 is not None and rel34 < 1e-3)
+        det_034.append(f"{rotulo}, {rot_g}: {d34}")
 # Registro (não decide o check): no ds0 (sem PHY/PVY/RHY, só de teste) o deslocamento do pneu some.
 _, p34_0, d34_0 = _comparar_034(ds0, {c: 0.0 for c in eq.CANTOS})
 det_034.append(f"ds0 (sem deslocamentos): {d34_0}")
 check("TC-EQ-034: k_inclinacao da 1ª linha (passo 2, Richardson das secantes de 0,005 e 0,01 g) = k_pneus + k_deslocamento + k_camber "
-      "(passo 1), rel < 1e-3, com e sem ganho de camber (veículo de teste, .tir real, sem roll steer)",
-      len(ok_034) == 2 and all(ok_034), " | ".join(det_034))
+      "(passo 1), rel < 1e-3, com e sem ganho de camber, também com toe dianteiro 0,25°, R = 8,0 m e R = 8,0 m com "
+      "Ackermann 100 % (veículo e entradas de teste, .tir real, sem roll steer: o passo 2 não tem roll steer)",
+      len(ok_034) == 2 + 2 * len(EXTRAS_034) and all(ok_034), " | ".join(det_034))
 
 # ---------------- TC-EQ-035 : sinal do camber (EDR-002) ----------------
 # Braços paralelos iguais na frente (gradiente de eixo +1, Gillespie p. 234): só de teste.
