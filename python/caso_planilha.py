@@ -2,7 +2,8 @@
 
 `caso_da_planilha` lê as entradas de uma CÓPIA já recalculada (Excel ou LibreOffice, EDR-044) e monta o
 `CasoEquilibrio`. `pior_origem_do_caso` abre a planilha SEM valores (só fórmulas) e acha o pior rótulo de origem
-entre as raízes das entradas e o pneu. Nenhuma função salva ou recalcula a planilha; a viva só é aberta para leitura.
+entre as raízes das entradas e o pneu (origem lida da 10_TIRE, I84); `pior_origem_entradas` faz o mesmo sem o
+pneu. Nenhuma função salva ou recalcula a planilha; a viva só é aberta para leitura.
 
 ENTRADAS_CASO é uma cópia consciente do `ENTRADAS` de tests/test_workbook_suspensao.py (só as chaves usadas aqui).
 O incremento 3 troca as duas pelos nomes definidos da planilha.
@@ -20,7 +21,7 @@ import suspension_model as sm
 import tire_model as tm
 from equilibrio import CasoEquilibrio
 from raizes import Grafo, origem_da_raiz, PIOR_PRIMEIRO, SEM_ROTULO
-from atualizar_planilha import TTC, CONF
+from atualizar_planilha import CONF
 
 ENTRADAS_CASO: dict[str, tuple[str, str]] = {
     "m": ("05_VEHICLE", "B4"), "h": ("05_VEHICLE", "B5"), "L": ("05_VEHICLE", "B6"),
@@ -58,16 +59,43 @@ def caso_da_planilha(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
     return CasoEquilibrio(cfg, ds, downforce_N=x["DF"], aero_balance_front=x["bal"])
 
 
-def pior_origem_do_caso(xlsx_formulas: Path) -> str:
-    """Pior rótulo de origem (ordem de raizes.PIOR_PRIMEIRO) entre as raízes das entradas e o pneu (.tir TTC).
-
-    Abre a planilha só para leitura, sem data_only. Raiz sem rótulo conta como "? A confirmar".
-    """
-    wb = openpyxl.load_workbook(xlsx_formulas, data_only=False)
+def _origens_entradas(wb) -> set[str]:
+    """Rótulos de origem das raízes preenchidas de ENTRADAS_CASO (raiz sem rótulo conta como "? A confirmar")."""
     grafo = Grafo(wb)
-    achados = {TTC}   # o pneu é o .tir provisório do TTC
+    achados = set()
     for no in ENTRADAS_CASO.values():
         for aba, cel in grafo.raizes_preenchidas(no):
             rotulo = origem_da_raiz(wb, aba, cel)
             achados.add(CONF if rotulo == SEM_ROTULO else rotulo)
+    return achados
+
+
+def _origem_pneu(wb) -> str:
+    """Origem do pneu na própria planilha: a célula de origem dos coeficientes do .tir na 10_TIRE
+    (raizes.celula_origem("10_TIRE", "B86") → I84). Sem rótulo conta como "? A confirmar"."""
+    rotulo = origem_da_raiz(wb, "10_TIRE", "B86")   # lê raizes.celula_origem("10_TIRE", "B86"), a I84
+    return CONF if rotulo == SEM_ROTULO else rotulo
+
+
+def pior_origem_entradas(xlsx_formulas: Path) -> str:
+    """Pior rótulo de origem (ordem de raizes.PIOR_PRIMEIRO) entre as raízes das entradas, sem o pneu.
+
+    Abre a planilha só para leitura, sem data_only. Raiz sem rótulo conta como "? A confirmar".
+    """
+    wb = openpyxl.load_workbook(xlsx_formulas, data_only=False)
+    achados = _origens_entradas(wb)
+    if not achados:
+        raise ValueError("nenhuma raiz preenchida nas entradas do caso: a pior origem não está definida")
+    return min(achados, key=PIOR_PRIMEIRO.index)
+
+
+def pior_origem_do_caso(xlsx_formulas: Path) -> str:
+    """Pior rótulo de origem (ordem de raizes.PIOR_PRIMEIRO) entre as raízes das entradas e o pneu.
+
+    A origem do pneu é lida da célula de origem dos coeficientes na 10_TIRE (I84), não de uma constante: se a equipe
+    trocar o .tir e o rótulo, o caso acompanha. Abre a planilha só para leitura, sem data_only. Raiz sem rótulo conta
+    como "? A confirmar".
+    """
+    wb = openpyxl.load_workbook(xlsx_formulas, data_only=False)
+    achados = _origens_entradas(wb) | {_origem_pneu(wb)}
     return min(achados, key=PIOR_PRIMEIRO.index)

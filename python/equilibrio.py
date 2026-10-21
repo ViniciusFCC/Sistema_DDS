@@ -36,6 +36,11 @@ def _zeros() -> dict:
     return {c: 0.0 for c in CANTOS}
 
 
+def _num(x: float, fmt: str) -> str:
+    """Número formatado com vírgula decimal, para os textos de motivo e de aviso (exibição em português)."""
+    return format(x, fmt).replace(".", ",")
+
+
 @dataclass(frozen=True)
 class CasoEquilibrio:
     """Entradas da análise de par. Os dicionários por roda levam as quatro chaves de CANTOS.
@@ -55,10 +60,10 @@ class CasoEquilibrio:
     fixo por Setup). cza_m2 exige raio_m e rho_kg_m3, e não aceita downforce_N ≠ 0 junto (a downforce contaria
     duas vezes).
     cda_m2 [m²] e crr [-] ligam a hipótese 9 (tração na traseira; spec 7.4): o eixo traseiro precisa de
-    Fx = 0,5·ρ·CdA·a_y·R + Crr·m·G + F_yf·sen δ_ref, dividido igual entre RL e RR (diferencial aberto, hipótese 10),
+    Fx = 0,5·ρ·CdA·a_y·R + Crr·m·G + F_yf·tan δ_ref, dividido igual entre RL e RR (diferencial aberto, hipótese 10),
     e a capacidade lateral de cada roda traseira cai pela elipse de atrito (ver capacidade_eixo). None = sem dado
     (desligado). cda_m2 exige raio_m e rho_kg_m3; crr sozinho só usa a massa (sem raio_m, os termos de arrasto e de
-    F_yf·sen δ_ref ficam fora, como o cos δ_ref).
+    F_yf·tan δ_ref ficam fora, como o cos δ_ref).
     """
     cfg: VehicleConfig
     ds: TireDataset
@@ -283,7 +288,8 @@ class Capacidade:
 
     Com motivo = "pico na borda da grade de α" o valor fica registrado, mas não serve para saturação.
     limites traz os avisos de entrada do pneu limitada à faixa do .tir (EDR-056), um por roda e
-    grandeza, no formato "Fz_FR = 1526.0 N → 1521.0 N (FZMAX)" ou "γ_FL = 4.50° → 4.00° (CAMMAX)".
+    grandeza, no formato "Fz_FR = 1526,0 N → 1521,0 N (FZMAX)" ou "γ_FL = 4,50° → 4,00° (CAMMAX)" (vírgula decimal,
+    _num).
     """
     fy_max_N: float | None
     alfa_pico_rad: float | None
@@ -309,7 +315,7 @@ def _descolamento(fz: dict, rodas: tuple) -> str | None:
     """
     for c in rodas:
         if fz[c] <= 0.0:
-            return (f"Fz_{c} = {fz[c]:.1f} N ≤ 0: descolamento, fora do domínio do modelo de transferência "
+            return (f"Fz_{c} = {_num(fz[c], '.1f')} N ≤ 0: descolamento, fora do domínio do modelo de transferência "
                     f"de carga (SUS-104)")
     return None
 
@@ -330,7 +336,7 @@ def _entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -
         if f < p["FZMIN"] or f > p["FZMAX"]:
             nome = "FZMIN" if f < p["FZMIN"] else "FZMAX"
             fz_u[c] = p[nome]
-            lims.append(_Limite(c, nome, f, p[nome], f"Fz_{c} = {f:.1f} N → {p[nome]:.1f} N ({nome})"))
+            lims.append(_Limite(c, nome, f, p[nome], f"Fz_{c} = {_num(f, '.1f')} N → {_num(p[nome], '.1f')} N ({nome})"))
         else:
             fz_u[c] = f
         g_pneu = s_g * gam[c]
@@ -338,7 +344,8 @@ def _entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -
             nome = "CAMMIN" if g_pneu < p["CAMMIN"] else "CAMMAX"
             gam_u[c] = p[nome] / s_g
             lims.append(_Limite(c, nome, gam[c], gam_u[c],
-                                f"γ_{c} = {math.degrees(gam[c]):.2f}° → {math.degrees(gam_u[c]):.2f}° ({nome})"))
+                                f"γ_{c} = {_num(math.degrees(gam[c]), '.2f')}° → "
+                                f"{_num(math.degrees(gam_u[c]), '.2f')}° ({nome})"))
         else:
             gam_u[c] = gam[c]
     return fz_u, gam_u, lims
@@ -371,10 +378,12 @@ def tracao_ativa(caso: CasoEquilibrio) -> bool:
 def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float) -> float:
     """Fx [N] que o eixo traseiro precisa dar em a_y para manter a velocidade (spec 7.4, hipótese 9).
 
-    Fx = 0,5·ρ·CdA·V² + Crr·m·G + |F_yf|·sen δ_ref, com V² = |a_y|·R e F_yf a força lateral exigida na dianteira
+    Fx = 0,5·ρ·CdA·V² + Crr·m·G + |F_yf|·tan δ_ref, com V² = |a_y|·R e F_yf a força lateral exigida na dianteira
     (forca_exigida): arrasto aerodinâmico, resistência ao rolamento (sobre m·G, sem a downforce) e a componente
-    para trás da força lateral das rodas dianteiras esterçadas de δ_ref = L/R. Cada termo só entra com o dado
-    dele (cda_m2; crr; raio_m para o termo de δ_ref). 0 com a hipótese desligada.
+    para trás da força das rodas dianteiras esterçadas de δ_ref = L/R. F_yf é a componente da força do pneu na
+    direção lateral do carro (F_yf = F_pneu·cos δ_ref, o mesmo cos δ_ref de _cos_dianteira); a componente para trás
+    é F_pneu·sen δ_ref = F_yf·tan δ_ref (EDR-057). Cada termo só entra com o dado dele (cda_m2; crr; raio_m para o
+    termo de δ_ref). 0 com a hipótese desligada.
     """
     cfg = caso.cfg
     fx = 0.0
@@ -383,24 +392,58 @@ def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float) -> float:
     if caso.crr is not None:
         fx += caso.crr * cfg.mass_total * G
     if tracao_ativa(caso) and caso.raio_m is not None:
-        fx += abs(forca_exigida(caso, ay_ms2)[0]) * math.sin(cfg.wheelbase / caso.raio_m)
+        fx += abs(forca_exigida(caso, ay_ms2)[0]) * math.tan(cfg.wheelbase / caso.raio_m)
     return fx
 
 
 def fx_max_puro(ds: TireDataset, fz: float, gamma: float) -> float:
     """Pico de Fx puro em tração [N] do PAC2002 na carga fz [N] e no camber gamma [rad, convenção do projeto].
 
-    Com Cx = PCX1·LCX ≥ 1 o seno da fórmula mágica chega a 1 e o pico é |Dx| + SVx (mesma forma fechada do pico
-    de Fy, TC-EQ-005). Com Cx < 1 o pico não é atingido em forma fechada: máximo numérico de pure_fx0 sobre
-    κ em [0, KPUMAX] (2001 pontos). γ vai ao pneu no referencial do arquivo (s_g·γ; o Fx não depende do lado).
+    Com Cx = PCX1·LCX > 1 o seno da fórmula mágica chega a 1 em κ_pico, e o pico é |Dx| + SVx (mesma forma fechada
+    do pico de Fy, TC-EQ-005). A forma fechada só vale se κ_pico cair na faixa de tração do .tir, [0, KPUMAX] ∩
+    [KPUMIN, KPUMAX] (κ ≥ 0 é tração; fora da faixa o pneu é avaliado no limite, EDR-056). κ_pico vem de
+    Cx·atan(φ) = π/2, φ = (1 − Ex)·u + Ex·atan(u), u = Bx·(κ + SHx): φ é crescente em u para Ex ≤ 1 (o PAC2002 já
+    limita Ex a 1), e u sai por bisseção. Com Cx ≤ 1 (o seno só chega a 1 no infinito) ou κ_pico fora da faixa:
+    máximo numérico de pure_fx0 sobre κ em [0, KPUMAX] (2001 pontos). γ vai ao pneu no referencial do arquivo
+    (s_g·γ; o Fx não depende do lado).
     """
     p = ds.p
     g_pneu = AXIS_TRANSFORMS[ds.axis_system][2] * gamma
-    if p["PCX1"] * p["LCX"] >= 1.0:
+    kappa_pico = _kappa_pico_fx(p, fz, g_pneu)
+    if kappa_pico is not None and max(0.0, p["KPUMIN"]) <= kappa_pico <= p["KPUMAX"]:
         _, info = pure_fx0(p, fz, g_pneu, 0.0)
         return abs(info["Dx"]) + info["SVx"]
     n = 2000
     return max(pure_fx0(p, fz, g_pneu, p["KPUMAX"] * i / n)[0] for i in range(n + 1))
+
+
+def _kappa_pico_fx(p: dict, fz: float, g_pneu: float) -> float | None:
+    """κ do pico de Fx puro (ramo de tração) do PAC2002, ou None se o seno não chega a 1 (Cx ≤ 1) ou Bx ≤ 0.
+
+    Resolve Cx·atan(φ) = π/2 com φ(u) = (1 − Ex)·u + Ex·atan(u), u = Bx·(κ + SHx), Ex do ramo κ + SHx > 0
+    (pure_fx0), por bisseção em u > 0 (φ é crescente para Ex ≤ 1). κ_pico = u/Bx − SHx.
+    """
+    _, info = pure_fx0(p, fz, g_pneu, p["KPUMAX"])   # Ex e Bx do ramo de tração (κ + SHx > 0)
+    cx, bx, ex, shx = info["Cx"], info["Bx"], info["Ex"], info["SHx"]
+    if cx <= 1.0 or bx <= 0.0:
+        return None
+    alvo = math.tan(math.pi / (2.0 * cx))
+
+    def phi(u: float) -> float:
+        return (1.0 - ex) * u + ex * math.atan(u)
+
+    lo, hi = 0.0, 1.0
+    while phi(hi) < alvo:
+        hi *= 2.0
+        if hi > 1e12:
+            return None
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if phi(mid) < alvo:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi) / bx - shx
 
 
 def _elipse_traseira(caso: CasoEquilibrio, ay_ms2: float, rodas: tuple, fz_u: dict,
@@ -534,17 +577,19 @@ def _folga(linha: LinhaPar, eixo: str) -> float:
     return cap.fy_max_N - req
 
 
-def _saturacao(linhas: tuple, eixo: str, ay_max_g: float) -> _Saturacao:
+def _saturacao(linhas: tuple, eixo: str) -> _Saturacao:
     """Primeira troca de sinal da folga entre linhas consecutivas válidas, interpolada linearmente.
 
-    A busca para na primeira linha inválida (capacidade com motivo): nada além dela é usado.
+    A busca para na primeira linha inválida (capacidade com motivo): nada além dela é usado. Sem troca de sinal, o
+    motivo "não satura até <x> g" cita a última linha varrida (linhas[-1]), e não ay_max_g: com ay_max_g = 0,33 e
+    passo 0,05, a grade para em 0,3 g.
     """
     ay_valido = None
     m_ant = None
     for k, ln in enumerate(linhas):
         cap = ln.cap_f if eixo == "F" else ln.cap_r
         if cap.motivo is not None:
-            return _Saturacao(None, None, ay_valido, f"{cap.motivo} em a_y = {ln.ay_ms2 / G:g} g")
+            return _Saturacao(None, None, ay_valido, f"{cap.motivo} em a_y = {_num(ln.ay_ms2 / G, 'g')} g")
         m = _folga(ln, eixo)
         if m_ant is not None and m_ant > 0.0 >= m:
             a0 = linhas[k - 1].ay_ms2
@@ -554,7 +599,7 @@ def _saturacao(linhas: tuple, eixo: str, ay_max_g: float) -> _Saturacao:
             return _Saturacao(ay_sat, k - 1, ln.ay_ms2, None)
         ay_valido = ln.ay_ms2
         m_ant = m
-    return _Saturacao(None, None, ay_valido, f"não satura até {ay_max_g:g} g")
+    return _Saturacao(None, None, ay_valido, f"não satura até {_num(linhas[-1].ay_ms2 / G, 'g')} g")
 
 
 def _varredura(caso: CasoEquilibrio, ay_max_g: float, passo_g: float, n_alfa: int) -> tuple:
@@ -570,7 +615,7 @@ def _varredura(caso: CasoEquilibrio, ay_max_g: float, passo_g: float, n_alfa: in
                                cap_r=capacidade_eixo(caso, "R", ay, n_alfa),
                                req_f=req_f, req_r=req_r))
     linhas = tuple(linhas)
-    return linhas, _saturacao(linhas, "F", ay_max_g), _saturacao(linhas, "R", ay_max_g)
+    return linhas, _saturacao(linhas, "F"), _saturacao(linhas, "R")
 
 
 # Piso da resolução: ruído de ponto flutuante, para que duas saturações iguais por simetria (diferença
@@ -596,29 +641,46 @@ def _resolucao(pedida: tuple, refinada: tuple, passo_ms2: float) -> float | None
     return max(max(difs), _PISO_RESOLUCAO_MS2)
 
 
-def _limitacoes(caso: CasoEquilibrio, linhas: tuple, ay_lim: float | None) -> tuple[str, ...]:
-    """Avisos de limitação (EDR-056, item 1) das capacidades válidas usadas no veredito.
+def _limitacoes_detalhe(caso: CasoEquilibrio, linhas: tuple, ay_lim: float | None) -> list[dict]:
+    """Limitações de entrada do pneu (EDR-056, item 1) das capacidades válidas usadas no veredito, estruturadas.
 
     Entram as linhas até a_y_lim, incluída a primeira linha com a_y >= a_y_lim (ela fecha o intervalo
     da interpolação da saturação e do C_N); sem a_y_lim, todas as linhas. Só capacidades válidas
-    (motivo None). Um aviso por roda e limite: o de maior excesso |real − usado|.
+    (motivo None). Uma entrada por roda e limite, na ordem de CANTOS e FZMIN, FZMAX, CAMMIN, CAMMAX:
+    {"canto", "nome", "primeira_ay" [m/s²], "pior" (_Limite de maior excesso |real − usado|; no empate, o
+    primeiro), "pior_ay" [m/s²]}.
     """
-    maior = {}
+    por_chave: dict = {}
     for ln in linhas:
         for eixo, cap in (("F", ln.cap_f), ("R", ln.cap_r)):
             if cap.motivo is not None or cap.fy_max_N is None or not cap.limites:
                 continue
-            rodas = _rodas(eixo)
-            _, _, lims = _entrada_limitada(caso, rodas, ln.fz, camber(caso, ln.ay_ms2))
+            _, _, lims = _entrada_limitada(caso, _rodas(eixo), ln.fz, camber(caso, ln.ay_ms2))
             for lim in lims:
-                chave = (lim.canto, lim.nome)
-                if chave not in maior or abs(lim.real - lim.usado) > abs(maior[chave].real - maior[chave].usado):
-                    maior[chave] = lim
+                d = por_chave.get((lim.canto, lim.nome))
+                if d is None:
+                    por_chave[(lim.canto, lim.nome)] = {"canto": lim.canto, "nome": lim.nome,
+                                                        "primeira_ay": ln.ay_ms2, "pior": lim, "pior_ay": ln.ay_ms2}
+                elif abs(lim.real - lim.usado) > abs(d["pior"].real - d["pior"].usado):
+                    d["pior"], d["pior_ay"] = lim, ln.ay_ms2
         if ay_lim is not None and ln.ay_ms2 >= ay_lim:
             break
     ordem = {nome: i for i, nome in enumerate(("FZMIN", "FZMAX", "CAMMIN", "CAMMAX"))}
-    chaves = sorted(maior, key=lambda k: (CANTOS.index(k[0]), ordem[k[1]]))
-    return tuple(maior[k].texto for k in chaves)
+    return [por_chave[k] for k in sorted(por_chave, key=lambda k: (CANTOS.index(k[0]), ordem[k[1]]))]
+
+
+def _limitacoes(caso: CasoEquilibrio, linhas: tuple, ay_lim: float | None) -> tuple[str, ...]:
+    """Avisos de limitação (EDR-056, item 1) usados no veredito: o texto do pior caso de cada roda e limite."""
+    return tuple(d["pior"].texto for d in _limitacoes_detalhe(caso, linhas, ay_lim))
+
+
+def limitacoes_detalhe(res: ResultadoPar, caso: CasoEquilibrio) -> list[dict]:
+    """Detalhe estruturado de res.limitacoes (mesmas linhas e mesma escolha; ver _limitacoes_detalhe).
+
+    caso tem de ser o caso que gerou res. Cada dict traz canto, nome do limite (FZMIN/FZMAX/CAMMIN/CAMMAX), a
+    primeira a_y em que o limite aparece, o _Limite de maior excesso (campos real, usado e texto) e a a_y dele.
+    """
+    return _limitacoes_detalhe(caso, res.linhas, res.ay_lim)
 
 
 def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.05,
@@ -751,17 +813,32 @@ def analise_par_dois_sentidos(caso: CasoEquilibrio, **kw) -> dict:
 # Robustez do veredito ao pneu e texto de exibição (spec 7.3 e 7.6)
 # ---------------------------------------------------------------------------
 
-def com_fatores(ds: TireDataset, fatores: dict) -> TireDataset:
-    """Cópia do dataset com p[nome] *= valor. Só aceita fatores λ (nome com "L") que existam em ds.p.
+# Fatores de escala do PAC2002 (help do Adams 2024.1, "User Scaling Factors", pp. 23-25: tabelas de pure slip,
+# combined slip e transient response, conferidas na imagem em 2026-10-20), na ordem das tabelas. LONGVL não é fator
+# de escala (é a velocidade de medição) e fica fora. A tabela imprime "LKG" para λKyγ; o .tir do projeto e o
+# tire_model usam o nome "LKYG" para esse mesmo fator (EDR-042), e é ele que entra aqui: um "LKG" no .tir não é lido
+# pelo tire_model e viraria um fator sem efeito.
+FATORES_LAMBDA = ("LFZO", "LIP", "LCZ", "LCX", "LMUX", "LEX", "LKX", "LHX", "LVX", "LGAX",
+                  "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY", "LKYG", "LTR", "LRES", "LGAZ",
+                  "LMX", "LVMX", "LMY",
+                  "LXAL", "LYKA", "LVYKA", "LS",
+                  "LSGKP", "LSGAL", "LGYR")
 
-    Um nome errado ("LMUX ", "PDY2") levanta ValueError: um erro de digitação não pode virar
-    "robusto" em silêncio (spec 7.6). O ds de entrada nunca é alterado.
+
+def com_fatores(ds: TireDataset, fatores: dict) -> TireDataset:
+    """Cópia do dataset com p[nome] *= valor. Só aceita nomes de FATORES_LAMBDA que existam em ds.p, com valor
+    finito e > 0.
+
+    Um nome errado ("LMUX ", "PDY2", "LONGVL") ou um valor 0, negativo ou não finito levanta ValueError: um erro de
+    digitação não pode virar "robusto" em silêncio (spec 7.6). O ds de entrada nunca é alterado.
     """
     p = copy.deepcopy(ds.p)
     for nome, valor in fatores.items():
-        if not (isinstance(nome, str) and nome.startswith("L") and nome in ds.p):
-            raise ValueError(f"fator de pneu inválido: {nome!r}; só são aceitos fatores λ (nome com 'L') "
-                             f"que existam no .tir.")
+        if not (isinstance(nome, str) and nome in FATORES_LAMBDA and nome in ds.p):
+            raise ValueError(f"fator de pneu inválido: {nome!r}; só são aceitos os fatores de escala do PAC2002 "
+                             f"(FATORES_LAMBDA) que existam no .tir.")
+        if isinstance(valor, bool) or not isinstance(valor, (int, float)) or not math.isfinite(valor) or valor <= 0.0:
+            raise ValueError(f"fator de pneu {nome} = {valor!r}: o valor deve ser finito e > 0.")
         p[nome] = p[nome] * valor
     return dataclasses.replace(ds, p=p)
 
