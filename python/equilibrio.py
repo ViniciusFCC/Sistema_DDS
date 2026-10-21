@@ -404,7 +404,8 @@ def fx_max_puro(ds: TireDataset, fz: float, gamma: float) -> float:
     [KPUMIN, KPUMAX] (κ ≥ 0 é tração; fora da faixa o pneu é avaliado no limite, EDR-056). κ_pico vem de
     Cx·atan(φ) = π/2, φ = (1 − Ex)·u + Ex·atan(u), u = Bx·(κ + SHx): φ é crescente em u para Ex ≤ 1 (o PAC2002 já
     limita Ex a 1), e u sai por bisseção. Com Cx ≤ 1 (o seno só chega a 1 no infinito) ou κ_pico fora da faixa:
-    máximo numérico de pure_fx0 sobre κ em [0, KPUMAX] (2001 pontos). γ vai ao pneu no referencial do arquivo
+    máximo numérico de pure_fx0 sobre κ em [max(0, KPUMIN), KPUMAX] (2001 pontos; a mesma faixa de tração, para
+    nenhum κ sair da faixa do .tir). γ vai ao pneu no referencial do arquivo
     (s_g·γ; o Fx não depende do lado).
     """
     p = ds.p
@@ -414,7 +415,8 @@ def fx_max_puro(ds: TireDataset, fz: float, gamma: float) -> float:
         _, info = pure_fx0(p, fz, g_pneu, 0.0)
         return abs(info["Dx"]) + info["SVx"]
     n = 2000
-    return max(pure_fx0(p, fz, g_pneu, p["KPUMAX"] * i / n)[0] for i in range(n + 1))
+    k_ini = max(0.0, p["KPUMIN"])
+    return max(pure_fx0(p, fz, g_pneu, k_ini + (p["KPUMAX"] - k_ini) * i / n)[0] for i in range(n + 1))
 
 
 def _kappa_pico_fx(p: dict, fz: float, g_pneu: float) -> float | None:

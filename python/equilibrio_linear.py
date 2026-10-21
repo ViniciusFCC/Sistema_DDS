@@ -87,10 +87,15 @@ def parcela_transferencia_aprox(W_f_N, C_f, b_f, dFz_f, W_r_N, C_r, b_r, dFz_r):
 # ---------------------------------------------------------------------------
 #
 # Montagem do K de um CasoEquilibrio com o pneu PAC2002 (V4.0, inc. 2; spec §6). Convenções dos Global Constraints:
-# C_α = −∂Fy_ISO/∂α e C_γ = −∂Fy_ISO/∂γ na roda FR (tire_model.rigidez_deriva e rigidez_camber), C do eixo = soma
-# das duas rodas; gradiente de camber do eixo = (∂γ_R/∂φ − ∂γ_L/∂φ)/2; roll steer na convenção do SUS-415. O
-# espelhamento da roda esquerda em wheel_forces dá ∂Fy_FL/∂α = ∂Fy_FR/∂α na mesma (Fz, γ), então a rigidez de deriva
-# da roda esquerda é rigidez_deriva(ds, Fz_FL, γ_FL), com γ na convenção do projeto.
+# C_α = −∂Fy_ISO/∂α e C_γ = −∂Fy_ISO/∂γ na roda FR (tire_model.rigidez_deriva e rigidez_camber); gradiente de camber
+# do eixo = (∂γ_R/∂φ − ∂γ_L/∂φ)/2; roll steer na convenção do SUS-415. O espelhamento da roda esquerda em
+# wheel_forces dá ∂Fy_FL/∂α = ∂Fy_FR/∂α na mesma (Fz, γ).
+#
+# Rigidez do eixo no ponto de operação: o C_α do eixo usado nas parcelas é a inclinação C_eixo = −∂Fy_eixo/∂α_ref
+# em α_ref = α_0, com Fy_eixo de equilibrio._fy_eixo_limitado (o mesmo modelo do passo 2: Δα do toe e do Ackermann
+# em cada roda, cos δ_ref na dianteira e Fz e γ limitados à faixa, EDR-056) e α_0 o ângulo de referência exigido em
+# a_y = 0 (`angulos_necessarios`). Com o carro simétrico em L/R, sem toe, raio e Ackermann, α_0 = 0, Δα = 0 e
+# cos δ_ref = 1, e C_eixo é a soma de rigidez_deriva nas duas rodas.
 #
 # Entrada do pneu fora da faixa do .tir: as regras do EDR-056 (Fz e γ limitados à faixa, com aviso em `limites`;
 # Fz <= 0 = descolamento, parcela N/A). Os auxiliares de limitação são os mesmos de equilibrio.capacidade_eixo.
@@ -136,31 +141,69 @@ def _pesos_eixo(caso) -> tuple[float, float]:
     return st["FL"] + st["FR"], st["RL"] + st["RR"]
 
 
-def _rigidez_eixo(caso, eixo: str, fz: dict, gam: dict):
-    """(C_α do eixo [N/rad], avisos de limitação, motivo de N/A) com Fz e γ dados por roda.
+# Passo da diferença central em α_ref para a rigidez do eixo [rad]: o mesmo de tire_model.rigidez_deriva.
+_H_ALFA_RIGIDEZ = _tm._H_RIGIDEZ
 
-    Fz <= 0 em alguma roda: N/A por descolamento (equilibrio._descolamento). Fz e γ fora da faixa: limitados
-    (equilibrio._entrada_limitada, EDR-056). C_α do eixo <= 0: N/A (nunca divisão por zero; Review Focus 3).
+
+def _alfa_operacao(caso):
+    """((α_0f, α_0r) [rad, ISO], motivo): ângulos de referência exigidos em a_y = 0 (`angulos_necessarios`).
+
+    São o ponto de operação em que a rigidez do eixo é avaliada (`_rigidez_eixo`). Zero com o carro simétrico em
+    L/R (com ou sem toe simétrico); diferentes de zero com Ackermann, CG lateral ou outra assimetria. Sem ângulos:
+    (None, motivo).
+    """
+    ang = angulos_necessarios(caso, 0.0)
+    if ang is None:
+        return None, "ângulo de referência exigido em a_y = 0 indisponível (ponto de operação da rigidez do eixo)"
+    return ang, None
+
+
+def _rigidez_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float):
+    """(C_α do eixo [N/rad], avisos de limitação, motivo de N/A) com Fz e γ dados por roda, no ponto α_ref = alfa_0.
+
+    C_eixo = −∂Fy_eixo/∂α_ref em α_ref = alfa_0, por diferença central (passo _H_ALFA_RIGIDEZ) sobre
+    equilibrio._fy_eixo_limitado: inclui o Δα do toe e do Ackermann em cada roda e o cos δ_ref da dianteira, como a
+    curva do eixo do passo 2. Fz <= 0 em alguma roda: N/A por descolamento (equilibrio._descolamento). Fz e γ fora
+    da faixa: limitados (equilibrio._entrada_limitada, EDR-056). C_α do eixo <= 0: N/A (nunca divisão por zero;
+    Review Focus 3).
     """
     rodas = _eq._rodas(eixo)
     desc = _eq._descolamento(fz, rodas)
     if desc is not None:
         return None, (), desc
     fz_u, gam_u, lims = _eq._entrada_limitada(caso, rodas, fz, gam)
-    c = sum(_tm.rigidez_deriva(caso.ds, fz_u[r], gam_u[r]) for r in rodas)
+    h = _H_ALFA_RIGIDEZ
+    c = -(_eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0 + h)
+          - _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0 - h)) / (2.0 * h)
     if not c > 0.0:
         return None, tuple(lim.texto for lim in lims), f"C_α do eixo {eixo} = {_eq._num(c, '.1f')} N/rad ≤ 0"
     return c, tuple(lim.texto for lim in lims), None
 
 
-def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict) -> float:
-    """C_γ do eixo [N/rad] = soma de rigidez_camber nas duas rodas, com Fz limitado à faixa (EDR-056).
+def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float) -> float:
+    """C_γ do eixo [N/rad] no ponto de operação: −∂Fy_eixo/∂γ_eixo em α_ref = alfa_0, com Fz e γ dados por roda.
 
-    rigidez_camber é avaliada em γ = 0 (definição dos Global Constraints). Exige Fz > 0 (quem chama verifica).
+    γ_eixo é o camber de eixo da convenção do gradiente (R − L)/2: a roda direita recebe +γ_eixo e a esquerda
+    −γ_eixo. Diferença central (passo _H_ALFA_RIGIDEZ) sobre equilibrio._fy_eixo_limitado, como `_rigidez_eixo`:
+    inclui o Δα do toe e do Ackermann, o cos δ_ref da dianteira e Fz e γ limitados à faixa (EDR-056); assim a razão
+    C_γ/C_α da eq. 6-56 é a do modelo do passo 2. O centro do estêncil de cada roda é levado para dentro de
+    [CAMMIN + h, CAMMAX − h] (no referencial do pneu) se for preciso, para nenhuma avaliação sair da faixa. Com o carro
+    simétrico em L/R, sem toe, raio e Ackermann, e γ estático nulo, é a soma de rigidez_camber nas duas rodas. Só a
+    parte antissimétrica do ganho de camber, (R − L)/2, entra na parcela (a simétrica dá força nula no carro
+    simétrico). Exige Fz > 0 (quem chama verifica).
     """
     rodas = _eq._rodas(eixo)
-    fz_u, _, _ = _eq._entrada_limitada(caso, rodas, fz, gam)
-    return sum(_tm.rigidez_camber(caso.ds, fz_u[r]) for r in rodas)
+    fz_u, gam_u, _ = _eq._entrada_limitada(caso, rodas, fz, gam)
+    p = caso.ds.p
+    s_g = _tm.AXIS_TRANSFORMS[caso.ds.axis_system][2]
+    h = _H_ALFA_RIGIDEZ
+    centro = {c: min(max(s_g * gam_u[c], p["CAMMIN"] + h), p["CAMMAX"] - h) / s_g for c in rodas}
+    sinal = {rodas[0]: -1.0, rodas[1]: 1.0}   # (esquerda, direita)
+
+    def fy(d):
+        return _eq._fy_eixo_limitado(caso, rodas, fz_u, {c: centro[c] + sinal[c] * d for c in rodas}, alfa_0)
+
+    return -(fy(h) - fy(-h)) / (2.0 * h)
 
 
 # Passo da diferença central em a_y para dF0/da_y [m/s²]. F0 é suave em Fz e ΔFz é linear em a_y, então o erro de
@@ -168,14 +211,15 @@ def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict) -> float:
 _H_AY_DESLOCAMENTO = 1e-4 * G
 
 
-def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict):
-    """(F0 do eixo [N, ISO], motivo): Σ Fy das duas rodas em α_ref = 0 (κ = 0), com o Fz de a_y = ay_fz e o γ dado,
+def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict, alfa_0: float):
+    """(F0 do eixo [N, ISO], motivo): Fy do eixo em α_ref = alfa_0 (κ = 0), com o Fz de a_y = ay_fz e o γ dado,
     limitados à faixa (EDR-056).
 
-    É a força que o pneu dá sem deriva: deslocamentos PHY*/PVY* do PAC2002 (ply steer e conicidade), com o
-    espelhamento esquerda/direita de wheel_forces. O γ é passado fixo por quem chama (o da linha) para que a
-    derivada em a_y não conte de novo o empuxo de camber, que já é a parcela k_camber. O toe estático entra como em
-    fy_eixo (α_roda = α_ref + Δα_toe), o mesmo modelo do passo 2. Fz <= 0: (None, motivo de descolamento).
+    No ponto de operação (alfa_0 = α_0 do eixo, `_alfa_operacao`), é a força do eixo além da parcela linear em
+    α − α_0: deslocamentos PHY*/PVY* do PAC2002 (ply steer e conicidade), com o espelhamento esquerda/direita de
+    wheel_forces, e a força do toe e do Ackermann. O γ é passado fixo por quem chama (o da linha) para que a
+    derivada em a_y não conte de novo o empuxo de camber, que já é a parcela k_camber. O Δα de toe e Ackermann e o
+    cos δ_ref entram como em fy_eixo, o mesmo modelo do passo 2. Fz <= 0: (None, motivo de descolamento).
     """
     rodas = _eq._rodas(eixo)
     fz = _eq.cargas(caso, ay_fz)
@@ -183,19 +227,21 @@ def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict):
     if desc is not None:
         return None, desc
     fz_u, gam_u, _ = _eq._entrada_limitada(caso, rodas, fz, gam)
-    return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, 0.0), None
+    return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0), None
 
 
-def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float):
+def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float, alfa_0: tuple):
     """(k_deslocamento [rad/(m/s²)], motivo): parcela do deslocamento do pneu que varia com a carga.
 
-    F0 é a Fy do eixo em α_ref = 0, com o toe estático (α_roda = Δα_toe) e o γ da linha: além dos deslocamentos
-    PHY/PVY do PAC2002, a parcela inclui o efeito do toe estático e a variação, com a carga, do empuxo do camber
-    estático (EDR-057). Só a variação do γ com a_y fica fora (é a parcela k_camber).
+    F0 é a Fy do eixo em α_ref = α_0 (ângulo exigido em a_y = 0; 0 no carro simétrico em L/R), com o Δα do toe e do
+    Ackermann e o γ da linha: além dos deslocamentos PHY/PVY do PAC2002, a parcela inclui o toe × ΔFz (a força do
+    toe muda com a carga de cada roda) e a variação, com a carga, do empuxo do camber estático (EDR-057). Só a
+    variação do γ com a_y fica fora (é a parcela k_camber).
 
-    Cada eixo dá Fy_eixo = −C_eixo·α + F0_eixo(a_y) (α ISO, C_α = −∂Fy/∂α) e precisa dar W·a_y/G. Logo
-    −α = (W·a_y/G − F0)/C, e o K do Gillespie (ângulos positivos), −d(α_f − α_r)/da_y, recebe do F0 a parcela
-    k_deslocamento = −(dF0_f/da_y)/C_f + (dF0_r/da_y)/C_r, com C de eixo da linha. dF0/da_y por diferença central
+    Cada eixo dá Fy_eixo = −C_eixo·(α − α_0) + F0_eixo(a_y) (α ISO, C_eixo = −∂Fy_eixo/∂α_ref em α_0,
+    `_rigidez_eixo`) e precisa dar W·a_y/G. Logo −(α − α_0) = (W·a_y/G − F0)/C, e o K do Gillespie (ângulos
+    positivos), −d(α_f − α_r)/da_y, recebe do F0 a parcela k_deslocamento = −(dF0_f/da_y)/C_f + (dF0_r/da_y)/C_r,
+    com C de eixo da linha. dF0/da_y por diferença central
     no Fz de a_y ± _H_AY_DESLOCAMENTO, com o γ da linha fixo (o empuxo de camber variando com a_y é k_camber); em
     a_y = 0, a diferença central em torno de 0 é o próprio limite a_y → 0. Com o dataset sem deslocamentos, F0 não
     depende de Fz e a parcela some. As parcelas do Gillespie (pp. 202-226) usam só o C_α e não têm este termo; ele
@@ -204,9 +250,9 @@ def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float):
     h = _H_AY_DESLOCAMENTO
     gam = _eq.camber(caso, ay_ms2)
     k = 0.0
-    for eixo, c, sinal in (("F", c_f, -1.0), ("R", c_r, 1.0)):
-        f_mais, m1 = _forca_deslocamento(caso, eixo, ay_ms2 + h, gam)
-        f_menos, m2 = _forca_deslocamento(caso, eixo, ay_ms2 - h, gam)
+    for eixo, c, sinal, a0 in (("F", c_f, -1.0, alfa_0[0]), ("R", c_r, 1.0, alfa_0[1])):
+        f_mais, m1 = _forca_deslocamento(caso, eixo, ay_ms2 + h, gam, a0)
+        f_menos, m2 = _forca_deslocamento(caso, eixo, ay_ms2 - h, gam, a0)
         if m1 is not None or m2 is not None:
             return None, (m1 or m2) + " (vizinhança da diferença central do deslocamento do pneu)"
         k += sinal * (f_mais - f_menos) / (2.0 * h) / c
@@ -226,22 +272,30 @@ def _juntar(*itens):
 def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
     """Parcelas do gradiente de subesterço K em a_y [m/s²] (Gillespie cap. 6; spec §6), em rad/(m/s²).
 
-    - k_pneus (eq. 6-15): (W_f/C_f − W_r/C_r)/G, com C de eixo na carga estática por roda (com a aerodinâmica do
-      caso) e γ estático.
+    - k_pneus (eq. 6-15): (W_f/C_f − W_r/C_r)/G, com C de eixo nas cargas por roda de a_y = 0 e γ estático. Com
+      downforce fixa (downforce_N, EDR-013) essas cargas já a incluem; com cza_m2 (hipótese 8, V² = a_y·R) a
+      downforce em a_y = 0 é nula, e o efeito da aerodinâmica na rigidez cai inteiro em k_transferencia.
     - k_transferencia (pp. 215-217): (W_f/C_f(a_y) − W_r/C_r(a_y))/G − k_pneus, com C de eixo nas cargas e no γ
-      dessa a_y (forma exata pelo PAC2002, sem o polinômio do livro). Com a_y → 0, tende a 0. Como o γ também
-      muda com a_y, a parcela inclui a variação de C_α com o camber (efeito de 2ª ordem, pequeno).
-    - k_deslocamento: −(dF0_f/da_y)/C_f + (dF0_r/da_y)/C_r, com F0 a Fy do eixo em α = 0 (deslocamentos do
+      dessa a_y (forma exata pelo PAC2002, sem o polinômio do livro) e no mesmo α_0. Com a_y → 0, tende a 0. Como
+      o γ também muda com a_y, a parcela inclui a variação de C_α com o camber (efeito de 2ª ordem, pequeno); com
+      cza_m2, inclui também a variação de C_α com a downforce, que cresce com a_y.
+    - k_deslocamento: −(dF0_f/da_y)/C_f + (dF0_r/da_y)/C_r, com F0 a Fy do eixo em α_ref = α_0 (deslocamentos do
       PAC2002 variando com a carga; ver `_parcela_deslocamento`). Termo fora do Gillespie, presente no pneu. Inclui
-      o efeito do toe estático (F0 é avaliada com α_roda = Δα_toe) e a variação, com a carga, do empuxo do camber
-      estático (γ da linha fixo); EDR-057.
-    - k_camber (eq. 6-56, pp. 218-219): (C_γf/C_αf·∂γ_f/∂φ − C_γr/C_αr·∂γ_r/∂φ)·∂φ/∂a_y, com C_γ e C_α de eixo na
-      carga estática, ∂γ/∂φ do eixo = (ganho_camber[R] − ganho_camber[L])/2 e ∂φ/∂a_y = φ(a_y)/a_y de
-      lateral_dfz (linear em a_y; em a_y = 0 usa a_y = 1e-6·G).
-    - k_roll_steer (eq. 6-57, SUS-415): (ε_f − ε_r)·∂φ/∂a_y, com ε = caso.roll_steer.
-    W_f e W_r são os pesos de eixo sem aerodinâmica (`_pesos_eixo`). O C_α é a inclinação em α = 0, sem o toe; o
-    toe estático entra no K pela parcela k_deslocamento. Fz <= 0 ou C_α <= 0: a parcela fica None, com motivo, e
-    k_total também.
+      o toe × ΔFz (F0 é avaliada com α_roda = α_0 + Δα de toe e Ackermann) e a variação, com a carga, do empuxo do
+      camber estático (γ da linha fixo); EDR-057.
+    - k_camber (eq. 6-56, pp. 218-219): (C_γf/C_αf·∂γ_f/∂φ − C_γr/C_αr·∂γ_r/∂φ)·∂φ/∂a_y, com C_γ
+      (`_rigidez_camber_eixo`) e C_α de eixo nas cargas de a_y = 0 e em α_0, ∂γ/∂φ do eixo =
+      (ganho_camber[R] − ganho_camber[L])/2 e ∂φ/∂a_y = φ(a_y)/a_y de lateral_dfz (linear em a_y; em a_y = 0 usa
+      a_y = 1e-6·G).
+    - k_roll_steer (eq. 6-57, SUS-415): (ε_f − ε_r)·∂φ/∂a_y, com ε = caso.roll_steer. Só existe no passo 1: o
+      passo 2 (`angulos_necessarios`, equilibrio.fy_eixo) não esterça a traseira nem soma o roll steer ao α das
+      rodas, então a igualdade do passo 1 com a inclinação do passo 2 (`tabela_linear`, k_inclinacao) vale sem o
+      roll steer (EDR-057).
+    W_f e W_r são os pesos de eixo sem aerodinâmica (`_pesos_eixo`). O C_α de eixo é a inclinação do passo 2 no
+    ponto de operação (`_rigidez_eixo`): −∂Fy_eixo/∂α_ref em α_ref = α_0, o ângulo exigido em a_y = 0, com o Δα do
+    toe e do Ackermann, o cos δ_ref e a limitação do EDR-056; assim, na 1ª linha da tabela, k_pneus +
+    k_deslocamento + k_camber é igual à inclinação do passo 2 (spec §6). Fz <= 0, C_α <= 0 ou α_0 indisponível: a
+    parcela fica None, com motivo, e k_total também.
     """
     cfg = caso.cfg
     W_f, W_r = _pesos_eixo(caso)
@@ -249,16 +303,21 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
     dphi = lateral_dfz(cfg, ay_ref)["roll_angle_rad"] / ay_ref
     motivos = []
 
+    alfa_0, m_alfa = _alfa_operacao(caso)
     fz0, gam0 = _eq.cargas(caso, 0.0), _eq.camber(caso, 0.0)
-    cf0, lf0, mf0 = _rigidez_eixo(caso, "F", fz0, gam0)
-    cr0, lr0, mr0 = _rigidez_eixo(caso, "R", fz0, gam0)
-    motivos += [m for m in (mf0, mr0) if m is not None]
-    k_pneus = gradiente_pneus(W_f, W_r, cf0, cr0) if (cf0 is not None and cr0 is not None) else None
-
     fz, gam = _eq.cargas(caso, ay_ms2), _eq.camber(caso, ay_ms2)
-    cf, lf, mf = _rigidez_eixo(caso, "F", fz, gam)
-    cr, lr, mr = _rigidez_eixo(caso, "R", fz, gam)
-    motivos += [m for m in (mf, mr) if m is not None and m not in motivos]
+    if alfa_0 is None:
+        motivos.append(m_alfa)
+        cf0 = cr0 = cf = cr = None
+        lf0 = lr0 = lf = lr = ()
+    else:
+        cf0, lf0, mf0 = _rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0])
+        cr0, lr0, mr0 = _rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1])
+        motivos += [m for m in (mf0, mr0) if m is not None]
+        cf, lf, mf = _rigidez_eixo(caso, "F", fz, gam, alfa_0[0])
+        cr, lr, mr = _rigidez_eixo(caso, "R", fz, gam, alfa_0[1])
+        motivos += [m for m in (mf, mr) if m is not None and m not in motivos]
+    k_pneus = gradiente_pneus(W_f, W_r, cf0, cr0) if (cf0 is not None and cr0 is not None) else None
     if k_pneus is not None and cf is not None and cr is not None:
         k_transf = gradiente_pneus(W_f, W_r, cf, cr) - k_pneus
     else:
@@ -266,7 +325,7 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
 
     k_desl = None
     if cf is not None and cr is not None:
-        k_desl, m_desl = _parcela_deslocamento(caso, ay_ms2, cf, cr)
+        k_desl, m_desl = _parcela_deslocamento(caso, ay_ms2, cf, cr, alfa_0)
         if m_desl is not None and m_desl not in motivos:
             motivos.append(m_desl)
 
@@ -274,8 +333,8 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
         g = caso.ganho_camber
         dgf = (g["FR"] - g["FL"]) / 2.0
         dgr = (g["RR"] - g["RL"]) / 2.0
-        cgf = _rigidez_camber_eixo(caso, "F", fz0, gam0)
-        cgr = _rigidez_camber_eixo(caso, "R", fz0, gam0)
+        cgf = _rigidez_camber_eixo(caso, "F", fz0, gam0, alfa_0[0])
+        cgr = _rigidez_camber_eixo(caso, "R", fz0, gam0, alfa_0[1])
         k_camber = parcela_camber(cgf, cf0, dgf, cgr, cr0, dgr, dphi)
     else:
         k_camber = None
@@ -489,8 +548,9 @@ def cruzamento_transferencia(caso, ay_ms2: float) -> dict:
         saida["motivo"] = p.motivo
         return saida
     W_f, W_r = _pesos_eixo(caso)
-    cf, _, _ = _rigidez_eixo(caso, "F", fz0, gam0)
-    cr, _, _ = _rigidez_eixo(caso, "R", fz0, gam0)
+    alfa_0, _ = _alfa_operacao(caso)   # k_transferencia não é None aqui, então alfa_0 também não
+    cf, _, _ = _rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0])
+    cr, _, _ = _rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1])
     lat = lateral_dfz(caso.cfg, ay_ms2)
     dff, dfr = lat["front_axle"], lat["rear_axle"]
     bf, br = saida["b_f"], saida["b_r"]
