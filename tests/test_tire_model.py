@@ -9,7 +9,7 @@ import tire_model as t
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TIR = os.path.join(HERE, "..", "data", "Hoosier_R25B_13x7_TTC_provisional.tir")
-LD = lambda path, ax="SAE_CALSPAN": t.load_dataset(path, source_axis_system=ax)
+LD = lambda path, ax="ISO_TYDEX": t.load_dataset(path, source_axis_system=ax)   # EDR-039 (revisão de 2026-10-19): o .tir PAC2002 está no eixo W do TYDEX
 results = []
 
 
@@ -166,38 +166,39 @@ check("TC-TIRE-009c: sensibilidade — alterar cada L* testado muda Fx ou Fy (ne
 
 
 # --- TC-TIRE-010: sistema de eixos do arquivo (V2.4): transformação SAE_CALSPAN -> ISO, invariantes físicos ---
-dsI = LD(TIR, "ISO_TYDEX")
+# O modo SAE_CALSPAN é pedido explicitamente (dsS); dsI é o modo do arquivo (ISO_TYDEX, EDR-039).
+dsS = LD(TIR, "SAE_CALSPAN"); dsI = LD(TIR, "ISO_TYDEX")
 import math as _m
 corners = ("FL", "FR", "RL", "RR")
 ok = True; det = []
 for cn in corners:
     for a_deg in (3, 6, 12, -3, -6, -12):
-        for dsx in (ds, dsI):
+        for dsx in (dsS, dsI):
             fy = t.wheel_forces(dsx, cn, 700.0, _m.radians(a_deg), 0.0, 0.0)[1]
             ok &= (fy * a_deg < 0)
 check("TC-TIRE-010a: |α|≥3°, γ=0: Fy (ISO, projeto) tem sinal oposto a α_ISO nos 4 cantos, nos dois modos de eixo (SAE_CALSPAN e ISO_TYDEX)", ok)
-fyR = t.wheel_forces(ds, "FR", 700.0, 0.0, _m.radians(3), 0.0)[1]; fyL = t.wheel_forces(ds, "FL", 700.0, 0.0, _m.radians(3), 0.0)[1]
-fyR_n = t.wheel_forces(ds, "FR", 700.0, 0.0, _m.radians(-3), 0.0)[1]; fyL_n = t.wheel_forces(ds, "FL", 700.0, 0.0, _m.radians(-3), 0.0)[1]
+fyR = t.wheel_forces(dsS, "FR", 700.0, 0.0, _m.radians(3), 0.0)[1]; fyL = t.wheel_forces(dsS, "FL", 700.0, 0.0, _m.radians(3), 0.0)[1]
+fyR_n = t.wheel_forces(dsS, "FR", 700.0, 0.0, _m.radians(-3), 0.0)[1]; fyL_n = t.wheel_forces(dsS, "FL", 700.0, 0.0, _m.radians(-3), 0.0)[1]
 check("TC-TIRE-010b: empuxo de camber aponta para o lado da inclinação: roda direita γ>0 (topo p/ direita=fora) -> Fy<0 (direita); roda esquerda γ>0 (topo p/ esquerda=fora) -> Fy>0; inverte com γ<0",
       fyR < 0 and fyL > 0 and fyR_n > 0 and fyL_n < 0, f"R+={fyR:.0f} L+={fyL:.0f} R-={fyR_n:.0f} L-={fyL_n:.0f}")
 f0_file = t.combined_forces(ds, 700.0, 0.0, 0.0, 0.0)[1]
 check("TC-TIRE-010c: offset de Fy em zero slip: SAE_CALSPAN -> Fy_ISO = −Fy_arquivo; ISO_TYDEX -> = +Fy_arquivo (roda direita)",
-      abs(t.wheel_forces(ds, "FR", 700.0, 0, 0, 0)[1] + f0_file) < 1e-9 and abs(t.wheel_forces(dsI, "FR", 700.0, 0, 0, 0)[1] - f0_file) < 1e-9, f"Fy_arquivo(0,0,0)={f0_file:.2f} N")
+      abs(t.wheel_forces(dsS, "FR", 700.0, 0, 0, 0)[1] + f0_file) < 1e-9 and abs(t.wheel_forces(dsI, "FR", 700.0, 0, 0, 0)[1] - f0_file) < 1e-9, f"Fy_arquivo(0,0,0)={f0_file:.2f} N")
 check("TC-TIRE-010d: Fx não depende do modo de eixos quando α=0 (X e κ iguais em SAE e ISO)",
-      all(abs(t.wheel_forces(ds, "FR", fz_, 0.0, g_, k_)[0] - t.wheel_forces(dsI, "FR", fz_, 0.0, g_, k_)[0]) < 1e-9 for fz_, g_, k_ in ((300, 0.0, 0.1), (700, 0.03, -0.15), (1200, -0.02, 0.2))))
+      all(abs(t.wheel_forces(dsS, "FR", fz_, 0.0, g_, k_)[0] - t.wheel_forces(dsI, "FR", fz_, 0.0, g_, k_)[0]) < 1e-9 for fz_, g_, k_ in ((300, 0.0, 0.1), (700, 0.03, -0.15), (1200, -0.02, 0.2))))
 psym = dict(p)
 for k in ("PHY1", "PHY2", "PHY3", "PVY1", "PVY2", "PVY3", "PVY4", "PEY3", "PEY4"):
     psym[k] = 0.0
 dsym_s = t.TireDataset(p=psym, strings=ds.strings, axis_system="SAE_CALSPAN"); dsym_i = t.TireDataset(p=psym, strings=ds.strings, axis_system="ISO_TYDEX")
 dd = max(abs(t.wheel_forces(dsym_s, "FR", fz_, _m.radians(a_), 0.0, 0.0)[1] - t.wheel_forces(dsym_i, "FR", fz_, _m.radians(a_), 0.0, 0.0)[1]) for fz_ in (300, 700, 1200) for a_ in (-12, -5, 2, 9))
 check("TC-TIRE-010e: sem termos assimétricos (SHy, SVy, PEY3/4 = 0; γ=0, κ=0), SAE_CALSPAN e ISO_TYDEX dão o MESMO Fy (parte ímpar invariante à convenção)", dd < 1e-9, f"dif máx={dd:.1e} N")
-dd2 = max(abs(t.wheel_forces(ds, "FR", 564.0, _m.radians(a_), 0.0, 0.0)[1] - t.wheel_forces(dsI, "FR", 564.0, _m.radians(a_), 0.0, 0.0)[1]) for a_ in (4, -4))
+dd2 = max(abs(t.wheel_forces(dsS, "FR", 564.0, _m.radians(a_), 0.0, 0.0)[1] - t.wheel_forces(dsI, "FR", 564.0, _m.radians(a_), 0.0, 0.0)[1]) for a_ in (4, -4))
 check("TC-TIRE-010f: CARACTERIZAÇÃO — com os termos reais do arquivo, os dois modos diferem (efeito da convenção nos termos assimétricos), mas por menos de 10% de |Fy| a 4°", 1.0 < dd2 < 0.1 * 1440, f"dif máx a ±4°, 564 N = {dd2:.1f} N")
 check("TC-TIRE-010g: sistema de eixos ausente ou 'UNKNOWN' rejeitado pelo loader; modo inválido rejeitado",
       raises(lambda: t.load_dataset(TIR), t.TireDataError) and raises(lambda: t.load_dataset(TIR, source_axis_system="UNKNOWN"), t.TireDataError) and raises(lambda: t.load_dataset(TIR, source_axis_system="sae"), t.TireDataError))
 check("TC-TIRE-010h: espelhamento antes da transformação: Fy_FL(α, γ) = −Fy_FR(−α, γ) e Fx igual, também em ISO_TYDEX",
-      all(abs(t.wheel_forces(dx, "FL", 700.0, _m.radians(3), _m.radians(1.5), 0.05)[1] + t.wheel_forces(dx, "FR", 700.0, _m.radians(-3), _m.radians(1.5), 0.05)[1]) < 1e-9 for dx in (ds, dsI)))
-psr = t.project_sign_report(ds)
+      all(abs(t.wheel_forces(dx, "FL", 700.0, _m.radians(3), _m.radians(1.5), 0.05)[1] + t.wheel_forces(dx, "FR", 700.0, _m.radians(-3), _m.radians(1.5), 0.05)[1]) < 1e-9 for dx in (dsS, dsI)))
+psr = t.project_sign_report(dsS)
 check("TC-TIRE-010i: CARACTERIZAÇÃO — sinais no projeto (SAE_CALSPAN, roda direita): Fy<0 para α_ISO>0; Fy<0 para camber topo-para-fora; Fx<0 em frenagem", psr["Fy_ISO(alpha_ISO=+4deg)"] < 0 and psr["Fy_ISO(gamma=+3deg topo p/ fora)"] < 0 and psr["Fx(kappa=-0.10)"] < 0, str({k: round(v, 1) for k, v in psr.items()}))
 
 print("\n--- Resumo ---")
