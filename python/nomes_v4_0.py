@@ -5,12 +5,13 @@ cálculo (05, 06, 07, 08, 09, 10, 11, 13 e 14) recebe um nome `<papel>_<aba2>_<s
 - papel: `ent` (valor de entrada), `org` (coluna Origem, E ou I na 10_TIRE), `fte` (coluna Fonte, F ou J na 10_TIRE),
   `res` (resultado com fórmula);
 - aba2: os dois dígitos da aba;
-- slug: o rótulo da coluna A da linha, sem acento, em minúsculas, com todo caractere fora de [a-z0-9] trocado por `_`,
+- slug: o rótulo da coluna A da linha, com as letras gregas transliteradas (α → alfa, Δ → delta…), sem acento, em minúsculas, com todo caractere fora de [a-z0-9] trocado por `_`,
   `_` repetidos colapsados, sem `_` nas pontas e com até 40 caracteres. Na 10_TIRE, as células de caso (colunas B a F
   das linhas com casos FL, FR, RL, RR e VERIF) levam também a coluna (`_b`…`_f`).
 Em colisão, todos os nomes iguais ganham `_<célula>` (por exemplo `_c86`), o que torna o resultado independente da
 ordem. Rótulo vazio dá slug vazio, e o nome vira `<papel>_<aba2>_<célula>` (a mesma regra da colisão).
-`sus_id` guarda os IDs SUS que já aparecem em algum texto da linha (nenhum ID é criado); vários vão separados por `;`.
+`sus_id` guarda os IDs SUS que já aparecem no rótulo (coluna A) ou na coluna de ID da aba (D; H na 10_TIRE), nunca nas
+colunas Origem e Fonte nem em comentários (nenhum ID é criado); vários vão separados por `;`.
 
 A tabela é gerada do arquivo da tag v3.0 (extraído para uma pasta temporária), aberto só para leitura.
 Uso: uv run python -X utf8 python/nomes_v4_0.py --v30 <arquivo> --saida data/nomes_V4_0.csv
@@ -36,6 +37,13 @@ PAPEIS = ("ent", "org", "fte", "res")
 CABECALHO = ("nome", "aba", "celula", "papel", "sus_id", "rotulo")
 TAM_SLUG = 40
 COLUNAS_CASO = "BCDEF"   # 10_TIRE: FL, FR, RL, RR e VERIF
+# Coluna de ID SUS de cada aba (fora estas, só a coluna A, que nas abas 01, 02 e 03 já é a de ID).
+COLUNA_ID = {"05_VEHICLE": "D", "06_SUSPENSION": "D", "07_KINEMATICS": "D", "08_VEHICLE_STATE": "D", "09_LOADS": "D",
+             "10_TIRE": "H", "11_DESIGN": "D", "13_VALIDATION": "D", "14_DASHBOARD": "D"}
+# Transliteração das letras gregas antes de tirar o que não é ASCII (decisão do controlador, correção 1 da Task 1).
+GREGO = {"α": "alfa", "β": "beta", "γ": "gama", "δ": "delta", "ε": "epsilon", "η": "eta", "θ": "theta", "κ": "kappa",
+         "λ": "lambda", "μ": "mu", "ν": "nu", "ρ": "rho", "σ": "sigma", "ς": "sigma", "τ": "tau", "φ": "phi", "ψ": "psi",
+         "ω": "omega"}
 
 # Regras do Excel: começa por letra; só letras ASCII, dígitos e `_`; até 255 caracteres.
 NOME_VALIDO = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,254}")
@@ -65,8 +73,11 @@ def parece_referencia(nome: str) -> bool:
 
 
 def slug(rotulo: str) -> str:
-    """Rótulo sem acento, em minúsculas, com fora de [a-z0-9] trocado por `_`, sem `_` repetido nem nas pontas, ≤ 40."""
-    s = unicodedata.normalize("NFKD", rotulo).encode("ascii", "ignore").decode("ascii").lower()
+    """Rótulo com as letras gregas transliteradas, sem acento, em minúsculas, com fora de [a-z0-9] trocado por `_`, sem
+    `_` repetido nem nas pontas, ≤ 40. Outras letras fora do ASCII caem."""
+    s = unicodedata.normalize("NFKD", rotulo).lower()   # NFKD também leva o µ (micro) ao μ
+    s = "".join(GREGO.get(ch, ch) for ch in s)
+    s = s.encode("ascii", "ignore").decode("ascii")
     s = re.sub(r"[^a-z0-9]+", "_", s).strip("_")
     return s[:TAM_SLUG].rstrip("_")
 
@@ -129,8 +140,7 @@ def tabela_nomes(caminho_v30: Path) -> list[Nome]:
             if s and aba == "10_TIRE" and col in COLUNAS_CASO and any(ws[f"{x}{r}"].value is not None for x in "CDEF"):
                 s = f"{s}_{col.lower()}"
             papel = celulas[(aba, cel)]
-            textos = [str(ws.cell(r, j).value) for j in range(1, ws.max_column + 1)
-                      if isinstance(ws.cell(r, j).value, str) and not _eh_formula(ws.cell(r, j).value)]
+            textos = [_texto(ws[f"{x}{r}"].value) for x in ("A", COLUNA_ID.get(aba, "A"))]
             ids = list(dict.fromkeys(m for t in textos for m in _RE_SUS.findall(t)))
             nome = f"{papel}_{aba[:2]}_{s}" if s else ""
             base.append([nome, aba, cel, papel, ";".join(ids), rotulo])
