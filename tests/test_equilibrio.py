@@ -298,8 +298,65 @@ if r_base is not None:
             seguinte = [ln for ln in r_base.linhas if ln.ay_ms2 > sat][:1]
             ok_013 = ok_013 and all(getattr(ln, f"cap_{eixo}").motivo is None for ln in ate + seguinte)
     det_013 = f"ramo={ramo}; {_resumo(r_base)}"
-check("TC-EQ-013: ds sem escala -> N/A 'fora da faixa do pneu', ou PUSH/LOOSE com o eixo não saturado válido "
-      "além de ay_lim; nenhuma capacidade inválida usada", ok_013, det_013)
+
+# Sub-casos determinísticos dos ramos de faixa do veredito (A: eixo não saturado segue válido -> PUSH/LOOSE
+# com c_n; B: eixo não saturado sai da faixa do pneu antes de S -> N/A com o motivo dele).
+# Escala (LMUY 0,45) e faixa de camber (CAMMIN/CAMMAX) só de teste, não é pneu; passo 0,01 g.
+ds_013 = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.45})
+L_013 = cfg.wheelbase
+
+
+def _cn_recomp(r, eixo_folga):
+    folga = _folga_em(r.linhas, eixo_folga, r.ay_lim)
+    # carro simétrico: a = b = L/2, então o braço é L/2 nos dois sinais
+    return folga * (L_013 / 2) / (W * L_013) * (1 if eixo_folga == "r" else -1)
+
+
+def _caso_013(lf, ds_x=None, gan=None):
+    kw = {} if gan is None else dict(camber_estatico_rad={c: 0.0 for c in eq.CANTOS}, ganho_camber=gan)
+    return eq.CasoEquilibrio(cfg=veiculo_simetrico(lf), ds=ds_x or ds_013, **kw)
+
+
+# Ramo A: o eixo traseiro (PUSH) ou dianteiro (LOOSE) não satura, mas a grade o mantém válido além de S.
+rA_p, eA_p = _par_sem_excecao(_caso_013(0.7), passo_g=0.01, ay_max_g=1.17)
+rA_l, eA_l = _par_sem_excecao(_caso_013(0.3), passo_g=0.01, ay_max_g=1.17)
+okA = False
+if rA_p is not None and rA_l is not None:
+    pre_p = (rA_p.ay_sat_f is not None and rA_p.ay_sat_r is None
+             and all(ln.cap_r.motivo is None for ln in rA_p.linhas) and rA_p.linhas[-1].ay_ms2 > rA_p.ay_sat_f)
+    pre_l = (rA_l.ay_sat_r is not None and rA_l.ay_sat_f is None
+             and all(ln.cap_f.motivo is None for ln in rA_l.linhas) and rA_l.linhas[-1].ay_ms2 > rA_l.ay_sat_r)
+    okA = (pre_p and pre_l
+           and rA_p.veredito == eq.PUSH and rA_p.motivo is None and rA_p.c_n is not None and rA_p.c_n > 0
+           and abs(rA_p.c_n - _cn_recomp(rA_p, "r")) < 1e-12
+           and rA_l.veredito == eq.LOOSE and rA_l.motivo is None and rA_l.c_n is not None and rA_l.c_n < 0
+           and abs(rA_l.c_n - _cn_recomp(rA_l, "f")) < 1e-12)
+
+# Ramo B: o eixo não saturado sai da faixa de camber antes de S do outro (ganho de camber só nele).
+_gan_tras = {"FL": 0.0, "FR": 0.0, "RL": 0.3, "RR": -0.3}
+_gan_diant = {"FL": 0.5, "FR": -0.5, "RL": 0.0, "RR": 0.0}
+ds_cam_p = dataclasses.replace(ds_013, p={**ds_013.p, "CAMMIN": -0.0043, "CAMMAX": 0.0043})
+ds_cam_l = dataclasses.replace(ds_013, p={**ds_013.p, "CAMMIN": -0.007, "CAMMAX": 0.007})
+rB_p, eB_p = _par_sem_excecao(_caso_013(0.7, ds_cam_p, _gan_tras), passo_g=0.01)
+rB_l, eB_l = _par_sem_excecao(_caso_013(0.3, ds_cam_l, _gan_diant), passo_g=0.01)
+okB = False
+if rB_p is not None and rB_l is not None:
+    inval_r = [ln.ay_ms2 for ln in rB_p.linhas if ln.cap_r.motivo is not None]
+    inval_f = [ln.ay_ms2 for ln in rB_l.linhas if ln.cap_f.motivo is not None]
+    pre_bp = (rB_p.ay_sat_f is not None and rB_p.ay_sat_r is None and inval_r != [] and min(inval_r) <= rB_p.ay_sat_f)
+    pre_bl = (rB_l.ay_sat_r is not None and rB_l.ay_sat_f is None and inval_f != [] and min(inval_f) <= rB_l.ay_sat_r)
+    okB = (pre_bp and pre_bl
+           and rB_p.veredito == eq.NA and rB_p.c_n is None
+           and "camber_RL" in (rB_p.motivo or "") and "fora da faixa do pneu" in rB_p.motivo
+           and rB_l.veredito == eq.NA and rB_l.c_n is None
+           and "camber_FL" in (rB_l.motivo or "") and "fora da faixa do pneu" in rB_l.motivo)
+ok_013 = ok_013 and okA and okB
+det_013 += (f" | A push: {eA_p or _resumo(rA_p)} | A loose: {eA_l or _resumo(rA_l)}"
+            f" | B push: {eB_p or _resumo(rB_p)} | B loose: {eB_l or _resumo(rB_l)}")
+check("TC-EQ-013: ramos de faixa do veredito, determinísticos (ds sem escala: N/A ou PUSH/LOOSE válido; "
+      "A: eixo não saturado válido além de S -> PUSH/LOOSE com c_n e recomposição; "
+      "B: eixo não saturado sai da faixa antes de S -> N/A com o motivo dele); nenhuma capacidade inválida usada",
+      ok_013, det_013)
 
 # ---------------- TC-EQ-014 : grade curta -> não satura ----------------
 r_curta, err_curta = _par_sem_excecao(caso0, ay_max_g=0.3)
