@@ -151,12 +151,17 @@ def _limites(cap):
     return getattr(cap, "limites", ()) or ()
 
 
+def _v(x, fmt):
+    """Número com vírgula decimal, como nos motivos e avisos de equilibrio (os mesmos números do formato)."""
+    return format(x, fmt).replace(".", ",")
+
+
 # 2,0 g no veículo de teste: 0 < Fz_FL < FZMIN (limitado) e Fz_RL <= 0 (descolamento)
 fz2 = eq.cargas(caso0, 2.0 * G)
 cap_f2 = _cap_sem_excecao(caso0, 2.0 * G, "F")
 cap_r2 = _cap_sem_excecao(caso0, 2.0 * G, "R")
 ref_f2 = _cap_ref(caso0, "F", {"FL": ds.p["FZMIN"], "FR": fz2["FR"]}, {"FL": 0.0, "FR": 0.0})
-aviso_fl = f"Fz_FL = {fz2['FL']:.1f} N → {ds.p['FZMIN']:.1f} N (FZMIN)"
+aviso_fl = f"Fz_FL = {_v(fz2['FL'], '.1f')} N → {_v(ds.p['FZMIN'], '.1f')} N (FZMIN)"
 ok_fzmin = (0.0 < fz2["FL"] < ds.p["FZMIN"] and ds.p["FZMIN"] <= fz2["FR"] <= ds.p["FZMAX"]
             and cap_f2 is not None and cap_f2.fy_max_N is not None and cap_f2.motivo is None
             and aviso_fl in _limites(cap_f2) and abs(cap_f2.fy_max_N - ref_f2) < TOL)
@@ -344,9 +349,13 @@ if r_base is not None:
             fzs = [ln.fz[roda] for ln in r_base.linhas
                    if getattr(ln, f"cap_{eixo}").motivo is None and ln.fz[roda] < ds.p["FZMIN"]]
             if fzs:
-                esp_lim.append(f"Fz_{roda} = {min(fzs):.1f} N → {ds.p['FZMIN']:.1f} N (FZMIN)")
+                esp_lim.append(f"Fz_{roda} = {_v(min(fzs), '.1f')} N → {_v(ds.p['FZMIN'], '.1f')} N (FZMIN)")
+        # limitacoes_detalhe (API pública): o mesmo pior caso de cada roda e limite, na mesma ordem
+        det_lim = eq.limitacoes_detalhe(r_base, caso0)
         ok_013 = ("descolamento" in (r_base.motivo or "") and r_base.c_n is None
-                  and len(esp_lim) >= 2 and r_base.limitacoes == tuple(esp_lim))
+                  and len(esp_lim) >= 2 and r_base.limitacoes == tuple(esp_lim)
+                  and [d["pior"].texto for d in det_lim] == esp_lim
+                  and all(d["nome"] == "FZMIN" and d["primeira_ay"] <= d["pior_ay"] for d in det_lim))
         ramo = "N/A"
     elif r_base.veredito in (eq.PUSH, eq.LOOSE):
         nao_sat = "r" if r_base.veredito == eq.PUSH else "f"
@@ -442,10 +451,15 @@ check("TC-EQ-013: ramos de validade do veredito, determinísticos (ds sem escala
 
 # ---------------- TC-EQ-014 : grade curta -> não satura ----------------
 r_curta, err_curta = _par_sem_excecao(caso0, ay_max_g=0.3)
-check("TC-EQ-014: ay_max_g = 0,3 -> N/A 'não satura até 0.3 g'",
-      r_curta is not None and r_curta.veredito == eq.NA and "não satura até 0.3 g" in (r_curta.motivo or "")
-      and r_curta.c_n is None and r_curta.ay_lim is None,
-      err_curta or _resumo(r_curta))
+# 0,33 g com passo 0,05: a grade para em 0,30 g (k = 6), e o motivo cita a última linha varrida, não ay_max_g
+r_curta33, err_curta33 = _par_sem_excecao(caso0, ay_max_g=0.33, passo_g=0.05)
+check("TC-EQ-014: ay_max_g = 0,3 -> N/A 'não satura até 0,3 g'; ay_max_g = 0,33 e passo 0,05 -> o motivo cita a "
+      "última linha varrida (0,3 g), não 0,33",
+      r_curta is not None and r_curta.veredito == eq.NA and "não satura até 0,3 g" in (r_curta.motivo or "")
+      and r_curta.c_n is None and r_curta.ay_lim is None
+      and r_curta33 is not None and r_curta33.veredito == eq.NA and len(r_curta33.linhas) == 7
+      and "não satura até 0,3 g" in (r_curta33.motivo or "") and "0,33" not in (r_curta33.motivo or ""),
+      (err_curta or _resumo(r_curta)) + " | " + (err_curta33 or _resumo(r_curta33)))
 
 # ---------------- TC-EQ-015 : parâmetros inválidos ----------------
 erros = [raises(lambda: eq.analise_par(caso0, ay_max_g=0)),
@@ -474,13 +488,24 @@ p_antes = copy.deepcopy(ds.p)
 v4 = eq.varredura_pneu(caso0, {"LFZO": [0.9, 1.1], "LKY": [0.9, 1.1]}, **_kw)
 ok_017b = len(v4) == 4 and ds.p == p_antes and caso0.ds is ds
 ok_017c = eq.varredura_pneu(caso0, {}, **_kw) == []
-check("TC-EQ-017: fator 1,0 reproduz analise_par; 4 combinações; ds.p intacto; dict vazio -> []",
-      ok_017a and ok_017b and ok_017c, f"{ok_017a}/{ok_017b}/{ok_017c}")
+# LMUY 0,5 (só de teste): igual a analise_par com o dataset escalado à mão (cópia de ds.p com LMUY·0,5)
+_p_mao = copy.deepcopy(ds.p)
+_p_mao["LMUY"] = ds.p["LMUY"] * 0.5
+v05 = eq.varredura_pneu(caso0, {"LMUY": [0.5]}, **_kw)
+ok_017d = (len(v05) == 1 and v05[0][0] == {"LMUY": 0.5}
+           and v05[0][1] == eq.analise_par(dataclasses.replace(caso0, ds=dataclasses.replace(ds, p=_p_mao)), **_kw))
+check("TC-EQ-017: fator 1,0 reproduz analise_par; LMUY 0,5 = analise_par com o .tir escalado à mão; 4 combinações; "
+      "ds.p intacto; dict vazio -> []",
+      ok_017a and ok_017b and ok_017c and ok_017d, f"{ok_017a}/{ok_017b}/{ok_017c}/{ok_017d}")
 
 # ---------------- TC-EQ-018 : nomes de fator e texto do veredito ----------------
 erros_018 = [raises(lambda: eq.com_fatores(ds, {"PDY2": 1.1})),
              raises(lambda: eq.com_fatores(ds, {"LMUX ": 1.0})),
-             raises(lambda: eq.com_fatores(ds, {"LXYZ": 1.0}))]
+             raises(lambda: eq.com_fatores(ds, {"LXYZ": 1.0})),
+             # LONGVL existe no .tir e começa com "L", mas não é fator de escala (help do Adams, pp. 23-25)
+             raises(lambda: eq.com_fatores(ds, {"LONGVL": 1.0})),
+             raises(lambda: eq.com_fatores(ds, {"LMUY": 0})),
+             raises(lambda: eq.com_fatores(ds, {"LMUY": float("nan")}))]
 ds_f = eq.com_fatores(ds, {"LMUY": 0.5})
 ok_018a = all(erros_018) and ds_f.p["LMUY"] == ds.p["LMUY"] * 0.5 and ds.p == p_antes
 _r = lambda v, m=None: eq.ResultadoPar(linhas=(), passo_ms2=0.0, ay_sat_f=None, ay_sat_r=None,
@@ -493,7 +518,8 @@ ok_018b = (eq.texto_veredito(_r(eq.PUSH), T09) == "DEMONSTRATIVO · ▲ PUSH: sa
            and eq.texto_veredito(_r(eq.PUSH), TX, (eq.PUSH, "mesmo")) == "▲ PUSH: sai de frente (final understeer)"
            and eq.texto_veredito(_r(eq.PUSH), T09, _dep)
            == "DEMONSTRATIVO · ? NÃO CONCLUSIVO: o sinal depende do pneu")
-check("TC-EQ-018: nome de fator inválido -> ValueError; textos exatos de 7.3 e prefixo DEMONSTRATIVO",
+check("TC-EQ-018: nome de fator inválido (inclusive LONGVL, que não é fator de escala) e valor 0 ou NaN -> "
+      "ValueError; textos exatos de 7.3 e prefixo DEMONSTRATIVO",
       ok_018a and ok_018b, f"{ok_018a}/{ok_018b}")
 
 # ---------------- TC-EQ-019 : planilha sem valores calculados ----------------
@@ -531,10 +557,14 @@ def _sha(p):
 
 _h0 = _sha(VIVA)
 _pior = cp.pior_origem_do_caso(VIVA)
+# sem o pneu: valor conhecido em 2026-10-21 (SUS-007/008 arbitrários na viva)
+_pior_ent = cp.pior_origem_entradas(VIVA)
 _h1 = _sha(VIVA)
-ok_020 = _pior in raizes.PIOR_PRIMEIRO and _pior != "● Dado do TX" and _h0 == _h1
-check("TC-EQ-020: pior origem da viva é rótulo conhecido e não é TX; arquivo intacto (SHA-256)",
-      ok_020, f"pior = {_pior}")
+ok_020 = (_pior in raizes.PIOR_PRIMEIRO and _pior != "● Dado do TX" and _h0 == _h1
+          and _pior_ent == "○ Arbitrário / demonstrativo")
+check("TC-EQ-020: pior origem da viva é rótulo conhecido e não é TX; pior origem das entradas (sem o pneu) = "
+      "'○ Arbitrário / demonstrativo'; arquivo intacto (SHA-256)",
+      ok_020, f"pior = {_pior}; entradas = {_pior_ent}")
 
 
 # ---------------- TC-EQ-039..041 : Ackermann e cos δ (V4.0, inc. 2; spec 7.1 item 3 e 7.4 hipóteses 2 e 3) ----------------
@@ -687,11 +717,14 @@ def _fx_max_ref(fz_c, gam_c):
 
 
 def _fx_exigido_ref(caso_x, ay, cda, crr):
-    """Fx exigido no eixo traseiro, recomposto: 0,5·ρ·CdA·a_y·R + Crr·m·G + F_yf·sen(L/R)."""
+    """Fx exigido no eixo traseiro, recomposto: 0,5·ρ·CdA·a_y·R + Crr·m·G + F_yf·tan(L/R).
+
+    F_yf é a componente lateral (no carro) da força do pneu dianteiro, F_pneu·cos δ; a componente para trás é
+    F_pneu·sen δ = F_yf·tan δ (EDR-057)."""
     cfg_x = caso_x.cfg
     f_yf = cfg_x.mass_total * ay * cfg_x.cg_to_rear / cfg_x.wheelbase
     return (0.5 * RHO_TESTE * cda * ay * R_TESTE + crr * cfg_x.mass_total * G
-            + f_yf * math.sin(cfg_x.wheelbase / R_TESTE))
+            + f_yf * math.tan(cfg_x.wheelbase / R_TESTE))
 
 
 # 044: CdA enorme (200 m², só de teste) a 1 g -> a roda interna (RL, menos carregada) passa do atrito longitudinal
@@ -733,10 +766,31 @@ for ay_g in (0.0, 0.5, 1.0):
     ok_045f = ok_045f and cf_com is not None and cf_com == cf_sem
     det_45.append(f"{ay_g:g} g: Fx/roda = {fx_roda:.2f} N, fatores RL/RR = {fat['RL']:.6f}/{fat['RR']:.6f}, "
                   f"erro rel = {erros_45[-1]:.1e}")
-ok_045 = max(erros_45) < 1e-9 and ok_045f
+# Fx_max: a forma fechada |Dx| + SVx só vale com o κ do pico dentro da faixa. Na carga de RR a 1 g do caso acima, a
+# forma fechada (fx_max_puro) bate com o máximo numérico de pure_fx0 em κ ∈ [0, KPUMAX] (20001 pontos). Com KPUMAX
+# reduzido a 0,03 (só de teste; o pico do .tir fica entre 0,065 e 0,092), o pico sai da faixa e fx_max_puro vira o
+# máximo numérico na faixa, abaixo da forma fechada.
+fz_fx = eq.cargas(caso_45, 1.0 * G)["RR"]
+
+
+def _fx_num(p_x, kmax, n=20000):
+    return max(tm.pure_fx0(p_x, fz_fx, 0.0, kmax * i / n)[0] for i in range(n + 1))
+
+
+fx_fech = eq.fx_max_puro(ds, fz_fx, 0.0)
+fx_num = _fx_num(ds.p, ds.p["KPUMAX"])
+ds_kcurto = dataclasses.replace(ds, p={**ds.p, "KPUMAX": 0.03})
+fx_kcurto = eq.fx_max_puro(ds_kcurto, fz_fx, 0.0)
+fx_kcurto_num = _fx_num(ds_kcurto.p, 0.03)
+ok_045x = (abs(fx_fech / fx_num - 1.0) < 1e-6 and abs(fx_fech - _fx_max_ref(fz_fx, 0.0)) < 1e-9
+           and abs(fx_kcurto / fx_kcurto_num - 1.0) < 1e-6 and fx_kcurto < fx_fech * (1.0 - 1e-3))
+det_45.append(f"Fx_max(RR, 1 g): fechada = {fx_fech:.3f} N, numérica = {fx_num:.3f} N; KPUMAX 0,03: "
+              f"{fx_kcurto:.3f} N (numérica {fx_kcurto_num:.3f} N)")
+ok_045 = max(erros_45) < 1e-9 and ok_045f and ok_045x
 check("TC-EQ-045: Crr = 0,015, CdA = 1,0 m² (só de teste) -> capacidade traseira = máx_α Σ Fy_c·√(1 − (Fx/Fx_max,c)²) "
-      "(erro rel < 1e-9), Fx = 0,5·ρ·CdA·a_y·R + Crr·m·G + F_yf·sen δ_ref dividido igual entre RL e RR; frente igual",
-      ok_045, f"(frente igual: {ok_045f}) " + "; ".join(det_45))
+      "(erro rel < 1e-9), Fx = 0,5·ρ·CdA·a_y·R + Crr·m·G + F_yf·tan δ_ref dividido igual entre RL e RR; frente igual; "
+      "Fx_max fechado = máximo numérico em [0, KPUMAX] e, com o pico fora da faixa, o numérico",
+      ok_045, f"(frente igual: {ok_045f}; Fx_max: {ok_045x}) " + "; ".join(det_45))
 
 # 046: teste de direção (spec 7.4, h9: ignorar a tração superestima a traseira e puxa para push). Veículo simétrico,
 # λ_f = 0,5, LMUY 0,45 (do TC-EQ-011, só de teste), R = 8 m, ρ = 1,2, Crr = 0,015, CdA = 1,0 m² (só de teste).

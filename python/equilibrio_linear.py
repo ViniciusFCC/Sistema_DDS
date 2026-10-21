@@ -149,7 +149,7 @@ def _rigidez_eixo(caso, eixo: str, fz: dict, gam: dict):
     fz_u, gam_u, lims = _eq._entrada_limitada(caso, rodas, fz, gam)
     c = sum(_tm.rigidez_deriva(caso.ds, fz_u[r], gam_u[r]) for r in rodas)
     if not c > 0.0:
-        return None, tuple(lim.texto for lim in lims), f"C_α do eixo {eixo} = {c:.1f} N/rad ≤ 0"
+        return None, tuple(lim.texto for lim in lims), f"C_α do eixo {eixo} = {_eq._num(c, '.1f')} N/rad ≤ 0"
     return c, tuple(lim.texto for lim in lims), None
 
 
@@ -188,6 +188,10 @@ def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict):
 
 def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float):
     """(k_deslocamento [rad/(m/s²)], motivo): parcela do deslocamento do pneu que varia com a carga.
+
+    F0 é a Fy do eixo em α_ref = 0, com o toe estático (α_roda = Δα_toe) e o γ da linha: além dos deslocamentos
+    PHY/PVY do PAC2002, a parcela inclui o efeito do toe estático e a variação, com a carga, do empuxo do camber
+    estático (EDR-057). Só a variação do γ com a_y fica fora (é a parcela k_camber).
 
     Cada eixo dá Fy_eixo = −C_eixo·α + F0_eixo(a_y) (α ISO, C_α = −∂Fy/∂α) e precisa dar W·a_y/G. Logo
     −α = (W·a_y/G − F0)/C, e o K do Gillespie (ângulos positivos), −d(α_f − α_r)/da_y, recebe do F0 a parcela
@@ -228,13 +232,16 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
       dessa a_y (forma exata pelo PAC2002, sem o polinômio do livro). Com a_y → 0, tende a 0. Como o γ também
       muda com a_y, a parcela inclui a variação de C_α com o camber (efeito de 2ª ordem, pequeno).
     - k_deslocamento: −(dF0_f/da_y)/C_f + (dF0_r/da_y)/C_r, com F0 a Fy do eixo em α = 0 (deslocamentos do
-      PAC2002 variando com a carga; ver `_parcela_deslocamento`). Termo fora do Gillespie, presente no pneu.
+      PAC2002 variando com a carga; ver `_parcela_deslocamento`). Termo fora do Gillespie, presente no pneu. Inclui
+      o efeito do toe estático (F0 é avaliada com α_roda = Δα_toe) e a variação, com a carga, do empuxo do camber
+      estático (γ da linha fixo); EDR-057.
     - k_camber (eq. 6-56, pp. 218-219): (C_γf/C_αf·∂γ_f/∂φ − C_γr/C_αr·∂γ_r/∂φ)·∂φ/∂a_y, com C_γ e C_α de eixo na
       carga estática, ∂γ/∂φ do eixo = (ganho_camber[R] − ganho_camber[L])/2 e ∂φ/∂a_y = φ(a_y)/a_y de
       lateral_dfz (linear em a_y; em a_y = 0 usa a_y = 1e-6·G).
     - k_roll_steer (eq. 6-57, SUS-415): (ε_f − ε_r)·∂φ/∂a_y, com ε = caso.roll_steer.
-    W_f e W_r são os pesos de eixo sem aerodinâmica (`_pesos_eixo`). O C_α é a inclinação em α = 0 (o toe
-    estático não entra no K linear). Fz <= 0 ou C_α <= 0: a parcela fica None, com motivo, e k_total também.
+    W_f e W_r são os pesos de eixo sem aerodinâmica (`_pesos_eixo`). O C_α é a inclinação em α = 0, sem o toe; o
+    toe estático entra no K pela parcela k_deslocamento. Fz <= 0 ou C_α <= 0: a parcela fica None, com motivo, e
+    k_total também.
     """
     cfg = caso.cfg
     W_f, W_r = _pesos_eixo(caso)

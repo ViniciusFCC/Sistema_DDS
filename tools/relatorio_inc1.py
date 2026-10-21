@@ -206,28 +206,13 @@ def fim_dominio(res: eq.ResultadoPar) -> dict | None:
 def detalhe_limitacoes(caso: eq.CasoEquilibrio, res: eq.ResultadoPar) -> list[dict]:
     """Limitações de entrada do pneu (EDR-056, item 1) das linhas usadas no veredito, com valores estruturados.
 
-    Mesma faixa de linhas de `equilibrio._limitacoes` (até a primeira linha com a_y >= a_y_lim, inclusive;
-    sem a_y_lim, todas) e só capacidades válidas. Por roda e grandeza: primeira a_y em que aparece e a
-    ocorrência de maior excesso. Confere com `res.limitacoes`; se divergir, levanta RuntimeError.
+    Usa a API pública `equilibrio.limitacoes_detalhe` (mesma faixa de linhas e mesma escolha de `res.limitacoes`):
+    por roda e grandeza, a primeira a_y em que aparece e a ocorrência de maior excesso. Confere com
+    `res.limitacoes`; se divergir, levanta RuntimeError.
     """
-    por_chave: dict = {}
-    for ln in res.linhas:
-        for eixo, cap in (("F", ln.cap_f), ("R", ln.cap_r)):
-            if cap.motivo is not None or cap.fy_max_N is None or not cap.limites:
-                continue
-            _, _, lims = eq._entrada_limitada(caso, eq._rodas(eixo), ln.fz, eq.camber(caso, ln.ay_ms2))
-            for lim in lims:
-                d = por_chave.setdefault((lim.canto, lim.nome), {"canto": lim.canto, "nome": lim.nome,
-                                                                 "primeira_ay": ln.ay_ms2, "pior": lim,
-                                                                 "pior_ay": ln.ay_ms2})
-                if abs(lim.real - lim.usado) > abs(d["pior"].real - d["pior"].usado):
-                    d["pior"], d["pior_ay"] = lim, ln.ay_ms2
-        if res.ay_lim is not None and ln.ay_ms2 >= res.ay_lim:
-            break
-    ordem = {nome: i for i, nome in enumerate(("FZMIN", "FZMAX", "CAMMIN", "CAMMAX"))}
-    saida = [por_chave[k] for k in sorted(por_chave, key=lambda k: (eq.CANTOS.index(k[0]), ordem[k[1]]))]
-    if sorted(d["pior"].texto for d in saida) != sorted(res.limitacoes):
-        raise RuntimeError("detalhe_limitacoes diverge de ResultadoPar.limitacoes; confira equilibrio._limitacoes")
+    saida = eq.limitacoes_detalhe(res, caso)
+    if [d["pior"].texto for d in saida] != list(res.limitacoes):
+        raise RuntimeError("detalhe_limitacoes diverge de ResultadoPar.limitacoes; confira equilibrio.limitacoes_detalhe")
     return saida
 
 
