@@ -36,9 +36,11 @@ uv run python -X utf8 tools/migrar_dados_v3_v4.py <viva_V3_0.xlsx>
 - Saída: `build/V4_0_com_dados.xlsx`; relatório: `build/migracao-V3-V4.md` (`--saida` e `--relatorio` mudam os
   caminhos; nenhum dos dois pode ficar em `excel/`).
 - A viva é comparada com a V3.0 da tag `v3.0`. Célula alterada fora dos nomes de dado (`ent`, `org`, `fte`) é
-  erro e sai com código 2, sem gravar a saída.
+  erro e sai com código 2, sem gravar a saída. Comentário, hiperlink, imagem ou gráfico diferente da tag também:
+  a ferramenta não os migra, e o relatório lista aba, célula e tipo para levá-los à mão ou aprovar.
 - Conflito (destino da V4.0 diferente da base) vai para o relatório e a célula não é sobrescrita; a ferramenta sai
-  com código 1. Sem conflito nem falta, sai com 0.
+  com código 1. Sem conflito nem falta, sai com 0. O conflito se resolve na V3.0 viva ou na saída, passada depois
+  como `--v40` com outra `--saida`; rodar de novo com a mesma `--saida` sobrescreve a anterior.
 - A viva e a V4.0 de origem só são lidas; nada é recalculado.
 
 ## Pendências
@@ -48,3 +50,5 @@ uv run python -X utf8 tools/migrar_dados_v3_v4.py <viva_V3_0.xlsx>
 - Pneu do carro (R60A) ou dataset do OptimumTire: o equilíbrio usa o `.tir` provisório do TTC (EDR-038, EDR-055).
 - EDR-057 está APPROVED_WITH_CONDITIONS: o usuário confere as escolhas de método no relatório do incremento 2.
 - A reescrita das 387 fórmulas para nomes fica para o incremento 7 (D13).
+- `python/caso_planilha.py` ainda lê o caso por endereço (`ENTRADAS_CASO`, cópia do `ENTRADAS` de
+  `tests/test_workbook_suspensao.py`); a troca das duas pelos nomes definidos fica para o incremento 4 (V4.1).
