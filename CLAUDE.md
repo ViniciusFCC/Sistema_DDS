@@ -49,8 +49,10 @@ Foco declarado: completar a planilha (EDR-019).
   gerada da V2.4 por `python/atualizar_planilha.py` (toda célula alterada fica em `alteracoes()`, com fonte e EDR);
   o script recusa gravar por cima da planilha viva. CA-07: a regeneração bate com a referência, e a viva bate
   com a referência em tudo menos as células de entrada (`atualizar_planilha.celulas_de_entrada()`). Mudança
-  de fórmula ou estrutura entra na próxima planilha, a **V4.0** (os textos da V3.0 que dizem "V3.1" se referem a
-  ela), nunca editando a planilha à mão.
+  de fórmula ou estrutura entra na próxima planilha gerada, nunca editando a planilha à mão. A **V4.0** já existe
+  (fundação: nomes definidos, fórmulas iguais às da V3.0; os textos da V3.0 que dizem "V3.1" se referem a ela); a
+  próxima planilha com mudança de fórmula ou estrutura é a **V4.1**, do incremento 4 em diante, numa conversa nova
+  (usuário, 2026-10-21).
 - V4.0 de referência (EDR-058): `python/gerar_v4_0.py` a gera da tag `v3.0` em `build/` (nunca em `excel/`; a cópia
   para `excel/` é um commit próprio), com os nomes de `data/nomes_V4_0.csv` (`python/nomes_v4_0.py`); só mudam
   00_README A3 e a linha 20 do 15_CHANGELOG (`docs/registro-de-versoes-V4_0-celulas.md`). Migração dos dados da viva,
