@@ -538,6 +538,29 @@ check("TC-KIN-129d: roll steer traseiro ε_r = b·t/2 (eixo simétrico, inclina�
       abs(eps_r - math.radians(rs_r["slope_deg_per_mm"] * 1e3) * tr_r / 2) < 1e-4 * abs(eps_r) and abs(K_rs - (eps_f - eps_r)) < 1e-12,
       f"ε_r={eps_r:.4f} °/°; K={K_rs:.4f} °/g por °/g de rolagem; curvatura do toe={rs_r['max_dev_from_linear_deg']:.3f}° (SINTÉTICO)")
 
+# ---- TC-EQ-047/048: gradiente de camber no solo por rolagem (V4.0, inc. 2; Gillespie eq. 6-50 p. 218, exemplo p. 234) ----
+g_par = km.camber_gradient_from_body(0.0, 0.0, 1.2)
+check("TC-EQ-047: braços paralelos iguais (dγ_corpo/dz = 0): gradiente do eixo = 1,0, R = +1, L = −1 (Gillespie p. 234)",
+      abs(g_par["eixo"] - 1.0) < 1e-12 and abs(g_par["R"] - 1.0) < 1e-12 and abs(g_par["L"] + 1.0) < 1e-12,
+      f"eixo={g_par['eixo']:.6f}, R={g_par['R']:.6f}, L={g_par['L']:.6f}")
+FL_, FR_ = Corner(hs4, "FL"), Corner(hs4, "FR")
+tr_f = float(FL_.p0["CONTACT_PATCH"][1] - FR_.p0["CONTACT_PATCH"][1])
+h_eq = 0.5 * tr_f * 1e-3   # m, mesmo passo de curso da função (dphi = 1e-3): derivadas centrais com passos diferentes diferem pela curvatura
+
+
+def _dg_dz(c):
+    a = sweep(c, [-h_eq, h_eq])
+    return math.radians(a[1][1]["camber_deg"] - a[0][1]["camber_deg"]) / (2 * h_eq)
+
+
+g_ref = km.camber_gradient_from_body(_dg_dz(FL_), _dg_dz(FR_), tr_f)
+g_fun = km.camber_gradient(FL_, FR_, tr_f)
+err_eq = max(abs(g_fun[k] - g_ref[k]) for k in ("L", "R", "eixo"))
+check("TC-EQ-048: camber_gradient (sweep, diferença central) = camber_gradient_from_body com derivadas da sweep (erro < 1e-9) e "
+      "gradiente do eixo < 1 (braço desigual reduz o camber positivo da roda externa) — SINTÉTICO",
+      err_eq < 1e-9 and g_fun["eixo"] < 1.0,
+      f"eixo={g_fun['eixo']:.4f} rad/rad (L={g_fun['L']:.4f}, R={g_fun['R']:.4f}); erro={err_eq:.1e} (SINTÉTICO)")
+
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s in results if s == "PASS")
