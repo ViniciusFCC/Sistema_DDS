@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from kinematics_model import ackermann_inner_ideal_deg
 from suspension_model import (G, VehicleConfig, combined_fz_corner, downforce_por_velocidade, lateral_dfz,
                               static_fz_corner, static_fz_corner_cg_lateral)
-from tire_model import AXIS_TRANSFORMS, TireDataset, wheel_forces
+from tire_model import AXIS_TRANSFORMS, TireDataset, pure_fx0, wheel_forces
 
 CANTOS = ("FL", "FR", "RL", "RR")
 
@@ -54,6 +54,11 @@ class CasoEquilibrio:
     ser 0,5·ρ·CzA·a_y·R, no lugar de downforce_N, com o mesmo aero_balance_front. None = sem dado (EDR-013: aero
     fixo por Setup). cza_m2 exige raio_m e rho_kg_m3, e não aceita downforce_N ≠ 0 junto (a downforce contaria
     duas vezes).
+    cda_m2 [m²] e crr [-] ligam a hipótese 9 (tração na traseira; spec 7.4): o eixo traseiro precisa de
+    Fx = 0,5·ρ·CdA·a_y·R + Crr·m·G + F_yf·sen δ_ref, dividido igual entre RL e RR (diferencial aberto, hipótese 10),
+    e a capacidade lateral de cada roda traseira cai pela elipse de atrito (ver capacidade_eixo). None = sem dado
+    (desligado). cda_m2 exige raio_m e rho_kg_m3; crr sozinho só usa a massa (sem raio_m, os termos de arrasto e de
+    F_yf·sen δ_ref ficam fora, como o cos δ_ref).
     """
     cfg: VehicleConfig
     ds: TireDataset
@@ -68,6 +73,8 @@ class CasoEquilibrio:
     cg_lateral_m: float = 0.0
     cza_m2: float | None = None
     rho_kg_m3: float | None = None
+    cda_m2: float | None = None
+    crr: float | None = None
 
     def __post_init__(self):
         for nome in ("toe_rad", "camber_estatico_rad", "ganho_camber"):
@@ -81,7 +88,7 @@ class CasoEquilibrio:
             raise ValueError(f"roll_steer exige exatamente as chaves ('F', 'R'); recebido {sorted(rs)}.")
         if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in rs.values()):
             raise ValueError(f"roll_steer exige valores numéricos finitos; recebido {rs}.")
-        for nome in ("raio_m", "ackermann_pct", "cza_m2", "rho_kg_m3"):
+        for nome in ("raio_m", "ackermann_pct", "cza_m2", "rho_kg_m3", "cda_m2", "crr"):
             v = getattr(self, nome)
             if v is not None and not (isinstance(v, (int, float)) and math.isfinite(v)):
                 raise ValueError(f"{nome} exige número finito ou None; recebido {v!r}.")
@@ -91,9 +98,13 @@ class CasoEquilibrio:
             raise ValueError(f"raio_m deve ser > 0; recebido {self.raio_m!r}.")
         if self.rho_kg_m3 is not None and self.rho_kg_m3 <= 0.0:
             raise ValueError(f"rho_kg_m3 deve ser > 0; recebido {self.rho_kg_m3!r}.")
-        # Entradas que só têm sentido com o raio da curva (spec 7.1 e 7.4). A Task 7 acrescenta cda_m2 a esta lista.
+        for nome in ("cda_m2", "crr"):
+            v = getattr(self, nome)
+            if v is not None and v < 0.0:
+                raise ValueError(f"{nome} deve ser >= 0; recebido {v!r}.")
+        # Entradas que só têm sentido com o raio da curva (spec 7.1 e 7.4).
         if self.raio_m is None:
-            falta = [nome for nome in ("ackermann_pct", "cza_m2") if getattr(self, nome) is not None]
+            falta = [nome for nome in ("ackermann_pct", "cza_m2", "cda_m2") if getattr(self, nome) is not None]
             if falta:
                 raise ValueError(f"{', '.join(falta)} exige(m) raio_m (raio do skidpad), que está faltando.")
         if self.cza_m2 is not None:
@@ -102,6 +113,8 @@ class CasoEquilibrio:
             if self.downforce_N != 0.0:
                 raise ValueError(f"cza_m2 substitui downforce_N (hipótese 8); recebido downforce_N = "
                                  f"{self.downforce_N!r} junto: a downforce contaria duas vezes.")
+        if self.cda_m2 is not None and self.rho_kg_m3 is None:
+            raise ValueError("cda_m2 exige rho_kg_m3 (densidade do ar), que está faltando.")
 
 
 def downforce(caso: CasoEquilibrio, ay_ms2: float) -> float:
@@ -331,11 +344,83 @@ def _entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -
     return fz_u, gam_u, lims
 
 
-def _fy_eixo_limitado(caso: CasoEquilibrio, rodas: tuple, fz_u: dict, gam_u: dict, alfa_ref: float) -> float:
-    """Σ Fy [N, ISO] do eixo com Fz e γ já limitados à faixa (uso interno de capacidade_eixo)."""
+def _fy_eixo_limitado(caso: CasoEquilibrio, rodas: tuple, fz_u: dict, gam_u: dict, alfa_ref: float,
+                      fatores: dict | None = None) -> float:
+    """Σ Fy [N, ISO] do eixo com Fz e γ já limitados à faixa (uso interno de capacidade_eixo).
+
+    fatores (opcional): fator da elipse de atrito por roda, que multiplica a Fy de cada roda antes da soma.
+    """
     dal = deriva_total(caso)
-    soma = sum(wheel_forces(caso.ds, c, fz_u[c], alfa_ref + dal[c], gam_u[c], 0.0)[1] for c in rodas)
+    if fatores is None:
+        soma = sum(wheel_forces(caso.ds, c, fz_u[c], alfa_ref + dal[c], gam_u[c], 0.0)[1] for c in rodas)
+    else:
+        soma = sum(fatores[c] * wheel_forces(caso.ds, c, fz_u[c], alfa_ref + dal[c], gam_u[c], 0.0)[1]
+                   for c in rodas)
     return soma * _cos_dianteira(caso, rodas)
+
+
+# ---------------------------------------------------------------------------
+# Tração na traseira: elipse de atrito e diferencial aberto (spec 7.4, hipóteses 9 e 10)
+# ---------------------------------------------------------------------------
+
+def tracao_ativa(caso: CasoEquilibrio) -> bool:
+    """True quando a hipótese 9 está ligada (cda_m2 ou crr informado)."""
+    return caso.cda_m2 is not None or caso.crr is not None
+
+
+def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float) -> float:
+    """Fx [N] que o eixo traseiro precisa dar em a_y para manter a velocidade (spec 7.4, hipótese 9).
+
+    Fx = 0,5·ρ·CdA·V² + Crr·m·G + |F_yf|·sen δ_ref, com V² = |a_y|·R e F_yf a força lateral exigida na dianteira
+    (forca_exigida): arrasto aerodinâmico, resistência ao rolamento (sobre m·G, sem a downforce) e a componente
+    para trás da força lateral das rodas dianteiras esterçadas de δ_ref = L/R. Cada termo só entra com o dado
+    dele (cda_m2; crr; raio_m para o termo de δ_ref). 0 com a hipótese desligada.
+    """
+    cfg = caso.cfg
+    fx = 0.0
+    if caso.cda_m2 is not None:
+        fx += 0.5 * caso.rho_kg_m3 * caso.cda_m2 * abs(ay_ms2) * caso.raio_m
+    if caso.crr is not None:
+        fx += caso.crr * cfg.mass_total * G
+    if tracao_ativa(caso) and caso.raio_m is not None:
+        fx += abs(forca_exigida(caso, ay_ms2)[0]) * math.sin(cfg.wheelbase / caso.raio_m)
+    return fx
+
+
+def fx_max_puro(ds: TireDataset, fz: float, gamma: float) -> float:
+    """Pico de Fx puro em tração [N] do PAC2002 na carga fz [N] e no camber gamma [rad, convenção do projeto].
+
+    Com Cx = PCX1·LCX ≥ 1 o seno da fórmula mágica chega a 1 e o pico é |Dx| + SVx (mesma forma fechada do pico
+    de Fy, TC-EQ-005). Com Cx < 1 o pico não é atingido em forma fechada: máximo numérico de pure_fx0 sobre
+    κ em [0, KPUMAX] (2001 pontos). γ vai ao pneu no referencial do arquivo (s_g·γ; o Fx não depende do lado).
+    """
+    p = ds.p
+    g_pneu = AXIS_TRANSFORMS[ds.axis_system][2] * gamma
+    if p["PCX1"] * p["LCX"] >= 1.0:
+        _, info = pure_fx0(p, fz, g_pneu, 0.0)
+        return abs(info["Dx"]) + info["SVx"]
+    n = 2000
+    return max(pure_fx0(p, fz, g_pneu, p["KPUMAX"] * i / n)[0] for i in range(n + 1))
+
+
+def _elipse_traseira(caso: CasoEquilibrio, ay_ms2: float, rodas: tuple, fz_u: dict,
+                     gam_u: dict) -> tuple[dict | None, str | None]:
+    """(fatores por roda, motivo) da elipse de atrito no eixo traseiro; (None, None) sem tração.
+
+    Diferencial aberto (hipótese 10): Fx igual nas duas rodas, Fx_roda = Fx_exigido/2. Fator da roda c:
+    √(1 − (Fx_roda/Fx_max,c)²), com Fx_max,c = fx_max_puro na Fz e no γ que o pneu recebe (já limitados à faixa,
+    EDR-056). Fx_roda > Fx_max em alguma roda: (None, "tração excede o atrito longitudinal em <canto>").
+    """
+    if not tracao_ativa(caso):
+        return None, None
+    fx_roda = fx_exigido_traseira(caso, ay_ms2) / 2.0
+    fatores = {}
+    for c in rodas:
+        fx_max = fx_max_puro(caso.ds, fz_u[c], gam_u[c])
+        if fx_roda > fx_max:
+            return None, f"tração excede o atrito longitudinal em {c}"
+        fatores[c] = math.sqrt(1.0 - (fx_roda / fx_max) ** 2)
+    return fatores, None
 
 
 def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int) -> Capacidade:
@@ -345,6 +430,18 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int)
     - Fz > 0 fora de [FZMIN, FZMAX] ou γ fora de [CAMMIN, CAMMAX]: avaliado no limite (convenção do
       PAC2002, help do Adams p. 83); a capacidade é válida e leva o aviso em `limites`.
     - α: a grade fica dentro da faixa por construção; toe que consome a faixa dá None.
+    - Tração na traseira (spec 7.4, hipóteses 9 e 10; só com cda_m2 ou crr): a Fy de cada roda traseira é
+      multiplicada por √(1 − (Fx/Fx_max)²) antes da soma do eixo e do máximo sobre α (a mesma ordem da curva do
+      eixo: escala por roda, e não do máximo depois). Fx > Fx_max em alguma roda: None com o motivo
+      "tração excede o atrito longitudinal em <canto>".
+      A elipse de atrito é a simplificação da planilha (spec 7.4, h9, coluna Planilha). O limite de um pneu é o
+      círculo de atrito F_R² = Fx² + Fy² (Milliken, Race Car Vehicle Dynamics, §2.7, p. 59), que "may be slightly
+      elliptical"; Gillespie (Fundamentals of Vehicle Dynamics, pp. 364-365) diz que, com limites lateral e
+      longitudinal diferentes, o limite é uma elipse. Nenhum dos dois imprime a fórmula: a elipse normalizada
+      (Fx/Fx_max)² + (Fy/Fy_max)² ≤ 1, com semi-eixos iguais aos picos de escorregamento puro do PAC2002 na carga
+      e no γ da roda, é a elipse com esses dois eixos e volta ao círculo do Milliken quando eles são iguais. A
+      referência do Python na escada de modelos (incremento 6) é o modelo combinado do PAC2002 (spec 7.4, h9,
+      coluna Python); o EDR-057 registra esta escolha.
     Nunca extrapola o pneu e nunca lança por faixa.
     """
     rodas = _rodas(eixo)
@@ -359,7 +456,12 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int)
         if n_alfa < 2:
             raise
         return Capacidade(None, None, "toe consome a faixa de α")
-    fys = [_fy_eixo_limitado(caso, rodas, fz_u, gam_u, a) for a in alfas]
+    fatores = None
+    if eixo == "R":
+        fatores, motivo_tracao = _elipse_traseira(caso, ay_ms2, rodas, fz_u, gam_u)
+        if motivo_tracao is not None:
+            return Capacidade(None, None, motivo_tracao)
+    fys = [_fy_eixo_limitado(caso, rodas, fz_u, gam_u, a, fatores) for a in alfas]
     i = max(range(len(fys)), key=fys.__getitem__)
     motivo = "pico na borda da grade de α" if i == len(fys) - 1 else None
     return Capacidade(fys[i], alfas[i], motivo, tuple(lim.texto for lim in lims))
