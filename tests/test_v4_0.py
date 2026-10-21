@@ -6,6 +6,8 @@ TC-WB40-001 (ID autorizado pelo usuário): tabela de nomes gerada da V3.0 da tag
 TC-WB40-002: a V4.0 gerada da tag tem exatamente os nomes da tabela (nome -> destino, escopo do workbook), as mesmas
 abas e as 387 fórmulas da V3.0 com texto idêntico, valores iguais fora das células de `alteracoes_v4_0()`, e o gerador
 recusa saída em excel/ ou igual à origem antes de abrir qualquer arquivo.
+TC-WB40-003: CA-07 da V4.0: a regeneração a partir da tag é igual à excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx
+(células, fórmulas, nomes definidos, validações e formatação condicional).
 Roda como script: uv run python -X utf8 tests/test_v4_0.py
 A V3.0 de partida é o arquivo da tag v3.0, extraído para uma pasta temporária (nunca a planilha viva).
 """
@@ -188,6 +190,20 @@ with tempfile.TemporaryDirectory() as tmp:
           f"nomes={nomes_ok} ({len(nomes4)} = {len(nomes3)} + {len(esperados)}; locais={locais[:3]}) comparar_v40={ok_cmp} "
           f"negativo={not ok_neg} A3={a3_ok} novos={novos_ok} registro={reg_ok} fullCalcOnLoad={calc} "
           f"recusas={rec_excel}/{rec_viva}/{rec_origem}" + ("" if ok_cmp else " | " + " ; ".join(rel_cmp[-6:])))
+
+    # ---------------- TC-WB40-003 ----------------
+    # CA-07 da V4.0: a regeneração (da tag, com o CSV commitado) é igual à excel/…V4_0.xlsx, inclusive os nomes definidos.
+    entregue = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_0.xlsx"
+    regen = Path(tmp) / "V4_0_regen.xlsx"
+    gv.gerar(v30, regen, nv.ler_tabela(CSV_NOMES))
+    if entregue.exists():
+        ok_ca07, rel_ca07 = cp.comparar_xlsx(regen, entregue, cp.FORMULAS_ESPERADAS_V40, estrutura=True)
+    else:
+        ok_ca07, rel_ca07 = False, [f"não existe: {entregue}"]
+    check("TC-WB40-003: CA-07 da V4.0: regeneração a partir da tag v3.0 igual à excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx "
+          "(células, 387 fórmulas, nomes definidos, validações, formatação condicional, colunas ocultas)",
+          ok_ca07, " ; ".join(r for r in rel_ca07 if not r.startswith("  DIF"))[:400] +
+          ("" if ok_ca07 else " | " + " ; ".join(rel_ca07[:8])))
 
 
 # ---------------- Resumo ----------------
