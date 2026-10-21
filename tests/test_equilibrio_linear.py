@@ -68,12 +68,19 @@ IN = 0.0254
 FT = 0.3048
 LBDEG = LB * 57.29578  # lb/deg -> N/rad
 
-# TC-EQ-024: exemplo 1, K = 0,11 deg/g (eq. 6-15), com C de eixo = 2 x C por pneu
-K1 = el.gradiente_pneus(1901 * LB, 1552 * LB, 2 * 232 * LBDEG, 2 * 195 * LBDEG)
+# TC-EQ-024: exemplo 1 (eq. 6-15), com C de eixo = 2 x C por pneu. O livro usa 950 e 776 lb por pneu (arredondados) e
+# imprime K = 0,11 deg/g arredondando cada termo (4,09 - 3,98); a conta exata dá 0,1153.
+K1 = el.gradiente_pneus(2 * 950 * LB, 2 * 776 * LB, 2 * 232 * LBDEG, 2 * 195 * LBDEG)
 K1_dpg = el.para_graus_por_g(K1)
-check("TC-EQ-024: exemplo 1 do Gillespie (p. 231), K = W_f/C_f - W_r/C_r = 0,11 deg/g +- 0,005",
-      abs(K1_dpg - 0.11) < 0.005,
-      f"K={K1_dpg:.4f} deg/g ({K1:.3e} rad/(m/s^2)); livro 0,11")
+K1_exato = el.para_graus_por_g(el.gradiente_pneus(1901 * LB, 1552 * LB, 2 * 232 * LBDEG, 2 * 195 * LBDEG))
+# Termos separados (W_r = 0 ou W_f = 0 zera o outro termo); o livro arredonda cada um antes de subtrair.
+t_f = el.para_graus_por_g(el.gradiente_pneus(2 * 950 * LB, 0.0, 2 * 232 * LBDEG, 1.0))
+t_r = -el.para_graus_por_g(el.gradiente_pneus(0.0, 2 * 776 * LB, 1.0, 2 * 195 * LBDEG))
+K1_impresso = round(t_f, 2) - round(t_r, 2)
+check("TC-EQ-024: exemplo 1 do Gillespie (p. 232), K = 950/232 - 776/195 = 0,1153 +- 0,0005 deg/g; termos arredondados (4,09 - 3,98) dão o 0,11 impresso",
+      abs(K1_dpg - 0.1153) < 0.0005 and abs(K1_impresso - 0.11) < 1e-9,
+      f"K={K1_dpg:.4f} deg/g com 950 e 776 lb por pneu; termos {t_f:.2f} - {t_r:.2f} = {K1_impresso:.2f} (livro imprime 0,11); "
+      f"com os pesos exatos 1901/2 e 1552/2: {K1_exato:.4f} deg/g")
 
 # TC-EQ-025: velocidade característica (eq. 6-18) e errata da p. 232
 K_book = 0.11 * math.pi / 180 / G  # 0,11 deg/g em rad/(m/s^2)
