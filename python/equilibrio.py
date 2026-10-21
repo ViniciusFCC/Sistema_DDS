@@ -8,6 +8,11 @@ as cargas verticais e o camber de cada roda para uma aceleração lateral dada.
 Convenções (CLAUDE.md): SI, eixos ISO 8855 (a_y > 0 = curva à esquerda, rodas FR/RR externas),
 camber + = topo da roda para fora, toe + = toe-out (EDR-002). Toe, camber estático e ganho de
 camber têm padrão 0: "sem dado" (EDR-036), nunca valor inventado.
+
+Regras do veredito no limite (EDR-056): entrada do pneu fora da faixa do .tir limitada ao valor da faixa,
+com aviso (convenção do PAC2002, help do Adams 2024.1, p. 83); Fz <= 0 é descolamento e invalida a linha;
+NEUTRO só dentro da resolução numérica medida por refinamento de grade, e PUSH/LOOSE pelo eixo que
+satura primeiro (Milliken, §8.6, p. 320).
 """
 
 from __future__ import annotations
@@ -115,41 +120,102 @@ def fy_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, alfa_ref: float) -> 
 
 @dataclass(frozen=True)
 class Capacidade:
-    """Capacidade lateral de um eixo. fy_max_N e alfa_pico_rad são None quando o pneu não cobre o caso.
+    """Capacidade lateral de um eixo. fy_max_N e alfa_pico_rad são None quando o caso sai do domínio.
 
     Com motivo = "pico na borda da grade de α" o valor fica registrado, mas não serve para saturação.
+    limites traz os avisos de entrada do pneu limitada à faixa do .tir (EDR-056), um por roda e
+    grandeza, no formato "Fz_FR = 1526.0 N → 1521.0 N (FZMAX)" ou "γ_FL = 4.50° → 4.00° (CAMMAX)".
     """
     fy_max_N: float | None
     alfa_pico_rad: float | None
     motivo: str | None
+    limites: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class _Limite:
+    """Uma entrada do pneu limitada à faixa: valor real e usado na convenção do projeto (N ou rad)."""
+    canto: str
+    nome: str          # FZMIN, FZMAX, CAMMIN ou CAMMAX (limite do .tir que foi aplicado)
+    real: float
+    usado: float
+    texto: str
+
+
+def _descolamento(fz: dict, rodas: tuple) -> str | None:
+    """Motivo de N/A quando alguma roda do eixo tem Fz <= 0, ou None.
+
+    Fz <= 0 não é limite do pneu: é o fim do domínio do modelo linear de transferência de carga
+    (SUS-104; EDR-056, item 1). Por isso não se limita ao FZMIN: a capacidade fica None.
+    """
+    for c in rodas:
+        if fz[c] <= 0.0:
+            return (f"Fz_{c} = {fz[c]:.1f} N ≤ 0: descolamento, fora do domínio do modelo de transferência "
+                    f"de carga (SUS-104)")
+    return None
+
+
+def _entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -> tuple[dict, dict, list]:
+    """Fz e γ que o pneu recebe, limitados à faixa do .tir, e a lista de _Limite (EDR-056, item 1).
+
+    Convenção do PAC2002 (help do Adams 2024.1, p. 83, "Validity Range of the Tire Model Input"): uma
+    entrada além da faixa de validade é avaliada no valor mínimo ou máximo da faixa, com aviso. Exige
+    Fz > 0 em todas as rodas (quem chama verifica _descolamento antes). A faixa de γ vale no referencial
+    do pneu, s_g·γ (ds.axis_system pode inverter o sinal); o γ usado volta à convenção do projeto.
+    """
+    p = caso.ds.p
+    s_g = AXIS_TRANSFORMS[caso.ds.axis_system][2]
+    fz_u, gam_u, lims = {}, {}, []
+    for c in rodas:
+        f = fz[c]
+        if f < p["FZMIN"] or f > p["FZMAX"]:
+            nome = "FZMIN" if f < p["FZMIN"] else "FZMAX"
+            fz_u[c] = p[nome]
+            lims.append(_Limite(c, nome, f, p[nome], f"Fz_{c} = {f:.1f} N → {p[nome]:.1f} N ({nome})"))
+        else:
+            fz_u[c] = f
+        g_pneu = s_g * gam[c]
+        if g_pneu < p["CAMMIN"] or g_pneu > p["CAMMAX"]:
+            nome = "CAMMIN" if g_pneu < p["CAMMIN"] else "CAMMAX"
+            gam_u[c] = p[nome] / s_g
+            lims.append(_Limite(c, nome, gam[c], gam_u[c],
+                                f"γ_{c} = {math.degrees(gam[c]):.2f}° → {math.degrees(gam_u[c]):.2f}° ({nome})"))
+        else:
+            gam_u[c] = gam[c]
+    return fz_u, gam_u, lims
+
+
+def _fy_eixo_limitado(caso: CasoEquilibrio, rodas: tuple, fz_u: dict, gam_u: dict, alfa_ref: float) -> float:
+    """Σ Fy [N, ISO] do eixo com Fz e γ já limitados à faixa (uso interno de capacidade_eixo)."""
+    dal = deriva_toe(caso)
+    return sum(wheel_forces(caso.ds, c, fz_u[c], alfa_ref + dal[c], gam_u[c], 0.0)[1] for c in rodas)
 
 
 def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int) -> Capacidade:
-    """Máximo de fy_eixo sobre grade_alfa. Nunca extrapola o pneu e nunca lança por faixa de Fz."""
+    """Máximo da Fy do eixo sobre grade_alfa, com a entrada do pneu limitada à faixa do .tir (EDR-056).
+
+    - Fz <= 0 em alguma roda: None com motivo de descolamento (SUS-104); a linha fica inválida.
+    - Fz > 0 fora de [FZMIN, FZMAX] ou γ fora de [CAMMIN, CAMMAX]: avaliado no limite (convenção do
+      PAC2002, help do Adams p. 83); a capacidade é válida e leva o aviso em `limites`.
+    - α: a grade fica dentro da faixa por construção; toe que consome a faixa dá None.
+    Nunca extrapola o pneu e nunca lança por faixa.
+    """
     rodas = _rodas(eixo)
-    p = caso.ds.p
     fz = cargas(caso, ay_ms2)
-    for c in rodas:
-        if not (p["FZMIN"] <= fz[c] <= p["FZMAX"]):
-            return Capacidade(None, None,
-                              f"Fz_{c} = {fz[c]:.1f} N fora da faixa do pneu [FZMIN, FZMAX]")
-    # γ que o pneu recebe (ds.axis_system pode inverter o sinal); fora de [CAMMIN, CAMMAX] não se extrapola.
-    s_g = AXIS_TRANSFORMS[caso.ds.axis_system][2]
-    gam = camber(caso, ay_ms2)
-    for c in rodas:
-        if not (p["CAMMIN"] <= s_g * gam[c] <= p["CAMMAX"]):
-            return Capacidade(None, None,
-                              f"camber_{c} = {math.degrees(gam[c]):.2f}° fora da faixa do pneu [CAMMIN, CAMMAX]")
+    desc = _descolamento(fz, rodas)
+    if desc is not None:
+        return Capacidade(None, None, desc)
+    fz_u, gam_u, lims = _entrada_limitada(caso, rodas, fz, camber(caso, ay_ms2))
     try:
         alfas = grade_alfa(caso, n_alfa)  # |α_roda| fica dentro de [ALPMIN, ALPMAX] por construção
     except ValueError:
         if n_alfa < 2:
             raise
         return Capacidade(None, None, "toe consome a faixa de α")
-    fys = [fy_eixo(caso, eixo, ay_ms2, a) for a in alfas]
+    fys = [_fy_eixo_limitado(caso, rodas, fz_u, gam_u, a) for a in alfas]
     i = max(range(len(fys)), key=fys.__getitem__)
     motivo = "pico na borda da grade de α" if i == len(fys) - 1 else None
-    return Capacidade(fys[i], alfas[i], motivo)
+    return Capacidade(fys[i], alfas[i], motivo, tuple(lim.texto for lim in lims))
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +253,13 @@ class LinhaPar:
 
 @dataclass(frozen=True)
 class ResultadoPar:
-    """Resultado da análise de par. veredito ∈ {PUSH, LOOSE, NEUTRO, N/A}; c_n só em PUSH/LOOSE."""
+    """Resultado da análise de par. veredito ∈ {PUSH, LOOSE, NEUTRO, N/A}; c_n só em PUSH/LOOSE.
+
+    resolucao_ms2: resolução numérica das saturações (EDR-056, item 2), medida contra a grade
+    refinada; None quando nenhum eixo satura em nenhuma das grades.
+    limitacoes: avisos de entrada do pneu limitada à faixa (EDR-056, item 1) nas capacidades válidas
+    usadas no veredito, um por roda e limite (o de maior excesso).
+    """
     linhas: tuple
     passo_ms2: float
     ay_sat_f: float | None
@@ -196,6 +268,8 @@ class ResultadoPar:
     veredito: str
     motivo: str | None
     c_n: float | None
+    resolucao_ms2: float | None = None
+    limitacoes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -234,25 +308,8 @@ def _saturacao(linhas: tuple, eixo: str, ay_max_g: float) -> _Saturacao:
     return _Saturacao(None, None, ay_valido, f"não satura até {ay_max_g:g} g")
 
 
-def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.05,
-                n_alfa: int = 25) -> ResultadoPar:
-    """Varre a_y_k = k·passo (k = 0…⌊ay_max/passo⌋) e decide PUSH/LOOSE/NEUTRO pelo eixo que satura antes.
-
-    Milliken §7.1 (p. 283-286): no limite, o eixo que satura primeiro define o comportamento final
-    (dianteiro = push, final understeer; traseiro = loose, final oversteer). C_N (spec 7.2;
-    Milliken §8.4, p. 311-312) é o momento de guinada adimensional que sobra no limite: a folga do
-    eixo não saturado em a_y_lim vezes o braço até o CG, sobre W·L, com W = m·G.
-
-    Capacidade com motivo (fora da faixa do pneu, pico na borda da grade de α, toe) nunca entra
-    no cálculo: a busca do eixo para nela e o veredito sai N/A se ela impedir a decisão.
-    """
-    if not (isinstance(ay_max_g, (int, float)) and ay_max_g > 0 and math.isfinite(ay_max_g)):
-        raise ValueError(f"ay_max_g deve ser > 0 e finito; recebido {ay_max_g!r}.")
-    if not (isinstance(passo_g, (int, float)) and passo_g > 0 and math.isfinite(passo_g)):
-        raise ValueError(f"passo_g deve ser > 0 e finito; recebido {passo_g!r}.")
-    if not (isinstance(n_alfa, int) and n_alfa >= 3):
-        raise ValueError(f"n_alfa deve ser um inteiro >= 3; recebido {n_alfa!r}.")
-
+def _varredura(caso: CasoEquilibrio, ay_max_g: float, passo_g: float, n_alfa: int) -> tuple:
+    """Linhas da grade a_y_k = k·passo (k = 0…⌊ay_max/passo⌋) e a saturação de cada eixo."""
     # ⌊ay_max/passo⌋ com folga de arredondamento: 0.3/0.05 = 5.999…, que deve dar 6.
     n = math.floor(ay_max_g / passo_g + 1e-9)
     linhas = []
@@ -264,26 +321,107 @@ def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.
                                cap_r=capacidade_eixo(caso, "R", ay, n_alfa),
                                req_f=req_f, req_r=req_r))
     linhas = tuple(linhas)
-    passo_ms2 = passo_g * G
+    return linhas, _saturacao(linhas, "F", ay_max_g), _saturacao(linhas, "R", ay_max_g)
 
-    sf = _saturacao(linhas, "F", ay_max_g)
-    sr = _saturacao(linhas, "R", ay_max_g)
+
+# Piso da resolução: ruído de ponto flutuante, para que duas saturações iguais por simetria (diferença
+# de ~1e-15 m/s²) não dependam de arredondamento. É tolerância numérica, não banda de engenharia
+# (banda de neutro de engenharia só por EDR da equipe; EDR-056, item 2).
+_PISO_RESOLUCAO_MS2 = 1e-9 * G
+
+
+def _resolucao(pedida: tuple, refinada: tuple, passo_ms2: float) -> float | None:
+    """Resolução numérica das saturações (EDR-056, item 2): max|S − S_refinado| sobre os eixos.
+
+    Se um eixo satura numa grade e não na outra, a resolução é o passo da grade pedida. None quando
+    nenhum eixo satura em nenhuma das grades.
+    """
+    difs = []
+    for s, s_ref in zip(pedida, refinada):
+        if s is not None and s_ref is not None:
+            difs.append(abs(s - s_ref))
+        elif s is not None or s_ref is not None:
+            difs.append(passo_ms2)
+    if not difs:
+        return None
+    return max(max(difs), _PISO_RESOLUCAO_MS2)
+
+
+def _limitacoes(caso: CasoEquilibrio, linhas: tuple, ay_lim: float | None) -> tuple[str, ...]:
+    """Avisos de limitação (EDR-056, item 1) das capacidades válidas usadas no veredito.
+
+    Entram as linhas até a_y_lim, incluída a primeira linha com a_y >= a_y_lim (ela fecha o intervalo
+    da interpolação da saturação e do C_N); sem a_y_lim, todas as linhas. Só capacidades válidas
+    (motivo None). Um aviso por roda e limite: o de maior excesso |real − usado|.
+    """
+    maior = {}
+    for ln in linhas:
+        for eixo, cap in (("F", ln.cap_f), ("R", ln.cap_r)):
+            if cap.motivo is not None or cap.fy_max_N is None or not cap.limites:
+                continue
+            rodas = _rodas(eixo)
+            _, _, lims = _entrada_limitada(caso, rodas, ln.fz, camber(caso, ln.ay_ms2))
+            for lim in lims:
+                chave = (lim.canto, lim.nome)
+                if chave not in maior or abs(lim.real - lim.usado) > abs(maior[chave].real - maior[chave].usado):
+                    maior[chave] = lim
+        if ay_lim is not None and ln.ay_ms2 >= ay_lim:
+            break
+    ordem = {nome: i for i, nome in enumerate(("FZMIN", "FZMAX", "CAMMIN", "CAMMAX"))}
+    chaves = sorted(maior, key=lambda k: (CANTOS.index(k[0]), ordem[k[1]]))
+    return tuple(maior[k].texto for k in chaves)
+
+
+def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.05,
+                n_alfa: int = 25) -> ResultadoPar:
+    """Varre a_y_k = k·passo (k = 0…⌊ay_max/passo⌋) e decide PUSH/LOOSE/NEUTRO pelo eixo que satura antes.
+
+    Milliken §7.1 (p. 283-286) e §8.6 (p. 320; EDR-056): o eixo que satura primeiro define o
+    comportamento no limite (dianteiro = push, final understeer; traseiro = loose, final oversteer);
+    o cruzamento das fronteiras sobre N = 0 é neutro. Regras (EDR-056, item 2 e 3), com S, V e a folga
+    da grade pedida e a resolução numérica R medida contra uma grade refinada (passo/2, 2·n_alfa − 1):
+    - os dois eixos saturam: Δ = S_r − S_f; |Δ| <= R -> NEUTRO; Δ > R -> PUSH; Δ < −R -> LOOSE;
+    - só a frente satura: PUSH se a traseira segue válida até V_r >= S_f + R; senão N/A com o motivo
+      da traseira (simétrico para LOOSE);
+    - nenhum satura: N/A com o motivo do eixo cuja parte válida acaba antes.
+    C_N (spec 7.2; Milliken §8.4, p. 311-312) é o momento de guinada adimensional que sobra no limite:
+    a folga do eixo não saturado em a_y_lim vezes o braço até o CG, sobre W·L, com W = m·G.
+
+    Entrada do pneu fora da faixa entra limitada, com aviso (EDR-056, item 1; ver capacidade_eixo).
+    Capacidade com motivo (descolamento, pico na borda da grade de α, toe) nunca entra no cálculo:
+    a busca do eixo para nela e o veredito sai N/A se ela impedir a decisão.
+    """
+    if not (isinstance(ay_max_g, (int, float)) and ay_max_g > 0 and math.isfinite(ay_max_g)):
+        raise ValueError(f"ay_max_g deve ser > 0 e finito; recebido {ay_max_g!r}.")
+    if not (isinstance(passo_g, (int, float)) and passo_g > 0 and math.isfinite(passo_g)):
+        raise ValueError(f"passo_g deve ser > 0 e finito; recebido {passo_g!r}.")
+    if not (isinstance(n_alfa, int) and n_alfa >= 3):
+        raise ValueError(f"n_alfa deve ser um inteiro >= 3; recebido {n_alfa!r}.")
+
+    linhas, sf, sr = _varredura(caso, ay_max_g, passo_g, n_alfa)
+    _, sf_ref, sr_ref = _varredura(caso, ay_max_g, passo_g / 2.0, 2 * n_alfa - 1)
+    passo_ms2 = passo_g * G
     S_f, S_r = sf.ay_sat, sr.ay_sat
     V_f = sf.ay_valido if sf.ay_valido is not None else -math.inf
     V_r = sr.ay_valido if sr.ay_valido is not None else -math.inf
+    res = _resolucao((S_f, S_r), (sf_ref.ay_sat, sr_ref.ay_sat), passo_ms2)
 
     motivo = None
-    if S_f is not None and S_r is not None and abs(S_f - S_r) < passo_ms2:
-        veredito = NEUTRO
-    elif (S_f is not None and S_r is not None and S_f < S_r) or (S_f is not None and S_r is None and V_r > S_f):
+    if S_f is not None and S_r is not None:
+        delta = S_r - S_f
+        if abs(delta) <= res:
+            veredito = NEUTRO
+        else:
+            veredito = PUSH if delta > 0.0 else LOOSE
+    elif S_f is not None and V_r >= S_f + res:
         veredito = PUSH
-    elif (S_f is not None and S_r is not None and S_r < S_f) or (S_r is not None and S_f is None and V_f > S_r):
+    elif S_r is not None and V_f >= S_r + res:
         veredito = LOOSE
     else:
         veredito = NA
-        if S_f is not None:        # o traseiro não chegou válido até S_f
+        if S_f is not None:        # o traseiro não chegou válido até S_f + R
             motivo = sr.motivo
-        elif S_r is not None:      # o dianteiro não chegou válido até S_r
+        elif S_r is not None:      # o dianteiro não chegou válido até S_r + R
             motivo = sf.motivo
         else:                      # nenhum saturou: vale o eixo cuja parte válida acaba antes
             motivo = sf.motivo if V_f <= V_r else sr.motivo
@@ -307,7 +445,8 @@ def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.
             c_n = -folga * cfg.cg_to_front / (W * cfg.wheelbase)
 
     return ResultadoPar(linhas=linhas, passo_ms2=passo_ms2, ay_sat_f=S_f, ay_sat_r=S_r, ay_lim=ay_lim,
-                        veredito=veredito, motivo=motivo, c_n=c_n)
+                        veredito=veredito, motivo=motivo, c_n=c_n, resolucao_ms2=res,
+                        limitacoes=_limitacoes(caso, linhas, ay_lim))
 
 
 # ---------------------------------------------------------------------------
