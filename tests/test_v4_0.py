@@ -11,7 +11,8 @@ TC-WB40-003: CA-07 da V4.0: a regeneração a partir da tag é igual à excel/FS
 TC-WB40-004: dados por chave (python/dados_planilha.py e tools/migrar_dados_v3_v4.py): a V4.0 de referência lida
 pelos nomes é igual à V3.0 da tag lida pelos endereços; ida e volta de 5 entradas (valor, Origem e Fonte) de abas
 diferentes; conflito listado com base, destino e novo, sem sobrescrever, e a CLI sai com código 1; recusa de saída em
-excel/ ou igual à origem antes de abrir qualquer arquivo; célula alterada na viva fora da tabela é erro que a lista.
+excel/ ou igual à origem antes de abrir qualquer arquivo; célula alterada na viva fora da tabela é erro que a lista;
+erro de dado na CLI (entrada com fórmula, abas diferentes da tag) sai com código 2 e reescreve o relatório com o erro.
 Roda como script: uv run python -X utf8 tests/test_v4_0.py
 A V3.0 de partida é o arquivo da tag v3.0, extraído para uma pasta temporária (nunca a planilha viva).
 """
@@ -290,27 +291,64 @@ with tempfile.TemporaryDirectory() as tmp:
                           cwd=RAIZ, capture_output=True, text=True, env=env)
     cli_ok_ok = cli0.returncode == 0 and rel_md0.exists() and \
         dp.ler_por_nome(Path(tmp) / "cli_ok.xlsx") == lido
-    # Recusas antes de abrir: origem inexistente + saída em excel/ dá SystemExit; saída = origem também.
+    # Recusas antes de abrir. Saída em excel/: origem inexistente, então nada pode ser lido nem gravado. Saída = origem:
+    # uma cópia temporária como origem e saída (isola a regra e nunca toca excel/, mesmo se as recusas regredirem).
     fantasma = Path(tmp) / "nao_existe.xlsx"
     saida_excel = RAIZ / "excel" / "_teste_recusa_injetor.xlsx"
-    bytes_ref = ref40.read_bytes()
+    copia_rec = Path(tmp) / "V4_0_copia_recusa.xlsx"
+    shutil.copy(ref40, copia_rec)
+    bytes_copia = copia_rec.read_bytes()
     rec_inj = raises(lambda: dp.injetar(fantasma, {}, saida_excel), SystemExit) and not saida_excel.exists() and \
-        raises(lambda: dp.injetar(ref40, {}, ref40), SystemExit) and ref40.read_bytes() == bytes_ref
+        raises(lambda: dp.injetar(copia_rec, {}, copia_rec), SystemExit) and copia_rec.read_bytes() == bytes_copia
     cli_rec = subprocess.run([sys.executable, "-X", "utf8", str(CLI), str(fantasma), "--saida", str(saida_excel),
                               "--relatorio", str(Path(tmp) / "rec.md")],
                              cwd=RAIZ, capture_output=True, text=True, env=env)
     rec_cli = cli_rec.returncode != 0 and "recusad" in (cli_rec.stdout + cli_rec.stderr) and \
         not saida_excel.exists() and not (Path(tmp) / "rec.md").exists()
-    ok_004 = all((equiv, ida_volta_ok, alt_ok, conflito_ok, cli_conf_ok, cli_ok_ok, rec_inj, rec_cli))
+
+    # Erro de dado na CLI: código 2, relatório reescrito com o erro (o antigo não pode parecer atual), sem saída.
+    def cli_erro(viva_err: Path, rotulo: str):
+        md, sai = Path(tmp) / f"erro_{rotulo}.md", Path(tmp) / f"erro_{rotulo}.xlsx"
+        md.write_text("RELATÓRIO ANTIGO\n", encoding="utf-8")
+        r = subprocess.run([sys.executable, "-X", "utf8", str(CLI), str(viva_err), "--v40", str(ref40), "--saida",
+                            str(sai), "--relatorio", str(md)], cwd=RAIZ, capture_output=True, text=True, env=env)
+        txt = md.read_text(encoding="utf-8") if md.exists() else ""
+        return r, txt, r.returncode == 2 and "RELATÓRIO ANTIGO" not in txt and "ERRO" in txt and not sai.exists()
+
+    # (1) entrada `ent` da viva com fórmula: ValueError do injetor vira código 2 com o erro no relatório.
+    alvo_f = escolhidas[1]["ent"]
+    viva_f = Path(tmp) / "viva_formula.xlsx"
+    shutil.copy(v30, viva_f)
+    wbf = openpyxl.load_workbook(viva_f)
+    wbf[alvo_f.aba][alvo_f.celula].value = "=1+1"
+    wbf.save(viva_f)
+    wbf.close()
+    rf, txt_f, base_f = cli_erro(viva_f, "formula")
+    erro_formula_ok = base_f and alvo_f.nome in txt_f
+    # (3) viva com uma aba a mais: mensagem própria, código 2.
+    viva_a = Path(tmp) / "viva_abas.xlsx"
+    shutil.copy(v30, viva_a)
+    wba = openpyxl.load_workbook(viva_a)
+    wba.create_sheet("99_EXTRA_TESTE")
+    wba.save(viva_a)
+    wba.close()
+    ra, txt_a, base_a = cli_erro(viva_a, "abas")
+    erro_abas_ok = base_a and "abas da viva diferentes das da V3.0 da tag" in ra.stderr and \
+        "99_EXTRA_TESTE" in txt_a and raises(lambda: dp.celulas_alteradas(viva_a, v30), dp.AbasDiferentes)
+    ok_004 = all((equiv, ida_volta_ok, alt_ok, conflito_ok, cli_conf_ok, cli_ok_ok, rec_inj, rec_cli, erro_formula_ok,
+                  erro_abas_ok))
     check("TC-WB40-004: dados por chave: V4.0 lida por nome = V3.0 (tag) lida por endereço; ida e volta de 5 entradas "
           "(15 nomes: valor, Origem, Fonte) sem tocar o resto; conflito listado (base, destino, novo) sem sobrescrever e "
-          "CLI com código 1 (0 sem conflito); célula da viva fora da tabela listada; recusa de saída em excel/ ou = origem",
+          "CLI com código 1 (0 sem conflito); célula da viva fora da tabela listada; recusa de saída em excel/ ou = origem; "
+          "erro de dado (entrada com fórmula, abas diferentes) sai com 2 e reescreve o relatório",
           ok_004,
           f"equiv={equiv} ({len(por_end)} dados) ida_volta={ida_volta_ok} (escritas={len(r1.escritas)} "
           f"iguais={len(r1.iguais)} conf={r1.conflitos[:2]} falt={r1.faltando[:3]}) alteradas={alt_ok} "
           f"conflito={conflito_ok} ({r2.conflitos[:2]}) cli_conf={cli_conf_ok} (rc={cli1.returncode}) "
-          f"cli_ok={cli_ok_ok} (rc={cli0.returncode}) recusas={rec_inj}/{rec_cli}"
-          + ("" if cli_conf_ok and cli_ok_ok else f" | stderr: {(cli1.stderr + cli0.stderr)[-300:]}"))
+          f"cli_ok={cli_ok_ok} (rc={cli0.returncode}) recusas={rec_inj}/{rec_cli} "
+          f"erro_formula={erro_formula_ok} (rc={rf.returncode}) erro_abas={erro_abas_ok} (rc={ra.returncode})"
+          + ("" if cli_conf_ok and cli_ok_ok else f" | stderr: {(cli1.stderr + cli0.stderr)[-300:]}")
+          + ("" if erro_formula_ok and erro_abas_ok else f" | stderr: {(rf.stderr + ra.stderr)[-400:]}"))
 
 
 # ---------------- Resumo ----------------
