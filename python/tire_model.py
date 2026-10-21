@@ -248,3 +248,34 @@ def project_sign_report(ds, fz=None):
     r["Fy_ISO(alpha=0, gamma=0, kappa=0)"] = wheel_forces(ds, "FR", fz, 0.0, 0.0, 0.0)[1]
     r["Fx(kappa=-0.10)"] = wheel_forces(ds, "FR", fz, 0.0, 0.0, -0.10)[0]
     return r
+
+
+_H_RIGIDEZ = 1e-6  # passo da diferença central, em rad
+
+
+def rigidez_deriva(ds, fz, gamma=0.0):
+    """Rigidez de deriva C_alpha na roda FR, em N/rad (V4.0, inc. 2).
+
+    Definição de sinal: C_alpha = -dFy_ISO/dalpha, com alpha = 0 e kappa = 0, de modo que
+    C_alpha > 0 no caso normal (Gillespie, Fundamentals of Vehicle Dynamics, p. 215:
+    a rigidez de deriva é a inclinação de Fy x alpha na origem). Diferença central em alpha,
+    passo 1e-6 rad, sobre wheel_forces (ISO 8855, camber + = topo para fora).
+    Fora da faixa do .tir levanta TireRangeError, como wheel_forces; limitar Fz e gamma à
+    faixa (EDR-056) é tarefa de quem chama."""
+    h = _H_RIGIDEZ
+    fy_p = wheel_forces(ds, "FR", fz, +h, gamma, 0.0)[1]
+    fy_m = wheel_forces(ds, "FR", fz, -h, gamma, 0.0)[1]
+    return -(fy_p - fy_m) / (2.0 * h)
+
+
+def rigidez_camber(ds, fz):
+    """Rigidez de camber C_gamma na roda FR, em N/rad (V4.0, inc. 2).
+
+    Definição de sinal: C_gamma = -dFy_ISO/dgamma_projeto, com alpha = 0 e kappa = 0, avaliada em
+    gamma = 0. Camber com topo para fora na roda direita empurra o pneu para a direita (Fy_ISO < 0),
+    então C_gamma > 0 é o caso normal (Gillespie p. 215; empuxo de camber). Diferença
+    central em gamma, passo 1e-6 rad. Fora da faixa levanta TireRangeError (como wheel_forces)."""
+    h = _H_RIGIDEZ
+    fy_p = wheel_forces(ds, "FR", fz, 0.0, +h, 0.0)[1]
+    fy_m = wheel_forces(ds, "FR", fz, 0.0, -h, 0.0)[1]
+    return -(fy_p - fy_m) / (2.0 * h)
