@@ -335,7 +335,8 @@ def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_orige
     modelo do passo 2 (`k_inclinacao`) e o texto de exibição (`texto_k`). k_inclinacao [rad/(m/s²)] é a
     diferença de (α_f − α_r) entre a linha e a anterior dividida pela diferença de a_y. Na primeira linha é a
     estimativa da derivada em a_y → 0 (a SAE define o gradiente como derivada, Gillespie p. 227): com S(h) a
-    secante (α_f − α_r)/h de a_y = 0 a h (vale α = 0 em a_y = 0 com o eixo simétrico), a extrapolação de
+    secante [(α_f − α_r)(h) − (α_f − α_r)(0)]/h de a_y = 0 a h (o ângulo em a_y = 0 é nulo só com o carro simétrico
+    em L/R; com CG lateral, toe ou camber assimétricos ele não é, e a secante desconta o valor medido), a extrapolação de
     Richardson 2·S(0,005·G) − S(0,01·G). Ela remove o termo de 2ª ordem de α(a_y) (por exemplo, o dos termos de
     camber do PAC2002, PKY3·|γ| e PVY3/PVY4, com γ e ΔFz proporcionais a a_y), que daria um erro de 1ª ordem em h
     numa secante simples (ruling C do controlador, Task 4). O α aqui é o ISO,
@@ -358,15 +359,16 @@ def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_orige
         k_incl, motivo_incl = None, None
         if k == 0:
             secantes = []
-            for ay1 in (0.005 * G, 0.01 * G):
-                ang1 = angulos_necessarios(caso, ay1, n_alfa)
-                if ang1 is None:
-                    break
-                secantes.append(-(ang1[0] - ang1[1]) / ay1)
+            if ang is not None:   # ang = ângulos em a_y = 0 (≠ 0 com CG lateral ou outra assimetria L/R)
+                for ay1 in (0.005 * G, 0.01 * G):
+                    ang1 = angulos_necessarios(caso, ay1, n_alfa)
+                    if ang1 is None:
+                        break
+                    secantes.append(-((ang1[0] - ang1[1]) - (ang[0] - ang[1])) / ay1)
             if len(secantes) == 2:
                 k_incl = 2.0 * secantes[0] - secantes[1]   # Richardson: tira o termo de 1ª ordem em h
             else:
-                motivo_incl = "ângulos necessários indisponíveis em 0,005 g ou 0,01 g"
+                motivo_incl = "ângulos necessários indisponíveis em 0, 0,005 g ou 0,01 g"
         elif ang is not None and ang_ant is not None:
             k_incl = -((ang[0] - ang[1]) - (ang_ant[0] - ang_ant[1])) / (ay - ay_ant)
         else:

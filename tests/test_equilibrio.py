@@ -5,6 +5,7 @@ TC-EQ-004..008 (idem): curva do eixo, capacidade, borda da grade, faixa do pneu 
 TC-EQ-009..015 (idem): análise de par (força exigida, saturação, veredito e C_N, Milliken §7.1 e §8.4).
 TC-EQ-016..018 (idem): robustez do veredito ao pneu, nomes de fator e texto do veredito (spec 7.3 e 7.6).
 TC-EQ-019..020 (idem): caso lido da planilha recalculada e pior origem (leitura apenas, sem salvar a planilha).
+TC-EQ-039..043 (idem; V4.0, inc. 2): Ackermann e cos δ; CG lateral, dois sentidos de curva e aero com a velocidade.
 Roda como script: uv run python -X utf8 tests/test_equilibrio.py
 O veículo e os números de camber abaixo são entradas de teste, não do carro.
 """
@@ -576,6 +577,86 @@ check("TC-EQ-041: Ackermann 0 % -> δ = δ_ref e Δα extra nulo; 100 % -> δ_i 
       ok_041a and ok_041b and ok_041c and ok_041d and ok_041e,
       f"δ_ref = {math.degrees(d_ref):.4f}°, δ_o = {math.degrees(d_o):.4f}°, δ_i = {math.degrees(d_i):.4f}° "
       f"({ok_041a}/{ok_041b}/{ok_041c}/{ok_041d}/{ok_041e})")
+
+
+# ---------------- TC-EQ-042..043 : CG lateral, dois sentidos e aero com a velocidade (V4.0, inc. 2; spec 7.4, hipóteses 7 e 8) ----------------
+def _campos_veredito(r):
+    return (r.veredito, r.ay_sat_f, r.ay_sat_r, r.ay_lim, r.c_n, r.motivo, r.resolucao_ms2, r.limitacoes)
+
+
+def _par2_sem_excecao(caso_x, **kw):
+    try:
+        return eq.analise_par_dois_sentidos(caso_x, **kw), None
+    except Exception as e:  # o check precisa registrar qualquer exceção como falha
+        return None, f"{type(e).__name__}: {e}"
+
+
+# 042a: carro simétrico, y_cg = 0, com toe, camber estático e ganho de camber simétricos (só de teste; o ganho
+# antissimétrico FL = −g, FR = +g é o de braços simétricos, gradiente de eixo +g) -> os dois sentidos iguais.
+_toe_sim = {"FL": math.radians(0.2), "FR": math.radians(0.2), "RL": 0.0, "RR": 0.0}
+_cam_sim = {"FL": math.radians(-1.0), "FR": math.radians(-1.0), "RL": math.radians(-0.5), "RR": math.radians(-0.5)}
+_gan_sim = {"FL": -0.6, "FR": 0.6, "RL": -0.4, "RR": 0.4}
+caso_42s = eq.CasoEquilibrio(cfg=veiculo_simetrico(0.7), ds=ds_teste_011, toe_rad=_toe_sim,
+                             camber_estatico_rad=_cam_sim, ganho_camber=_gan_sim)
+d42s, e42s = _par2_sem_excecao(caso_42s)
+ok_042a = (d42s is not None and d42s["esquerda"] == d42s["direita"]
+           and _campos_veredito(d42s["esquerda"]) == _campos_veredito(d42s["direita"])
+           and d42s["esquerda"].ay_sat_f is not None and d42s["pior"] == "empate")
+ok_042a2 = eq.espelhar(caso_42s) == caso_42s
+
+# 042b: y_cg = +0,02 m (só de teste) -> estática: soma igual e o lado esquerdo ganha W_eixo·y/t por eixo.
+Y_TESTE = 0.02
+cfg_42 = veiculo_simetrico(0.7)
+st = sm.static_fz_corner(cfg_42)
+stl = sm.static_fz_corner_cg_lateral(cfg_42, Y_TESTE)
+W_f42, W_r42 = st["FL"] + st["FR"], st["RL"] + st["RR"]
+dzf, dzr = W_f42 * Y_TESTE / cfg_42.track_front, W_r42 * Y_TESTE / cfg_42.track_rear
+ok_042b = (abs(sum(stl.values()) - sum(st.values())) < TOL
+           and abs(stl["FL"] - (st["FL"] + dzf)) < TOL and abs(stl["FR"] - (st["FR"] - dzf)) < TOL
+           and abs(stl["RL"] - (st["RL"] + dzr)) < TOL and abs(stl["RR"] - (st["RR"] - dzr)) < TOL)
+caso_42y = eq.CasoEquilibrio(cfg=cfg_42, ds=ds_teste_011, cg_lateral_m=Y_TESTE)
+c42 = eq.cargas(caso_42y, 0.0)
+ok_042c = all(abs(c42[c] - stl[c]) < TOL for c in eq.CANTOS)
+
+# 042c: dois sentidos com y_cg = +0,02 m (LMUY 0,45 do TC-EQ-011): a direita (rodas externas = as esquerdas, já mais
+# carregadas) é a pior. Esperado físico; se der o contrário, o check falha e os números ficam no detalhe.
+d42, e42 = _par2_sem_excecao(caso_42y)
+ok_042d = (d42 is not None and d42["pior"] == "direita"
+           and d42["direita"].ay_lim is not None and d42["esquerda"].ay_lim is not None
+           and d42["direita"].ay_lim <= d42["esquerda"].ay_lim)
+_det42 = e42 or (f"esquerda: {_resumo(d42['esquerda'])}, res={d42['esquerda'].resolucao_ms2} | "
+                 f"direita: {_resumo(d42['direita'])}, res={d42['direita'].resolucao_ms2} | pior={d42['pior']}")
+check("TC-EQ-042: simétrico com y_cg = 0 -> esquerda == direita (ResultadoPar inteiro) e espelhar(caso) == caso; "
+      "y_cg = +0,02 m (só de teste) -> soma estática igual, esquerda ganha W_eixo·y/t por eixo, cargas(a_y=0) = "
+      "estática deslocada; dois sentidos (LMUY 0,45) -> pior = direita",
+      ok_042a and ok_042a2 and ok_042b and ok_042c and ok_042d,
+      f"({ok_042a}/{ok_042a2}/{ok_042b}/{ok_042c}/{ok_042d}) sim: {e42s or _resumo(d42s['esquerda'])} | "
+      f"ΔFz_F = {dzf:.3f} N, ΔFz_R = {dzr:.3f} N | {_det42}")
+
+# ---------------- TC-EQ-043 : aero com V = √(a_y·R) ----------------
+CZA_TESTE, RHO_TESTE, BAL_TESTE = 3.0, 1.2, 0.45   # entradas de teste rotuladas (CzA, ρ, balanço "a confirmar")
+caso_43 = eq.CasoEquilibrio(cfg=cfg, ds=ds, aero_balance_front=BAL_TESTE, raio_m=R_TESTE, cza_m2=CZA_TESTE,
+                            rho_kg_m3=RHO_TESTE)
+erros_43, det_43 = [], []
+for ay_g in (0.0, 0.5, 1.0, 1.5):
+    ay = ay_g * G
+    f43 = eq.cargas(caso_43, ay)
+    df_esp = 0.5 * RHO_TESTE * CZA_TESTE * (ay * R_TESTE)
+    st43 = sm.static_fz_corner(cfg)
+    e_soma = abs(sum(f43.values()) - (W + df_esp))
+    e_f = abs(f43["FL"] + f43["FR"] - (st43["FL"] + st43["FR"] + BAL_TESTE * df_esp))
+    e_r = abs(f43["RL"] + f43["RR"] - (st43["RL"] + st43["RR"] + (1.0 - BAL_TESTE) * df_esp))
+    erros_43.append(max(e_soma, e_f, e_r))
+    det_43.append(f"{ay_g:g} g: DF = {df_esp:.2f} N, erro = {erros_43[-1]:.1e} N")
+ok_043a = max(erros_43) < 1e-9
+ok_043b = abs(sm.downforce_por_velocidade(1.2, 3.0, 10.0) - 180.0) < 1e-12
+ok_043c = (raises(lambda: eq.CasoEquilibrio(cfg=cfg, ds=ds, cza_m2=3.0, rho_kg_m3=1.2), ValueError, "raio_m")
+           and raises(lambda: eq.CasoEquilibrio(cfg=cfg, ds=ds, cza_m2=3.0, raio_m=R_TESTE), ValueError, "rho_kg_m3")
+           and raises(lambda: eq.CasoEquilibrio(cfg=cfg, ds=ds, cza_m2=3.0, raio_m=R_TESTE, rho_kg_m3=1.2,
+                                                downforce_N=400.0), ValueError, "downforce_N"))
+check("TC-EQ-043: CzA = 3,0 m², ρ = 1,2 kg/m³, R = 8 m (só de teste) -> Σ Fz = m·G + 0,5·ρ·CzA·a_y·R e divisão "
+      "F/R pelo balanço (erro < 1e-9 N); cza_m2 sem raio_m, sem rho_kg_m3 ou junto com downforce_N -> ValueError",
+      ok_043a and ok_043b and ok_043c, f"({ok_043a}/{ok_043b}/{ok_043c}) " + "; ".join(det_43))
 
 
 # ---------------- Resumo ----------------
