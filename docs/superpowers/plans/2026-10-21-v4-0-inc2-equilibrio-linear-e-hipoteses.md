@@ -27,7 +27,7 @@
     - dφ/da_y = W·h1/(K_φf + K_φr − W·h1) = 2750·10/(1500 + 1606 − 480) = 10,5 deg/g;
     - K_camber = (0,1·1,0 − 0,1·0)·10,5 = 1,05 deg/g;
     - roll steer traseiro com ε_r = +0,122 rad/rad (SAE: positivo esterça para a direita numa rolagem para a direita): o livro escreve "+0,122 radians (10,5 deg/g) = 1,28 deg/g" e diz, na p. 235, que o carro fica **sobresterçante**. Pela eq. 6-57, K_roll steer = (ε_f − ε_r)·dφ/da_y = −1,28 deg/g. A função existente `kinematics_model.roll_steer_understeer_deg_per_g` (SUS-415, EDR-052) já usa essa forma.
-- **Gillespie, pp. 215-219 (folhas 142-144 do PDF):** C_α = a·Fz − b·Fz² (eq. 6-36 a 6-38); K_llt = W_f/C_αf · 2b·ΔFz_f²/C_αf − W_r/C_αr · 2b·ΔFz_r²/C_αr (eq. 6-47); γ_g = γ_b + φ (eq. 6-50); K_camber (eq. 6-56). O executor confere essas equações na imagem antes de implementar (CLAUDE.md).
+- **Gillespie, pp. 215-219 (folhas 142-144 do PDF):** C_α = a·Fz − b·Fz² (eq. 6-36 a 6-38); K_llt = W_f/C_αf · 2b·ΔFz_f²/C_αf − W_r/C_αr · 2b·ΔFz_r²/C_αr (eq. 6-49, p. 217; a eq. 6-47 é só a aproximação 1/(C − 2b·ΔFz²); citação corrigida em 2026-10-21, EDR-057); γ_g = γ_b + φ (eq. 6-50); K_camber (eq. 6-56). O executor confere essas equações na imagem antes de implementar (CLAUDE.md).
 - **Milliken §2.7 (elipse de atrito):** o executor localiza e confere na imagem do PDF (OCR em `references/md/milliken-rcvd/livro.md`, a partir da linha 2416) antes da Task 7.
 
 ## Autorizações a pedir ao usuário antes de começar (CLAUDE.md: IDs só com autorização)
@@ -132,7 +132,7 @@
   - `ponto_neutro_ate_traseiro(L_m, C_f, C_r) -> float`: L·C_f/(C_f + C_r) (p. 233).
   - `gradiente_rolagem(W_N, h1_m, K_phi_f, K_phi_r) -> float`: W·h1/(K_φf + K_φr − W·h1)/G em rad/(m/s²). Eq. 6-32. Levanta `ValueError` se o denominador ≤ 0.
   - `parcela_camber(Cg_f, Ca_f, dgf, Cg_r, Ca_r, dgr, dphi_day) -> float`: (Cg_f/Ca_f·dgf − Cg_r/Ca_r·dgr)·dphi_day. Eq. 6-56.
-  - `parcela_transferencia_aprox(W_f_N, C_f, b_f, dFz_f, W_r_N, C_r, b_r, dFz_r) -> float`: forma da eq. 6-47, dividida por G (rad/(m/s²)) e avaliada no ΔFz da a_y dada; `b` por pneu em 1/N·(N/rad), coerente com C_α = a·Fz − b·Fz² por pneu.
+  - `parcela_transferencia_aprox(W_f_N, C_f, b_f, dFz_f, W_r_N, C_r, b_r, dFz_r) -> float`: forma da eq. 6-49 (p. 217; citação corrigida em 2026-10-21, antes 6-47), dividida por G (rad/(m/s²)) e avaliada no ΔFz da a_y dada; `b` por pneu em 1/N·(N/rad), coerente com C_α = a·Fz − b·Fz² por pneu.
 - [ ] **Step 1: Testes que falham** (valores do livro com conversão no teste: 1 lb = 4,4482216 N; 1 in = 0,0254 m; 1 ft = 0,3048 m; rigidez em lb/deg → N/rad pela multiplicação por 4,4482216·57,29578):
   - `TC-EQ-024`: exemplo 1, K = 0,11 deg/g ± 0,005, com C de eixo = 2 × (232 e 195 lb/deg) e W_f = 1901 lb, W_r = 1552 lb (via `gradiente_pneus` e `para_graus_por_g`).
   - `TC-EQ-025`: `velocidade_caracteristica` com L = 110,6 in e K = 0,11 deg/g dá 393 ft/s ± 1 (conta impressa). Com L = 100,6 in dá 375 ft/s ± 1. O detalhe do check diz "errata do Gillespie p. 232: V_char usa 110,6 in; o problema dá 100,6 in".
