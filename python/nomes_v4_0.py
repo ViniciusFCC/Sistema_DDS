@@ -10,8 +10,8 @@ cálculo (05, 06, 07, 08, 09, 10, 11, 13 e 14) recebe um nome `<papel>_<aba2>_<s
   das linhas com casos FL, FR, RL, RR e VERIF) levam também a coluna (`_b`…`_f`).
 Em colisão, todos os nomes iguais ganham `_<célula>` (por exemplo `_c86`), o que torna o resultado independente da
 ordem. Rótulo vazio dá slug vazio, e o nome vira `<papel>_<aba2>_<célula>` (a mesma regra da colisão).
-`sus_id` guarda os IDs SUS que já aparecem no rótulo (coluna A) ou na coluna de ID da aba (D; H na 10_TIRE), nunca nas
-colunas Origem e Fonte nem em comentários (nenhum ID é criado); vários vão separados por `;`.
+`sus_id` guarda os IDs SUS que já aparecem no rótulo (coluna A) ou na coluna de ID da aba (D; H na 10_TIRE; B na
+03_TARGETS), nunca nas colunas Origem e Fonte nem em comentários (nenhum ID é criado); vários vão separados por `;`.
 
 A tabela é gerada do arquivo da tag v3.0 (extraído para uma pasta temporária), aberto só para leitura.
 Uso: uv run python -X utf8 python/nomes_v4_0.py --v30 <arquivo> --saida data/nomes_V4_0.csv
@@ -37,9 +37,9 @@ PAPEIS = ("ent", "org", "fte", "res")
 CABECALHO = ("nome", "aba", "celula", "papel", "sus_id", "rotulo")
 TAM_SLUG = 40
 COLUNAS_CASO = "BCDEF"   # 10_TIRE: FL, FR, RL, RR e VERIF
-# Coluna de ID SUS de cada aba (fora estas, só a coluna A, que nas abas 01, 02 e 03 já é a de ID).
-COLUNA_ID = {"05_VEHICLE": "D", "06_SUSPENSION": "D", "07_KINEMATICS": "D", "08_VEHICLE_STATE": "D", "09_LOADS": "D",
-             "10_TIRE": "H", "11_DESIGN": "D", "13_VALIDATION": "D", "14_DASHBOARD": "D"}
+# Coluna de ID SUS de cada aba (na 03_TARGETS, a "Parameter"; fora estas, só a coluna A).
+COLUNA_ID = {"03_TARGETS": "B", "05_VEHICLE": "D", "06_SUSPENSION": "D", "07_KINEMATICS": "D", "08_VEHICLE_STATE": "D",
+             "09_LOADS": "D", "10_TIRE": "H", "11_DESIGN": "D", "13_VALIDATION": "D", "14_DASHBOARD": "D"}
 # Transliteração das letras gregas antes de tirar o que não é ASCII (decisão do controlador, correção 1 da Task 1).
 GREGO = {"α": "alfa", "β": "beta", "γ": "gama", "δ": "delta", "ε": "epsilon", "η": "eta", "θ": "theta", "κ": "kappa",
          "λ": "lambda", "μ": "mu", "ν": "nu", "ρ": "rho", "σ": "sigma", "ς": "sigma", "τ": "tau", "φ": "phi", "ψ": "psi",
