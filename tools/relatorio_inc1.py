@@ -1,7 +1,9 @@
 """Relatório de viabilidade e robustez do incremento 1 da V4.0 (evidência registrada).
 
+Regras do veredito no limite: EDR-056 (python/equilibrio.py). Relatório anterior ao EDR-056: docs/v4-0/inc1-viabilidade-e-robustez.md.
+
 Uso (Git Bash, depois de export UV_SYSTEM_CERTS=1):
-    uv run python -X utf8 tools/relatorio_inc1.py --saida docs/v4-0/inc1-viabilidade-e-robustez.md
+    uv run python -X utf8 tools/relatorio_inc1.py --saida docs/v4-0/inc1-viabilidade-e-robustez-edr056.md
 
 Regras (mesmo cuidado de `tools/rodar_testes.py --saida`):
 - `--saida` é obrigatório; o arquivo não pode existir (o relatório nunca é regravado).
@@ -23,6 +25,7 @@ import dataclasses
 import datetime as dt
 import hashlib
 import json
+import math
 import platform
 import re
 import shutil
@@ -183,10 +186,14 @@ def ler_exp_json() -> tuple[dict | None, str | None]:
 # análises
 # ----------------------------------------------------------------------------------------------------------------
 
-def faixa(res: eq.ResultadoPar) -> dict | None:
-    """Primeira linha da grade com capacidade inválida por faixa do pneu (Fz ou camber) e a última válida antes dela."""
+def fim_dominio(res: eq.ResultadoPar) -> dict | None:
+    """Primeira linha da grade com alguma capacidade inválida (descolamento, toe ou pico na borda; EDR-056).
+
+    Devolve a linha, o motivo de cada eixo inválido, a última linha válida antes dela e a fração req/cap
+    dessa linha. None quando todas as linhas da grade são válidas.
+    """
     for k, ln in enumerate(res.linhas):
-        motivos = [c.motivo for c in (ln.cap_f, ln.cap_r) if c.motivo and "fora da faixa do pneu" in c.motivo]
+        motivos = [(e, c.motivo) for e, c in (("Dianteiro", ln.cap_f), ("Traseiro", ln.cap_r)) if c.motivo]
         if motivos:
             lv = res.linhas[k - 1] if k > 0 else None
             fr = None
@@ -196,15 +203,56 @@ def faixa(res: eq.ResultadoPar) -> dict | None:
     return None
 
 
-def rodas_fora(ln: eq.LinhaPar, p: dict) -> list[tuple[str, float, str]]:
-    """(roda, Fz, limite violado) para cada roda fora de [FZMIN, FZMAX] na linha."""
-    fora = []
-    for c in eq.CANTOS:
-        if ln.fz[c] < p["FZMIN"]:
-            fora.append((c, ln.fz[c], "FZMIN"))
-        elif ln.fz[c] > p["FZMAX"]:
-            fora.append((c, ln.fz[c], "FZMAX"))
-    return fora
+def detalhe_limitacoes(caso: eq.CasoEquilibrio, res: eq.ResultadoPar) -> list[dict]:
+    """Limitações de entrada do pneu (EDR-056, item 1) das linhas usadas no veredito, com valores estruturados.
+
+    Mesma faixa de linhas de `equilibrio._limitacoes` (até a primeira linha com a_y >= a_y_lim, inclusive;
+    sem a_y_lim, todas) e só capacidades válidas. Por roda e grandeza: primeira a_y em que aparece e a
+    ocorrência de maior excesso. Confere com `res.limitacoes`; se divergir, levanta RuntimeError.
+    """
+    por_chave: dict = {}
+    for ln in res.linhas:
+        for eixo, cap in (("F", ln.cap_f), ("R", ln.cap_r)):
+            if cap.motivo is not None or cap.fy_max_N is None or not cap.limites:
+                continue
+            _, _, lims = eq._entrada_limitada(caso, eq._rodas(eixo), ln.fz, eq.camber(caso, ln.ay_ms2))
+            for lim in lims:
+                d = por_chave.setdefault((lim.canto, lim.nome), {"canto": lim.canto, "nome": lim.nome,
+                                                                 "primeira_ay": ln.ay_ms2, "pior": lim,
+                                                                 "pior_ay": ln.ay_ms2})
+                if abs(lim.real - lim.usado) > abs(d["pior"].real - d["pior"].usado):
+                    d["pior"], d["pior_ay"] = lim, ln.ay_ms2
+        if res.ay_lim is not None and ln.ay_ms2 >= res.ay_lim:
+            break
+    ordem = {nome: i for i, nome in enumerate(("FZMIN", "FZMAX", "CAMMIN", "CAMMAX"))}
+    saida = [por_chave[k] for k in sorted(por_chave, key=lambda k: (eq.CANTOS.index(k[0]), ordem[k[1]]))]
+    if sorted(d["pior"].texto for d in saida) != sorted(res.limitacoes):
+        raise RuntimeError("detalhe_limitacoes diverge de ResultadoPar.limitacoes; confira equilibrio._limitacoes")
+    return saida
+
+
+def pequeno(x: float | None, casas: int = 4) -> str:
+    """Número em g (já dividido por G) com vírgula; valores abaixo de 1e-4 saem em notação científica."""
+    if x is None:
+        return "—"
+    if x != 0.0 and abs(x) < 1e-4:
+        return f"{x:.1e}".replace(".", ",")
+    return n(x, casas)
+
+
+def linhas_veredito(res: eq.ResultadoPar) -> list[str]:
+    """Linhas de números do veredito: S_f, S_r, a_y_lim, C_N, resolução e S_r − S_f (EDR-056, item 2)."""
+    delta = None if res.ay_sat_f is None or res.ay_sat_r is None else (res.ay_sat_r - res.ay_sat_f) / G
+    return [
+        f"- a_y de saturação do eixo dianteiro (S_f): {g_de(res.ay_sat_f, 4)}",
+        f"- a_y de saturação do eixo traseiro (S_r): {g_de(res.ay_sat_r, 4)}",
+        f"- S_r − S_f (positivo = a frente satura primeiro = PUSH; negativo = LOOSE): {pequeno(delta) + ' g' if delta is not None else '— (um dos eixos não satura)'}",
+        f"- Resolução numérica medida (grade pedida contra grade refinada): "
+        f"{pequeno(None if res.resolucao_ms2 is None else res.resolucao_ms2 / G)}"
+        f"{' g' if res.resolucao_ms2 is not None else ' (nenhum eixo satura em nenhuma das grades)'}",
+        f"- a_y_lim: {g_de(res.ay_lim, 4)}",
+        f"- C_N: {n(res.c_n, 5) if res.c_n is not None else '— (só existe em PUSH ou LOOSE)'}",
+    ]
 
 
 def veiculo_teste_011(lambda_f: float) -> VehicleConfig:
@@ -278,7 +326,8 @@ def main() -> int:
     # --- nominal ---
     res = eq.analise_par(caso, **GRADE)
     txt_nominal = eq.texto_veredito(res, pior_caso)
-    fx = faixa(res)
+    fx = fim_dominio(res)
+    lim_det = detalhe_limitacoes(caso, res)
 
     # --- varredura (EDR-055) ---
     pior_var = pior(pior_caso, var["origem"])
@@ -395,98 +444,130 @@ def main() -> int:
     # 3. Resultado nominal
     w("## 3. Resultado nominal (pneu sem escala)")
     w("")
+    w("Regras do veredito no limite: EDR-056 (APPROVED_WITH_CONDITIONS; a condição é o usuário conferir este "
+      "relatório). Entrada do pneu fora da faixa do `.tir` entra limitada ao valor da faixa, com aviso; Fz ≤ 0 "
+      "(descolamento) invalida a linha; NEUTRO só dentro da resolução numérica medida; PUSH/LOOSE pelo eixo que "
+      "satura primeiro.")
+    w("")
     w(f"- Veredito: **{txt_nominal}**")
-    w(f"- a_y de saturação do eixo dianteiro: {g_de(res.ay_sat_f, 4)}")
-    w(f"- a_y de saturação do eixo traseiro: {g_de(res.ay_sat_r, 4)}")
-    w(f"- a_y_lim: {g_de(res.ay_lim, 4)}")
-    w(f"- C_N: {n(res.c_n, 5) if res.c_n is not None else '— (só existe em PUSH ou LOOSE)'}")
-    if fx is None:
-        w("- Nenhuma roda sai da faixa do pneu na grade.")
+    for ln_ in linhas_veredito(res):
+        w(ln_)
+    w("")
+
+    w("### Limitações da entrada do pneu (convenção do PAC2002, EDR-056)")
+    w("")
+    if not lim_det:
+        w("Nas linhas usadas no veredito nenhuma roda ficou fora da faixa de Fz ou de γ do `.tir`: não há "
+          "limitação.")
         w("")
     else:
-        ln = fx["linha"]
-        w(f"- Primeira a_y em que alguma roda sai da faixa do pneu: **{g_de(ln.ay_ms2, 2)}** "
-          f"({'; '.join(fx['motivos'])})")
+        w("Linhas válidas em que o pneu foi avaliado no limite da faixa do `.tir`, e não no valor real. É a "
+          "convenção do PAC2002 (help do Adams 2024.1, p. 83; EDR-056). Entram as linhas usadas no veredito ("
+          + (f"até a_y_lim = {g_de(res.ay_lim, 4)}, incluída a linha que fecha o intervalo da interpolação"
+             if res.ay_lim is not None else "sem a_y_lim, todas as linhas da grade") + "). "
+          "Limitar Fz ao FZMAX **subestima** a força da roda externa (a carga real é maior que a usada); "
+          "limitar ao FZMIN **superestima** a força da roda interna (a carga real é menor que a usada). "
+          "O excesso mostra o tamanho do efeito.")
         w("")
-        fora = rodas_fora(ln, p)
-        lv = fx["ultima_valida"]
-        w("Cargas verticais por roda na transição (curva à esquerda: FR e RR são as externas):")
+        w("| Roda | Grandeza | Limite aplicado | Primeira a_y | a_y do maior excesso | Valor real | Valor usado | "
+          "Excesso (% do limite) |")
+        w("|---|---|---|---|---|---|---|---|")
+        for d in lim_det:
+            lm = d["pior"]
+            if lm.nome.startswith("FZ"):
+                grandeza, real, usado = "Fz", f"{n(lm.real, 1)} N", f"{n(lm.usado, 1)} N"
+            else:
+                grandeza = "γ"
+                real, usado = f"{n(math.degrees(lm.real), 2)}°", f"{n(math.degrees(lm.usado), 2)}°"
+            exc = abs(lm.real - lm.usado) / abs(lm.usado) if lm.usado else None
+            w(f"| {d['canto']} | {grandeza} | {lm.nome} | {g_de(d['primeira_ay'], 2)} | {g_de(d['pior_ay'], 2)} | "
+              f"{real} | {usado} | {pct(exc)} |")
         w("")
-        w("| a_y | Fz_FL [N] | Fz_FR [N] | Fz_RL [N] | Fz_RR [N] | Faixa do pneu |")
-        w("|---|---|---|---|---|---|")
-        for lx, rotulo in ((lv, "última linha válida"), (ln, "primeira linha fora")):
-            if lx is None:
-                continue
-            w(f"| {g_de(lx.ay_ms2, 2)} ({rotulo}) | " + " | ".join(n(lx.fz[c], 1) for c in eq.CANTOS)
-              + f" | [{n(p['FZMIN'], 0)}, {n(p['FZMAX'], 0)}] N |")
+
+    w("### Fim do domínio")
+    w("")
+    if fx is None:
+        w("Todas as linhas da grade têm capacidade válida: o domínio não termina dentro da grade.")
         w("")
-        limites = {lim for _, _, lim in fora}
-        if fora:
-            desc = "; ".join(f"Fz_{c} = {n(fz, 1)} N passa de {lim} = {n(p[lim], 0)} N" for c, fz, lim in fora)
-            w(f"Causa: {desc}.")
-            if limites == {"FZMAX"}:
-                interna_min = min(ln.fz["FL"], ln.fz["RL"])
-                w(f"A roda que sai da faixa é uma roda **externa**, por excesso de carga. A roda interna mais "
-                  f"leve tem {n(interna_min, 1)} N nessa linha, acima de FZMIN = {n(p['FZMIN'], 0)} N.")
-                w("")
-                w("**Correção do plano.** Segundo o plano (`docs/superpowers/plans/2026-10-20-v4-0-inc1-viabilidade-"
-                  "robustez.md`, seção \"Risco conhecido\"), a roda RL do veículo de teste fica abaixo de 100 N perto de "
-                  "1,55 g e o resultado mais provável é N/A por faixa do pneu, também no caso da planilha; e a "
-                  "decisão (c) do plano é sobre a roda interna abaixo de FZMIN (texto do plano, não reverificado aqui). "
-                  f"No caso da planilha viva a causa é outra: {', '.join(c for c, _, _ in fora)} "
-                  f"({'externa' if all(c in ('FR', 'RR') for c, _, _ in fora) else 'ver tabela'}) passa de FZMAX.")
-            w("")
-        if res.veredito == eq.NA and fx["fracao"] is not None:
-            fr = fx["fracao"]
-            w(f"Fração da capacidade usada por eixo na última linha válida ({g_de(lv.ay_ms2, 2)}), "
-              "req/cap. Indica qual eixo está mais perto do limite, sem extrapolar o pneu. **Não é veredito.**")
+        if res.veredito == eq.NA:
+            lv, fr = res.linhas[-1], {"F": res.linhas[-1].req_f / res.linhas[-1].cap_f.fy_max_N,
+                                      "R": res.linhas[-1].req_r / res.linhas[-1].cap_r.fy_max_N}
+            w(f"Sem saturação, a fração da capacidade usada por eixo na última linha da grade ({g_de(lv.ay_ms2, 2)}), "
+              "req/cap, mostra a folga que sobra. **Não é veredito.**")
             w("")
             w("| Eixo | Força exigida [N] | Capacidade [N] | req/cap |")
             w("|---|---|---|---|")
             w(f"| Dianteiro | {n(lv.req_f, 1)} | {n(lv.cap_f.fy_max_N, 1)} | {pct(fr['F'])} |")
             w(f"| Traseiro | {n(lv.req_r, 1)} | {n(lv.cap_r.fy_max_N, 1)} | {pct(fr['R'])} |")
             w("")
-    w("Linhas da grade até a primeira linha fora da faixa (capacidade = máximo de Fy do eixo na grade de α):")
+    else:
+        ln = fx["linha"]
+        w(f"Primeira a_y com linha inválida: **{g_de(ln.ay_ms2, 2)}**. Motivo: "
+          + "; ".join(f"{e}: {m}" for e, m in fx["motivos"]) + ".")
+        w("")
+        w("Cargas verticais por roda na transição (curva à esquerda: FR e RR são as externas):")
+        w("")
+        w("| a_y | Fz_FL [N] | Fz_FR [N] | Fz_RL [N] | Fz_RR [N] | Faixa de Fz do pneu |")
+        w("|---|---|---|---|---|---|")
+        lv = fx["ultima_valida"]
+        for lx, rotulo in ((lv, "última linha válida"), (ln, "primeira linha inválida")):
+            if lx is None:
+                continue
+            w(f"| {g_de(lx.ay_ms2, 2)} ({rotulo}) | " + " | ".join(n(lx.fz[c], 1) for c in eq.CANTOS)
+              + f" | [{n(p['FZMIN'], 0)}, {n(p['FZMAX'], 0)}] N |")
+        w("")
+        if res.veredito == eq.NA and fx["fracao"] is not None:
+            fr = fx["fracao"]
+            w(f"Fração da capacidade usada por eixo na última linha válida ({g_de(lv.ay_ms2, 2)}), req/cap. Indica "
+              "qual eixo está mais perto do limite. **Não é veredito.**")
+            w("")
+            w("| Eixo | Força exigida [N] | Capacidade [N] | req/cap |")
+            w("|---|---|---|---|")
+            w(f"| Dianteiro | {n(lv.req_f, 1)} | {n(lv.cap_f.fy_max_N, 1)} | {pct(fr['F'])} |")
+            w(f"| Traseiro | {n(lv.req_r, 1)} | {n(lv.cap_r.fy_max_N, 1)} | {pct(fr['R'])} |")
+            w("")
+    w("Linhas da grade até a primeira linha inválida (capacidade = máximo de Fy do eixo na grade de α, com a "
+      "entrada do pneu limitada à faixa; \"lim.\" marca capacidade calculada com limitação):")
     w("")
     w("| a_y [g] | Fz_FL | Fz_FR | Fz_RL | Fz_RR | req_F [N] | cap_F [N] | req_R [N] | cap_R [N] | Observação |")
     w("|---|---|---|---|---|---|---|---|---|---|")
     ate = fx["k"] if fx else len(res.linhas) - 1
     for lx in res.linhas[:ate + 1]:
-        obs = "; ".join(c.motivo for c in (lx.cap_f, lx.cap_r) if c.motivo) or ""
+        obs = "; ".join(
+            [f"{e}: {c.motivo}" for e, c in (("F", lx.cap_f), ("R", lx.cap_r)) if c.motivo]
+            + [f"{e} lim.: " + ", ".join(c.limites) for e, c in (("F", lx.cap_f), ("R", lx.cap_r))
+               if c.limites and not c.motivo])
         w(f"| {n(lx.ay_ms2 / G, 2)} | " + " | ".join(n(lx.fz[c], 0) for c in eq.CANTOS)
           + f" | {n(lx.req_f, 0)} | {n(lx.cap_f.fy_max_N, 0)} | {n(lx.req_r, 0)} | {n(lx.cap_r.fy_max_N, 0)} | {obs} |")
     w("")
-    w("### Decisão pendente do usuário: política da faixa do pneu (\"Risco conhecido\", item c)")
-    w("")
-    w("O plano deixou para o usuário como tratar uma roda fora da faixa de carga do pneu. As opções escritas no "
-      "plano são: (1) Fy = 0 só quando Fz ≤ 0 (descolamento, que é física e não extrapolação) e N/A entre 0 e "
-      "FZMIN; (2) manter o N/A. Esta decisão não foi tomada neste incremento.")
-    w("")
-    if fx is not None and {lim for _, _, lim in rodas_fora(fx["linha"], p)} == {"FZMAX"}:
-        w("Com os números acima, a opção (1) não muda o resultado do caso da planilha: ela trata a roda interna "
-          "com pouca carga, e aqui a análise para porque a roda externa passa de FZMAX. Qualquer política que "
-          "permita seguir além desse ponto teria de dizer o que fazer acima de FZMAX, o que seria extrapolar o pneu; "
-          "a decisão continua sendo do usuário.")
-        w("")
-    w("### Nota sobre a resolução da grade de a_y")
+
+    w("### Nota sobre a resolução: cenário do TC-EQ-011")
     w("")
     w("Cenário do TC-EQ-011 de `tests/test_equilibrio.py`, recalculado aqui: veículo de teste simétrico "
-      "(`veiculo_simetrico`, NÃO é setup real) com LMUY = 0,45 (escala só de teste, não é pneu).")
+      "(`veiculo_simetrico`, NÃO é setup real) com LMUY = 0,45 (escala só de teste, não é pneu). Mostra o que o "
+      "veredito faz quando o passo da grade muda de 0,05 g para 0,01 g.")
     w("")
-    w("| λ_f | Passo [g] | a_y sat. F | a_y sat. R | Diferença | Veredito |")
-    w("|---|---|---|---|---|---|")
+    w("Convenção: S_r − S_f > 0 quando a frente satura primeiro (PUSH); < 0 quando a traseira satura primeiro "
+      "(LOOSE).")
+    w("")
+    w("| λ_f | Passo [g] | S_f | S_r | S_r − S_f [g] | Resolução [g] | Veredito |")
+    w("|---|---|---|---|---|---|---|")
     for (lf, passo), r in r011.items():
-        dif = (abs(r.ay_sat_f - r.ay_sat_r) / G) if (r.ay_sat_f is not None and r.ay_sat_r is not None) else None
-        w(f"| {n(lf, 1)} | {n(passo, 2)} | {g_de(r.ay_sat_f, 4)} | {g_de(r.ay_sat_r, 4)} | "
-          f"{'—' if dif is None else n(dif, 4) + ' g'} | {eq.texto_veredito(r, pior(ORIGEM_TESTE))} |")
+        dif = None if (r.ay_sat_f is None or r.ay_sat_r is None) else (r.ay_sat_r - r.ay_sat_f) / G
+        w(f"| {n(lf, 1)} | {n(passo, 2)} | {g_de(r.ay_sat_f, 4)} | {g_de(r.ay_sat_r, 4)} | {pequeno(dif)} | "
+          f"{pequeno(None if r.resolucao_ms2 is None else r.resolucao_ms2 / G)} | "
+          f"{eq.texto_veredito(r, pior(ORIGEM_TESTE))} |")
+    w("")
+    for lf in (0.5, 0.7):
+        va, vb = r011[(lf, 0.05)].veredito, r011[(lf, 0.01)].veredito
+        w(f"- λ_f = {n(lf, 1)}: {va} com 0,05 g e {vb} com 0,01 g "
+          + ("(o veredito não depende do passo da grade)." if va == vb else "(o veredito **muda** com o passo)."))
     r5, r7 = r011[(0.5, 0.01)], r011[(0.7, 0.01)]
     if None not in (r5.ay_sat_f, r5.ay_sat_r, r7.ay_sat_f, r7.ay_sat_r):
-        w("")
-        w(f"De λ_f = 0,5 para 0,7 (passo 0,01 g), a saturação dianteira muda {n((r7.ay_sat_f - r5.ay_sat_f) / G, 4)} g "
-          f"e a traseira {n((r7.ay_sat_r - r5.ay_sat_r) / G, 4)} g; a diferença entre os eixos fica em "
-          f"{n(abs(r7.ay_sat_f - r7.ay_sat_r) / G, 4)} g. Com o passo padrão de 0,05 g, uma diferença menor que o "
-          "passo dá NEUTRO (critério |S_f − S_r| < passo de `analise_par`). O passo padrão não separa um efeito "
-          "desse tamanho.")
+        w(f"- De λ_f = 0,5 para 0,7 (passo 0,01 g), a saturação dianteira muda "
+          f"{n((r7.ay_sat_f - r5.ay_sat_f) / G, 4)} g e a traseira {n((r7.ay_sat_r - r5.ay_sat_r) / G, 4)} g; "
+          f"S_r − S_f passa de {pequeno((r5.ay_sat_r - r5.ay_sat_f) / G)} g para "
+          f"{pequeno((r7.ay_sat_r - r7.ay_sat_f) / G)} g.")
     w("")
 
     # 4. Varredura
@@ -497,20 +578,27 @@ def main() -> int:
       + f" ({len(varr)} combinações). Rótulo: \"{var['origem']}\" ({var['nota']}). Os fatores não alteram "
       f"FZMIN/FZMAX. Tempo do Python para as {len(varr)} análises: {n(t_varr, 1)} s.")
     w("")
-    w("| " + " | ".join(fatores) + " | Veredito | a_y_lim | Primeira a_y fora da faixa | req/cap F | req/cap R |")
-    w("|" + "---|" * (len(fatores) + 5))
+    w("| " + " | ".join(fatores) + " | Veredito | S_f [g] | S_r [g] | S_r − S_f [g] | Resolução [g] | a_y_lim | "
+      "Primeira a_y inválida | Limitações |")
+    w("|" + "---|" * (len(fatores) + 8))
     for comb, r in varr:
-        f2 = faixa(r)
-        frc = f2["fracao"] if (f2 and r.veredito == eq.NA) else None
+        f2 = fim_dominio(r)
+        dif = None if (r.ay_sat_f is None or r.ay_sat_r is None) else (r.ay_sat_r - r.ay_sat_f) / G
         w("| " + " | ".join(n(comb[k], 1) for k in fatores)
-          + f" | {eq.texto_veredito(r, pior_var)} | {g_de(r.ay_lim, 4)} | "
-          f"{g_de(f2['linha'].ay_ms2, 2) if f2 else '—'} | "
-          f"{pct(frc['F']) if frc else '—'} | {pct(frc['R']) if frc else '—'} |")
+          + f" | {eq.texto_veredito(r, pior_var)} | {n(None if r.ay_sat_f is None else r.ay_sat_f / G, 4)} | "
+          f"{n(None if r.ay_sat_r is None else r.ay_sat_r / G, 4)} | {pequeno(dif)} | "
+          f"{pequeno(None if r.resolucao_ms2 is None else r.resolucao_ms2 / G)} | {g_de(r.ay_lim, 4)} | "
+          f"{g_de(f2['linha'].ay_ms2, 2) if f2 else '—'} | {len(r.limitacoes)} |")
     w("")
     contagem = {}
     for _, r in varr:
         contagem[r.veredito] = contagem.get(r.veredito, 0) + 1
     w("Contagem: " + ", ".join(f"{k} = {v}" for k, v in sorted(contagem.items())) + ".")
+    w("")
+    w("S_r − S_f > 0: a frente satura primeiro (PUSH); < 0: a traseira satura primeiro (LOOSE).")
+    w("")
+    w("\"Limitações\" é o número de avisos de entrada limitada (`ResultadoPar.limitacoes`) usados no veredito de "
+      "cada combinação.")
     w("")
     w(f"Veredito robusto (`veredito_robusto`): **{robusto[0]}** ({robusto[1]}).")
     w("")
@@ -526,6 +614,10 @@ def main() -> int:
       "\"Base\" é o recálculo da pasta de trabalho só com a aba de coeficientes; \"recálculo\" é o da cheia. "
       f"Tolerância da comparação: {exp['tolerancia']:g} (a mesma da CA-09). Casos `teste_*` usam o veículo de teste "
       "e escalas só de teste (não são o carro).")
+    w("")
+    w("**O experimento usa a regra anterior ao EDR-056** (faixa do pneu = N/A). Ele mediu o tempo de recálculo e a "
+      "exatidão das fórmulas da grade do PAC2002 sob essa regra. Ele **não exercitou** a limitação da entrada do "
+      "pneu à faixa, a grade refinada da resolução numérica nem a verificação do outro eixo até S + resolução.")
     w("")
     w("| Motor | Caso | Linhas | Células de fórmula | Base [s] | Recálculo [s] | Leitura openpyxl [s] | Erros | "
       "Dif. rel. máx. capacidade | Dif. a_y sat. F | Dif. a_y sat. R | Picos na borda (planilha/Python) | Aprovado |")
@@ -543,10 +635,30 @@ def main() -> int:
               f"{x['pico_na_borda']}/{x['pico_na_borda_python']} | {'sim' if x['aprovado'] else 'NÃO'} |")
     w("")
     viva_exp = [next(e for e in execs if e["motor"] == m and e["caso"] == "planilha_viva") for m in MOTORES]
-    coincide = all(e["veredito_python"] == res.veredito and e["motivo_python"] == res.motivo for e in viva_exp)
-    w("Conferência: o veredito e o motivo do caso `planilha_viva` no JSON "
-      + ("**coincidem**" if coincide else "**NÃO coincidem**")
-      + f" com a análise deste relatório ({res.veredito}; {res.motivo}).")
+    v_json = {e["veredito_python"] for e in viva_exp}
+    m_json = {e["motivo_python"] for e in viva_exp}
+    ver_igual = v_json == {res.veredito}
+    mot_igual = m_json == {res.motivo}
+    w("Conferência do caso `planilha_viva` (JSON da Task 6, regra anterior ao EDR-056, contra a análise deste "
+      "relatório):")
+    w("")
+    w(f"- Veredito: JSON {', '.join(sorted(v_json))}; relatório {res.veredito}: "
+      + ("**coincide**." if ver_igual else "**não coincide**."))
+    w(f"- Motivo: JSON \"{'; '.join(sorted(m_json))}\"; relatório \"{res.motivo}\": "
+      + ("**coincide**." if mot_igual else "**não coincide**."))
+    w("")
+    if ver_igual and not mot_igual:
+        w("Só o motivo difere, e o JSON é anterior ao EDR-056 (a regra antiga parava na faixa do pneu); a "
+          "diferença vem da mudança de regra e não indica por si só erro das fórmulas. Levar a regra nova para as "
+          "fórmulas é mudança de fórmula, a prototipar no incremento que gerar a aba (aprovação própria).")
+    elif not ver_igual:
+        w("O veredito difere. O JSON é anterior ao EDR-056, então a diferença pode vir da mudança de regra, mas "
+          "este relatório não demonstra isso: a regra nova não foi exercitada nas fórmulas. Levar a regra nova "
+          "para as fórmulas é mudança de fórmula, a prototipar no incremento que gerar a aba (aprovação própria).")
+    else:
+        w("Veredito e motivo coincidem, mas o JSON é anterior ao EDR-056 e não exercitou a regra nova nas fórmulas; "
+          "levar a regra nova para as fórmulas é mudança de fórmula, a prototipar no incremento que gerar a aba "
+          "(aprovação própria).")
     w("")
     t_rec = {m: [e["t_recalculo_s"] for e in execs if e["motor"] == m] for m in MOTORES}
 
@@ -558,10 +670,13 @@ def main() -> int:
     w("")
     w(f"- Veredito nominal do caso da planilha: {txt_nominal}")
     w(f"- Veredito com a varredura ({len(varr)} combinações): {txt_robusto} (veredito robusto: {robusto[0]}; nota: {robusto[1]})")
+    w(f"- S_f = {g_de(res.ay_sat_f, 4)}, S_r = {g_de(res.ay_sat_r, 4)}, a_y_lim = {g_de(res.ay_lim, 4)}, "
+      f"resolução = {pequeno(None if res.resolucao_ms2 is None else res.resolucao_ms2 / G)} g")
+    w(f"- Limitações de entrada do pneu nas linhas usadas no veredito: {len(res.limitacoes)}"
+      + (": " + "; ".join(res.limitacoes) if res.limitacoes else ""))
     if fx is not None:
-        w(f"- Primeira a_y fora da faixa do pneu: {g_de(fx['linha'].ay_ms2, 2)}; "
-          + "; ".join(f"Fz_{c} = {n(fz, 1)} N > {lim}" if lim == "FZMAX" else f"Fz_{c} = {n(fz, 1)} N < {lim}"
-                      for c, fz, lim in rodas_fora(fx["linha"], p)))
+        w(f"- Fim do domínio: {g_de(fx['linha'].ay_ms2, 2)} ("
+          + "; ".join(f"{e}: {m}" for e, m in fx["motivos"]) + ")")
         if fx["fracao"]:
             w(f"- req/cap em {g_de(fx['ultima_valida'].ay_ms2, 2)}: dianteiro {pct(fx['fracao']['F'])}, "
               f"traseiro {pct(fx['fracao']['R'])}")
@@ -571,9 +686,10 @@ def main() -> int:
           f"{sum(e['erros_formula'] for e in execs if e['motor'] == m)} erros; diferença relativa máxima da "
           f"capacidade {max(e['dif_rel_max_capacidade'] for e in execs if e['motor'] == m):.1e}")
     w(f"- Casos aprovados no experimento: {sum(e['aprovado'] for e in execs)} de {len(execs)}")
-    celulas = max(e["celulas_formula"] for e in execs)
-    w(f"- Estimativa linear, **não medida**: a varredura de {len(varr)} combinações em fórmulas teria da ordem de "
-      f"{len(varr)} × {celulas} = {len(varr) * celulas} células de fórmula.")
+    w(f"- Estimativa de células para a varredura em fórmulas: **não feita**. O protótipo tem uma análise "
+      f"(grade pedida) por caso; a resolução do EDR-056 exige uma segunda análise em grade refinada (passo/2, "
+      f"2·n_alfa − 1 valores de α) e a limitação da entrada, nenhuma medida. Multiplicar o protótipo por "
+      f"{len(varr)} subestimaria o tamanho.")
     w(f"- Varredura no Python: {n(t_varr, 1)} s para {len(varr)} análises")
     w("")
     w("### Recomendação (não é decisão)")
@@ -582,30 +698,50 @@ def main() -> int:
     w("")
     tudo_ok = all(e["aprovado"] and e["erros_formula"] == 0 for e in execs)
     if tudo_ok:
-        w(f"1. A análise de par cabe em fórmulas nos dois motores: as fórmulas reproduziram o Python em todos os "
-          f"casos, com 0 erros. O recálculo do protótipo levou cerca de {n(max(t_rec['excel']), 1)} s no Excel e "
-          f"{n(max(t_rec['libreoffice']), 1)} s no LibreOffice. Se esse tempo é aceitável é decisão da equipe.")
+        w(f"1. **Medido** (regra anterior ao EDR-056): as fórmulas da grade do PAC2002 reproduziram o Python em "
+          f"todos os casos do experimento, com 0 erros, em cerca de {n(max(t_rec['excel']), 1)} s no Excel e "
+          f"{n(max(t_rec['libreoffice']), 1)} s no LibreOffice por recálculo. **Não medido**: as regras do EDR-056 "
+          "em fórmulas (limitação da entrada à faixa, grade refinada para a resolução, verificação S + resolução "
+          "do outro eixo); a prototipagem delas fica para o incremento 4. Se o tempo é aceitável é decisão da "
+          "equipe.")
     else:
         w("1. O experimento não reproduziu o Python em todos os casos (ver a seção 5); antes de levar a análise "
-          "para a planilha, a divergência precisa ser investigada na ordem do CLAUDE.md.")
-    w(f"2. A varredura em fórmulas multiplicaria o protótipo por {len(varr)} (estimativa acima, não medida). A spec "
-      "(7.6, item 4) prevê a alternativa de o Python gerar o relatório da varredura e a planilha mostrar só o "
-      "veredito nominal com o aviso \"robustez ao pneu: ver relatório\".")
-    if res.veredito == eq.NA and robusto[0] == eq.NA and fx is not None:
-        lims = sorted({lim for _, _, lim in rodas_fora(fx["linha"], p)})
-        rodas = ", ".join(f"Fz_{c} ({lim})" for c, _, lim in rodas_fora(fx["linha"], p))
-        sem_sat = res.ay_sat_f is None and res.ay_sat_r is None
-        w(f"3. Com os dados demonstrativos atuais e o `.tir` provisório, o incremento 1 não produz veredito de "
-          f"equilíbrio no limite para o caso da planilha: o resultado é N/A no nominal e nas {len(varr)} combinações. "
-          f"No nominal, a primeira a_y fora da faixa é {g_de(fx['linha'].ay_ms2, 2)}, por {rodas}"
-          + (", e nenhum eixo saturou nas linhas válidas anteriores. " if sem_sat else ". ")
-          + ("A fração req/cap na última linha válida mostra o quanto falta, sem dar o sinal de push ou loose. "
-             if fx["fracao"] else "")
-          + ("A causa é o limite FZMAX; a opção (1) do plano, que só trata Fz ≤ 0, não muda esse resultado. "
-             if lims == ["FZMAX"] else
-             "A opção (1) do plano só trata Fz ≤ 0; confira na tabela da seção 3 se ela cobre essa causa. ")
-          + "Antes de usar o veredito, o usuário precisa decidir a política da faixa do pneu, ou usar o pneu do "
-            "carro quando houver dado dele (hoje o .tir é o R25B provisório, EDR-022).")
+          "para a planilha, a divergência precisa ser investigada na ordem do CLAUDE.md. As regras do EDR-056 em "
+          "fórmulas também não foram medidas (incremento 4).")
+    w(f"2. A varredura de {len(varr)} combinações em fórmulas não foi medida nem estimada: cada combinação exigiria "
+      "ao menos a análise da grade pedida e a da grade refinada. A spec (7.6, item 4) prevê a alternativa de o "
+      "Python gerar o relatório da varredura e a planilha mostrar só o veredito nominal com o aviso \"robustez "
+      "ao pneu: ver relatório\".")
+    r3 = (f"3. Com os dados demonstrativos atuais e o `.tir` provisório, o veredito do caso da planilha é "
+          f"{txt_nominal} no nominal e {txt_robusto} na varredura de {len(varr)} combinações "
+          f"({', '.join(f'{k} = {v}' for k, v in sorted(contagem.items()))}). ")
+    if fx is not None:
+        r3 += (f"O domínio da grade termina em {g_de(fx['linha'].ay_ms2, 2)} ("
+               + "; ".join(f"{e}: {m}" for e, m in fx["motivos"]) + "). ")
+    if res.limitacoes:
+        r3 += (f"O resultado nominal usa {len(res.limitacoes)} entrada(s) do pneu limitada(s) à faixa (seção 3); onde Fz foi "
+               "limitado ao FZMAX, a força da roda externa está subestimada, e onde foi limitado ao FZMIN, a da "
+               "roda interna está superestimada. ")
+    r3 += ("Antes de usar o veredito para decidir algo do carro, é preciso o pneu do carro (hoje o .tir é o R25B "
+           "provisório, EDR-022) e dados do TX no lugar dos demonstrativos.")
+    w(r3)
+    w("")
+    w("### Decisões e pendências")
+    w("")
+    w("Passam a valer pelo EDR-056 (APPROVED_WITH_CONDITIONS; o usuário confere este relatório): faixa do pneu "
+      "limitada com aviso (convenção do PAC2002) e Fz ≤ 0 como descolamento (N/A); NEUTRO só dentro da resolução "
+      "numérica medida; PUSH/LOOSE pelo eixo que satura primeiro. Deixam de ser pendentes a política de faixa e o "
+      "critério de neutro.")
+    w("")
+    w("Continuam pendentes:")
+    w("")
+    w("- Pneu real (R60A): os números daqui usam o `.tir` provisório do R25B.")
+    w("- Banda de neutro de engenharia: só por EDR da equipe (spec 7.3, item 4); hoje NEUTRO é só a resolução "
+      "numérica.")
+    w("- Alinhamento da aba 10_TIRE da V4.0 à regra da faixa: a V3.0 devolve N/A fora da faixa (DR-013, EDR-037, "
+      "EDR-041); mudar é mudança de fórmula e entra na aprovação do incremento que gerar a aba.")
+    w("- Descolamento (Fz ≤ 0) no modelo de transferência de carga: hoje a linha é inválida; tratar a roda interna "
+      "levantada exige outro modelo.")
     w("")
     w("A decisão de seguir, ajustar ou parar é do usuário.")
     w("")

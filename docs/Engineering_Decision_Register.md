@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 55 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
+Total: 56 registros. APPROVED: 20 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-20)
 
 | ID | Título | Status |
 |---|---|---|
@@ -92,6 +92,7 @@ Total: 55 registros. APPROVED: 19 · APPROVED_WITH_CONDITIONS: 8 · AWAITING_DEC
 | EDR-053 | Linha de força pelo trabalho virtual como definição primária do IC/RC no MODEL (SUS-412) | VERIFIED |
 | EDR-054 | Roadmap V0-V5 como plano do projeto; etapas E0-E5 e "V" só para revisão de artefatos | APPROVED_WITH_CONDITIONS |
 | EDR-055 | Amplitude exploratória da varredura do pneu (LFZO, LMUY, LKY × 0,8/1,0/1,2) | APPROVED |
+| EDR-056 | Regras do veredito no limite: entrada do pneu limitada à faixa (convenção PAC2002), neutro pelo momento desbalanceado e eixo que satura primeiro | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1222,6 +1223,29 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-015, EDR-022, EDR-038, EDR-049.
 - **Source_Conversation_or_Document:** Conversa de 2026-10-20 (incremento 1 da V4.0, Task 7); help do Adams 2024.1 PAC2002, pp. 23-24.
 
+### EDR-056 — Regras do veredito no limite: entrada do pneu limitada à faixa (convenção PAC2002), neutro pelo momento desbalanceado e eixo que satura primeiro
+
+- **Date:** 2026-10-21
+- **Status:** APPROVED (2026-10-21; antes APPROVED_WITH_CONDITIONS)
+- **Context:** O incremento 1 da V4.0 (PR #12, `docs/v4-0/inc1-viabilidade-e-robustez.md`) deixou três regras da análise de par para decisão do usuário. (1) Pneu fora da faixa: o incremento 1 devolvia N/A quando Fz, γ ou α saíam da faixa do `.tir`; no caso da planilha viva isso dá N/A a partir de 1,55 g porque a roda externa traseira passa de FZMAX (1526 N > 1521 N), com cada eixo usando cerca de 53 % da capacidade. (2) Neutro: o critério era \|S_f − S_r\| < passo da grade, mas as saturações são interpoladas e saem quase iguais com passo 0,05 e 0,01 g; o veredito mudava com um parâmetro de exibição (λ_f 0,7: NEUTRO com 0,05 g, PUSH com 0,01 g). (3) PUSH/LOOSE com o outro eixo sem saturar: a regra aceitava o outro eixo conhecido até uma linha depois da saturação, o que podia contradizer o critério de neutro (revisão final do PR #12).
+- **Question:** Que regras a análise de par usa nesses três pontos?
+- **Alternatives:** (1) manter N/A fora da faixa; limitar a entrada ao valor do limite com aviso (convenção do PAC2002); Fy = 0 só para Fz ≤ 0. (2) manter o passo como banda; banda de engenharia por EDR da equipe; neutro só quando a diferença de saturação está abaixo da resolução numérica medida. (3) manter a regra; exigir que o outro eixo siga válido e com folga além da saturação do primeiro por mais que a resolução numérica.
+- **Decision:** Usuário, 2026-10-21: "siga uma metodologia coerente com a literatura enviada e as convenções recomendadas pelos softwares". Aplicado pelo assistente assim:
+  1. **Faixa do pneu (convenção PAC2002):** Fz > 0, γ e α fora da faixa de validade do `.tir` entram no cálculo limitados ao valor mínimo ou máximo da faixa, e a linha leva o aviso de limitação (quais rodas, qual limite, valor real e valor usado). O resultado dessa linha conta para a saturação. Fz ≤ 0 continua N/A: ali deixa de valer o modelo linear de transferência de carga (SUS-104; aviso de descolamento do Python, Guide D.4), não o pneu. O pico na borda da grade de α continua inválido (é limite da grade, não entrada do pneu).
+  2. **Neutro (Milliken p. 320):** o veredito segue a posição do ponto de cruzamento das fronteiras dos eixos em relação a N = 0: frente satura primeiro = PUSH, traseira primeiro = LOOSE, sobre o eixo = NEUTRO. NEUTRO só quando \|S_f − S_r\| ≤ resolução numérica, medida pela diferença entre a análise na grade pedida e numa grade refinada (metade do passo, o dobro de pontos de α menos um). O "quanto" é o C_N residual (momento desbalanceado, Milliken p. 320 e §8.4), mais a diferença S_r − S_f em g. Banda de neutro de engenharia só por EDR da equipe (spec 7.3, item 4).
+  3. **Eixo que satura primeiro (Milliken p. 320):** PUSH quando a frente satura e a traseira continua válida e com folga positiva até pelo menos S_f + resolução (simétrico para LOOSE); caso contrário, N/A com o motivo do eixo que parou.
+- **Rationale:** O help do Adams 2024.1 PAC2002 (p. 83 do PDF, conferida na imagem) diz que, se uma entrada passa de um limite de validade, o cálculo é feito com o valor mínimo ou máximo da faixa, para evitar comportamento irrealista, e uma mensagem avisa. O Milliken, §8.6, p. 320 (conferida na imagem): o ponto de cruzamento abaixo de N = 0 dá plow, acima dá spin, sobre o eixo o carro "drifts (is neutral)"; a distância ao eixo é a medida da tendência (momento desbalanceado). Na mesma página, com a frente saturada e a traseira ainda capaz de momento de guinada, o carro faz plow (push). Neutro é um ponto, não uma faixa; a única faixa que o método numérico justifica é a sua própria resolução.
+- **Evidence:** Help do Adams 2024.1 PAC2002, p. 83 (Validity Range of the Tire Model Input); Milliken & Milliken, *Race Car Vehicle Dynamics*, §8.6, p. 320 (Figura 8.12 e texto); relatório `docs/v4-0/inc1-viabilidade-e-robustez.md` (PR #12); revisão final do PR #12 (achados Important 1 e 2).
+- **Assumptions:** A limitação do Fz ao FZMAX subestima a força da roda externa quando a carga real passa do limite; a planilha e o relatório mostram o excesso para que a equipe veja o tamanho do efeito. A resolução numérica medida por refinamento de grade é uma estimativa do erro de discretização, não um erro de engenharia.
+- **Consequences:** O caso da planilha viva deixa de parar em 1,55 g por FZMAX; o veredito passa a depender do primeiro eixo que satura ou do descolamento da roda interna. A aba 10_TIRE da V3.0 usa N/A fora da faixa (DR-013, EDR-037, EDR-041); alinhá-la a esta regra na V4.0 é mudança de fórmula e entra na lista de aprovação do incremento que gerar a aba. O protótipo descartável da Task 6 usava a regra antiga e não é refeito.
+- **Affected_Artifacts:** `python/equilibrio.py` (`capacidade_eixo`, `analise_par`); `tools/relatorio_inc1.py`; relatório novo do incremento 1; especificação da V4.0 (7.3, item 4; 7.6).
+- **Affected_Tests:** TC-EQ-007, TC-EQ-010 a TC-EQ-014.
+- **Dependencies:** EDR-022, EDR-038, EDR-039, EDR-055.
+- **Approval_Conditions:** O usuário confere a aplicação no relatório regenerado do incremento 1 (a instrução foi de método, não de cada regra). **Cumprida em 2026-10-21:** o usuário conferiu `docs/v4-0/inc1-viabilidade-e-robustez-edr056.md` e aprovou a aplicação ("Conferi o relatório … e aprovo a aplicação do EDR-056").
+- **Reopening_Criteria:** Pneu real (R60A) ou OptimumTire com outra convenção de faixa; banda de neutro de engenharia definida pela equipe; modelo de transferência de carga com descolamento.
+- **Related_Decisions:** EDR-004, EDR-015, EDR-037, EDR-041, EDR-055.
+- **Source_Conversation_or_Document:** Conversa de 2026-10-21 (decisões pendentes do PR #12); help do Adams 2024.1 PAC2002, p. 83; Milliken, p. 320.
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1281,6 +1305,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-053 | SUS-301, SUS-302, SUS-412 | kinematics_model; Standard; planilha V3.0 (07 F10:F13). | TC-KIN-120, TC-KIN-128 |
 | EDR-054 | — | docs/arquitetura-planejada.md; especificação da V4.0. | — |
 | EDR-055 | — | python/equilibrio.py (varredura_pneu); data/varredura_pneu_exploratoria.json. | TC-EQ-016..018 |
+| EDR-056 | — | python/equilibrio.py (capacidade_eixo, analise_par); tools/relatorio_inc1.py; especificação da V4.0. | TC-EQ-007, TC-EQ-010..014 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
