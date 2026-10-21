@@ -235,7 +235,10 @@ como teste do máximo numérico.
 2. Linha de apoio: saturação de cada eixo, a_y limite, C_N, perda em relação ao neutro, Δt.
 3. Cor só como reforço: azul para push, laranja para loose (par legível para daltônicos); símbolos para P&B.
 4. NEUTRO só quando a diferença entre saturações for menor que o passo da rampa (resolução numérica) ou que uma
-   banda registrada em EDR.
+   banda registrada em EDR. *Precisado pelo EDR-056 (2026-10-21):* a resolução numérica é medida por refinamento
+   da grade, não o passo de exibição. O veredito segue o eixo que satura primeiro (Milliken p. 320), e o "quanto"
+   é o C_N residual. Entrada do pneu fora da faixa do `.tir` é limitada ao valor do limite, com aviso, pela
+   convenção do PAC2002 (help do Adams, p. 83); Fz ≤ 0 continua N/A (domínio do modelo de transferência de carga).
 5. Linear e limite lado a lado, com "regimes diferentes (Milliken p. 313-315)"; subesterço linear com loose no
    limite não é marcado como erro.
 6. Pior origem ao lado.
@@ -285,6 +288,7 @@ resto. Nenhum número do Python é copiado para a planilha (valor estático enve
 
 O sinal de push/loose depende sobretudo da sensibilidade do pneu à carga, a parte menos confiável do `.tir` do TTC
 (R25B, e não o R60A do carro). Antes de a equipe usar o veredito, ele precisa resistir a essa incerteza.
+Amplitude: EDR-055. Tratamento da faixa do pneu: EDR-056.
 
 1. **O que varia:** os fatores de escala do próprio PAC2002 ligados à carga e ao pico (por exemplo λ_Fz0, λ_μy,
    λ_Ky; lista final no incremento 1, com a definição de cada um conferida no help do Adams). Eles existem no
