@@ -1253,7 +1253,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Status:** APPROVED_WITH_CONDITIONS
 - **Context:** O incremento 2 da V4.0 (plano `docs/superpowers/plans/2026-10-21-v4-0-inc2-equilibrio-linear-e-hipoteses.md`) leva ao Python o passo 1 da especificação (gradiente de subesterço K pelas parcelas do Gillespie cap. 6) e as hipóteses do limite que a planilha do incremento 4 vai implementar (spec `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md`, §6 e §7.4). As escolhas de método foram feitas pelo controlador da implementação, por delegação do usuário (2026-10-21: "siga uma metodologia coerente com a literatura e as convenções dos softwares"). O usuário autorizou este registro em 2026-10-21.
 - **Question:** Que método o Python usa para K (passo 1) e para as hipóteses do limite (passo 2) neste incremento?
-- **Alternatives:** Os itens da decisão são as escolhas feitas; as alternativas de cada uma estão no plano e nos relatórios das Tasks 1 a 9 do incremento 2.
+- **Alternatives:** Os itens da decisão são as escolhas feitas; as alternativas de cada uma estão no plano `docs/superpowers/plans/2026-10-21-v4-0-inc2-equilibrio-linear-e-hipoteses.md`.
 - **Decision:**
   1. **K pelas parcelas do Gillespie cap. 6:** C_α do eixo = soma das rigidezes de deriva do PAC2002 das duas rodas, com a definição de sinal C_α = −∂Fy_ISO/∂α na roda FR. A parcela de transferência é a diferença entre o K na carga da linha e o K na carga estática. O camber segue a eq. 6-56, com o gradiente de eixo (R − L)/2. O roll steer segue a eq. 6-57 (SUS-415).
   2. **Parcela nova "deslocamento do pneu"** (conicidade e ply steer, Gillespie p. 367): aparece porque os termos PHY/PVY do PAC2002 dependem da carga. No veículo de teste ela vale −0,004 °/g; sem ela, o K do passo 1 difere da inclinação inicial do passo 2 em cerca de 13 %.
@@ -1270,7 +1270,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Dependencies:** EDR-002, EDR-004, EDR-013, EDR-022, EDR-039, EDR-052, EDR-055, EDR-056.
 - **Approval_Conditions:** O usuário confere as escolhas quando o relatório do incremento 2 sair (as escolhas foram do controlador, por delegação de método).
 - **Reopening_Criteria:** O usuário discorda de alguma escolha ao conferir o relatório do incremento 2.
-- **Related_Decisions:** EDR-002, EDR-004, EDR-013, EDR-022, EDR-039, EDR-052, EDR-055, EDR-056.
+- **Related_Decisions:** EDR-002, EDR-004, EDR-013, EDR-022, EDR-038, EDR-039, EDR-052, EDR-055, EDR-056.
 - **Source_Conversation_or_Document:** Conversa de 2026-10-21 (incremento 2 da V4.0; autorização do EDR-057); plano do incremento 2; Gillespie, cap. 6 e pp. 364-367; Milliken, §2.7.
 
 ## 6. Tabela de rastreabilidade
