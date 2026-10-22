@@ -96,18 +96,120 @@ def caso_da_planilha(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
             raise ValueError("a cópia precisa ser recalculada (Excel ou LibreOffice) antes da leitura: "
                              f"{aba}!{cel} sem valor")
         x[chave] = float(v)
+    ds = tm.load_dataset(str(tir), source="caso da planilha", source_axis_system="ISO_TYDEX")
+    return CasoEquilibrio(_cfg(x), ds, downforce_N=x["DF"], aero_balance_front=x["bal"])
+
+
+def _cfg(x: dict) -> sm.VehicleConfig:
+    """VehicleConfig das entradas do caso (chaves de ENTRADAS_CASO), com K_φ pelo SUS-206/207 (pneu em série)."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         kw_f, kw_r = sm.wheel_rate(x["KsF"], x["MRF"]), sm.wheel_rate(x["KsR"], x["MRR"])
     kphi_f = sm.roll_stiffness_axle(kw_f, x["tF"], x["KarbF"], x["KTF"])
     kphi_r = sm.roll_stiffness_axle(kw_r, x["tR"], x["KarbR"], x["KTR"])
-    cfg = sm.VehicleConfig(
+    return sm.VehicleConfig(
         mass_total=x["m"], cg_height=x["h"], wheelbase=x["L"], track_front=x["tF"], track_rear=x["tR"],
         cg_to_front=x["a"], cg_to_rear=x["b"], unsprung_mass_front=x["muF"], unsprung_mass_rear=x["muR"],
         unsprung_cg_height_front=x["huF"], unsprung_cg_height_rear=x["huR"], roll_center_front=x["zF"],
         roll_center_rear=x["zR"], roll_stiffness_front=kphi_f, roll_stiffness_rear=kphi_r)
-    ds = tm.load_dataset(str(tir), source="caso da planilha", source_axis_system="ISO_TYDEX")
-    return CasoEquilibrio(cfg, ds, downforce_N=x["DF"], aero_balance_front=x["bal"])
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# V4.1 (incremento 4): o caso que a 16_EQUILIBRIO calcula, lido por nomes
+# ---------------------------------------------------------------------------------------------------------------------
+def _valor_por_nome(wb, nome: str):
+    import aba_equilibrio as ae
+    aba, cel = ae._destino(wb, nome)
+    return wb[aba][cel].value
+
+
+def valores_v41(wb) -> dict:
+    """chave -> valor (cópia recalculada, data_only) das entradas que a 16_EQUILIBRIO usa: ENTRADAS16, V40 (inclui as 23
+    de ENTRADAS_CASO), "coef" (lista dos coeficientes da 10_TIRE B86:B175 e B177) e "coef_nomes" (nome do .tir ->
+    valor, para os coeficientes que o .tir também tem)."""
+    import aba_equilibrio as ae
+    x = {e.chave: _valor_por_nome(wb, ae.NOME_ENT[e.chave]) for e in ae.ENTRADAS16}
+    x.update({k: _valor_por_nome(wb, nome) for k, nome in ae.V40.items()})
+    t = wb["10_TIRE"]
+    x["coef"] = [t[f"B{r}"].value for r in list(range(86, 176)) + [177]]
+    x["coef_nomes"] = {str(t[f"A{r}"].value).strip(): t[f"B{r}"].value for r in list(range(86, 176)) + [177]}
+    return x
+
+
+def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
+    """O CasoEquilibrio que a 16_EQUILIBRIO da V4.1 calcula, lido por nomes de uma cópia recalculada.
+
+    - Entradas da V4.0 pelos nomes de ENTRADAS_CASO; as novas pelos nomes ent_16_* (aba_equilibrio.NOME_ENT); o camber
+      estático da 10_TIRE (B24:E24, °), o ganho de camber em rolagem derivado do SUS-404 (07_KINEMATICS B23/B24, °/mm,
+      por kinematics_model.camber_gradient_from_body; autorização 7 do plano) e o % Ackermann da 07 B75 (h2).
+    - Pneu: o .tir `tir`, com o sistema de eixos da 10_TIRE B11 e os coeficientes da 10_TIRE (B86:B177) por cima dos do
+      arquivo, para que o caso seja o que a planilha avalia (uma cópia de teste pode escalar, por exemplo, LMUY).
+    - Chaves (spec 7.4): o raio entra com h2, h3, h8 ou h9 (no Python, o raio liga o cos δ_ref); h2 usa o % Ackermann;
+      h7, o CG lateral; h8 troca a downforce fixa por CzA e ρ (downforce_N = 0); h9 usa CdA, Crr e ρ.
+    - Entrada inválida para a planilha (chave ligada com entrada vazia, texto numa entrada numérica, h3 desligada com
+      h2/h8/h9): ValueError com o mesmo motivo que a 16 mostra (aba_equilibrio.VERIFICACOES, na mesma ordem); idem para
+      a instabilidade de rolagem e o Ackermann fora do alcance.
+    - Sentido "Direita": devolve equilibrio.espelhar do caso (a curva à direita do carro vista como curva à esquerda do
+      carro espelhado), que é o que a planilha mostra (cantos no referencial espelhado; FL = roda interna).
+    """
+    import math as _m
+    import aba_equilibrio as ae
+    from equilibrio import espelhar, esterco_rodas
+    from kinematics_model import camber_gradient_from_body
+    wb = openpyxl.load_workbook(xlsx_recalculado, data_only=True)
+    try:
+        x = valores_v41(wb)
+    finally:
+        wb.close()
+    motivo = ae.motivo_das_entradas(x)
+    if motivo is not None:
+        raise ValueError(motivo)
+    h = {k: x[k] == 1 for k in ("h2", "h3", "h7", "h8", "h9")}
+    base = {k: float(x[k]) for k in ENTRADAS_CASO if not (k == "DF" and h["h8"])}
+    base.setdefault("DF", 0.0)
+    cfg = _cfg(base)
+    try:
+        sm.lateral_dfz(cfg, 1.0)
+    except ValueError:
+        raise ValueError(ae.MSG_DEN) from None
+    ds = tm.load_dataset(str(tir), source="caso da planilha V4.1", source_axis_system=x["eixos"])
+    for k, v in x["coef_nomes"].items():
+        if k in ds.p:
+            ds.p[k] = float(v)
+    raio = float(x["R"]) if any(h[k] for k in ("h2", "h3", "h8", "h9")) else None
+    gF = camber_gradient_from_body(*(2 * [_m.radians(float(x["dgF"])) * 1000.0]), cfg.track_front)
+    gR = camber_gradient_from_body(*(2 * [_m.radians(float(x["dgR"])) * 1000.0]), cfg.track_rear)
+    caso = CasoEquilibrio(
+        cfg, ds, downforce_N=0.0 if h["h8"] else base["DF"], aero_balance_front=base["bal"],
+        toe_rad={c: _m.radians(float(x[f"toe{c}"])) for c in ae.CANTOS},
+        camber_estatico_rad={c: _m.radians(float(x[f"gs{c}"])) for c in ae.CANTOS},
+        ganho_camber={"FL": gF["L"], "FR": gF["R"], "RL": gR["L"], "RR": gR["R"]},
+        raio_m=raio, ackermann_pct=float(x["pct"]) if h["h2"] else None,
+        cg_lateral_m=float(x["cg"]) if h["h7"] else 0.0,
+        cza_m2=float(x["cza"]) if h["h8"] else None,
+        rho_kg_m3=float(x["rho"]) if (h["h8"] or h["h9"]) else None,
+        cda_m2=float(x["cda"]) if h["h9"] else None, crr=float(x["crr"]) if h["h9"] else None)
+    if caso.ackermann_pct not in (None, 0.0):
+        try:
+            esterco_rodas(caso)
+        except ValueError:
+            raise ValueError(ae.MSG_ACK) from None
+    return espelhar(caso) if x["sentido"] == "Direita" else caso
+
+
+def pior_origem_do_caso_v41(xlsx_formulas: Path) -> str:
+    """Pior origem que a 16_EQUILIBRIO mostra (res_16_pior_origem...), pela mesma regra: raízes preenchidas dos nós da
+    V4.0 que o limite usa (raizes.Grafo), a origem do pneu (10_TIRE I84) e as entradas da 16 pela coluna E, cada termo
+    condicional só quando a chave o usa (aba_equilibrio.termos_pior_origem). Abre a planilha só para leitura, sem
+    data_only (as chaves são valores digitados). Origem vazia ou fora da lista conta como "? A confirmar"."""
+    import aba_equilibrio as ae
+    wb = openpyxl.load_workbook(xlsx_formulas, data_only=False)
+    try:
+        termos = ae.termos_pior_origem(wb)
+        chaves = {k: _valor_por_nome(wb, ae.NOME_ENT[k]) for k in ("h2", "h3", "h7", "h8", "h9")}
+        return ae.pior_origem_de_valores(termos, lambda aba, cel: wb[aba][cel].value, chaves)
+    finally:
+        wb.close()
 
 
 def _origens_entradas(wb) -> set[str]:
