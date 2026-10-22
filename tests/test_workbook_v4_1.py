@@ -9,15 +9,15 @@ Uso: uv run python -X utf8 tests/test_workbook_v4_1.py
 Namespace TC-WB41-xxx (IDs autorizados pelo usuário: 001 a 006; este script tem o 003, o 004, o 005 e o 006, este em duas
 partes; o 001 e o 002 estão em tests/test_v4_1.py).
 
-TC-WB41-003: (1) a cópia C1 recalculada tem 0 erros (os nomes resolvem: nenhum #NAME?) e as 117568 fórmulas, e todo res
+TC-WB41-003: (1) a cópia C1 recalculada tem 0 erros (os nomes resolvem: nenhum #NAME?) e as 117569 fórmulas, e todo res
 da V4.0 (data/nomes_V4_0.csv) tem o mesmo valor da V4.0 da tag recalculada (rel. <= 1e-12), inclusive as 215 fórmulas
 da 10_TIRE que a autorização 6a muda (ruling 3: com as entradas nominais, dentro da faixa do .tir, nada muda); no
 Excel, que salva a cópia ao recalcular, os nomes definidos, as validações de dados, a formatação condicional e a nota
 na célula do veredito ficam iguais aos da cópia gerada (no LibreOffice essa parte não é executada e o log diz isso: a
 equipe salva pelo Excel). (2) 10_TIRE pelo EDR-056 (valores de TESTE por endereço, só na cópia): Fz acima de FZMAX,
-Fz abaixo de FZMIN com γ abaixo de CAMMIN, α acima da faixa numa roda esquerda, Fz = 0 e κ fora da faixa; o status e
+Fz abaixo de FZMIN com γ abaixo de CAMMIN, α acima da faixa numa roda esquerda com κ abaixo de KPUMIN, Fz = 0 e κ acima de KPUMAX; o status e
 Fx, Fy e μ_eff de cada coluna iguais aos de tire_model.wheel_forces com a entrada limitada (rel. <= 1e-9), com o aviso
-no formato de equilibrio._entrada_limitada; Fz = 0 e κ fora continuam N/A. (3) Review Focus 5: "8 m" colado no raio
+no formato de equilibrio._entrada_limitada (o do κ é "κ_roda = 0,300 → 0,250 (KPUMAX)"); Fz = 0 continua N/A. (3) Review Focus 5: "8 m" colado no raio
 com a h3 ligada: a célula tem validação decimal, e o veredito dá N/A com o motivo "raio do skidpad R não é número",
 sem nenhum #VALUE!. O tempo de recálculo de cada cópia vai ao log.
 
@@ -1059,8 +1059,6 @@ def esperado_tire(ds, roda, fz, a_deg, g_deg, kappa):
     p = ds.p
     if fz <= 0:
         return "N/A - Fz<=0 (liftoff)", None, None, None
-    if not (p["KPUMIN"] <= kappa <= p["KPUMAX"]):
-        return "N/A - κ fora da faixa", None, None, None
     av, esp = [], ESPELHO[roda]
     fz_u = min(max(fz, p["FZMIN"]), p["FZMAX"])
     if fz_u != fz:
@@ -1076,12 +1074,16 @@ def esperado_tire(ds, roda, fz, a_deg, g_deg, kappa):
         lim = "CAMMIN" if g_u < p["CAMMIN"] else "CAMMAX"
         g_u = p[lim]
         av.append(f"γ_{roda} = {eq._num(g_deg, '.2f')}° → {eq._num(math.degrees(g_u), '.2f')}° ({lim})")
-    fx, fy, _ = tm.wheel_forces(ds, "FR" if roda == "VERIF" else roda, fz_u, a_u, g_u, kappa)
+    k_u = min(max(kappa, p["KPUMIN"]), p["KPUMAX"])   # emenda do EDR-056 (2026-10-22): o κ também entra limitado
+    if k_u != kappa:
+        lim = "KPUMIN" if kappa < p["KPUMIN"] else "KPUMAX"
+        av.append(f"κ_{roda} = {eq._num(kappa, '.3f')} → {eq._num(k_u, '.3f')} ({lim})")
+    fx, fy, _ = tm.wheel_forces(ds, "FR" if roda == "VERIF" else roda, fz_u, a_u, g_u, k_u)
     st = "OK" if not av else "OK - limitado à faixa do .tir (EDR-056): " + "; ".join(av)
     return st, fx, fy, tm.mu_effective(fx, fy, fz_u)
 
 
-if not SUB:   # DDS_CASOS (mutação da planilha): só os casos nomeados; o TC-WB41-003 não roda
+if not SUB or "TC003" in SUB:   # DDS_CASOS (mutação da planilha): só os casos nomeados e o TC-WB41-003 não roda, salvo com "TC003" na lista
     falhas3, tempos3, notas3 = [], [], []
     alteradas41 = {(a["aba"], a["cel"]) for a in gerar_v4_1.alteracoes_v4_1(base)}
     # (1) C1 sem alterações: 0 erros, equivalência com a V4.0 recalculada em todo res antigo e a estrutura depois de salvar
@@ -1097,6 +1099,10 @@ if not SUB:   # DDS_CASOS (mutação da planilha): só os casos nomeados; o TC-W
         res40 = [n for n in csv.DictReader(f) if n["papel"] == "res"]
     res_alterados = sorted(f"{n['aba']}!{n['celula']}" for n in res40 if (n["aba"], n["celula"]) in alteradas41)
     wb3, wbb = openpyxl.load_workbook(t3, data_only=True), openpyxl.load_workbook(base, data_only=True)
+    v3 = wb3["13_VALIDATION"]   # caso nominal: VERIF dentro da faixa, nada muda (PASS, 4 cantos válidos, nenhum limitado)
+    if [v3["B40"].value, v3["B41"].value, v3["B42"].value, v3["B43"].value, v3["C43"].value] != ["PASS"] * 3 + [4, "-"]:
+        falhas3.append(f"C1: 13_VALIDATION B40:B43/C43 = {[v3[c].value for c in ('B40', 'B41', 'B42', 'B43', 'C43')]}, "
+                       "esperado PASS, PASS, PASS, 4, '-'")
     for n in res40:   # inclusive as 215 fórmulas da 10_TIRE alteradas pela 6a (ruling 3: dentro da faixa nada muda)
         a, b = wb3[n["aba"]][n["celula"]].value, wbb[n["aba"]][n["celula"]].value
         if not _iguais(a, b):
@@ -1118,10 +1124,10 @@ if not SUB:   # DDS_CASOS (mutação da planilha): só os casos nomeados; o TC-W
         notas3.append("salvar pelo Excel NÃO EXECUTADO (motor LibreOffice; a equipe salva pelo Excel e o LibreOffice nunca "
                       "salva a planilha, CLAUDE.md): esta parte só conta na rodada do Excel")
     # (2) 10_TIRE com entradas fora da faixa (TESTE, só na cópia): Fz acima; Fz abaixo e γ abaixo; α acima numa roda L;
-    # Fz = 0 (descolamento); κ fora (continua N/A)
+    # Fz = 0 (descolamento, continua N/A); κ fora da faixa (RL abaixo de KPUMIN, VERIF acima de KPUMAX): limitado, EDR-056
     ds_tire = tm.load_dataset(TIR, source_axis_system="ISO_TYDEX")
     PONTOS_TIRE = {"B": ("FL", 1700.0, -3.0, -1.5, -0.05), "C": ("FR", 50.0, -3.0, -5.0, -0.05),
-                   "D": ("RL", 700.0, 20.0, -1.0, -0.03), "E": ("RR", 0.0, -2.0, -1.0, -0.03),
+                   "D": ("RL", 700.0, 20.0, -1.0, -0.30), "E": ("RR", 0.0, -2.0, -1.0, -0.03),
                    "F": ("VERIF", 700.0, 3.0, 1.5, 0.30)}
     t_tire = ae.copia_v41(Path(tempfile.mkdtemp()), {}, "T3_TIRE.xlsx")
     _editar_tire(t_tire, {f"{c}{r}": v for c, (_, *vals) in PONTOS_TIRE.items() for r, v in zip((22, 23, 24, 25), vals)})
@@ -1144,9 +1150,18 @@ if not SUB:   # DDS_CASOS (mutação da planilha): só os casos nomeados; o TC-W
             elif not (num(v) and abs(v - esp) <= 1e-9 * max(1.0, abs(esp))):
                 falhas3.append(f"TIRE {c}{lin}: {v!r}, esperado {esp!r} (wheel_forces com a entrada limitada)")
         limitados += st.startswith("OK - limitado")
+    # 13_VALIDATION com o caso VERIF limitado (usuário, 2026-10-22): B40:B42 N/A (sem FAIL falso); B43 conta "OK" e
+    # limitados como válidos (B, C e D de 4; a E é Fz = 0) e a C43 diz quantos foram limitados (3)
+    wsv = wbt["13_VALIDATION"]
+    for cel in ("B40", "B41", "B42"):
+        if wsv[cel].value != "N/A - caso VERIF limitado à faixa (EDR-056)":
+            falhas3.append(f"13_VALIDATION {cel}: {wsv[cel].value!r}, esperado N/A - caso VERIF limitado à faixa (EDR-056)")
+    if wsv["B43"].value != 3 or wsv["C43"].value != "3 limitado(s) à faixa do .tir (EDR-056)":
+        falhas3.append(f"13_VALIDATION B43/C43: {wsv['B43'].value!r} / {wsv['C43'].value!r}, esperado 3 / "
+                       "'3 limitado(s) à faixa do .tir (EDR-056)'")
     wbt.close()
-    if limitados != 3:
-        falhas3.append(f"TIRE: {limitados} colunas limitadas, esperado 3")
+    if limitados != 4:
+        falhas3.append(f"TIRE: {limitados} colunas limitadas, esperado 4")
     # (3) Review Focus 5: "8 m" colado no raio com a h3 ligada (TESTE): validação na célula e N/A com motivo, sem #VALUE!
     t_rf5 = ae.copia_v41(Path(tempfile.mkdtemp()), {ENT["R"]: "8 m", ENT["h3"]: 1}, "T3_RF5.xlsx")
     wbr = openpyxl.load_workbook(t_rf5)
@@ -1170,7 +1185,9 @@ if not SUB:   # DDS_CASOS (mutação da planilha): só os casos nomeados; o TC-W
     check("TC-WB41-003: cópia da V4.1 recalculada com 0 erros (nomes resolvem, sem #NAME?) e o número de fórmulas esperado; "
           "todo res da V4.0 igual à V4.0 recalculada (rel. <= 1e-12, inclusive as 215 fórmulas da 10_TIRE alteradas: as "
           "entradas nominais ficam dentro da faixa do .tir); 10_TIRE pelo EDR-056: Fz, α e γ fora da faixa limitados (Fx, Fy "
-          "e μ = wheel_forces com a entrada limitada) com o aviso no status, Fz = 0 e κ fora = N/A; \"8 m\" no raio: "
+          "e μ = wheel_forces com a entrada limitada) com o aviso no status, κ fora da faixa também limitado (emenda do EDR-056), "
+          "Fz = 0 = N/A; 13_VALIDATION B40:B42 N/A (sem FAIL falso) com o caso VERIF limitado e B43/C43 contando válidos e "
+          "limitados; sem limitação, PASS, 4 e \"-\"; \"8 m\" no raio: "
           "validação decimal na célula e N/A com motivo, sem #VALUE!; no Excel, salvar mantém nomes, validações, formatação "
           "condicional e a nota do veredito; tempo no log",
           not falhas3, f"{len(falhas3)} divergência(s): {falhas3[:8]}; res da V4.0 entre as alteradas: "

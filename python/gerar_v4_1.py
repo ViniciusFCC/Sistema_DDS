@@ -15,10 +15,13 @@ O que muda em relação à V4.0 (EDR-060; plano docs/superpowers/plans/2026-10-2
   22_CADEIA, e o bloco novo do 14_DASHBOARD (`aba_equilibrio.montar`, fórmulas por família do catálogo F1-F19);
 - os nomes definidos de `aba_equilibrio.NOMES_V41` (os 698 da V4.0 ficam iguais);
 - as células existentes de `alteracoes_v4_1()`, aprovadas pelo usuário em 2026-10-21 (item 6 das autorizações do plano):
-  (a) a 10_TIRE alinhada ao EDR-056: Fz > 0, α e γ fora da faixa do .tir entram no cálculo limitados ao valor mínimo
+  (a) a 10_TIRE alinhada ao EDR-056: Fz > 0, α e γ fora da faixa do .tir (e o κ, ver abaixo) entram no cálculo limitados ao valor mínimo
       ou máximo da faixa (convenção do PAC2002, help do Adams 2024.1, p. 83), e a linha de status da coluna mostra o
-      aviso (entrada, limite, valor real e usado); Fz <= 0 continua N/A (descolamento) e κ fora da faixa também (o
-      EDR-056 não trata do κ). Dentro da faixa nenhum valor muda;
+      aviso (entrada, limite, valor real e usado); Fz <= 0 continua N/A (descolamento). O κ fora da faixa
+      (KPUMIN/KPUMAX) entra limitado do mesmo modo (emenda do EDR-056, usuário, 2026-10-22; help do Adams 2024.1,
+      pp. 82-83). Dentro da faixa nenhum valor muda;
+  (a2) a 13_VALIDATION B40:B42 mostram "N/A - caso VERIF limitado à faixa (EDR-056)" em vez de "FAIL" com o caso VERIF
+      limitado, e a B43 conta "OK" e "OK - limitado …" como válidos (a C43 diz quantos foram limitados);
   (b) os textos da spec §12.1 (13_VALIDATION A25, 00_README A8, 14_DASHBOARD A19);
   (c) a versão na 00_README A3 e a linha nova do 15_CHANGELOG, como na V4.0.
 A saída nunca fica em excel/ nem por cima da origem: a recusa vem antes de abrir qualquer arquivo. A V4.1 de
@@ -48,7 +51,7 @@ PLANO = "docs/superpowers/plans/2026-10-21-v4-1-inc4-equilibrio-na-planilha.md"
 REGISTRO = "docs/registro-de-versoes-V4_1-celulas.md"
 REF_6A = ("EDR-056, item 1 (help do Adams 2024.1 PAC2002, p. 83: entrada fora da faixa avaliada no limite, com aviso); "
           "plano, autorização 6a (usuário, 2026-10-21); dependentes fora da 10_TIRE: 13_VALIDATION B40:B43 e "
-          "14_DASHBOARD B34:B37 (o B43 conta só status exatamente \"OK\", sem os limitados); teste: TC-WB41-003")
+          "14_DASHBOARD B34:B37 (o B43 contava só status exatamente \"OK\"; ver a 13_VALIDATION B40:B43 abaixo); teste: TC-WB41-003")
 REF_6B = "spec §12.1; plano, autorização 6b (usuário, 2026-10-21); teste: TC-WB41-001 (só o trecho muda)"
 REF_6C = "EDR-060; plano, autorização 6c (padrão da V4.0); teste: TC-WB41-001"
 REF_NOVAS = "EDR-060; catálogo de fórmulas do plano (famílias F1-F19 e REF)"
@@ -74,10 +77,10 @@ L_ALFA_ARQ, L_GAMA_ARQ, L_ESPELHO = 38, 39, 35
 # (linhas 38 e 39), onde a faixa vale, como `equilibrio._entrada_limitada` faz com s_g·γ.
 P = {"FZMIN": "$B$87", "FZMAX": "$B$88", "ALPMIN": "$B$89", "ALPMAX": "$B$90", "CAMMIN": "$B$91", "CAMMAX": "$B$92",
      "KPUMIN": "$B$93", "KPUMAX": "$B$94", "s_a": "$B$12", "s_g": "$B$14", "valido": "$B$17"}
-NOTA_STATUS = ("Sem extrapolação: fora da faixa do dataset, Fz (> 0), α e γ entram no cálculo limitados ao valor mínimo "
-               "ou máximo da faixa (FZMIN/FZMAX, ALPMIN/ALPMAX, CAMMIN/CAMMAX; convenção do PAC2002, help do Adams "
+NOTA_STATUS = ("Sem extrapolação: fora da faixa do dataset, Fz (> 0), α, γ e κ entram no cálculo limitados ao valor mínimo "
+               "ou máximo da faixa (FZMIN/FZMAX, ALPMIN/ALPMAX, CAMMIN/CAMMAX, KPUMIN/KPUMAX; convenção do PAC2002, help do Adams "
                "2024.1, p. 83; EDR-056), e o status mostra \"OK - limitado …\" com a entrada, o valor real, o usado e "
-               "o limite. κ fora da faixa continua N/A. Fz≤0 = perda de contato (N/A). Com limitação, o μ efetivo "
+               "o limite; o mesmo vale para o κ (KPUMIN/KPUMAX). Fz≤0 = perda de contato (N/A). Com limitação, o μ efetivo "
                "(linha 31) divide pelo Fz usado (limitado à faixa), não pelo Fz real da linha 22.")
 
 
@@ -93,10 +96,11 @@ def _limitado(col: str, lin: int, lo: str, hi: str) -> str:
 def status_tire(col: str) -> str:
     """Status do ponto de operação da coluna (linha 26) pela regra do EDR-056.
 
-    Ordem: entrada ausente → dataset inválido → Fz <= 0 (descolamento) → κ fora da faixa → "OK" (tudo dentro) ou
+    Ordem: entrada ausente → dataset inválido → Fz <= 0 (descolamento) → "OK" (tudo dentro) ou
     "OK - limitado à faixa do .tir (EDR-056): <avisos>". Cada aviso segue o texto de `equilibrio._entrada_limitada`
     (vírgula decimal; Fz com 1 casa, ângulos em graus com 2), com a roda da linha 20: "Fz_FR = 1526,3 N → 1521,0 N
-    (FZMAX)", "γ_FL = -4,50° → -4,00° (CAMMIN)"; o α no mesmo formato, no referencial do projeto (ISO 8855). O valor
+    (FZMAX)", "γ_FL = -4,50° → -4,00° (CAMMIN)", "κ_VERIF = 0,300 → 0,250 (KPUMAX)" (3 casas); o α no mesmo formato, no referencial do
+    projeto (ISO 8855). O valor
     usado de α e de γ volta do referencial do arquivo: α = s_α·espelho·α_arq e γ = s_γ·γ_arq (fatores ±1)."""
     c = col
     roda = f"{c}${L_CANTO}"
@@ -110,24 +114,29 @@ def status_tire(col: str) -> str:
 
     a_usado = lambda lim: f"DEGREES({P[lim]}*{P['s_a']}*{c}${L_ESPELHO})"
     g_usado = lambda lim: f"DEGREES({P[lim]}*{P['s_g']})"
+    k = f"{c}${L_KAPPA}"
+
+    def kap_txt(lim):
+        return (f'"; κ_"&{roda}&" = "&{ae._fs(k, 3)}&" → "&{ae._fs(P[lim], 3)}&" ({lim})"')
+
     avisos = (f'IF({fz}<{P["FZMIN"]},{fz_txt("FZMIN")},IF({fz}>{P["FZMAX"]},{fz_txt("FZMAX")},""))'
               f'&IF({al}<{P["ALPMIN"]},{ang_txt("α", f"{c}${L_ALFA}", a_usado("ALPMIN"), "ALPMIN")},'
               f'IF({al}>{P["ALPMAX"]},{ang_txt("α", f"{c}${L_ALFA}", a_usado("ALPMAX"), "ALPMAX")},""))'
               f'&IF({ga}<{P["CAMMIN"]},{ang_txt("γ", f"{c}${L_GAMA}", g_usado("CAMMIN"), "CAMMIN")},'
-              f'IF({ga}>{P["CAMMAX"]},{ang_txt("γ", f"{c}${L_GAMA}", g_usado("CAMMAX"), "CAMMAX")},""))')
+              f'IF({ga}>{P["CAMMAX"]},{ang_txt("γ", f"{c}${L_GAMA}", g_usado("CAMMAX"), "CAMMAX")},""))'
+              f'&IF({k}<{P["KPUMIN"]},{kap_txt("KPUMIN")},IF({k}>{P["KPUMAX"]},{kap_txt("KPUMAX")},""))')
     dentro = (f"AND({fz}>={P['FZMIN']},{fz}<={P['FZMAX']},{al}>={P['ALPMIN']},{al}<={P['ALPMAX']},"
-              f"{ga}>={P['CAMMIN']},{ga}<={P['CAMMAX']})")
-    k = f"{c}${L_KAPPA}"
+              f"{ga}>={P['CAMMIN']},{ga}<={P['CAMMAX']},{k}>={P['KPUMIN']},{k}<={P['KPUMAX']})")
     return (f'=IF(NOT(AND(ISNUMBER({c}${L_FZ}),ISNUMBER({c}${L_ALFA}),ISNUMBER({c}${L_GAMA}),ISNUMBER({k}))),'
             f'"N/A - entrada ausente",IF({P["valido"]}<>"OK","N/A - dataset inválido",'
-            f'IF({fz}<=0,"N/A - Fz<=0 (liftoff)",IF(OR({k}<{P["KPUMIN"]},{k}>{P["KPUMAX"]}),"N/A - κ fora da faixa",'
-            f'IF({dentro},"OK","OK - limitado à faixa do .tir (EDR-056): "&MID({avisos},3,2000))))))')
+            f'IF({fz}<=0,"N/A - Fz<=0 (liftoff)",'
+            f'IF({dentro},"OK","OK - limitado à faixa do .tir (EDR-056): "&MID({avisos},3,2000)))))')
 
 
 def formula_tire_limitada(antes: str, col: str) -> str:
     """Fórmula de cálculo da 10_TIRE (linhas 29-83) com a regra do EDR-056: a guarda `X$26<>"OK"` passa a aceitar o
     status "OK - limitado …" (LEFT(X$26,2)), e Fz (linha 22), α do arquivo (38) e γ do arquivo (39) entram limitados à
-    faixa. O resto do texto fica igual. Recusa fórmula sem a guarda ou com referência relativa a outra coluna."""
+    faixa, e o κ (linha 25) também (KPUMIN/KPUMAX; emenda do EDR-056, 2026-10-22). O resto do texto fica igual. Recusa fórmula sem a guarda ou com referência relativa a outra coluna."""
     guarda = f'{col}${L_STATUS}<>"OK"'
     if guarda not in antes:
         raise ValueError(f"10_TIRE {col}: fórmula sem a guarda {guarda}: {antes!r}")
@@ -135,7 +144,8 @@ def formula_tire_limitada(antes: str, col: str) -> str:
     if outras:
         raise ValueError(f"10_TIRE {col}: referência relativa a outra coluna ({outras}): {antes!r}")
     novo = antes.replace(guarda, f'LEFT({col}${L_STATUS},2)<>"OK"')
-    for lin, lo, hi in ((L_FZ, "FZMIN", "FZMAX"), (L_ALFA_ARQ, "ALPMIN", "ALPMAX"), (L_GAMA_ARQ, "CAMMIN", "CAMMAX")):
+    for lin, lo, hi in ((L_FZ, "FZMIN", "FZMAX"), (L_ALFA_ARQ, "ALPMIN", "ALPMAX"), (L_GAMA_ARQ, "CAMMIN", "CAMMAX"),
+                          (L_KAPPA, "KPUMIN", "KPUMAX")):
         novo = _rel(col, lin).sub(_limitado(col, lin, lo, hi), novo)
     return novo
 
@@ -157,15 +167,46 @@ def _alteracoes_tire(ws) -> list[dict]:
     return out
 
 
+# 13_VALIDATION B40:B43 com o caso VERIF limitado (usuário, 2026-10-22): sem o N/A, o status limitado deixaria a Fx, a Fy e
+# o μ do Excel (calculados no ponto limitado) divergirem da referência Python (calculada no ponto pedido) e mostrar
+# "FAIL - Excel diverge do Python", que seria falso: o Excel e o Python não calculam o mesmo ponto.
+ABA_VAL = "13_VALIDATION"
+STATUS_VERIF = "'10_TIRE'!$F$26"
+TXT_VERIF_LIMITADO = "N/A - caso VERIF limitado à faixa (EDR-056)"
+REF_6A2 = ("EDR-056, emenda do EDR-060 (usuário, 2026-10-22); a B40:B42 deixam de mostrar FAIL falso com o caso VERIF "
+           "limitado; a B43 conta \"OK\" e \"OK - limitado …\" como válidos e a C43 diz quantos foram limitados; "
+           "teste: TC-WB41-003")
+CANTOS_TIRE = "'10_TIRE'!$B$26:$E$26"
+B43_NOVA = f'=SUMPRODUCT(--(LEFT({CANTOS_TIRE},2)="OK"))'
+C43_NOVA = (f'=IF(SUMPRODUCT(--(LEFT({CANTOS_TIRE},4)="OK -"))=0,"-",SUMPRODUCT(--(LEFT({CANTOS_TIRE},4)="OK -"))'
+            f'&" limitado(s) à faixa do .tir (EDR-056)")')
+
+
+def _alteracoes_validation(ws) -> list[dict]:
+    out = []
+    for cel in ("B40", "B41", "B42"):
+        antes = ws[cel].value
+        if not (isinstance(antes, str) and antes.startswith("=IF(ISNUMBER('10_TIRE'!$F$")):
+            raise ValueError(f"{ABA_VAL}!{cel}: fórmula inesperada na origem: {antes!r}")
+        novo = f'=IF(LEFT({STATUS_VERIF},4)="OK -","{TXT_VERIF_LIMITADO}",{antes[1:]})'
+        out.append({"aba": ABA_VAL, "cel": cel, "antes": antes, "novo": novo, "ref": REF_6A2})
+    b43 = ws["B43"].value
+    if b43 != f'=COUNTIF({CANTOS_TIRE},"OK")':
+        raise ValueError(f"{ABA_VAL}!B43: fórmula inesperada na origem: {b43!r}")
+    out.append({"aba": ABA_VAL, "cel": "B43", "antes": b43, "novo": B43_NOVA, "ref": REF_6A2})
+    out.append({"aba": ABA_VAL, "cel": "C43", "antes": ws["C43"].value, "novo": C43_NOVA, "ref": REF_6A2})
+    return out
+
+
 # Textos que a 6a deixaria falsos (ruling do controlador na Task 7): o resumo do pneu e o item 7 do guia na 00_README e o
 # rótulo do μ efetivo na 10_TIRE. O 04_DECISION_REGISTER C17 fica: é o registro histórico do DR-013.
 # (aba, célula, trecho de hoje, trecho novo): só o trecho muda, o resto da frase fica
 TEXTOS_6A = (
     ("00_README", "A37", "fora da faixa do dataset o resultado é N/A",
-     "fora da faixa do dataset, Fz (> 0), α e γ entram limitados ao valor mínimo ou máximo da faixa, com aviso no "
-     "status (EDR-056); Fz ≤ 0 e κ fora da faixa dão N/A"),
-    ("00_README", "A53", "valor fora da faixa do pneu",
-     "Fz ≤ 0 ou κ fora da faixa do pneu; Fz, α e γ fora da faixa entram limitados ao limite, com aviso, EDR-056"),
+     "fora da faixa do dataset, Fz (> 0), α, γ e κ entram limitados ao valor mínimo ou máximo da faixa, com aviso no "
+     "status (EDR-056); Fz ≤ 0 dá N/A"),
+    ("00_README", "A53", "valor fora da faixa do pneu, instabilidade",
+     "instabilidade ou Fz ≤ 0; Fz, α, γ e κ fora da faixa do pneu entram limitados ao limite, com aviso, EDR-056"),
     ("10_TIRE", "A31", "√(Fx²+Fy²)/Fz", "√(Fx²+Fy²)/Fz usado (limitado à faixa com aviso, EDR-056)"),
 )
 REF_6A_TEXTO = REF_6A + "; texto que a 6a deixaria falso (ruling do controlador, Task 7)"
@@ -191,7 +232,7 @@ def _changelog() -> list[tuple[str, str]]:
         (f"B{lin}", "V4.1, equilibrio na planilha (incremento 4): abas 16_EQUILIBRIO a 22_CADEIA (analise de par do "
                     "Milliken com as regras do EDR-056, gradiente de subesterco K pelas parcelas, tabela de troca da "
                     "barra dianteira, cobertura e cadeia de decisao) e bloco novo do 14_DASHBOARD; nomes de "
-                    "data/nomes_V4_1.csv; 10_TIRE com Fz, alfa e gama limitados a faixa do .tir com aviso (EDR-056); "
+                    "data/nomes_V4_1.csv; 10_TIRE com Fz, alfa, gama e kappa limitados a faixa do .tir com aviso (EDR-056); "
                     "textos da spec 12.1. Gerada da tag v4.0 por python/gerar_v4_1.py."),
         (f"C{lin}", f"EDR-060 (equilibrio na planilha V4.1), EDR-056 (10_TIRE), EDR-059 (faixa SUS-10XX). Plano: {PLANO}. "
                     f"Registro celula a celula: {REGISTRO}. NOT_VALIDATED fisicamente."),
@@ -205,7 +246,7 @@ def alteracoes_v4_1(origem: Path | None = None) -> list[dict]:
         caminho = Path(origem) if origem is not None else ae.extrair_v40(Path(tmp))
         wb = openpyxl.load_workbook(caminho)
         try:
-            out = _alteracoes_tire(wb[ABA_TIRE])
+            out = _alteracoes_tire(wb[ABA_TIRE]) + _alteracoes_validation(wb[ABA_VAL])
             for textos, ref in ((TEXTOS_6A, REF_6A_TEXTO), (TEXTOS_6B, REF_6B)):
                 for aba, cel, trecho, novo in textos:
                     antes = wb[aba][cel].value
@@ -308,7 +349,7 @@ INTRO_REGISTRO = (
     "Gerado da tag v4.0; não edite à mão (regere com `uv run python -X utf8 python/gerar_v4_1.py --registro "
     f"{REGISTRO}`). Primeiro, cada célula existente que a V4.1 muda (autorizações 6a, 6b e 6c do plano {PLANO}), "
     "com o texto de antes e o de depois. A 6a (10_TIRE, EDR-056) troca a guarda `X$26<>\"OK\"` por "
-    "`LEFT(X$26,2)<>\"OK\"` e usa Fz (linha 22), α do arquivo (38) e γ do arquivo (39) limitados à faixa do .tir "
+    "`LEFT(X$26,2)<>\"OK\"` e usa Fz (linha 22), α do arquivo (38), γ do arquivo (39) e κ (25) limitados à faixa do .tir "
     "(`MIN(MAX(…))`); dentro da faixa nenhum valor muda (TC-WB41-003). Depois, as fórmulas novas, uma linha por aba e "
     "família do catálogo (F1-F19, REF), com o número de células, a primeira e a última e o texto da primeira: as 117181 "
     "fórmulas novas somam cerca de 31 MB de texto, e o de cada célula é reproduzível pelo gerador (CA-07, TC-WB41-002). "
