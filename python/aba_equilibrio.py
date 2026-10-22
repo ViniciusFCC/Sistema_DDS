@@ -352,7 +352,7 @@ def _cond_verif(vf: Verificacao) -> str:
     """Fórmula de uma verificação: "-" quando passa, a mensagem quando falha (sem o "=")."""
     n = f"{{{vf.nome}}}" if vf.nome else ""
     if vf.tipo == "lista_sentido":
-        corpo = f'IF(OR({n}="Esquerda",{n}="Direita"),"-","{vf.texto}")'
+        corpo = f'IF(OR(EXACT({n},"Esquerda"),EXACT({n},"Direita")),"-","{vf.texto}")'   # EXACT: com caixa, como o Python
     elif vf.tipo == "chave":
         corpo = f'IF(ISNUMBER({n}),IF(OR({n}=0,{n}=1),"-","{vf.texto}"),"{vf.texto}")'
     elif vf.tipo == "num":
@@ -362,7 +362,7 @@ def _cond_verif(vf: Verificacao) -> str:
     elif vf.tipo == "nao_negativo":
         corpo = f'IF(ISNUMBER({n}),IF({n}>=0,"-","{vf.texto} deve ser >= 0"),"-")'
     elif vf.tipo == "eixos":
-        corpo = f'IF(AND(ISNUMBER({{s_a}}),ISNUMBER({{s_f}}),ISNUMBER({{s_g}})),"-","{vf.texto}")'
+        corpo = f'IF(AND(ISNUMBER({{s_a}}),ISNUMBER({{s_f}}),ISNUMBER({{s_g}}),OR(EXACT({{eixos}},"SAE_CALSPAN"),EXACT({{eixos}},"ISO_TYDEX"))),"-","{vf.texto}")'
     elif vf.tipo == "coef":
         corpo = (f"IF(AND(COUNT('10_TIRE'!$B$86:$B$175)=90,ISNUMBER('10_TIRE'!$B$177)),\"-\",\"{vf.texto}\")")
     elif vf.tipo == "derivados":
@@ -399,7 +399,7 @@ def _layout16() -> list[_Linha16]:
     # Caso efetivo (F1)
     sec("Caso efetivo: curva à esquerda equivalente (com \"Direita\", o espelho de equilibrio.espelhar)")
     res("ok", "Caso válido (situação = OK)", '=IF({status}="OK",1,0)', "0/1", "F1")
-    res("dir", "Curva à direita (análise no espelho)", '=IF({sentido}="Direita",1,0)', "0/1", "F1")
+    res("dir", "Curva à direita (análise no espelho)", '=IF(EXACT({sentido},"Direita"),1,0)', "0/1", "F1")
     res("raio", "Raio ativo (h2, h3, h8 ou h9 ligada)", "=IF(" + CONDICOES["raio"][0] + ",1,0)", "0/1", "F1")
     isn = ",".join(f"ISNUMBER({{{k}}})" for k in V40_DERIVADOS)
     res("base_ok", "Resultados da V4.0 usados com valor numérico", f"=IF(AND({isn}),1,0)", "0/1", "F1")
