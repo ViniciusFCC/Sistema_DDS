@@ -59,6 +59,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import openpyxl
+from openpyxl.comments import Comment
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, PatternFill
 from openpyxl.utils import get_column_letter as COL
@@ -333,6 +334,10 @@ AVISO_ROBUSTEZ = ("robustez ao pneu: ver relatório docs/v4-1/inc4-equilibrio-na
                   "planilha)")   # decisão 1 do plano (spec 7.6, item 4): nenhum número do Python é copiado
 TXT_REGIMES = ("regimes diferentes (Milliken p. 313-315): o K vale no regime linear (a_y pequeno) e o veredito, no limite. "
                "Subesterço no linear com LOOSE no limite não é erro.")   # spec 7.3, item 5
+# Nota na célula do veredito (spec 7.3, item 1): o termo principal é o do limite, pelo Milliken p. 315
+NOTA_VEREDITO = ("Push/loose é o termo do Milliken (p. 315) para o comportamento no limite; understeer/oversteer "
+                 "(subesterço/sobresterço) fica reservado ao regime linear (gradiente K, ao lado). O termo entre "
+                 "parênteses é só para familiaridade (spec 7.3, item 1).")
 TXT_SENTIDO = ": um sentido por vez (decisão 2 do plano); troque o sentido da curva na entrada para ver o outro"
 TXT_DIF = ("Diferencial: aberto (h10), o único tipo que a planilha implementa (spec 7.4; decisão 3 do plano); Fx igual "
            "nas duas rodas traseiras. Tipo real a confirmar.")
@@ -1069,6 +1074,7 @@ def _aba16(ctx: _Ctx, est: dict) -> None:
     _bissecao(ctx, ws)
     _validacoes16(ws)
     _cf_veredito(ws, f"B{LINHAS16['txt_ver']}")
+    ws[f"B{LINHAS16['txt_ver']}"].comment = Comment(NOTA_VEREDITO, "Sistema_DDS")
     for k in ("txt_k", "txt_ver", "apoio", "txt_sent"):
         ws[f"B{LINHAS16[k]}"].alignment = Alignment(wrap_text=True, vertical="top")
     ws.column_dimensions["A"].width, ws.column_dimensions["B"].width = 62, 22
@@ -1937,7 +1943,8 @@ HIPOTESES74 = (
 )
 # Texto da coluna Chave quando a hipótese não tem chave (a planilha sempre a aplica, ou não a implementa)
 CHAVE74 = {"1": "sem chave (sempre)", "4": "sem chave (sempre; ganho de camber do SUS-404)", "5": "sem chave (sempre)",
-           "6": "sem chave (sempre)", "10": "sem chave: aberto, declarado (decisão 3 do plano)"}
+           "6": "sem chave (sempre)", "10": "sem chave: aberto, declarado (decisão 3 do plano)",
+           "15": "sem chave (planilha e Python iguais, spec 7.4)"}
 CHAVE74_TEXTO = {"2": "h2 (o toe das entradas Toe entra sempre)", "7": "h7 (e a entrada Sentido da curva)"}
 # "Fora" da spec §2 (o que o modelo não cobre)
 FORA2 = (
@@ -1947,7 +1954,7 @@ FORA2 = (
     "Compliance (sem dado).",
     "Mz no momento de guinada (Mz do PAC2002 não verificado, EDR-037).",
     "Conversão do custo em pontos de competição (depende do melhor tempo dos concorrentes).",
-    "Redesenho estético da planilha (fase própria, mais tarde).",
+    "Redesenho estético da planilha (fase própria, mais tarde; a V4.0 só remove as travas que impediriam essa fase).",
 )
 
 
@@ -2007,8 +2014,8 @@ def _aba22(ctx: _Ctx, est: dict) -> None:
     _estilo(ws["A4"], est, "secao")
     niveis = (
         ("Objetivo", "O que o carro precisa fazer (prova ou uso: skidpad, autocross, endurance/eficiência, "
-                     "previsibilidade para o piloto). A lista de objetivos é decisão da equipe, registrada em EDR: a "
-                     "confirmar."),
+                     "previsibilidade para o piloto). A lista de objetivos é decisão da equipe, registrada em EDR; os "
+                     "nomes das provas vêm do regulamento."),
         ("Comportamento", "Grandeza física que se pode medir no carro. No equilíbrio: o gradiente de subesterço K "
                           "(linear) e o push/loose no limite, com o C_N residual."),
         ("Parâmetro", "Hardware ou acerto (mola, barra, MR, geometria). Sai do modelo; não é digitado como meta."),
@@ -2030,7 +2037,7 @@ def _aba22(ctx: _Ctx, est: dict) -> None:
              "(07_KINEMATICS); downforce (08_VEHICLE_STATE); pneu (10_TIRE); toe, raio, CG lateral, aero, tração e "
              "chaves (16_EQUILIBRIO, linhas 4 a " + str(LINHA_ENTRADA0 + len(ENTRADAS16) - 1) + ")", None))),
         ("2. Rigidez de rolagem K_φ e λ_f", (
-            ("K_φ dianteiro (SUS-206)", V40["KphiF"]), ("K_φ traseiro (SUS-206)", V40["KphiR"]),
+            ("K_φ dianteiro (SUS-206)", V40["KphiF"]), ("K_φ traseiro (SUS-207)", V40["KphiR"]),
             ("λ_f = K_φF/(K_φF + K_φR)", V40_20["lam06"]))),
         ("3. Fz por roda", (
             (f"17_EQ_PAR, colunas {c17('Fz_FL')} a {c17('Fz_RR')}: Fz de cada roda por linha de a_y (cálculo auxiliar, "
