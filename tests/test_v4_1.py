@@ -96,7 +96,7 @@ def linha(cel: str) -> int:
 def desfazer_6a(novo: str, col: str) -> str:
     """Inverso de gerar_v4_1.formula_tire_limitada, escrito à parte: guarda LEFT → guarda exata; MIN(MAX(…)) → ref."""
     s = novo.replace(f'LEFT({col}$26,2)<>"OK"', f'{col}$26<>"OK"')
-    for lin, lo, hi in ((22, 87, 88), (38, 89, 90), (39, 91, 92)):
+    for lin, lo, hi in ((22, 87, 88), (38, 89, 90), (39, 91, 92), (25, 93, 94)):
         s = s.replace(f"MIN(MAX({col}${lin},$B${lo}),$B${hi})", f"{col}${lin}")
     return s
 
@@ -126,6 +126,7 @@ with tempfile.TemporaryDirectory(prefix="dds_v41_") as tmp:
     n_tire = len(esperado_alt)
     esperado_alt |= {("10_TIRE", "I26"), ("00_README", "A37"), ("00_README", "A53"), ("10_TIRE", "A31"),
                      ("13_VALIDATION", "A25"), ("00_README", "A8"), ("14_DASHBOARD", "A19"),
+                     *(("13_VALIDATION", c) for c in ("B40", "B41", "B42", "B43", "C43")),
                      ("00_README", "A3"), ("15_CHANGELOG", "A21"), ("15_CHANGELOG", "B21"), ("15_CHANGELOG", "C21")}
     alt_set = {(a["aba"], a["cel"]) for a in alts}
     conj_ok = alt_set == esperado_alt and len(alts) == len(alt_set) and n_tire == 215 and len(f40) == 387
@@ -145,12 +146,12 @@ with tempfile.TemporaryDirectory(prefix="dds_v41_") as tmp:
                 inverso.append(a["cel"])
         elif a["aba"] == "10_TIRE" and linha(a["cel"]) == 26 and a["cel"] != "I26":
             if not all(t in a["novo"] for t in ('"N/A - entrada ausente"', '"N/A - dataset inválido"',
-                                                '"N/A - Fz<=0 (liftoff)"', '"N/A - κ fora da faixa"', '"OK"',
+                                                '"N/A - Fz<=0 (liftoff)"', '"OK"',
                                                 "OK - limitado à faixa do .tir (EDR-056): ")):
                 inverso.append(a["cel"])
     textos_ok = all(a["novo"].replace(novo, trecho) == a["antes"] and novo in a["novo"]
                     for aba, cel, trecho, novo in g41.TEXTOS_6A + g41.TEXTOS_6B for a in alts if (a["aba"], a["cel"]) == (aba, cel))
-    antigas_ok = conj_ok and not antes_novo and reg_ok and not iguais_fora and not sobra and f_iguais == 387 - n_tire \
+    antigas_ok = conj_ok and not antes_novo and reg_ok and not iguais_fora and not sobra and f_iguais == 387 - n_tire - 4 \
         and not inverso and textos_ok
     # Células novas: fórmula ⇔ registro de montar, mesmo texto, família do catálogo e da aba.
     reg_novas = {(r["aba"], r["cel"]): r for r in novas}
