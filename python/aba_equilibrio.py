@@ -2121,17 +2121,26 @@ def extrair_v40(pasta: Path) -> Path:
     return destino
 
 
+_ALTERACOES_V41: list[dict] | None = None
+
+
 def copia_v41(tmp: Path, alteracoes: dict | None = None, nome: str = "V4_1_copia.xlsx") -> Path:
-    """Helper de teste: V4.0 da tag v4.0 + `montar` + nomes da V4.1 + `alteracoes` (nome definido -> valor; None
-    esvazia a célula), gravada em `tmp/nome`. Os valores de teste ficam só nessa cópia. Recusa caminho em excel/."""
+    """Helper de teste: a V4.1 como o gerador a monta (V4.0 da tag v4.0 + `gerar_v4_1.montar_v41`: abas novas, nomes da
+    V4.1 e as alterações aprovadas em células existentes, `gerar_v4_1.alteracoes_v4_1()`) + `alteracoes` (nome definido
+    -> valor; None esvazia a célula), gravada em `tmp/nome`. Os valores de teste ficam só nessa cópia. Recusa caminho
+    em excel/."""
+    import gerar_v4_1   # aqui, e não no topo: o gerador importa este módulo
+    global _ALTERACOES_V41
     tmp = Path(tmp)
     saida = (tmp / nome).resolve()
     if (RAIZ / "excel").resolve() in saida.parents:
         raise ValueError(f"cópia de teste em excel/ recusada: {saida}")
-    wb = openpyxl.load_workbook(extrair_v40(tmp))
+    origem = extrair_v40(tmp)
+    if _ALTERACOES_V41 is None:
+        _ALTERACOES_V41 = gerar_v4_1.alteracoes_v4_1(origem)
+    wb = openpyxl.load_workbook(origem)
     try:
-        montar(wb)
-        acrescentar_nomes(wb)
+        gerar_v4_1.montar_v41(wb, _ALTERACOES_V41)
         for nome_def, valor in (alteracoes or {}).items():
             aba, cel = _destino(wb, nome_def)
             wb[aba][cel].value = valor
