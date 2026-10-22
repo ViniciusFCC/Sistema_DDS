@@ -4,7 +4,8 @@ Recalcula CÓPIAS (aba_equilibrio.copia_v41: V4.0 da tag v4.0 + abas 16-18 + nom
 (COM) ou pelo LibreOffice (recalculo_planilha.py; DDS_RECALC=excel|libreoffice força um). A V4.0 de referência em excel/
 e a V3.0 viva nunca são abertas para escrita. Sem motor: NÃO EXECUTÁVEL (código 3), que nunca conta como aprovado.
 Uso: uv run python -X utf8 tests/test_workbook_v4_1.py
-Namespace TC-WB41-xxx (IDs autorizados pelo usuário: 001 a 006; este script tem, por enquanto, o 004 e o 005).
+Namespace TC-WB41-xxx (IDs autorizados pelo usuário: 001 a 006; este script tem, por enquanto, o 004, o 005 e a parte 1
+do 006).
 
 TC-WB41-004: em cada caso (valores de TESTE, só nas cópias; não são o carro), o caso que a 16_EQUILIBRIO calcula, lido
 por nomes (caso_planilha.caso_da_planilha_v41), vai a equilibrio.analise_par, e a planilha tem de dar o mesmo:
@@ -35,6 +36,15 @@ K da 1ª linha (res_16_k_total e as parcelas), V_char e V_crit (velocidade_carac
 é N/A com o motivo da situação das entradas. Roll steer (07_KINEMATICS B82/B83): RS1 = C2 com ε_f 0,05 e ε_r −0,03 °/°
 (TESTE; k_roll_steer ≠ 0 bate com o Python); RS2 = C2 com ε_f vazio (caso_da_planilha_v41 levanta o motivo; a planilha dá
 k_roll_steer e K N/A com "… a confirmar" e o resto das parcelas igual ao Python). O passo 2 usa o caso com passo1=False.
+TC-WB41-006 (parte 1; a parte 2, textos de exibição, vem depois): nas MESMAS cópias, a tabela de troca da barra dianteira
+(20_EQ_TROCA, K_ARB dianteiro × 0,5; 0,75; 1; 1,5; 2 do valor da 06, grade de exibição) contra o Python: para cada linha,
+caso_da_planilha_v41 com o K_ARB dianteiro × fator (K_φF por suspension_model.roll_stiffness_axle, a mesma ordem de
+verificações), equilibrio.analise_par e equilibrio_linear.parcelas_k(caso, 0): K_φF, λ_f, K, S_f, S_r, a_y limite,
+resolução, veredito, C_N e motivos; depois o a_y do acerto neutro pelo cruzamento das saturações (1º par de linhas
+vizinhas em que S_r − S_f troca de sinal, por interpolação linear de S_f e S_r, ou vale 0; senão a linha NEUTRO de menor
+|S_r − S_f|; senão N/A "neutro fora da faixa da tabela", sem extrapolação) e o custo = a_y do neutro − a_y limite do ×1,
+com "limiar não definido" (spec §5, itens 4 e 5). TR1 = C2 com o K_ARB traseiro × 1,25 (TESTE): o neutro cai entre ×1 e
+×1,5, e o check exige pelo menos um caso com a interpolação.
 O log traz o tempo de recálculo de cada cópia e o número de células com fórmula de cada aba (insumo do portão da Task 4).
 "Passou" = a planilha reproduz o oráculo; não é validação física.
 """
@@ -86,10 +96,13 @@ RF1 = {**C4, ENT["cza"]: None}
 EPS_F, EPS_R = "ent_07_roll_steer_dianteiro_epsilon_f", "ent_07_roll_steer_traseiro_epsilon_r"
 RS1 = {**C2, EPS_F: 0.05, EPS_R: -0.03}
 RS2 = {**C2, EPS_F: None}
+# Tabela de troca (TC-WB41-006): TR1 = C2 com o K_ARB traseiro × 1,25 (TESTE), para o neutro cair entre as linhas ×1 e
+# ×1,5 da barra dianteira e o cruzamento sair de uma interpolação (no C2 o ×1 já é neutro, com S_r − S_f = 0).
+TR1 = {**C2, "ent_06_k_arb_traseiro": 5012.32 * 1.25}
 # nome, alterações, veredito esperado (None = só a comparação com o Python), motivo esperado (prefixo) ou None
 CASOS = [("C1", {}, None, None), ("C2", C2, eq.NEUTRO, None), ("C3", C3, eq.PUSH, None), ("C3b", C3b, eq.LOOSE, None),
          ("C4", C4, None, None), ("C4b", C4b, None, None), ("C5", C5, eq.NA, "Fz_"), ("RF1", RF1, eq.NA, "CzA a confirmar"),
-         ("RS1", RS1, None, None), ("RS2", RS2, None, None)]
+         ("RS1", RS1, None, None), ("RS2", RS2, None, None), ("TR1", TR1, None, None)]
 
 
 def num(v) -> bool:
@@ -698,9 +711,140 @@ def comparar_k(nome, copia, falhas):
             f"Python {rel_py if rel_py is None else f'{rel_py:.2e} ({crit_py})'}")
 
 
+# --- TC-WB41-006 (parte 1): tabela de troca da barra dianteira (20_EQ_TROCA) × Python ---
+def caso_com_karb(copia, fator, passo1):
+    """caso_da_planilha_v41 com o K_ARB dianteiro da 06 × fator (o K_φF sai de suspension_model.roll_stiffness_axle
+    dentro de caso_planilha._cfg, e a instabilidade de rolagem é conferida com ele, na ordem da planilha). Troca o
+    _cfg só durante a chamada; a cópia não muda."""
+    orig = cp._cfg
+    cp._cfg = lambda x: orig({**x, "KarbF": x["KarbF"] * fator})
+    try:
+        return cp.caso_da_planilha_v41(copia, TIR, passo1=passo1)
+    finally:
+        cp._cfg = orig
+
+
+def linha_troca_python(copia, fator):
+    """Esperado de uma linha da tabela: dict com as chaves de ae.TAB20 (None = N/A) e os motivos."""
+    try:
+        caso = caso_com_karb(copia, fator, False)
+    except ValueError as e:   # entradas inválidas (ou instabilidade de rolagem com o K_φF da linha): tudo N/A
+        return {"invalida": str(e)}
+    m_rs = None
+    try:
+        p = el.parcelas_k(caso_com_karb(copia, fator, True), 0.0)
+    except ValueError as e:   # só o roll steer sem dado: K N/A com o motivo no fim da lista (como comparar_k)
+        p0 = el.parcelas_k(caso, 0.0)
+        m_rs = str(e)
+        p = dataclasses.replace(p0, k_roll_steer=None, k_total=None, motivo="; ".join(m for m in (p0.motivo, m_rs) if m))
+    r = eq.analise_par(caso)
+    kf, kr = caso.cfg.roll_stiffness_front, caso.cfg.roll_stiffness_rear
+    return {"kphi": kf, "lam": kf / (kf + kr), "k": p.k_total, "kmot": p.motivo or "-", "sf": r.ay_sat_f, "sr": r.ay_sat_r,
+            "aylim": r.ay_lim, "resol": r.resolucao_ms2, "ver": r.veredito, "cn": r.c_n, "mot": r.motivo or "-"}
+
+
+def neutro_python(linhas):
+    """a_y do acerto neutro pela regra da 20_EQ_TROCA (spec §5, item 4): o 1º par de linhas vizinhas, na ordem dos fatores,
+    com as duas saturações em que S_r − S_f troca de sinal (interpolação linear de S_f e S_r entre elas) ou vale 0; sem
+    troca, a linha NEUTRO de menor |S_r − S_f| (a 1ª no empate); senão None. Devolve (a_y, ramo, d por linha)."""
+    d = [ln["sr"] - ln["sf"] if ln.get("sf") is not None and ln.get("sr") is not None else None for ln in linhas]
+    for j, dj in enumerate(d):
+        if dj is None:
+            continue
+        if dj == 0:
+            return linhas[j]["sf"], f"zero na linha {j}", d
+        if j + 1 < len(d) and d[j + 1] is not None and dj * d[j + 1] < 0:
+            sf, sf1 = linhas[j]["sf"], linhas[j + 1]["sf"]
+            return sf + (sf1 - sf) * dj / (dj - d[j + 1]), f"interpolação entre as linhas {j} e {j + 1}", d
+    neu = [(abs(dj), j) for j, dj in enumerate(d) if dj is not None and linhas[j]["ver"] == eq.NEUTRO]
+    if neu:
+        j = min(neu)[1]
+        return linhas[j]["aylim"], f"linha NEUTRO {j}", d
+    return None, "fora da faixa", d
+
+
+INTERPOLADOS6 = []   # casos em que o neutro saiu de uma interpolação estrita (exigido: pelo menos um)
+
+
+def comparar_troca(nome, copia, falhas):
+    """Compara a 20_EQ_TROCA da cópia recalculada com o Python; devolve o resumo (texto) do caso."""
+    wb = openpyxl.load_workbook(copia, data_only=True)
+    sh = [{q: valor(wb, ae.NOME20[(q, j)]) for q, _, _ in ae.TAB20 if q != "fator"} for j in range(len(ae.FATORES20))]
+    custo = {q: valor(wb, n) for q, n in ae.NOME20_CUSTO.items()}
+    status = valor(wb, ae.NOME16["status"])
+    wb.close()
+    py = [linha_troca_python(copia, f) for f in ae.FATORES20]
+    pior = cp.pior_origem_do_caso_v41(copia, linear=True)
+    for j, (s, p) in enumerate(zip(sh, py)):
+        onde = f"{nome} linha {j} (×{ae.FATORES20[j]:g})"
+        if s["pior"] != pior:
+            falhas.append(f"{onde} pior origem: planilha {s['pior']!r} Python {pior!r}")
+        if "invalida" in p:
+            e = p["invalida"]
+            if not (s["ver"] == eq.NA and s["mot"] == e and s["k"] == "N/A" and s["kmot"] == e):
+                falhas.append(f"{onde}: Python N/A pelas entradas ({e}); planilha veredito={s['ver']!r} motivo={s['mot']!r} "
+                              f"K={s['k']!r} motivo do K={s['kmot']!r}")
+            continue
+        for q in ("kphi", "lam"):
+            if not perto(s[q], p[q], onde=f"{nome} troca {q}"):
+                falhas.append(f"{onde} {q}: planilha {s[q]!r} Python {p[q]!r}")
+        if not k_igual(s["k"], p["k"], f"{onde} K"):
+            falhas.append(f"{onde} K: planilha {s['k']!r} Python {p['k']!r}")
+        kg_py = None if p["k"] is None else el.para_graus_por_g(p["k"])
+        if not (s["kg"] == "N/A" if kg_py is None else num(s["kg"]) and abs(s["kg"] - kg_py) <= TOL_K):
+            falhas.append(f"{onde} K em °/g: planilha {s['kg']!r} Python {kg_py!r}")
+        for q in ("sf", "sr", "aylim", "resol", "cn"):
+            if not sat_igual(s[q], p[q]):
+                falhas.append(f"{onde} {q}: planilha {s[q]!r} Python {p[q]!r}")
+        for q, base in (("sfg", "sf"), ("srg", "sr"), ("aylimg", "aylim")):
+            if not sat_igual(s[q], None if p[base] is None else p[base] / G):
+                falhas.append(f"{onde} {q}: planilha {s[q]!r} Python {p[base]!r}/G")
+        for q in ("ver", "mot", "kmot"):
+            if s[q] != p[q]:
+                falhas.append(f"{onde} {q}: planilha {s[q]!r} Python {p[q]!r}")
+    # Cruzamento das saturações e custo do comportamento
+    ayn, ramo, d = neutro_python(py)
+    escala = max([abs(x) for ln in py for x in (ln.get("sf"), ln.get("sr")) if x is not None] or [1.0])
+    for j, dj in enumerate(d):
+        if not (sh[j]["d"] == "-" if dj is None else perto(sh[j]["d"], dj, escala, f"{nome} troca d")):
+            falhas.append(f"{nome} linha {j} S_r − S_f: planilha {sh[j]['d']!r} Python {dj!r}")
+    invalida = status != "OK"
+    if invalida:
+        ok = custo["ayn"] == "N/A" and custo["aynm"] == status and custo["perda"] == "N/A" and custo["perdam"] == status
+        if not ok:
+            falhas.append(f"{nome} custo com entradas inválidas: planilha {custo!r}, esperado N/A com {status!r}")
+        return f"{nome}: tabela N/A pelas entradas ({status})"
+    if ayn is None:
+        if not (custo["ayn"] == "N/A" and custo["aynm"] == ae.M_NEUTRO_FORA and custo["perda"] == "N/A"
+                and custo["perdam"] == ae.M_NEUTRO_FORA and custo["limiar"] == "N/A"):
+            falhas.append(f"{nome} neutro fora da faixa: planilha {custo!r}")
+    else:
+        if not (perto(custo["ayn"], ayn, onde=f"{nome} a_y neutro") and custo["aynm"] == "-"
+                and perto(custo["ayng"], ayn / G, onde=f"{nome} a_y neutro g")):
+            falhas.append(f"{nome} a_y do neutro: planilha {custo['ayn']!r} / {custo['aynm']!r} Python {ayn!r} ({ramo})")
+        lim = py[ae.J_ATUAL]["aylim"]
+        if lim is None:
+            m = "a_y limite do acerto atual N/A (16_EQUILIBRIO): " + py[ae.J_ATUAL]["mot"]
+            if not (custo["perda"] == "N/A" and custo["perdam"] == m):
+                falhas.append(f"{nome} custo: planilha {custo['perda']!r} / {custo['perdam']!r}, esperado N/A com {m!r}")
+        else:
+            e = max(abs(ayn), abs(lim))
+            if not (perto(custo["perda"], ayn - lim, e, f"{nome} custo") and perto(custo["perdag"], (ayn - lim) / G, e / G)
+                    and custo["perdam"] == "-" and custo["limiar"] == ae.M_LIMIAR):
+                falhas.append(f"{nome} custo: planilha {custo['perda']!r} / {custo['perdam']!r} / {custo['limiar']!r} "
+                              f"Python {ayn - lim!r}")
+        if ramo.startswith("interpolação"):
+            INTERPOLADOS6.append(nome)
+    g = lambda x: "N/A" if x is None else f"{x / G:.4f} g"
+    vs = "/".join(ln.get("ver", "N/A") for ln in py)
+    return (f"{nome}: vereditos {vs}; neutro {g(ayn)} ({ramo}); custo "
+            f"{'N/A' if ayn is None or py[ae.J_ATUAL].get('aylim') is None else g(ayn - py[ae.J_ATUAL]['aylim'])}")
+
+
 # --- TC-WB41-004 e TC-WB41-005 (as mesmas cópias recalculadas) ---
 falhas, resumos, tempos = [], [], []
 falhas5, resumos5 = [], []
+falhas6, resumos6 = [], []
 base = ae.extrair_v40(Path(tempfile.mkdtemp()))
 info_b, t_b = recalcular(base)
 print(f"  V4.0 da tag (referência de tempo): {t_b:.1f} s no motor, {info_b['total_formulas']} fórmulas, "
@@ -717,7 +861,7 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
         falhas.append(f"{nome}: {info['total_errors']} erro(s) de fórmula {info['error_summary']}")
     if nome == "C1":
         wbf = openpyxl.load_workbook(copia)
-        for aba in (ae.ABA16, ae.ABA17, ae.ABA18, ae.ABA19):
+        for aba in (ae.ABA16, ae.ABA17, ae.ABA18, ae.ABA19, ae.ABA20, *ae.AUX20.values()):
             n = sum(1 for lin in wbf[aba].iter_rows() for c in lin if isinstance(c.value, str) and c.value.startswith("="))
             print(f"  CÉLULAS com fórmula em {aba}: {n}")
         wbf.close()
@@ -725,6 +869,7 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
         caso_c3 = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
     resumos.append(comparar_caso(nome, copia, esperado, prefixo, falhas))
     resumos5.append(comparar_k(nome, copia, falhas5))
+    resumos6.append(comparar_troca(nome, copia, falhas6))
     if nome == "RF3":
         caso = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
         r = eq.analise_par(caso)
@@ -753,6 +898,16 @@ check("TC-WB41-005: passo 1 em fórmulas (19_EQ_LINEAR e o K na 16) == equilibri
       "do Newton = bissecção, rel. <= 1e-8; resíduo da igualdade da 1ª linha = o do Python, |Δ| <= 1e-6 °/g; K, V_char, "
       "V_crit e pior origem na 16)",
       not falhas5, f"{len(falhas5)} divergência(s): {falhas5[:8]}")
+for s6 in resumos6:
+    print("  " + s6)
+if not INTERPOLADOS6:
+    falhas6.append("nenhum caso pôs o cruzamento das saturações dentro da tabela por interpolação (o TR1 devia pôr)")
+check("TC-WB41-006 (parte 1): tabela de troca da barra dianteira (20_EQ_TROCA, K_ARB dianteiro × 0,5; 0,75; 1; 1,5; 2) == "
+      "equilibrio.analise_par e equilibrio_linear.parcelas_k com o K_ARB trocado, em todos os casos (K_φF e λ_f rel. <= 1e-9; "
+      "K |Δ| <= 1e-6 °/g; S_f, S_r, a_y limite, resolução, C_N, também em g; veredito e motivos exatos; pior origem); "
+      "a_y do neutro pelo cruzamento das saturações (interpolação, nunca S_r − S_f) e custo = a_y do neutro − a_y limite "
+      f"atual, \"limiar não definido\"; interpolação exercitada em {INTERPOLADOS6}",
+      not falhas6, f"{len(falhas6)} divergência(s): {falhas6[:8]}")
 
 print("\n--- Resumo ---"); p = sum(1 for _, s in results if s == "PASS"); f = len(results) - p
 print(f"{p} PASS, {f} FAIL, de {len(results)} testes")
