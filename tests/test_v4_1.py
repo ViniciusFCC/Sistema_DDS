@@ -9,10 +9,11 @@ TC-WB41-001 (estrutura da V4.1 gerada da tag v4.0 por gerar_v4_1.gerar):
 - abas: as da V4.0, na mesma ordem, e depois 16, 17, 18, 19, 20, 20a…20d, 21 e 22;
 - células da V4.0: as 387 fórmulas e todos os valores iguais, fora das células de alteracoes_v4_1(); o conjunto dessas
   células é exatamente o aprovado (item 6 do plano), montado aqui de forma independente: 6a = status B26:F26, toda
-  fórmula da 10_TIRE com a guarda X$26<>"OK" (215 fórmulas ao todo) e a nota I26; 6b = 13_VALIDATION A25, 00_README A8,
+  fórmula da 10_TIRE com a guarda X$26<>"OK" (215 fórmulas ao todo), a nota I26 e os textos que a 6a deixaria falsos
+  (00_README A37 e A53, rótulo 10_TIRE A31; ruling do controlador); 6b = 13_VALIDATION A25, 00_README A8,
   14_DASHBOARD A19; 6c = 00_README A3 e 15_CHANGELOG A21:C21. Cada alteração tem antes = V4.0 e novo = V4.1; desfazer a
-  regra do EDR-056 (guarda LEFT e entradas limitadas MIN(MAX(…))) devolve o texto da V4.0, e os textos 6b mudam só o
-  trecho aprovado. Célula nova numa aba antiga só no bloco do 14_DASHBOARD (linha 40 em diante) e no 15_CHANGELOG;
+  regra do EDR-056 (guarda LEFT e entradas limitadas MIN(MAX(…))) devolve o texto da V4.0, e os textos da 6a e da 6b
+  mudam só o trecho aprovado. Célula nova numa aba antiga só no bloco do 14_DASHBOARD (linha 40 em diante) e no 15_CHANGELOG;
 - células novas: toda fórmula das abas novas e do bloco do 14 está no registro de aba_equilibrio.montar com o mesmo
   texto e uma família do catálogo (F1-F19, REF), na aba que o catálogo e os rulings do controlador aceitam;
 - nomes: os 698 da V4.0 (e Origens) iguais; os novos = data/nomes_V4_1.csv = aba_equilibrio.NOMES_V41 (CSV UTF-8, LF),
@@ -123,7 +124,8 @@ with tempfile.TemporaryDirectory(prefix="dds_v41_") as tmp:
     esperado_alt |= {("10_TIRE", f"{c}{r}") for c in "BCDEF" for r in range(27, t10.max_row + 1)
                      if formula(t10[f"{c}{r}"].value) and f'{c}$26<>"OK"' in t10[f"{c}{r}"].value}
     n_tire = len(esperado_alt)
-    esperado_alt |= {("10_TIRE", "I26"), ("13_VALIDATION", "A25"), ("00_README", "A8"), ("14_DASHBOARD", "A19"),
+    esperado_alt |= {("10_TIRE", "I26"), ("00_README", "A37"), ("00_README", "A53"), ("10_TIRE", "A31"),
+                     ("13_VALIDATION", "A25"), ("00_README", "A8"), ("14_DASHBOARD", "A19"),
                      ("00_README", "A3"), ("15_CHANGELOG", "A21"), ("15_CHANGELOG", "B21"), ("15_CHANGELOG", "C21")}
     alt_set = {(a["aba"], a["cel"]) for a in alts}
     conj_ok = alt_set == esperado_alt and len(alts) == len(alt_set) and n_tire == 215 and len(f40) == 387
@@ -138,7 +140,7 @@ with tempfile.TemporaryDirectory(prefix="dds_v41_") as tmp:
     inverso = []
     for a in alts:
         col = a["cel"][0]
-        if a["aba"] == "10_TIRE" and a["cel"] != "I26" and linha(a["cel"]) > 26:
+        if a["aba"] == "10_TIRE" and a["cel"] not in ("I26", "A31") and linha(a["cel"]) > 26:
             if desfazer_6a(a["novo"], col) != a["antes"] or a["novo"] == a["antes"]:
                 inverso.append(a["cel"])
         elif a["aba"] == "10_TIRE" and linha(a["cel"]) == 26 and a["cel"] != "I26":
@@ -147,7 +149,7 @@ with tempfile.TemporaryDirectory(prefix="dds_v41_") as tmp:
                                                 "OK - limitado à faixa do .tir (EDR-056): ")):
                 inverso.append(a["cel"])
     textos_ok = all(a["novo"].replace(novo, trecho) == a["antes"] and novo in a["novo"]
-                    for aba, cel, trecho, novo in g41.TEXTOS_6B for a in alts if (a["aba"], a["cel"]) == (aba, cel))
+                    for aba, cel, trecho, novo in g41.TEXTOS_6A + g41.TEXTOS_6B for a in alts if (a["aba"], a["cel"]) == (aba, cel))
     antigas_ok = conj_ok and not antes_novo and reg_ok and not iguais_fora and not sobra and f_iguais == 387 - n_tire \
         and not inverso and textos_ok
     # Células novas: fórmula ⇔ registro de montar, mesmo texto, família do catálogo e da aba.

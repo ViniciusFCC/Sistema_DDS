@@ -77,7 +77,8 @@ P = {"FZMIN": "$B$87", "FZMAX": "$B$88", "ALPMIN": "$B$89", "ALPMAX": "$B$90", "
 NOTA_STATUS = ("Sem extrapolação: fora da faixa do dataset, Fz (> 0), α e γ entram no cálculo limitados ao valor mínimo "
                "ou máximo da faixa (FZMIN/FZMAX, ALPMIN/ALPMAX, CAMMIN/CAMMAX; convenção do PAC2002, help do Adams "
                "2024.1, p. 83; EDR-056), e o status mostra \"OK - limitado …\" com a entrada, o valor real, o usado e "
-               "o limite. κ fora da faixa continua N/A. Fz≤0 = perda de contato (N/A).")
+               "o limite. κ fora da faixa continua N/A. Fz≤0 = perda de contato (N/A). Com limitação, o μ efetivo "
+               "(linha 31) divide pelo Fz usado (limitado à faixa), não pelo Fz real da linha 22.")
 
 
 def _rel(col: str, lin: int) -> re.Pattern:
@@ -156,6 +157,20 @@ def _alteracoes_tire(ws) -> list[dict]:
     return out
 
 
+# Textos que a 6a deixaria falsos (ruling do controlador na Task 7): o resumo do pneu e o item 7 do guia na 00_README e o
+# rótulo do μ efetivo na 10_TIRE. O 04_DECISION_REGISTER C17 fica: é o registro histórico do DR-013.
+# (aba, célula, trecho de hoje, trecho novo): só o trecho muda, o resto da frase fica
+TEXTOS_6A = (
+    ("00_README", "A37", "fora da faixa do dataset o resultado é N/A",
+     "fora da faixa do dataset, Fz (> 0), α e γ entram limitados ao valor mínimo ou máximo da faixa, com aviso no "
+     "status (EDR-056); Fz ≤ 0 e κ fora da faixa dão N/A"),
+    ("00_README", "A53", "valor fora da faixa do pneu",
+     "Fz ≤ 0 ou κ fora da faixa do pneu; Fz, α e γ fora da faixa entram limitados ao limite, com aviso, EDR-056"),
+    ("10_TIRE", "A31", "√(Fx²+Fy²)/Fz", "√(Fx²+Fy²)/Fz usado (limitado à faixa com aviso, EDR-056)"),
+)
+REF_6A_TEXTO = REF_6A + "; texto que a 6a deixaria falso (ruling do controlador, Task 7)"
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # 6b e 6c: textos
 # ---------------------------------------------------------------------------------------------------------------------
@@ -191,11 +206,12 @@ def alteracoes_v4_1(origem: Path | None = None) -> list[dict]:
         wb = openpyxl.load_workbook(caminho)
         try:
             out = _alteracoes_tire(wb[ABA_TIRE])
-            for aba, cel, trecho, novo in TEXTOS_6B:
-                antes = wb[aba][cel].value
-                if not isinstance(antes, str) or antes.count(trecho) != 1:
-                    raise ValueError(f"{aba}!{cel}: o texto de hoje não tem o trecho {trecho!r}: {antes!r}")
-                out.append({"aba": aba, "cel": cel, "antes": antes, "novo": antes.replace(trecho, novo), "ref": REF_6B})
+            for textos, ref in ((TEXTOS_6A, REF_6A_TEXTO), (TEXTOS_6B, REF_6B)):
+                for aba, cel, trecho, novo in textos:
+                    antes = wb[aba][cel].value
+                    if not isinstance(antes, str) or antes.count(trecho) != 1:
+                        raise ValueError(f"{aba}!{cel}: o texto de hoje não tem o trecho {trecho!r}: {antes!r}")
+                    out.append({"aba": aba, "cel": cel, "antes": antes, "novo": antes.replace(trecho, novo), "ref": ref})
             out.append({"aba": "00_README", "cel": "A3", "antes": wb["00_README"]["A3"].value, "novo": TEXTO_A3,
                         "ref": REF_6C})
             for cel, novo in _changelog():
@@ -276,7 +292,7 @@ def gerar(caminho_v40: Path, saida: Path, tabela: list[Nome] | None = None) -> l
         existentes = list(wb.defined_names)
         registro, novas = montar_v41(wb, alts)
         registro += resumo_novas(novas)
-        registro.append({"aba": "(workbook)", "cel": "nomes definidos", "antes": f"{len(existentes)} nomes da V4.0",
+        registro.append({"aba": "(workbook)", "cel": "nomes definidos", "antes": f"{len(existentes) - 1} nomes da V4.0 e a lista Origens",
                          "novo": f"{len(tabela)} nomes de data/nomes_V4_1.csv acrescentados (escopo do workbook); "
                                  f"{len(novas)} fórmulas novas nas abas {ABAS_NOVAS[0]} a {ABAS_NOVAS[-1]} e no "
                                  "14_DASHBOARD", "ref": REF_NOVAS})
