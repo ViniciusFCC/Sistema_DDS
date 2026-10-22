@@ -178,6 +178,20 @@ Casos (valores de teste injetados só nas cópias, rotulados; não são o carro)
 **Files:** Create `tests/mutation_planilha_equilibrio.py` (padrão de `tests/mutation_equilibrio.py`: aplica cada mutante ao gerador numa cópia, regenera em pasta temporária e roda TC-WB41-004 a 006).
 - [ ] **Step 1:** os 5 mutantes da tabela; esperado `5 / 5`. **Step 2: Commit** `test: mutação da planilha do equilíbrio (V4.1)`.
 
+### Task 8b: Decisões do usuário de 2026-10-22 (pneu, 13_VALIDATION e K com aero)
+
+**Decisões (usuário, 2026-10-22; "Concordo com as suas recomendações"):**
+1. **κ fora da faixa limitado como Fz, α e γ.** O help do Adams 2024.1 lista o LONG_SLIP_RANGE (KPUMIN/KPUMAX) entre as faixas de validade (p. 82) e a regra "the calculation … is performed with the minimum or maximum value of this range" vale para qualquer entrada (p. 83); conferido na imagem do PDF (controlador, 2026-10-22). Emenda do EDR-056, registrada no EDR-060. Muda fórmulas da 10_TIRE (antes/depois no registro) e os textos 00_README A37/A53 (que hoje dizem "κ fora da faixa dá N/A"; corrigir também a pontuação da A53).
+2. **13_VALIDATION B40:B42 e B43:** com o caso VERIF limitado, B40:B42 mostram "N/A - caso VERIF limitado à faixa (EDR-056)" em vez de "FAIL - Excel diverge"; B43 conta "OK" e limitado como válidos e diz quantos foram limitados. Mudança de fórmula existente (antes/depois no registro).
+3. **μ_eff com o Fz limitado:** fica como está (nota da 10_TIRE I26 já declara); registrar no EDR-060.
+4. **h3 estrita** (h2, h8 ou h9 sem h3 = N/A): aceita.
+5. **K com aero dependente da velocidade (h8):** corrigir pelo método de menor custo, com Python e planilha alinhados. Ruling do controlador: em a_y = 0, a derivada dF0/da_y do k_deslocamento passa a ser a diferença de um lado só de 2ª ordem, (−3·F0(0) + 4·F0(h) − F0(2h))/(2h), com h = 1e-4·G, em todos os casos (sem condição sobre h8): a derivada de um lado em 0+ é a que a inclinação do passo 2 enxerga, e com o carro sem h8 o valor muda só no erro de truncamento O(h²). Nas outras linhas continua a diferença central. Muda `equilibrio_linear._parcela_deslocamento` e a família F14 na 19 (e nas 20a-20d).
+
+**Files:** Modify `python/equilibrio_linear.py`, `python/aba_equilibrio.py`, `python/gerar_v4_1.py`, `tests/test_equilibrio_linear.py`, `tests/test_workbook_v4_1.py`, `tests/test_v4_1.py`; regenerar `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` e o registro.
+- [ ] **Step 1:** testes que falham: (a) caso com κ fora da faixa na 10_TIRE (TC-WB41-003): valor limitado igual a `tire_model.wheel_forces` com κ limitado, e o aviso; (b) cópia com o caso VERIF fora da faixa: B40:B42 "N/A - caso VERIF limitado à faixa (EDR-056)" e B43 com a contagem nova (TC-WB41-003); (c) no Python, a igualdade da 1ª linha (TC-EQ-034) com h8 ligado (R 8 m, ρ 1,2, CzA 2,0, valores de teste) dentro de < 1e-3 relativo, como os outros casos; (d) a planilha continua batendo com o Python no TC-WB41-005 (caso C4 com h8).
+- [ ] **Step 2:** implementar; rodar test_equilibrio_linear.py (18), test_equilibrio.py (28), test_v4_1.py (2) e test_workbook_v4_1.py nos dois motores.
+- [ ] **Step 3: Commits** separados: `fix: derivada de um lado em a_y = 0 no deslocamento com a carga (Python e planilha)`; `feat: κ limitado à faixa e 13_VALIDATION com caso limitado na 10_TIRE (V4.1)`; `feat: planilha V4.1 de referência regenerada`.
+
 ### Task 9: Relatório, EDRs, registro e suíte
 
 **Files:** Create `tools/relatorio_inc4.py`, `docs/v4-1/inc4-equilibrio-na-planilha.md`, `docs/registro-de-versoes-V4_1.md`; Modify `docs/Engineering_Decision_Register.md` (EDR-059, EDR-060, índice, rastreabilidade, nota no EDR-057), `tools/rodar_testes.py`, `CLAUDE.md`, spec §7.6 item 4 e §7.4 h7 (notas datadas).
