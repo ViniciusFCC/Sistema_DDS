@@ -14,9 +14,10 @@ por nomes (caso_planilha.caso_da_planilha_v41), vai a equilibrio.analise_par, e 
   exato, uma por roda e limite), tempo de volta no skidpad (com R) e pior origem (pior_origem_do_caso_v41).
 Casos: C1 (V4.1 como gerada, demonstrativa); C2 simétrico com LMUY 0,45 (esperado NEUTRO); C3 = C2 com K_ARB dianteiro × 3
 (PUSH) e C3b com o traseiro × 3 (LOOSE); C4 = C3 com as hipóteses ligadas (R 8 m, h2, h3, CG lateral 10 mm com h7,
-sentido "Direita", h8 com ρ 1,2 e CzA 2,0 e downforce fixa 0, h9 com CdA 1,0 e Crr 0,015, toe 0,25° na frente); C4b = C4
+sentido "Direita", h8 com ρ 1,2 e CzA 2,0 e downforce fixa 0, h9 com CdA 1,0 e Crr 0,015, toe na frente); C4b = C4
 com δi = 22° na 07_KINEMATICS (% Ackermann ≠ 0, exercita a bisseção do Ackermann); C5 = C2 com h_CG 0,7 m (a roda interna
 descola antes de saturar: N/A por descolamento).
+O C4 usa toe 0,25°/0,10° e camber estático −1,5°/−1,0° em FL/FR (assimétricos), para o espelho ser testado.
 Variantes do Review Focus: RF1 = C4 sem CzA (N/A "CzA a confirmar" na planilha e o mesmo ValueError no Python, nunca o
 resultado da h8 desligada); RF3 = C3 com LKY × 0,9 e LMUY escalado até o eixo traseiro saturar na grade pedida e não
 na refinada, perto de 2 g (resolução = passo da grade pedida, regra de equilibrio._resolucao); RF4 está no C1 (limitação que só a grade refinada
@@ -60,7 +61,9 @@ C3 = {**C2, "ent_06_k_arb_dianteiro": 5012.32 * 3}
 C3b = {**C2, "ent_06_k_arb_traseiro": 5012.32 * 3}
 C4 = {**C3, ENT["R"]: 8.0, ENT["h2"]: 1, ENT["h3"]: 1, ENT["cg"]: 0.010, ENT["h7"]: 1, ENT["sentido"]: "Direita",
       ENT["h8"]: 1, ENT["rho"]: 1.2, ENT["cza"]: 2.0, "ent_08_downforce_total": 0, ENT["h9"]: 1, ENT["cda"]: 1.0,
-      ENT["crr"]: 0.015, ENT["toeFL"]: 0.25, ENT["toeFR"]: 0.25}
+      ENT["crr"]: 0.015, ENT["toeFL"]: 0.25, ENT["toeFR"]: 0.10,
+      # toe e camber estático com FL ≠ FR (TESTE): o "Direita" tem de trocar L↔R, não só inverter o CG lateral
+      "ent_10_camber_gama_projeto_topo_para_fora_b": -1.5, "ent_10_camber_gama_projeto_topo_para_fora_c": -1.0}
 C4b = {**C4, "ent_07_angulo_da_roda_dianteira_interna_deltai": 22}
 C5 = {**C2, "ent_05_altura_do_cg_total": 0.7}
 RF1 = {**C4, ENT["cza"]: None}
@@ -167,8 +170,9 @@ def comparar_caso(nome, copia, esperado, prefixo, falhas):
     lims = tuple(x for x in lims if x != "-")
     if lims != res.limitacoes or r16["lims"] != ("; ".join(res.limitacoes) or "nenhuma"):
         falhas.append(f"{nome} limitações: planilha {lims!r} / {r16['lims']!r} Python {res.limitacoes!r}")
-    if caso.raio_m is not None and res.ay_lim is not None:
-        t_py = 2 * math.pi * math.sqrt(caso.raio_m / res.ay_lim)
+    R = valor(wb, ENT["R"])   # o tempo de volta usa o R digitado, com ou sem chave ligada
+    if num(R) and R > 0 and res.ay_lim is not None:
+        t_py = 2 * math.pi * math.sqrt(R / res.ay_lim)
         if not perto(r16["tvolta"], t_py):
             falhas.append(f"{nome} tempo de volta: planilha {r16['tvolta']!r} Python {t_py!r}")
     elif not (isinstance(r16["tvolta"], str) and r16["tvolta"].startswith("N/A")):
