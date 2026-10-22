@@ -1,14 +1,19 @@
-"""Abas do equilíbrio da V4.1 (incremento 4): 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA, 19_EQ_LINEAR e 20_EQ_TROCA.
+"""Abas do equilíbrio da V4.1 (incremento 4): 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA, 19_EQ_LINEAR, 20_EQ_TROCA,
+21_COBERTURA e 22_CADEIA, e o bloco novo do 14_DASHBOARD.
 
 A análise de par do Milliken (§7.1, p. 283-286) em fórmulas do Excel, com as regras do EDR-056 (entrada do pneu
 limitada à faixa do .tir, com aviso; Fz <= 0 = descolamento; NEUTRO só dentro da resolução numérica medida por
-refinamento de grade). O oráculo é `equilibrio.analise_par`; cada família de fórmula (catálogo F1-F12, F16 e a pior
-origem da F17, plano docs/superpowers/plans/2026-10-21-v4-1-inc4-equilibrio-na-planilha.md) reproduz a função citada:
+refinamento de grade). O oráculo é `equilibrio.analise_par`; cada família de fórmula (catálogo F1-F19, plano
+docs/superpowers/plans/2026-10-21-v4-1-inc4-equilibrio-na-planilha.md) reproduz a função citada:
 
 - 16_EQUILIBRIO: entradas novas (toe, raio, CG lateral, aero, tração, sentido e chaves h2, h3, h7, h8, h9), a
   verificação das entradas (chave ligada com entrada vazia = N/A com o motivo "<entrada> a confirmar"), o caso efetivo
   (curva à esquerda equivalente; com "Direita", o espelho de `equilibrio.espelhar`), a bisseção do Ackermann e o
-  resultado no limite (saturações, resolução, veredito, C_N, limitações, tempo de volta, pior origem);
+  resultado no limite (saturações, resolução, veredito, C_N, limitações, tempo de volta, pior origem) e a exibição (F17;
+  spec 7.3): os textos de `equilibrio.texto_veredito` e `equilibrio_linear.texto_k` em fórmula, com o prefixo
+  "DEMONSTRATIVO · " (D16) pela pior origem da própria linha, lado a lado com "regimes diferentes (Milliken p. 313-315)",
+  o aviso fixo de robustez ao pneu (decisão 1), a linha de apoio, o sentido da curva (decisão 2) e as cores azul (push) e
+  laranja (loose) por formatação condicional;
 - 17_EQ_PAR: grade pedida, a_y = k·0,05 g (k = 0…40) e 25 valores de α;
 - 18_EQ_PAR_FINA: grade refinada, a_y = k·0,025 g (k = 0…80) e 49 valores de α (`analise_par`: passo/2, 2·n − 1);
 - 19_EQ_LINEAR: passo 1 (F13-F15; oráculo `equilibrio_linear.tabela_linear`): gradiente de subesterço K pelas parcelas
@@ -23,7 +28,12 @@ origem da F17, plano docs/superpowers/plans/2026-10-21-v4-1-inc4-equilibrio-na-p
   cruzamento das saturações na tabela, por interpolação, menos o a_y limite atual; "limiar não definido"). O ×1 referencia
   a 16 e a 19; cada linha extra tem a aba auxiliar 20a…20d (grade pedida, grade refinada e a linha do K em a_y = 0),
   gerada pelas mesmas funções das famílias F4-F15 com o mapa da linha (`_mapa_linha`: K_φF, rolagem, situação e
-  veredito próprios), e o bloco "cálculo por linha" da 20 com as regras do veredito da 16 (`_regras_limite`).
+  veredito próprios), e o bloco "cálculo por linha" da 20 com as regras do veredito da 16 (`_regras_limite`);
+- 14_DASHBOARD (F19): bloco novo depois da última linha da V4.0, com o K e o veredito (os textos da 16, por nome) e a
+  pior origem, a linha de apoio e os textos fixos (regimes, robustez, sentido, diferencial); as células da V4.0 não mudam;
+- 21_COBERTURA ("o que o modelo cobre"): a tabela 7.4 da spec com a chave de cada hipótese e o "Fora" da spec §2;
+- 22_CADEIA ("cadeia de decisão", spec §4.1): objetivo → comportamento → parâmetro e a cadeia do equilíbrio, das
+  entradas à tabela de troca, com o nome definido de cada célula. As 21 e 22 têm só texto e =nome (família "REF").
 
 Decisões (plano, "Decisões do plano"; registrar no EDR-060):
 - um sentido de curva por vez (decisão 2); diferencial aberto declarado em texto (decisão 3);
@@ -55,9 +65,10 @@ from openpyxl.utils import get_column_letter as COL
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 
+import equilibrio as _eq
 import equilibrio_linear as _el
 import tire_model as _tm
-from atualizar_planilha import ABAS_ORIGEM, COR_ORIGEM, NOME_LISTA, ORIGENS_LISTA, CONF, celulas_de_entrada
+from atualizar_planilha import ABAS_ORIGEM, COR_ORIGEM, NOME_LISTA, ORIGENS_LISTA, CONF, TX, celulas_de_entrada
 from caso_planilha import ENTRADAS_CASO
 from nomes_v4_0 import NOME_VALIDO, Nome, ler_tabela, parece_referencia, slug
 from raizes import Grafo, linha
@@ -303,6 +314,40 @@ def _f(x: str, casas: int) -> str:
 def _g(x: str) -> str:
     """format(x, 'g') com vírgula, para a_y/G = k·passo (no máximo 3 casas): ROUND a 6 casas e texto do número."""
     return f'SUBSTITUTE(ROUND({x},6)&"",".",",")'
+
+
+def _fs(x: str, casas: int) -> str:
+    """format(x, f'.{casas}f') com vírgula e o sinal do Python: o "-" sai do sinal de x, não do FIXED (o Python escreve
+    "-0,00" para um negativo que arredonda a zero; o FIXED do Excel arredonda antes e perderia o sinal)."""
+    return f'IF({x}<0,"-","")&' + _f(f"ABS({x})", casas)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Textos de exibição (F17, F19; spec 7.3): os do Python e os textos fixos das decisões do plano
+# ---------------------------------------------------------------------------------------------------------------------
+PREFIXO_D16 = "DEMONSTRATIVO · "
+# Meio do texto do K (equilibrio_linear.texto_k, entre o valor e o rótulo); o TC-WB41-006 compara com o Python.
+MEIO_K = (" °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e camber estático) + camber "
+          "+ roll steer; sem compliance, torque de alinhamento e tração) · ")
+AVISO_ROBUSTEZ = ("robustez ao pneu: ver relatório docs/v4-1/inc4-equilibrio-na-planilha.md (não recalculada na "
+                  "planilha)")   # decisão 1 do plano (spec 7.6, item 4): nenhum número do Python é copiado
+TXT_REGIMES = ("regimes diferentes (Milliken p. 313-315): o K vale no regime linear (a_y pequeno) e o veredito, no limite. "
+               "Subesterço no linear com LOOSE no limite não é erro.")   # spec 7.3, item 5
+TXT_SENTIDO = ": um sentido por vez (decisão 2 do plano); troque o sentido da curva na entrada para ver o outro"
+TXT_DIF = ("Diferencial: aberto (h10), o único tipo que a planilha implementa (spec 7.4; decisão 3 do plano); Fx igual "
+           "nas duas rodas traseiras. Tipo real a confirmar.")
+# Cores do veredito, só como reforço (spec 7.3, item 3): azul (push) e laranja (loose) da paleta de Okabe e Ito, legível
+# para daltônicos; os símbolos ▲/▼/● ficam no texto para impressão em preto e branco.
+COR_PUSH, COR_LOOSE = "56B4E9", "E69F00"
+
+
+def _cf_veredito(ws, cel: str) -> None:
+    """Formatação condicional do texto do veredito: azul com "▲ PUSH", laranja com "▼ LOOSE" (a própria célula)."""
+    r = cel.lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    col = cel[:len(cel) - len(r)]
+    for marca, cor in (("▲ PUSH", COR_PUSH), ("▼ LOOSE", COR_LOOSE)):
+        ws.conditional_formatting.add(cel, FormulaRule(formula=[f'ISNUMBER(SEARCH("{marca}",${col}${r}))'],
+                                                     fill=PatternFill("solid", start_color=cor, end_color=cor)))
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -675,7 +720,7 @@ def _layout16() -> list[_Linha16]:
         "N", "F4", "suspension_model.static_fz_corner_cg_lateral")
     res("aero", "Aerodinâmica usada", '=IF({h8}=1,"0,5·ρ·CzA·a_y·R por linha (h8; substitui a downforce fixa da '
         '08_VEHICLE_STATE, EDR-013)","downforce fixa da 08_VEHICLE_STATE (EDR-013)")', "-", "F4", "equilibrio.downforce")
-    txt("Diferencial: aberto (h10), o único tipo que a planilha implementa (spec 7.4); Fx igual nas duas rodas traseiras.")
+    txt(TXT_DIF)
     # Resultado no limite (F11, F12, F16)
     sec("Resultado no limite (grade pedida 0,05 g e 25 α; resolução pela grade refinada 0,025 g e 49 α; EDR-056)")
     _regras_limite(res)
@@ -717,6 +762,29 @@ def _layout16() -> list[_Linha16]:
     res("vcrit", "Velocidade crítica V_crit = √(−L/K) (só com K < 0)",
         '=IF(ISNUMBER({kTot}),IF({kTot}<0,SQRT(-{L}/{kTot}),"N/A"),"N/A")', "m/s", "F16",
         "equilibrio_linear.velocidade_critica (Gillespie p. 203-204)", True, pior_chave="PIOR_K")
+    # Exibição (F17; spec 7.3): os textos de equilibrio.texto_veredito e equilibrio_linear.texto_k em fórmula. O prefixo
+    # D16 sai da pior origem da própria linha (coluna E); o "-" do motivo (sem motivo) nunca aparece no texto.
+    sec("Exibição (spec 7.3): linear e limite lado a lado, regimes diferentes (Milliken p. 313-315)")
+    pre = lambda k: f'IF(EXACT({{E_{k}}},"{TX}"),"","{PREFIXO_D16}")'
+    res("txt_k", "Gradiente de subesterço K (texto de exibição, linear)",
+        f'={pre("txt_k")}&IF(ISNUMBER({{kTot}}),"K = "&IF({{kTot}}<0,"-","+")&{_f("ABS({kTotg})", 2)}&"{MEIO_K}"&'
+        'IF({kTot}>0,"Subesterço",IF({kTot}<0,"Sobresterço","Neutro")),"N/A: "&IF({kmot}="-","",{kmot}))', "-", "F17",
+        "equilibrio_linear.texto_k (D16)", True, TXT_REGIMES, "PIOR_K")
+    rot = _eq._ROTULO
+    res("txt_ver", "Equilíbrio no limite (texto de exibição)",
+        f'={pre("txt_ver")}&IF({{ver}}="{_eq.PUSH}","{rot[_eq.PUSH]}",IF({{ver}}="{_eq.LOOSE}","{rot[_eq.LOOSE]}",'
+        f'IF({{ver}}="{_eq.NEUTRO}","{rot[_eq.NEUTRO]}","N/A: "&IF({{mot}}="-","",{{mot}}))))', "-", "F17",
+        "equilibrio.texto_veredito (D16; Milliken p. 315)", True, AVISO_ROBUSTEZ)
+    gx = lambda x: f'IF(ISNUMBER({x}),{_fs(x, 3)}&" g","N/A")'
+    res("apoio", "Linha de apoio: saturações, a_y limite, C_N, custo e Δt (spec 7.3, item 2)",
+        f'="S_f "&{gx("{S_F_g}")}&" · S_r "&{gx("{S_R_g}")}&" · a_y limite "&{gx("{aylim_g}")}&" · C_N "&'
+        f'IF(ISNUMBER({{cn}}),{_fs("{cn}", 4)},"N/A")&" · custo do comportamento "&IF(ISNUMBER({{c20_perdag}}),'
+        f'{_fs("{c20_perdag}", 3)}&" g ("&{{c20_limiar}}&")","N/A")&" · Δt "&IF(ISNUMBER({{tvolta}}),'
+        f'{_fs("{tvolta}", 2)}&" s","N/A")', "-", "F17", "spec 7.3, item 2; custo da 20_EQ_TROCA", True,
+        "Custo do comportamento = a_y do acerto neutro − a_y limite (20_EQ_TROCA; spec §5, itens 4 e 5).", "PIOR_K")
+    res("txt_sent", "Sentido da curva analisado",
+        f'=IF(EXACT({{sentido}},"Direita"),"Curva à direita",IF(EXACT({{sentido}},"Esquerda"),"Curva à esquerda",'
+        f'"sentido da curva inválido (use Esquerda ou Direita)"))&"{TXT_SENTIDO}"', "-", "F17", "decisão 2 do plano")
     return L
 
 
@@ -735,6 +803,24 @@ def _linhas16() -> dict[str, int]:
 
 LINHAS16 = _linhas16()
 COL_BIS = "H"   # bisseção do Ackermann: colunas H (j), I (lo), J (hi), K (mid), L (teste)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 14_DASHBOARD: linhas novas (F19) num bloco novo depois da última linha da V4.0 (38); as células existentes não mudam
+# ---------------------------------------------------------------------------------------------------------------------
+ABA14 = "14_DASHBOARD"
+LINHA14_SECAO = 40
+# chave, rótulo (coluna A), conteúdo da coluna B (chave da 16 = "=nome" da 16; senão texto fixo), referência (D), pior
+# origem ao lado (E = a da linha da 16)
+DASH14 = (
+    ("txt_k", "Gradiente de subesterço K (linear)", "txt_k", "SUS-1001", True),
+    ("txt_ver", "Equilíbrio no limite (push/loose)", "txt_ver", "SUS-1004", True),
+    ("regimes", "Linear × limite", TXT_REGIMES, "Milliken p. 313-315", False),
+    ("apoio", "Saturações, a_y limite, C_N, custo e Δt", "apoio", "SUS-1003; SUS-1006; SUS-1007", True),
+    ("robustez", "Robustez ao pneu (D15)", AVISO_ROBUSTEZ, "EDR-060 (decisão 1)", False),
+    ("txt_sent", "Sentido da curva", "txt_sent", "EDR-060 (decisão 2)", False),
+    ("dif", "Diferencial", TXT_DIF, "EDR-060 (decisão 3)", False),
+)
+LINHA14 = {k: LINHA14_SECAO + 1 + i for i, (k, *_) in enumerate(DASH14)}
 
 
 def _nomes_v41() -> list[Nome]:
@@ -760,6 +846,11 @@ def _nomes_v41() -> list[Nome]:
                 base.append((f"{ABA20}:{q}:{j}", _nome_res(ABA20, rot), celula20(q, j), rot))
     for q, rot, _ in CUSTO20:
         base.append((f"{ABA20}:{q}", _nome_res(ABA20, rot), f"B{LINHA20[q]}", rot))
+    for k, rot, conteudo, _, pior in DASH14:   # dashboard: B (e E) das linhas com fórmula, sufixo da célula como na V4.0
+        if conteudo in LINHAS16:
+            r = LINHA14[k]
+            for col in ("B", "E") if pior else ("B",):
+                base.append((f"{ABA14}:{k}:{col}", f"{_nome_res(ABA14, rot)}_{col.lower()}{r}", f"{col}{r}", rot))
     cont: dict[str, int] = {}
     for _, nome, _, _ in base:
         cont[nome] = cont.get(nome, 0) + 1
@@ -785,6 +876,9 @@ NOME19 = {(q, k): _NOME_POR_CELULA[(ABA19, f"{COL19[q]}{LINHA_TAB19 + k}")] for 
 NOME20 = {(q, j): _NOME_POR_CELULA[(ABA20, celula20(q, j))] for q, _, _ in TAB20 if q != "fator"
           for j in range(len(FATORES20))}
 NOME20_CUSTO = {q: _NOME_POR_CELULA[(ABA20, f"B{LINHA20[q]}")] for q, _, _ in CUSTO20}
+# 14_DASHBOARD: chave -> nome da coluna B; chave + "_pior" -> nome da coluna E (pior origem)
+NOME14 = {(k if col == "B" else k + "_pior"): _NOME_POR_CELULA[(ABA14, f"{col}{LINHA14[k]}")]
+          for k, _, conteudo, _, pior in DASH14 if conteudo in LINHAS16 for col in (("B", "E") if pior else ("B",))}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -905,7 +999,9 @@ def _mapa_base(cols17: dict, termos, termos_k) -> dict:
               dict(NOME16), {f"a{aba[:2]}_{k}": nome for (aba, k), nome in NOME_RESUMO.items()},
               {f"a19_{q}_{k}": nome for (q, k), nome in NOME19.items()},
               {f"c17_{_cabecalho(n)}": letra for n, letra in cols17.items()},
-              {f"G_{k}": f"'{ABA16}'!$G${r}" for k, r in LINHAS16.items() if k.startswith("vf")}]
+              {f"G_{k}": f"'{ABA16}'!$G${r}" for k, r in LINHAS16.items() if k.startswith("vf")},
+              {f"E_{ln.chave}": f"'{ABA16}'!$E${LINHAS16[ln.chave]}" for ln in _LAYOUT16 if ln.tipo == "res" and ln.pior},
+              {f"c20_{q}": nome for q, nome in NOME20_CUSTO.items()}]
     for p in partes:
         repetidas = set(m) & set(p)
         if repetidas:
@@ -972,6 +1068,9 @@ def _aba16(ctx: _Ctx, est: dict) -> None:
             ws[f"F{r}"] = ln.obs
     _bissecao(ctx, ws)
     _validacoes16(ws)
+    _cf_veredito(ws, f"B{LINHAS16['txt_ver']}")
+    for k in ("txt_k", "txt_ver", "apoio", "txt_sent"):
+        ws[f"B{LINHAS16[k]}"].alignment = Alignment(wrap_text=True, vertical="top")
     ws.column_dimensions["A"].width, ws.column_dimensions["B"].width = 62, 22
     ws.column_dimensions["D"].width, ws.column_dimensions["E"].width, ws.column_dimensions["F"].width = 30, 30, 80
     for r in LINHA_ENTRADA.values():
@@ -1630,7 +1729,7 @@ def _aba_aux20(ctx: _Ctx, est: dict, j: int) -> None:
     ws = ctx.wb.create_sheet(aux)
     _aba_grade(ctx, est, aux, grade=ABA17, ws=ws)
     _aba_grade(ctx, est, aux, grade=ABA18, ws=ws, desloc=DESLOC_FINA20)
-    ws["A1"] = f"{aux} — linha {rotulo_linha20(j)} da 20_EQ_TROCA (K_ARB dianteiro × fator; TESTE de exibição): " + ws["A1"].value
+    ws["A1"] = f"{aux} — linha {rotulo_linha20(j)} da 20_EQ_TROCA (K_ARB dianteiro × fator; grade de exibição, não meta): " + ws["A1"].value
     ws[f"A{LINHA_K20 - 2}"] = ("K em a_y = 0 da linha (F13-F15, as fórmulas da linha k = 0 do cálculo auxiliar da "
                                "19_EQ_LINEAR, sem a inclinação de Richardson)")
     _estilo(ws[f"A{LINHA_K20 - 2}"], est, "secao")
@@ -1768,12 +1867,210 @@ def _aba20(ctx: _Ctx, est: dict) -> None:
         _aba_aux20(_Ctx(ctx.wb, ctx.registro, _mapa_linha(m, j)), est, j)
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 14_DASHBOARD (F19), 21_COBERTURA e 22_CADEIA (só texto e referências simples =nome, família "REF")
+# ---------------------------------------------------------------------------------------------------------------------
+def _aba14(ctx: _Ctx) -> None:
+    """Bloco novo do equilíbrio no fim do 14_DASHBOARD (F19): K e veredito (os textos da 16, por nome), linear e limite
+    lado a lado com "regimes diferentes", linha de apoio, aviso de robustez, sentido da curva e diferencial; a pior origem
+    da linha da 16 na coluna E. Estilos copiados do bloco do pneu (linhas 32-33); recusa sobrescrever célula preenchida."""
+    ws = ctx.wb[ABA14]
+    ultima = max(LINHA14.values())
+    for r in range(LINHA14_SECAO, ultima + 1):
+        for col in "ABCDE":
+            if ws[f"{col}{r}"].value is not None:
+                raise ValueError(f"{ABA14}!{col}{r} já preenchida; o bloco do equilíbrio só usa linhas vazias")
+    est = {k: ws[c]._style for k, c in (("secao", "A32"), ("rotulo", "A33"), ("valor", "B33"), ("un", "C33"),
+                                        ("ref", "D33"), ("pior", "E33"))}
+    s = f"A{LINHA14_SECAO}"
+    ws[s] = ("Equilíbrio (V4.1; 16_EQUILIBRIO e 20_EQ_TROCA): DEMONSTRATIVO enquanto a pior origem não for "
+             f"\"{TX}\" (D16)")
+    ws[s]._style = copy.copy(est["secao"])
+    ws.merge_cells(f"A{LINHA14_SECAO}:E{LINHA14_SECAO}")
+    for k, rot, conteudo, ref, pior in DASH14:
+        r = LINHA14[k]
+        ws[f"A{r}"], ws[f"C{r}"], ws[f"D{r}"] = rot, "-", ref
+        if conteudo in LINHAS16:
+            ctx.put(ws, f"B{r}", "F19", "={" + conteudo + "}")
+            if pior:
+                ctx.put(ws, f"E{r}", "F19", "={E_" + conteudo + "}")
+        else:
+            ws[f"B{r}"] = conteudo
+        for col, e in (("A", "rotulo"), ("B", "valor"), ("C", "un"), ("D", "ref"), ("E", "pior")):
+            ws[f"{col}{r}"]._style = copy.copy(est[e])
+        ws[f"B{r}"].alignment = Alignment(wrap_text=True, vertical="top")
+    r0, r1 = LINHA14_SECAO + 1, ultima
+    for simb, cor in COR_ORIGEM.items():
+        ws.conditional_formatting.add(f"E{r0}:E{r1}", FormulaRule(formula=[f'LEFT($E{r0},1)="{simb}"'],
+                                                                   fill=PatternFill("solid", start_color=cor, end_color=cor)))
+    _cf_veredito(ws, f"B{LINHA14['txt_ver']}")
+
+
+ABA21, ABA22 = "21_COBERTURA", "22_CADEIA"
+# Tabela 7.4 da spec (docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md), colunas #, Hipótese, Base,
+# Planilha e "Efeito se ignorada" copiadas do texto; a coluna Chave diz qual entrada da 16 liga a hipótese na planilha
+# (plano, Global Constraints e decisão 3). A coluna Python da spec fica fora (esta aba é a cobertura da planilha).
+HIPOTESES74 = (
+    ("1", "α comum por eixo com deslocamento por roda", "Milliken §7.1", "Sim", "—", None),
+    ("2", "Toe e Ackermann por roda", "§7.1", "Sim (toe digitado; Ackermann SUS-414, precisa do R)",
+     "Muda a capacidade da frente", "h2"),
+    ("3", "cos δ na frente", "§7.1", "Sim", "Superestima a frente (ordem de 1,5 % com δ ≈ 10°, estimativa a medir)", "h3"),
+    ("4", "Camber em curva", "Gillespie eq. 6-50; §7.2", "Linear", "Capacidade", None),
+    ("5", "Três massas, RC fixo, rolagem linear", "EDR-009/011", "Sim", "Cresce com a rolagem", None),
+    ("6", "Termo gravitacional da rolagem", "EDR-046", "Sim", "—", None),
+    ("7", "CG lateral, dois sentidos de curva", "§7.2", "Sim (entrada, 0 até medir)", "Um sentido piora", "h7"),
+    ("8", "Aero com V = √(a_y·R)", "Milliken cap. 3; EDR-013", "Sim (CzA, balanço, R; 0 ou a confirmar)",
+     "Subestima a_y em alta velocidade", "h8"),
+    ("9", "Força de tração na traseira", "Gillespie p. 222; §7.1",
+     "Elipse de atrito normalizada, com semieixos nos picos puros do PAC2002 (Gillespie pp. 364-365; Milliken p. 59; a "
+     "fórmula normalizada não está impressa em nenhum dos dois, e é a simplificação adotada); Fx por arrasto, rolamento e "
+     "arrasto do pneu dianteiro F_yf·tan δ_ref; CdA e Crr a confirmar (EDR-057, 2026-10-21)",
+     "Superestima a traseira (puxa para push)", "h9"),
+    ("10", "Diferencial", "Milliken cap. 20", "Aberto, declarado; tipo real a confirmar", "Travado puxa para push", None),
+    ("11", "Transferência longitudinal pela tração", "cap. 18", "Não (limite declarado)", "Pequena; medida", None),
+    ("12", "Jacking", "Milliken p. 615", "Não", "Altura e camber", None),
+    ("13", "Compliance", "§7.1; cap. 23", "Não", "Desconhecido, declarado", None),
+    ("14", "Mz no momento de guinada", "Gillespie p. 222", "Não", "Pequeno no linear (< 0,5 °/g, Gillespie)", None),
+    ("15", "Pressão, temperatura, superfície", "Milliken cap. 2", "Igual",
+     "Mais no a_y absoluto que no equilíbrio; rotular \"pneu de teste\"", None),
+    ("16", "Amortecedor e transiente", "Milliken p. 283", "Não", "Declarado", None),
+)
+# Texto da coluna Chave quando a hipótese não tem chave (a planilha sempre a aplica, ou não a implementa)
+CHAVE74 = {"1": "sem chave (sempre)", "4": "sem chave (sempre; ganho de camber do SUS-404)", "5": "sem chave (sempre)",
+           "6": "sem chave (sempre)", "10": "sem chave: aberto, declarado (decisão 3 do plano)"}
+CHAVE74_TEXTO = {"2": "h2 (o toe das entradas Toe entra sempre)", "7": "h7 (e a entrada Sentido da curva)"}
+# "Fora" da spec §2 (o que o modelo não cobre)
+FORA2 = (
+    "Dinâmica transitória e amortecedores ([GUIA] §1.5; Milliken p. 283).",
+    "CarSim.",
+    "Otimização formal com função-objetivo e pesos.",
+    "Compliance (sem dado).",
+    "Mz no momento de guinada (Mz do PAC2002 não verificado, EDR-037).",
+    "Conversão do custo em pontos de competição (depende do melhor tempo dos concorrentes).",
+    "Redesenho estético da planilha (fase própria, mais tarde).",
+)
+
+
+def _aba21(ctx: _Ctx, est: dict) -> None:
+    """21_COBERTURA: o que o modelo da planilha cobre (tabela 7.4 da spec, com a chave e o valor atual dela) e o que fica
+    fora (spec §2). Só texto e =nome (o valor atual de cada chave)."""
+    ws = ctx.wb.create_sheet(ABA21)
+    ws["A1"] = "21_COBERTURA — o que o modelo do equilíbrio cobre na planilha (spec 7.4) e o que fica fora (spec §2)"
+    _estilo(ws["A1"], est, "titulo")
+    ws["A2"] = ("Hipóteses da análise de par como na tabela 7.4 da spec (docs/superpowers/specs/2026-10-20-v4-0-metas-"
+                "equilibrio-design.md). Planilha = o que esta planilha implementa. Chave = a entrada da 16_EQUILIBRIO que "
+                "liga a hipótese (1 = ligada, 0 = desligada).")
+    ws["A4"] = "Hipóteses (spec 7.4)"
+    _estilo(ws["A4"], est, "secao")
+    cab = ("#", "Hipótese", "Base", "Planilha", "Chave", "Chave agora", "Efeito se ignorada")
+    for j, t in enumerate(cab):
+        ws[f"{COL(1 + j)}5"] = t
+        _estilo(ws[f"{COL(1 + j)}5"], est, "cab")
+    for i, (n, hip, base, plan, efeito, chave) in enumerate(HIPOTESES74):
+        r = 6 + i
+        ws[f"A{r}"], ws[f"B{r}"], ws[f"C{r}"], ws[f"D{r}"], ws[f"G{r}"] = n, hip, base, plan, efeito
+        if chave is None:
+            ws[f"E{r}"], ws[f"F{r}"] = CHAVE74.get(n, "sem chave (não implementada)"), "-"
+        else:
+            ws[f"E{r}"] = CHAVE74_TEXTO.get(n, chave) + f" ({NOME_ENT[chave]})"
+            ctx.put(ws, f"F{r}", "REF", "={" + chave + "}")
+        for col in "ABCDEFG":
+            ws[f"{col}{r}"].alignment = Alignment(wrap_text=True, vertical="top")
+    r = 6 + len(HIPOTESES74) + 1
+    ws[f"A{r}"] = "Fora do modelo (spec §2)"
+    _estilo(ws[f"A{r}"], est, "secao")
+    for i, t in enumerate(FORA2):
+        ws[f"A{r + 1 + i}"], ws[f"B{r + 1 + i}"] = "-", t
+    for col, w in zip("ABCDEFG", (5, 40, 26, 50, 40, 12, 44)):
+        ws.column_dimensions[col].width = w
+
+
+def _onde(wb, nome: str) -> str:
+    """aba!célula de um nome da V4.1 (ainda não definido no workbook durante a montagem) ou da V4.0."""
+    for n in NOMES_V41:
+        if n.nome == nome:
+            return f"{n.aba}!{n.celula}"
+    aba, cel = _destino(wb, nome)
+    return f"{aba}!{cel}"
+
+
+def _aba22(ctx: _Ctx, est: dict) -> None:
+    """22_CADEIA: cadeia de decisão do equilíbrio (spec §4.1: objetivo → comportamento → parâmetro), do parâmetro ao
+    comportamento, com o nome definido de cada célula, o valor atual (=nome) e onde ela fica. Só texto e =nome."""
+    ws = ctx.wb.create_sheet(ABA22)
+    m = ctx.mapa
+    ws["A1"] = "22_CADEIA — cadeia de decisão do equilíbrio: objetivo → comportamento → parâmetro (spec §4.1)"
+    _estilo(ws["A1"], est, "titulo")
+    ws["A2"] = (f"Valores DEMONSTRATIVOS enquanto a pior origem não for \"{TX}\" (D16); a pior origem de cada resultado "
+                "está na coluna E da 16_EQUILIBRIO. Esta aba só aponta para as células; nenhum cálculo é feito aqui.")
+    ws["A4"] = "Três níveis (spec §4.1)"
+    _estilo(ws["A4"], est, "secao")
+    niveis = (
+        ("Objetivo", "O que o carro precisa fazer (prova ou uso: skidpad, autocross, endurance/eficiência, "
+                     "previsibilidade para o piloto). A lista de objetivos é decisão da equipe, registrada em EDR: a "
+                     "confirmar."),
+        ("Comportamento", "Grandeza física que se pode medir no carro. No equilíbrio: o gradiente de subesterço K "
+                          "(linear) e o push/loose no limite, com o C_N residual."),
+        ("Parâmetro", "Hardware ou acerto (mola, barra, MR, geometria). Sai do modelo; não é digitado como meta."),
+    )
+    for i, (a, b) in enumerate(niveis):
+        ws[f"A{5 + i}"], ws[f"B{5 + i}"] = a, b
+        _estilo(ws[f"A{5 + i}"], est, "rotulo")
+    ws["A9"] = "Cadeia do equilíbrio (do parâmetro ao comportamento)"
+    _estilo(ws["A9"], est, "secao")
+    for j, t in enumerate(("Etapa", "O que é", "Nome definido", "Valor agora", "Onde")):
+        ws[f"{COL(1 + j)}10"] = t
+        _estilo(ws[f"{COL(1 + j)}10"], est, "cab")
+    c17 = lambda n: m[f"c17_{n}"]
+    passos = (
+        ("1. Entradas (parâmetro)", (
+            ("K_ARB dianteiro: a alavanca da tabela de troca", V40["KarbF"]),
+            ("K_ARB traseiro", V40["KarbR"]),
+            ("Demais entradas: massa, CG, L e bitolas (05_VEHICLE); molas, MR e RC (06_SUSPENSION); ganho de camber "
+             "(07_KINEMATICS); downforce (08_VEHICLE_STATE); pneu (10_TIRE); toe, raio, CG lateral, aero, tração e "
+             "chaves (16_EQUILIBRIO, linhas 4 a " + str(LINHA_ENTRADA0 + len(ENTRADAS16) - 1) + ")", None))),
+        ("2. Rigidez de rolagem K_φ e λ_f", (
+            ("K_φ dianteiro (SUS-206)", V40["KphiF"]), ("K_φ traseiro (SUS-206)", V40["KphiR"]),
+            ("λ_f = K_φF/(K_φF + K_φR)", V40_20["lam06"]))),
+        ("3. Fz por roda", (
+            (f"17_EQ_PAR, colunas {c17('Fz_FL')} a {c17('Fz_RR')}: Fz de cada roda por linha de a_y (cálculo auxiliar, "
+             "sem nome)", None),)),
+        ("4. Curvas de eixo", (
+            (f"17_EQ_PAR, colunas {c17('cap_F')} e {c17('cap_R')}: capacidade de cada eixo (máximo sobre α) por linha; "
+             f"folgas nas colunas {c17('folga_F')} e {c17('folga_R')}", None),)),
+        ("5. Saturações", (
+            ("Saturação do eixo dianteiro S_f", NOME16["S_F"]), ("Saturação do eixo traseiro S_r", NOME16["S_R"]),
+            ("a_y limite (a menor saturação)", NOME16["aylim"]), ("Resolução numérica (EDR-056)", NOME16["resol"]))),
+        ("6. Veredito e K (comportamento)", (
+            ("Veredito no limite", NOME16["ver"]), ("C_N residual", NOME16["cn"]),
+            ("Texto do veredito", NOME16["txt_ver"]), ("K total em a_y = 0 [rad/(m/s²)]", NOME16["kTot"]),
+            ("Texto do K", NOME16["txt_k"]))),
+        ("7. Tabela de troca", (
+            ("a_y do acerto neutro (cruzamento das saturações)", NOME20_CUSTO["ayn"]),
+            ("Custo do comportamento: a_y do neutro − a_y limite", NOME20_CUSTO["perda"]),
+            ("Veredito do custo", NOME20_CUSTO["limiar"]))),
+        ("8. Ficha de meta", (("Incremento 5 (ainda não existe nesta planilha)", None),)),
+    )
+    r = 11
+    for etapa, itens in passos:
+        for i, (texto, nome) in enumerate(itens):
+            ws[f"A{r}"] = etapa if i == 0 else ""
+            ws[f"B{r}"] = texto
+            if nome is not None:
+                ws[f"C{r}"], ws[f"E{r}"] = nome, _onde(ctx.wb, nome)
+                ctx.put(ws, f"D{r}", "REF", f"={nome}")
+            ws[f"B{r}"].alignment = Alignment(wrap_text=True, vertical="top")
+            r += 1
+    for col, w in zip("ABCDE", (32, 70, 46, 30, 26)):
+        ws.column_dimensions[col].width = w
+
+
 def montar(wb) -> list[dict]:
-    """Escreve as abas 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA, 19_EQ_LINEAR, 20_EQ_TROCA e 20a…20d_TROCA no workbook da
-    V4.0 (aberto pelo openpyxl, com os
+    """Escreve as abas 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA, 19_EQ_LINEAR, 20_EQ_TROCA, 20a…20d_TROCA, 21_COBERTURA e
+    22_CADEIA e o bloco novo do 14_DASHBOARD no workbook da V4.0 (aberto pelo openpyxl, com os
     nomes definidos da V4.0) e devolve o registro [{aba, cel, familia, formula}] de toda célula com fórmula escrita.
     Não acrescenta os nomes novos (`acrescentar_nomes`) nem salva."""
-    for aba in (ABA16, ABA17, ABA18, ABA19, ABA20, *AUX20.values()):
+    for aba in (ABA16, ABA17, ABA18, ABA19, ABA20, *AUX20.values(), ABA21, ABA22):
         if aba in wb.sheetnames:
             raise ValueError(f"a aba {aba} já existe")
     if wb.sheetnames[-1] != "15_CHANGELOG":
@@ -1787,6 +2084,9 @@ def montar(wb) -> list[dict]:
     _aba_grade(ctx, est, ABA18)
     _aba19(ctx, est)
     _aba20(ctx, est)
+    _aba21(ctx, est)
+    _aba22(ctx, est)
+    _aba14(ctx)
     return ctx.registro
 
 

@@ -4,8 +4,7 @@ Recalcula CÓPIAS (aba_equilibrio.copia_v41: V4.0 da tag v4.0 + abas 16-18 + nom
 (COM) ou pelo LibreOffice (recalculo_planilha.py; DDS_RECALC=excel|libreoffice força um). A V4.0 de referência em excel/
 e a V3.0 viva nunca são abertas para escrita. Sem motor: NÃO EXECUTÁVEL (código 3), que nunca conta como aprovado.
 Uso: uv run python -X utf8 tests/test_workbook_v4_1.py
-Namespace TC-WB41-xxx (IDs autorizados pelo usuário: 001 a 006; este script tem, por enquanto, o 004, o 005 e a parte 1
-do 006).
+Namespace TC-WB41-xxx (IDs autorizados pelo usuário: 001 a 006; este script tem o 004, o 005 e o 006, em duas partes).
 
 TC-WB41-004: em cada caso (valores de TESTE, só nas cópias; não são o carro), o caso que a 16_EQUILIBRIO calcula, lido
 por nomes (caso_planilha.caso_da_planilha_v41), vai a equilibrio.analise_par, e a planilha tem de dar o mesmo:
@@ -36,7 +35,7 @@ K da 1ª linha (res_16_k_total e as parcelas), V_char e V_crit (velocidade_carac
 é N/A com o motivo da situação das entradas. Roll steer (07_KINEMATICS B82/B83): RS1 = C2 com ε_f 0,05 e ε_r −0,03 °/°
 (TESTE; k_roll_steer ≠ 0 bate com o Python); RS2 = C2 com ε_f vazio (caso_da_planilha_v41 levanta o motivo; a planilha dá
 k_roll_steer e K N/A com "… a confirmar" e o resto das parcelas igual ao Python). O passo 2 usa o caso com passo1=False.
-TC-WB41-006 (parte 1; a parte 2, textos de exibição, vem depois): nas MESMAS cópias, a tabela de troca da barra dianteira
+TC-WB41-006 (parte 1): nas MESMAS cópias, a tabela de troca da barra dianteira
 (20_EQ_TROCA, K_ARB dianteiro × 0,5; 0,75; 1; 1,5; 2 do valor da 06, grade de exibição) contra o Python: para cada linha,
 caso_da_planilha_v41 com o K_ARB dianteiro × fator (K_φF por suspension_model.roll_stiffness_axle, a mesma ordem de
 verificações), equilibrio.analise_par e equilibrio_linear.parcelas_k(caso, 0): K_φF, λ_f, K, S_f, S_r, a_y limite,
@@ -45,10 +44,18 @@ vizinhas em que S_r − S_f troca de sinal, por interpolação linear de S_f e S
 |S_r − S_f|; senão N/A "neutro fora da faixa da tabela", sem extrapolação) e o custo = a_y do neutro − a_y limite do ×1,
 com "limiar não definido" (spec §5, itens 4 e 5). TR1 = C2 com o K_ARB traseiro × 1,25 (TESTE): o neutro cai entre ×1 e
 ×1,5, e o check exige pelo menos um caso com a interpolação.
+TC-WB41-006 (parte 2): nas MESMAS cópias, os textos de exibição da 16_EQUILIBRIO e do 14_DASHBOARD iguais a
+equilibrio.texto_veredito(res, pior) e equilibrio_linear.texto_k(p, pior) (sem "-" como motivo; o dashboard repete a 16,
+com a mesma pior origem), a linha de apoio (os números da própria cópia formatados pelo Python) e o sentido da curva; na
+cópia C1, os textos fixos (aviso de robustez ao lado do veredito, "regimes diferentes" ao lado do K, diferencial), as
+cores azul/laranja por formatação condicional e as abas 21 e 22. A pior origem do prefixo D16 é conferida contra uma
+construção INDEPENDENTE da fórmula: ORG_TX = C3 com todas as células de Origem (nomes org_*) em "● Dado do TX" (texto sem o
+prefixo); ORG_T09 = C3b com tudo em TX e a massa medida sem piloto em "◐ Dado do T09" (texto com o prefixo).
 O log traz o tempo de recálculo de cada cópia e o número de células com fórmula de cada aba (insumo do portão da Task 4).
 "Passou" = a planilha reproduz o oráculo; não é validação física.
 """
-import dataclasses, json, math, os, re, sys, tempfile, threading, time
+import csv, dataclasses, json, math, os, re, sys, tempfile, threading, time
+from types import SimpleNamespace
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
 from pathlib import Path
 import openpyxl
@@ -67,6 +74,7 @@ _RAIZ = Path(__file__).resolve().parent.parent
 TIR = _RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
 TOL_REL = 1e-9
 results = []
+ESPERADO6 = {}   # nome do caso -> textos de exibição esperados (TC-WB41-006, parte 2): txt_ver, txt_k
 
 
 def check(name, cond, detail=""):
@@ -491,6 +499,8 @@ def comparar_caso(nome, copia, esperado, prefixo, falhas):
         if not ok:
             falhas.append(f"{nome}: Python ValueError({e!s}); planilha situação={r16['status']!r} "
                           f"veredito={r16['ver']!r} motivo={r16['mot']!r}")
+        ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(SimpleNamespace(veredito=eq.NA, motivo=str(e)),
+                                                        cp.pior_origem_do_caso_v41(copia))}
         return f"{nome}: N/A pelas entradas ({e})"
     res = eq.analise_par(caso)
     fina, sf2, sr2 = eq._varredura(caso, ae.AY_MAX_G, ae.PASSO_G / 2.0, 2 * ae.N_ALFA - 1)
@@ -520,6 +530,7 @@ def comparar_caso(nome, copia, esperado, prefixo, falhas):
     pior = cp.pior_origem_do_caso_v41(copia)
     if r16["pior"] != pior:
         falhas.append(f"{nome} pior origem: planilha {r16['pior']!r} Python {pior!r}")
+    ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(res, pior)}
     if esperado is not None and res.veredito != esperado:
         falhas.append(f"{nome}: veredito do Python {res.veredito} ≠ esperado no plano {esperado} (achado, não ajuste)")
     if prefixo is not None and not (res.motivo or "").startswith(prefixo):
@@ -607,6 +618,8 @@ def comparar_k(nome, copia, falhas):
                               f"inclinação={ln['kI']!r} motivo={ln['motI']!r}")
         if not (r16["kTot"] == "N/A" and r16["kmot"] == str(e)):
             falhas.append(f"{nome} 16: K={r16['kTot']!r} motivo={r16['kmot']!r}, esperado N/A com {e}")
+        ESPERADO6[nome]["txt_k"] = el.texto_k(SimpleNamespace(k_total=None, motivo=str(e)),
+                                              cp.pior_origem_do_caso_v41(copia, linear=True))
         return f"{nome}: K N/A pelas entradas ({e})"
     pior = cp.pior_origem_do_caso_v41(copia, linear=True)
     tab = el.tabela_linear(caso, pior_origem=pior)
@@ -617,6 +630,8 @@ def comparar_k(nome, copia, falhas):
         if m_rs is not None:   # o que o Python daria sem o dado: as duas parcelas None e o motivo no fim da lista
             p = dataclasses.replace(p, k_roll_steer=None, k_total=None,
                                     motivo="; ".join(m for m in (p.motivo, m_rs) if m))
+        if k == 0:   # texto de exibição do K (TC-WB41-006, parte 2): o da 1ª linha, com o motivo já juntado
+            ESPERADO6[nome]["txt_k"] = el.texto_k(p, pior)
         for q, py in (("kP", p.k_pneus), ("kT", p.k_transferencia), ("kD", p.k_deslocamento), ("kC", p.k_camber),
                       ("kRS", p.k_roll_steer), ("kTot", p.k_total), ("kI", row["k_inclinacao"])):
             if not k_igual(ln[q], py, f"{nome} linha {k} {q}"):
@@ -841,10 +856,152 @@ def comparar_troca(nome, copia, falhas):
             f"{'N/A' if ayn is None or py[ae.J_ATUAL].get('aylim') is None else g(ayn - py[ae.J_ATUAL]['aylim'])}")
 
 
+# --- TC-WB41-006 (parte 2): textos de exibição da 16_EQUILIBRIO e do 14_DASHBOARD × equilibrio.texto_veredito/texto_k ---
+TX, T09 = "● Dado do TX", "◐ Dado do T09"
+PREFIXO = "DEMONSTRATIVO · "
+# Textos fixos exigidos (plano, decisão 1; spec 7.3, item 5; decisões 2 e 3), escritos aqui à mão para não depender das
+# constantes do gerador.
+AVISO = "robustez ao pneu: ver relatório docs/v4-1/inc4-equilibrio-na-planilha.md (não recalculada na planilha)"
+REGIMES = "regimes diferentes (Milliken p. 313-315)"
+SENTIDO = ": um sentido por vez (decisão 2 do plano); troque o sentido da curva na entrada para ver o outro"
+DIFERENCIAL = "Diferencial: aberto (h10)"
+
+
+def _nomes_org() -> list[str]:
+    """Todos os nomes de Origem (papel org) da V4.0 (data/nomes_V4_0.csv) e da V4.1 (entradas da 16)."""
+    with open(_RAIZ / "data" / "nomes_V4_0.csv", encoding="utf-8", newline="") as f:
+        v40 = [ln["nome"] for ln in csv.DictReader(f) if ln["papel"] == "org"]
+    return v40 + [n.nome for n in ae.NOMES_V41 if n.papel == "org"]
+
+
+def _txt(x, casas):
+    """format(x, f'.{casas}f') com vírgula (o Python formata; a planilha usa FIXED)."""
+    return format(x, f".{casas}f").replace(".", ",")
+
+
+def _cf(ws, cel) -> list[tuple[str, str]]:
+    """(fórmula, cores do preenchimento) das regras de formatação condicional que cobrem `cel`. As cores vêm de fgColor e
+    bgColor: o Excel grava o preenchimento sólido do dxf nas duas; o LibreOffice, ao salvar a cópia, só no bgColor."""
+    out = []
+    for faixa, regras in ws.conditional_formatting._cf_rules.items():
+        if cel in faixa.sqref:
+            for r in regras:
+                f = r.dxf.fill if r.dxf is not None else None
+                cor = "" if f is None else f"{f.fgColor.rgb} {f.bgColor.rgb}"
+                out.append((" ".join(r.formula or []), str(cor)))
+    return out
+
+
+def comparar_textos(nome, copia, falhas):
+    """Textos da 16 e do dashboard contra ESPERADO6[nome] (equilibrio.texto_veredito e equilibrio_linear.texto_k com a
+    pior origem do caso) e a linha de apoio contra os números da própria cópia formatados pelo Python."""
+    esp = ESPERADO6.get(nome, {})
+    n16 = {k: ae.NOME16.get(k) for k in ("txt_ver", "txt_k", "apoio", "txt_sent")}
+    n14 = getattr(ae, "NOME14", {})
+    if None in n16.values() or not n14:
+        falhas.append(f"{nome}: a V4.1 não tem os textos de exibição (16: {n16}; 14_DASHBOARD: {n14})")
+        return f"{nome}: sem textos de exibição"
+    wb = openpyxl.load_workbook(copia, data_only=True)
+    t16 = {k: valor(wb, n) for k, n in n16.items()}
+    e16 = {k: wb[ae.ABA16][f"E{ae.LINHAS16[k]}"].value for k in ("txt_ver", "txt_k", "apoio")}
+    t14 = {k: valor(wb, n) for k, n in n14.items()}
+    num16 = {k: valor(wb, ae.NOME16[k]) for k in ("S_F_g", "S_R_g", "aylim_g", "cn", "tvolta")}
+    num20 = {k: valor(wb, ae.NOME20_CUSTO[k]) for k in ("perdag", "limiar")}
+    sentido = valor(wb, ENT["sentido"])
+    wb.close()
+    for k in ("txt_ver", "txt_k"):
+        if t16[k] != esp.get(k):
+            falhas.append(f"{nome} 16 {k}: planilha {t16[k]!r} Python {esp.get(k)!r}")
+        if isinstance(t16[k], str) and "N/A: -" in t16[k]:
+            falhas.append(f"{nome} 16 {k}: o \"-\" (sem motivo) apareceu como motivo: {t16[k]!r}")
+    g3 = lambda x: f"{_txt(x, 3)} g" if num(x) else "N/A"
+    custo = f"{_txt(num20['perdag'], 3)} g ({num20['limiar']})" if num(num20["perdag"]) else "N/A"
+    apoio = (f"S_f {g3(num16['S_F_g'])} · S_r {g3(num16['S_R_g'])} · a_y limite {g3(num16['aylim_g'])} · C_N "
+             f"{_txt(num16['cn'], 4) if num(num16['cn']) else 'N/A'} · custo do comportamento {custo} · Δt "
+             f"{_txt(num16['tvolta'], 2) + ' s' if num(num16['tvolta']) else 'N/A'}")
+    if t16["apoio"] != apoio:
+        falhas.append(f"{nome} 16 linha de apoio: planilha {t16['apoio']!r}, esperado {apoio!r}")
+    sent = {"Direita": "Curva à direita", "Esquerda": "Curva à esquerda"}.get(sentido)
+    if sent is None or t16["txt_sent"] != sent + SENTIDO:
+        falhas.append(f"{nome} 16 sentido: planilha {t16['txt_sent']!r} (entrada {sentido!r})")
+    for k in ("txt_ver", "txt_k", "apoio", "txt_sent"):   # o dashboard repete a 16 (F19), com a mesma pior origem
+        if t14.get(k) != t16[k]:
+            falhas.append(f"{nome} 14_DASHBOARD {k}: {t14.get(k)!r} ≠ 16 {t16[k]!r}")
+        if k in e16 and t14.get(k + "_pior") != e16[k]:
+            falhas.append(f"{nome} 14_DASHBOARD pior origem de {k}: {t14.get(k + '_pior')!r} ≠ 16 {e16[k]!r}")
+    return f"{nome}: {t16['txt_ver']!r} | {t16['txt_k'][:40]!r}…"
+
+
+def conferir_fixos(copia, falhas):
+    """Textos fixos e cores (na cópia com fórmulas): aviso de robustez ao lado do veredito, "regimes diferentes" ao lado do
+    K, diferencial e sentido; formatação condicional azul (▲ PUSH) e laranja (▼ LOOSE) no veredito da 16 e do dashboard."""
+    wb = openpyxl.load_workbook(copia)
+    try:
+        ws16, ws14 = wb[ae.ABA16], wb["14_DASHBOARD"]
+        r_ver, r_k = ae.LINHAS16.get("txt_ver"), ae.LINHAS16.get("txt_k")
+        if r_ver is None or r_k is None:
+            falhas.append("16: sem as linhas de texto de exibição")
+            return
+        if ws16[f"F{r_ver}"].value != AVISO:
+            falhas.append(f"16 F{r_ver} (ao lado do veredito): {ws16[f'F{r_ver}'].value!r}, esperado o aviso de robustez")
+        if not str(ws16[f"F{r_k}"].value or "").startswith(REGIMES):
+            falhas.append(f"16 F{r_k} (ao lado do K): {ws16[f'F{r_k}'].value!r}, esperado {REGIMES!r}…")
+        textos14 = [str(c.value) for lin in ws14.iter_rows() for c in lin if isinstance(c.value, str)]
+        for t in (AVISO, REGIMES, DIFERENCIAL):
+            if not any(t in x for x in textos14):
+                falhas.append(f"14_DASHBOARD sem o texto {t!r}")
+        celulas = [(ws16, f"B{r_ver}")] + [(ws14, ae._destino(wb, ae.NOME14["txt_ver"])[1])]
+        for ws, cel in celulas:
+            regras = _cf(ws, cel)
+            azul = any("▲ PUSH" in f and ae.COR_PUSH in c for f, c in regras)
+            laranja = any("▼ LOOSE" in f and ae.COR_LOOSE in c for f, c in regras)
+            if not (azul and laranja):
+                falhas.append(f"{ws.title} {cel}: formatação condicional azul/laranja ausente ({regras})")
+        for aba in ("21_COBERTURA", "22_CADEIA"):
+            if aba not in wb.sheetnames:
+                falhas.append(f"aba {aba} ausente")
+        if any(isinstance(ws[c].value, str) and "TESTE" in ws[c].value for aux in ae.AUX20.values() for ws in [wb[aux]]
+               for c in ("A1",)):
+            falhas.append("título das abas 20a-20d ainda diz TESTE (marca de valor injetado só em cópia)")
+    except AttributeError as e:
+        falhas.append(f"textos fixos: {e}")
+    finally:
+        wb.close()
+
+
+def casos_origem():
+    """Pior origem INDEPENDENTE da função que gera a fórmula: na cópia ORG_TX, todas as células de Origem (nomes org_*)
+    em "● Dado do TX"; na ORG_T09, o mesmo com a massa medida sem piloto (05_VEHICLE E30) em "◐ Dado do T09". Sobre o C3
+    (PUSH) e o C3b (LOOSE). Valores de TESTE, só nas cópias."""
+    todos_tx = {n: TX for n in _nomes_org()}
+    return [("ORG_TX", {**C3, **todos_tx}, TX), ("ORG_T09", {**C3b, **todos_tx, "org_05_massa_medida_sem_piloto": T09}, T09)]
+
+
+def esperado_origem(nome, copia, pior, falhas):
+    """Textos esperados com a pior origem conhecida pela construção do caso (não pela fórmula): texto_veredito e texto_k
+    com `pior`; a cópia tem de mostrar essa pior origem, sem prefixo com TX e com prefixo com T09."""
+    res = eq.analise_par(cp.caso_da_planilha_v41(copia, TIR, passo1=False))
+    p = el.parcelas_k(cp.caso_da_planilha_v41(copia, TIR), 0.0)
+    ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(res, pior), "txt_k": el.texto_k(p, pior)}
+    for k, t in ESPERADO6[nome].items():
+        if t.startswith(PREFIXO) != (pior != TX):
+            falhas.append(f"{nome}: texto esperado {t!r} com o prefixo errado para a pior origem {pior!r}")
+    wb = openpyxl.load_workbook(copia, data_only=True)
+    sh = {k: wb[ae.ABA16][f"E{ae.LINHAS16[k]}"].value for k in ("ver", "kTot")}
+    wb.close()
+    if sh != {"ver": pior, "kTot": pior}:
+        falhas.append(f"{nome}: pior origem da planilha {sh!r}, esperado {pior!r} em todas")
+    for linear in (False, True):
+        if cp.pior_origem_do_caso_v41(copia, linear=linear) != pior:
+            falhas.append(f"{nome}: pior_origem_do_caso_v41(linear={linear}) ≠ {pior!r} (o gerador da fórmula diverge)")
+    return res.veredito
+
+
 # --- TC-WB41-004 e TC-WB41-005 (as mesmas cópias recalculadas) ---
 falhas, resumos, tempos = [], [], []
 falhas5, resumos5 = [], []
 falhas6, resumos6 = [], []
+falhas6b, resumos6b = [], []
 base = ae.extrair_v40(Path(tempfile.mkdtemp()))
 info_b, t_b = recalcular(base)
 print(f"  V4.0 da tag (referência de tempo): {t_b:.1f} s no motor, {info_b['total_formulas']} fórmulas, "
@@ -870,6 +1027,9 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
     resumos.append(comparar_caso(nome, copia, esperado, prefixo, falhas))
     resumos5.append(comparar_k(nome, copia, falhas5))
     resumos6.append(comparar_troca(nome, copia, falhas6))
+    resumos6b.append(comparar_textos(nome, copia, falhas6b))
+    if nome == "C1":
+        conferir_fixos(copia, falhas6b)
     if nome == "RF3":
         caso = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
         r = eq.analise_par(caso)
@@ -877,6 +1037,15 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
         if not (r.ay_sat_r is not None and sr2.ay_sat is None and r.resolucao_ms2 == ae.PASSO_G * G):
             falhas.append(f"RF3: o caso não ficou com a traseira saturando só na grade pedida (S_r {r.ay_sat_r}, "
                           f"S_r refinada {sr2.ay_sat}, resolução {r.resolucao_ms2})")
+for nome, alt, pior_esp in casos_origem():   # TC-WB41-006, parte 2: pior origem conhecida pela construção do caso
+    copia = ae.copia_v41(Path(tempfile.mkdtemp()), alt, f"{nome}.xlsx")
+    info, t = recalcular(copia)
+    tempos.append(t)
+    print(f"  {nome}: recalculado em {t:.1f} s no motor; {info['total_formulas']} fórmulas, {info['total_errors']} erros")
+    if info["total_errors"]:
+        falhas6b.append(f"{nome}: {info['total_errors']} erro(s) de fórmula {info['error_summary']}")
+    v = esperado_origem(nome, copia, pior_esp, falhas6b)
+    resumos6b.append(f"{comparar_textos(nome, copia, falhas6b)} (veredito {v}, pior origem {pior_esp})")
 for s in resumos:
     print("  " + s)
 print(f"  MAIOR diferença relativa planilha × Python ({MOTOR}): {DIF_MAX[0]:.2e} ({DIF_MAX[1]})")
@@ -908,6 +1077,15 @@ check("TC-WB41-006 (parte 1): tabela de troca da barra dianteira (20_EQ_TROCA, K
       "a_y do neutro pelo cruzamento das saturações (interpolação, nunca S_r − S_f) e custo = a_y do neutro − a_y limite "
       f"atual, \"limiar não definido\"; interpolação exercitada em {INTERPOLADOS6}",
       not falhas6, f"{len(falhas6)} divergência(s): {falhas6[:8]}")
+
+for s6 in resumos6b:
+    print("  " + s6)
+check("TC-WB41-006 (parte 2): textos de exibição da 16_EQUILIBRIO e do 14_DASHBOARD == equilibrio.texto_veredito e "
+      "equilibrio_linear.texto_k em todos os casos (sem \"-\" como motivo); sem o prefixo DEMONSTRATIVO com todas as "
+      "Origens em \"● Dado do TX\" e com ele com a massa em \"◐ Dado do T09\" (pior origem pela construção do caso); linha "
+      "de apoio e sentido da curva; aviso de robustez ao lado do veredito, \"regimes diferentes\" ao lado do K, "
+      "diferencial; cores azul/laranja; abas 21 e 22",
+      not falhas6b, f"{len(falhas6b)} divergência(s): {falhas6b[:8]}")
 
 print("\n--- Resumo ---"); p = sum(1 for _, s in results if s == "PASS"); f = len(results) - p
 print(f"{p} PASS, {f} FAIL, de {len(results)} testes")
