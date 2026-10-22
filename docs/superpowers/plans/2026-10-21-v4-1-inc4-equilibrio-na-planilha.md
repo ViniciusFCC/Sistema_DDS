@@ -42,6 +42,8 @@
    - (c) **00_README A3** (versão V4.1) e a linha nova do 15_CHANGELOG, como na V4.0.
 7. **Ganho de camber em rolagem:** derivar ∂γ/∂φ de cada roda das entradas existentes SUS-404-F/R (07_KINEMATICS B23/B24, dγ/dz em °/mm) por `kinematics_model.camber_gradient_from_body` (EDR-050: valor derivado entra como fórmula). Aviso: o valor demonstrativo atual (−0,6 °/mm) dá ∂γ/∂φ ≈ −5,7 rad/rad, implausível, e o camber em curva vai ser limitado ao CAMMIN/CAMMAX com aviso. Alternativa: entrada nova "ganho de camber em rolagem" com 0 = sem dado (EDR-036).
 
+**Respostas do usuário (2026-10-21):** autorizados os itens 1 a 5 ("Autorizo tudo"); item 6: (a) 10_TIRE pelo EDR-056 e (b) textos da §12.1 aprovados, e (c) segue o padrão da V4.0; item 7: derivar do SUS-404. A tabela de troca espera o portão da Task 4.
+
 ## Global Constraints
 - A V4.1 parte do arquivo `excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx` da tag `v4.0` (`git show v4.0:...`), extraído para uma pasta temporária. Saída em `build/`; a cópia para `excel/` é um commit próprio. Nenhuma ferramenta salva ou recalcula a viva `excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx`.
 - As 387 fórmulas da V4.0 ficam com texto idêntico, salvo as células aprovadas no item 6. Os 698 nomes da V4.0 ficam iguais.
