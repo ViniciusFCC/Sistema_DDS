@@ -92,6 +92,7 @@ print(f"MOTOR: {MOTOR} ({DETALHE})")
 _RAIZ = Path(__file__).resolve().parent.parent
 TIR = _RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
 TOL_REL = 1e-9
+SUB = set(filter(None, os.environ.get("DDS_CASOS", "").split(",")))   # vazio = todos os casos
 results = []
 ESPERADO6 = {}   # nome do caso -> textos de exibição esperados (TC-WB41-006, parte 2): txt_ver, txt_k
 
@@ -1080,103 +1081,106 @@ def esperado_tire(ds, roda, fz, a_deg, g_deg, kappa):
     return st, fx, fy, tm.mu_effective(fx, fy, fz_u)
 
 
-falhas3, tempos3, notas3 = [], [], []
-alteradas41 = {(a["aba"], a["cel"]) for a in gerar_v4_1.alteracoes_v4_1(base)}
-# (1) C1 sem alterações: 0 erros, equivalência com a V4.0 recalculada em todo res antigo e a estrutura depois de salvar
-t3 = ae.copia_v41(Path(tempfile.mkdtemp()), {}, "T3_C1.xlsx")
-est_antes = cmp_pl._estrutura(t3)
-info3, t = recalcular(t3)
-tempos3.append(t)
-if info3["total_errors"]:
-    falhas3.append(f"C1: {info3['total_errors']} erro(s) de fórmula {info3['error_summary']}")
-if info3["total_formulas"] != cmp_pl.FORMULAS_ESPERADAS_V41:
-    falhas3.append(f"C1: {info3['total_formulas']} fórmulas, esperado {cmp_pl.FORMULAS_ESPERADAS_V41}")
-with open(_RAIZ / "data" / "nomes_V4_0.csv", encoding="utf-8", newline="") as f:
-    res40 = [n for n in csv.DictReader(f) if n["papel"] == "res"]
-res_alterados = sorted(f"{n['aba']}!{n['celula']}" for n in res40 if (n["aba"], n["celula"]) in alteradas41)
-wb3, wbb = openpyxl.load_workbook(t3, data_only=True), openpyxl.load_workbook(base, data_only=True)
-for n in res40:   # inclusive as 215 fórmulas da 10_TIRE alteradas pela 6a (ruling 3: dentro da faixa nada muda)
-    a, b = wb3[n["aba"]][n["celula"]].value, wbb[n["aba"]][n["celula"]].value
-    if not _iguais(a, b):
-        falhas3.append(f"equivalência {n['nome']} ({n['aba']}!{n['celula']}): V4.1={a!r} V4.0={b!r}")
-wb3.close(); wbb.close()
-if MOTOR == "excel":   # o Excel salvou a cópia no recálculo: nomes, validações, formatação condicional e a nota ficam
-    est_depois = cmp_pl._estrutura(t3)
-    difs = cmp_pl._difs_estrutura(est_antes, est_depois, "gerada", "salva pelo Excel")
-    if difs:
-        falhas3.append(f"Excel ao salvar: {len(difs)} diferença(s) de estrutura {difs[:5]}")
-    wbn = openpyxl.load_workbook(t3)
-    nota = wbn[ae.ABA16][f"B{ae.LINHAS16['txt_ver']}"].comment
-    wbn.close()
-    if nota is None or nota.text.strip() != ae.NOTA_VEREDITO:
-        falhas3.append(f"Excel ao salvar: a nota do veredito (16 B{ae.LINHAS16['txt_ver']}) não sobreviveu: {nota!r}")
-    notas3.append(f"Excel salvou a cópia: {len(est_depois['nomes'])} nomes; validações, formatação condicional e a nota "
-                  "do veredito iguais às da cópia gerada")
-else:
-    notas3.append("salvar pelo Excel NÃO EXECUTADO (motor LibreOffice; a equipe salva pelo Excel e o LibreOffice nunca "
-                  "salva a planilha, CLAUDE.md): esta parte só conta na rodada do Excel")
-# (2) 10_TIRE com entradas fora da faixa (TESTE, só na cópia): Fz acima; Fz abaixo e γ abaixo; α acima numa roda L;
-# Fz = 0 (descolamento); κ fora (continua N/A)
-ds_tire = tm.load_dataset(TIR, source_axis_system="ISO_TYDEX")
-PONTOS_TIRE = {"B": ("FL", 1700.0, -3.0, -1.5, -0.05), "C": ("FR", 50.0, -3.0, -5.0, -0.05),
-               "D": ("RL", 700.0, 20.0, -1.0, -0.03), "E": ("RR", 0.0, -2.0, -1.0, -0.03),
-               "F": ("VERIF", 700.0, 3.0, 1.5, 0.30)}
-t_tire = ae.copia_v41(Path(tempfile.mkdtemp()), {}, "T3_TIRE.xlsx")
-_editar_tire(t_tire, {f"{c}{r}": v for c, (_, *vals) in PONTOS_TIRE.items() for r, v in zip((22, 23, 24, 25), vals)})
-info_t, t = recalcular(t_tire)
-tempos3.append(t)
-if info_t["total_errors"]:
-    falhas3.append(f"TIRE: {info_t['total_errors']} erro(s) de fórmula {info_t['error_summary']}")
-wbt = openpyxl.load_workbook(t_tire, data_only=True)
-wst = wbt["10_TIRE"]
-limitados = 0
-for c, (roda, fz, a_deg, g_deg, kap) in PONTOS_TIRE.items():
-    st, fx, fy, mu = esperado_tire(ds_tire, roda, fz, a_deg, g_deg, kap)
-    if wst[f"{c}26"].value != st:
-        falhas3.append(f"TIRE {c} ({roda}): status {wst[f'{c}26'].value!r}, esperado {st!r}")
-    for lin, esp in ((29, fx), (30, fy), (31, mu)):
-        v = wst[f"{c}{lin}"].value
-        if esp is None:
-            if v != "N/A":
-                falhas3.append(f"TIRE {c}{lin}: {v!r}, esperado N/A")
-        elif not (num(v) and abs(v - esp) <= 1e-9 * max(1.0, abs(esp))):
-            falhas3.append(f"TIRE {c}{lin}: {v!r}, esperado {esp!r} (wheel_forces com a entrada limitada)")
-    limitados += st.startswith("OK - limitado")
-wbt.close()
-if limitados != 3:
-    falhas3.append(f"TIRE: {limitados} colunas limitadas, esperado 3")
-# (3) Review Focus 5: "8 m" colado no raio com a h3 ligada (TESTE): validação na célula e N/A com motivo, sem #VALUE!
-t_rf5 = ae.copia_v41(Path(tempfile.mkdtemp()), {ENT["R"]: "8 m", ENT["h3"]: 1}, "T3_RF5.xlsx")
-wbr = openpyxl.load_workbook(t_rf5)
-r_R = ae.LINHA_ENTRADA["R"]
-dv_R = [v for v in wbr[ae.ABA16].data_validations.dataValidation if f"B{r_R}" in str(v.sqref).split()]
-wbr.close()
-if not (dv_R and dv_R[0].type == "decimal"):
-    falhas3.append(f"RF5: a célula do raio (16 B{r_R}) sem validação decimal: {dv_R!r}")
-info_r, t = recalcular(t_rf5)
-tempos3.append(t)
-wbr = openpyxl.load_workbook(t_rf5, data_only=True)
-ver_r, mot_r, txt_r = (valor(wbr, ae.NOME16[k]) for k in ("ver", "mot", "txt_ver"))
-wbr.close()
-if info_r["total_errors"] or ver_r != eq.NA or mot_r != "raio do skidpad R não é número" or \
-        not str(txt_r).endswith("N/A: raio do skidpad R não é número"):
-    falhas3.append(f"RF5: erros={info_r['total_errors']} {info_r.get('error_summary')} veredito={ver_r!r} "
-                   f"motivo={mot_r!r} texto={txt_r!r}")
-for s3 in notas3:
-    print("  " + s3)
-print(f"  TEMPO de recálculo das cópias do TC-WB41-003 ({MOTOR}): " + ", ".join(f"{x:.1f} s" for x in tempos3))
-check("TC-WB41-003: cópia da V4.1 recalculada com 0 erros (nomes resolvem, sem #NAME?) e o número de fórmulas esperado; "
-      "todo res da V4.0 igual à V4.0 recalculada (rel. <= 1e-12, inclusive as 215 fórmulas da 10_TIRE alteradas: as "
-      "entradas nominais ficam dentro da faixa do .tir); 10_TIRE pelo EDR-056: Fz, α e γ fora da faixa limitados (Fx, Fy "
-      "e μ = wheel_forces com a entrada limitada) com o aviso no status, Fz = 0 e κ fora = N/A; \"8 m\" no raio: "
-      "validação decimal na célula e N/A com motivo, sem #VALUE!; no Excel, salvar mantém nomes, validações, formatação "
-      "condicional e a nota do veredito; tempo no log",
-      not falhas3, f"{len(falhas3)} divergência(s): {falhas3[:8]}; res da V4.0 entre as alteradas: "
-      f"{len(res_alterados)}; {'; '.join(notas3)}")
+if not SUB:   # DDS_CASOS (mutação da planilha): só os casos nomeados; o TC-WB41-003 não roda
+    falhas3, tempos3, notas3 = [], [], []
+    alteradas41 = {(a["aba"], a["cel"]) for a in gerar_v4_1.alteracoes_v4_1(base)}
+    # (1) C1 sem alterações: 0 erros, equivalência com a V4.0 recalculada em todo res antigo e a estrutura depois de salvar
+    t3 = ae.copia_v41(Path(tempfile.mkdtemp()), {}, "T3_C1.xlsx")
+    est_antes = cmp_pl._estrutura(t3)
+    info3, t = recalcular(t3)
+    tempos3.append(t)
+    if info3["total_errors"]:
+        falhas3.append(f"C1: {info3['total_errors']} erro(s) de fórmula {info3['error_summary']}")
+    if info3["total_formulas"] != cmp_pl.FORMULAS_ESPERADAS_V41:
+        falhas3.append(f"C1: {info3['total_formulas']} fórmulas, esperado {cmp_pl.FORMULAS_ESPERADAS_V41}")
+    with open(_RAIZ / "data" / "nomes_V4_0.csv", encoding="utf-8", newline="") as f:
+        res40 = [n for n in csv.DictReader(f) if n["papel"] == "res"]
+    res_alterados = sorted(f"{n['aba']}!{n['celula']}" for n in res40 if (n["aba"], n["celula"]) in alteradas41)
+    wb3, wbb = openpyxl.load_workbook(t3, data_only=True), openpyxl.load_workbook(base, data_only=True)
+    for n in res40:   # inclusive as 215 fórmulas da 10_TIRE alteradas pela 6a (ruling 3: dentro da faixa nada muda)
+        a, b = wb3[n["aba"]][n["celula"]].value, wbb[n["aba"]][n["celula"]].value
+        if not _iguais(a, b):
+            falhas3.append(f"equivalência {n['nome']} ({n['aba']}!{n['celula']}): V4.1={a!r} V4.0={b!r}")
+    wb3.close(); wbb.close()
+    if MOTOR == "excel":   # o Excel salvou a cópia no recálculo: nomes, validações, formatação condicional e a nota ficam
+        est_depois = cmp_pl._estrutura(t3)
+        difs = cmp_pl._difs_estrutura(est_antes, est_depois, "gerada", "salva pelo Excel")
+        if difs:
+            falhas3.append(f"Excel ao salvar: {len(difs)} diferença(s) de estrutura {difs[:5]}")
+        wbn = openpyxl.load_workbook(t3)
+        nota = wbn[ae.ABA16][f"B{ae.LINHAS16['txt_ver']}"].comment
+        wbn.close()
+        if nota is None or nota.text.strip() != ae.NOTA_VEREDITO:
+            falhas3.append(f"Excel ao salvar: a nota do veredito (16 B{ae.LINHAS16['txt_ver']}) não sobreviveu: {nota!r}")
+        notas3.append(f"Excel salvou a cópia: {len(est_depois['nomes'])} nomes; validações, formatação condicional e a nota "
+                      "do veredito iguais às da cópia gerada")
+    else:
+        notas3.append("salvar pelo Excel NÃO EXECUTADO (motor LibreOffice; a equipe salva pelo Excel e o LibreOffice nunca "
+                      "salva a planilha, CLAUDE.md): esta parte só conta na rodada do Excel")
+    # (2) 10_TIRE com entradas fora da faixa (TESTE, só na cópia): Fz acima; Fz abaixo e γ abaixo; α acima numa roda L;
+    # Fz = 0 (descolamento); κ fora (continua N/A)
+    ds_tire = tm.load_dataset(TIR, source_axis_system="ISO_TYDEX")
+    PONTOS_TIRE = {"B": ("FL", 1700.0, -3.0, -1.5, -0.05), "C": ("FR", 50.0, -3.0, -5.0, -0.05),
+                   "D": ("RL", 700.0, 20.0, -1.0, -0.03), "E": ("RR", 0.0, -2.0, -1.0, -0.03),
+                   "F": ("VERIF", 700.0, 3.0, 1.5, 0.30)}
+    t_tire = ae.copia_v41(Path(tempfile.mkdtemp()), {}, "T3_TIRE.xlsx")
+    _editar_tire(t_tire, {f"{c}{r}": v for c, (_, *vals) in PONTOS_TIRE.items() for r, v in zip((22, 23, 24, 25), vals)})
+    info_t, t = recalcular(t_tire)
+    tempos3.append(t)
+    if info_t["total_errors"]:
+        falhas3.append(f"TIRE: {info_t['total_errors']} erro(s) de fórmula {info_t['error_summary']}")
+    wbt = openpyxl.load_workbook(t_tire, data_only=True)
+    wst = wbt["10_TIRE"]
+    limitados = 0
+    for c, (roda, fz, a_deg, g_deg, kap) in PONTOS_TIRE.items():
+        st, fx, fy, mu = esperado_tire(ds_tire, roda, fz, a_deg, g_deg, kap)
+        if wst[f"{c}26"].value != st:
+            falhas3.append(f"TIRE {c} ({roda}): status {wst[f'{c}26'].value!r}, esperado {st!r}")
+        for lin, esp in ((29, fx), (30, fy), (31, mu)):
+            v = wst[f"{c}{lin}"].value
+            if esp is None:
+                if v != "N/A":
+                    falhas3.append(f"TIRE {c}{lin}: {v!r}, esperado N/A")
+            elif not (num(v) and abs(v - esp) <= 1e-9 * max(1.0, abs(esp))):
+                falhas3.append(f"TIRE {c}{lin}: {v!r}, esperado {esp!r} (wheel_forces com a entrada limitada)")
+        limitados += st.startswith("OK - limitado")
+    wbt.close()
+    if limitados != 3:
+        falhas3.append(f"TIRE: {limitados} colunas limitadas, esperado 3")
+    # (3) Review Focus 5: "8 m" colado no raio com a h3 ligada (TESTE): validação na célula e N/A com motivo, sem #VALUE!
+    t_rf5 = ae.copia_v41(Path(tempfile.mkdtemp()), {ENT["R"]: "8 m", ENT["h3"]: 1}, "T3_RF5.xlsx")
+    wbr = openpyxl.load_workbook(t_rf5)
+    r_R = ae.LINHA_ENTRADA["R"]
+    dv_R = [v for v in wbr[ae.ABA16].data_validations.dataValidation if f"B{r_R}" in str(v.sqref).split()]
+    wbr.close()
+    if not (dv_R and dv_R[0].type == "decimal"):
+        falhas3.append(f"RF5: a célula do raio (16 B{r_R}) sem validação decimal: {dv_R!r}")
+    info_r, t = recalcular(t_rf5)
+    tempos3.append(t)
+    wbr = openpyxl.load_workbook(t_rf5, data_only=True)
+    ver_r, mot_r, txt_r = (valor(wbr, ae.NOME16[k]) for k in ("ver", "mot", "txt_ver"))
+    wbr.close()
+    if info_r["total_errors"] or ver_r != eq.NA or mot_r != "raio do skidpad R não é número" or \
+            not str(txt_r).endswith("N/A: raio do skidpad R não é número"):
+        falhas3.append(f"RF5: erros={info_r['total_errors']} {info_r.get('error_summary')} veredito={ver_r!r} "
+                       f"motivo={mot_r!r} texto={txt_r!r}")
+    for s3 in notas3:
+        print("  " + s3)
+    print(f"  TEMPO de recálculo das cópias do TC-WB41-003 ({MOTOR}): " + ", ".join(f"{x:.1f} s" for x in tempos3))
+    check("TC-WB41-003: cópia da V4.1 recalculada com 0 erros (nomes resolvem, sem #NAME?) e o número de fórmulas esperado; "
+          "todo res da V4.0 igual à V4.0 recalculada (rel. <= 1e-12, inclusive as 215 fórmulas da 10_TIRE alteradas: as "
+          "entradas nominais ficam dentro da faixa do .tir); 10_TIRE pelo EDR-056: Fz, α e γ fora da faixa limitados (Fx, Fy "
+          "e μ = wheel_forces com a entrada limitada) com o aviso no status, Fz = 0 e κ fora = N/A; \"8 m\" no raio: "
+          "validação decimal na célula e N/A com motivo, sem #VALUE!; no Excel, salvar mantém nomes, validações, formatação "
+          "condicional e a nota do veredito; tempo no log",
+          not falhas3, f"{len(falhas3)} divergência(s): {falhas3[:8]}; res da V4.0 entre as alteradas: "
+          f"{len(res_alterados)}; {'; '.join(notas3)}")
 
 
 caso_c3 = None
 for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
+    if SUB and nome not in SUB:
+        continue
     if nome == "RF3":
         alt = {**C3, "ent_10_lmuy": lmuy_rf3(caso_c3), "ent_10_lky": caso_c3.ds.p["LKY"] * LKY_RF3}
     copia = ae.copia_v41(Path(tempfile.mkdtemp()), alt, f"{nome}.xlsx")
@@ -1207,6 +1211,8 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
             falhas.append(f"RF3: o caso não ficou com a traseira saturando só na grade pedida (S_r {r.ay_sat_r}, "
                           f"S_r refinada {sr2.ay_sat}, resolução {r.resolucao_ms2})")
 for nome, alt, pior_esp in casos_origem():   # TC-WB41-006, parte 2: pior origem conhecida pela construção do caso
+    if SUB and nome not in SUB:
+        continue
     copia = ae.copia_v41(Path(tempfile.mkdtemp()), alt, f"{nome}.xlsx")
     info, t = recalcular(copia)
     tempos.append(t)
@@ -1238,7 +1244,7 @@ check("TC-WB41-005: passo 1 em fórmulas (19_EQ_LINEAR e o K na 16) == equilibri
       not falhas5, f"{len(falhas5)} divergência(s): {falhas5[:8]}")
 for s6 in resumos6:
     print("  " + s6)
-if not INTERPOLADOS6:
+if not INTERPOLADOS6 and not SUB:
     falhas6.append("nenhum caso pôs o cruzamento das saturações dentro da tabela por interpolação (o TR1 devia pôr)")
 check("TC-WB41-006 (parte 1): tabela de troca da barra dianteira (20_EQ_TROCA, K_ARB dianteiro × 0,5; 0,75; 1; 1,5; 2) == "
       "equilibrio.analise_par e equilibrio_linear.parcelas_k com o K_ARB trocado, em todos os casos (K_φF e λ_f rel. <= 1e-9; "
