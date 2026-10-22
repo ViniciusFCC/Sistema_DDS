@@ -458,11 +458,12 @@ def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_orige
 def texto_k(p: ParcelasK, pior_origem: str | None) -> str:
     """Texto exato de exibição do K (spec §6; Global Constraints).
 
-    "K = <±x,xx> °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; sem compliance, torque de
-    alinhamento e tração)"
-    seguido de " · Subesterço" (K > 0), " · Sobresterço" (K < 0) ou " · Neutro" (só K == 0 exato; banda de neutro
-    só por EDR). K None: "N/A: " + motivo. Prefixo "DEMONSTRATIVO · " se a pior origem não for "● Dado do TX"
-    (D16), também no N/A, como em equilibrio.texto_veredito.
+    "K = <±x,xx> °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e camber
+    estático) + camber + roll steer; sem compliance, torque de alinhamento e tração)"
+    (rótulo da parcela de deslocamento revisto no incremento 4, 2026-10-21: ela reúne ply steer, conicidade, toe e
+    camber estático, não só o deslocamento do pneu) seguido de " · Subesterço" (K > 0), " · Sobresterço" (K < 0) ou
+    " · Neutro" (só K == 0 exato; banda de neutro só por EDR). K None: "N/A: " + motivo. Prefixo "DEMONSTRATIVO · " se
+    a pior origem não for "● Dado do TX" (D16), também no N/A, como em equilibrio.texto_veredito.
     """
     if p.k_total is None:
         texto = "N/A: " + (p.motivo or "")
@@ -474,8 +475,8 @@ def texto_k(p: ParcelasK, pior_origem: str | None) -> str:
             rotulo = "Sobresterço"
         else:
             rotulo = "Neutro"
-        texto = (f"K = {valor} °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; sem "
-                 f"compliance, torque de alinhamento e tração) · {rotulo}")
+        texto = (f"K = {valor} °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e "
+                 f"camber estático) + camber + roll steer; sem compliance, torque de alinhamento e tração) · {rotulo}")
     return texto if pior_origem == "● Dado do TX" else "DEMONSTRATIVO · " + texto
 
 

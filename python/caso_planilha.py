@@ -1,12 +1,13 @@
-"""Caso de equilíbrio demonstrativo lido da planilha V3.0 e a pior origem dos dados (V4.0, incremento 1).
+"""Caso de equilíbrio demonstrativo lido da planilha e a pior origem dos dados (V4.0, incremento 1).
 
 `caso_da_planilha` lê as entradas de uma CÓPIA já recalculada (Excel ou LibreOffice, EDR-044) e monta o
 `CasoEquilibrio`. `pior_origem_do_caso` abre a planilha SEM valores (só fórmulas) e acha o pior rótulo de origem
 entre as raízes das entradas e o pneu (origem lida da 10_TIRE, I84); `pior_origem_entradas` faz o mesmo sem o
 pneu. Nenhuma função salva ou recalcula a planilha; a viva só é aberta para leitura.
 
-ENTRADAS_CASO é uma cópia consciente do `ENTRADAS` de tests/test_workbook_suspensao.py (só as chaves usadas aqui).
-O incremento 4 (V4.1) troca as duas pelos nomes definidos da planilha.
+ENTRADAS_CASO mapeia cada chave de entrada ao nome definido da V4.0 (data/nomes_V4_0.csv); a leitura resolve o nome na
+própria planilha (`wb.defined_names`). Uma cópia da V3.0, sem nomes definidos, cai no endereço da mesma tabela
+(`endereco_da_entrada`), então as ferramentas que passam a V3.0 viva continuam funcionando.
 Toe, camber estático e ganho de camber ficam em 0: não há dado do carro (EDR-036).
 """
 from __future__ import annotations
@@ -22,29 +23,79 @@ import tire_model as tm
 from equilibrio import CasoEquilibrio
 from raizes import Grafo, origem_da_raiz, PIOR_PRIMEIRO, SEM_ROTULO
 from atualizar_planilha import CONF
+from nomes_v4_0 import ler_tabela
 
-ENTRADAS_CASO: dict[str, tuple[str, str]] = {
-    "m": ("05_VEHICLE", "B4"), "h": ("05_VEHICLE", "B5"), "L": ("05_VEHICLE", "B6"),
-    "tF": ("05_VEHICLE", "B7"), "tR": ("05_VEHICLE", "B8"), "a": ("05_VEHICLE", "B9"), "b": ("05_VEHICLE", "B10"),
-    "muF": ("05_VEHICLE", "B14"), "muR": ("05_VEHICLE", "B15"), "huF": ("05_VEHICLE", "B16"), "huR": ("05_VEHICLE", "B17"),
-    "KsF": ("06_SUSPENSION", "B4"), "KsR": ("06_SUSPENSION", "B5"), "MRF": ("06_SUSPENSION", "B6"),
-    "MRR": ("06_SUSPENSION", "B7"), "KarbF": ("06_SUSPENSION", "B10"), "KarbR": ("06_SUSPENSION", "B11"),
-    "zF": ("06_SUSPENSION", "B14"), "zR": ("06_SUSPENSION", "B15"),
-    "KTF": ("06_SUSPENSION", "B47"), "KTR": ("06_SUSPENSION", "B48"),
-    "DF": ("08_VEHICLE_STATE", "B8"), "bal": ("08_VEHICLE_STATE", "B9"),
+TABELA_NOMES = Path(__file__).resolve().parent.parent / "data" / "nomes_V4_0.csv"
+
+ENTRADAS_CASO: dict[str, str] = {
+    "m": "res_05_massa_total_com_piloto",
+    "h": "ent_05_altura_do_cg_total",
+    "L": "ent_05_wheelbase_l",
+    "tF": "ent_05_front_track_t_f",
+    "tR": "ent_05_rear_track_t_r",
+    "a": "res_05_cg_eixo_dianteiro_a",
+    "b": "res_05_cg_eixo_traseiro_b",
+    "muF": "ent_05_massa_nao_suspensa_dianteira",
+    "muR": "ent_05_massa_nao_suspensa_traseira",
+    "huF": "res_05_altura_cg_nao_suspenso_dianteiro",
+    "huR": "res_05_altura_cg_nao_suspenso_traseiro",
+    "KsF": "ent_06_spring_rate_dianteiro",
+    "KsR": "ent_06_spring_rate_traseiro",
+    "MRF": "ent_06_motion_ratio_dianteiro_wheel_spring",
+    "MRR": "ent_06_motion_ratio_traseiro_wheel_spring",
+    "KarbF": "ent_06_k_arb_dianteiro",
+    "KarbR": "ent_06_k_arb_traseiro",
+    "zF": "ent_06_roll_center_dianteiro_rh_estatico",
+    "zR": "ent_06_roll_center_traseiro_rh_estatico",
+    "KTF": "ent_06_rigidez_vertical_do_pneu_dianteiro_k_t",
+    "KTR": "ent_06_rigidez_vertical_do_pneu_traseiro_k_t",
+    "DF": "ent_08_downforce_total",
+    "bal": "ent_08_aero_balance_fracao_dianteira",
 }
+
+_ENDERECOS_V30: dict[str, tuple[str, str]] = {}
+
+
+def _enderecos_da_tabela() -> dict[str, tuple[str, str]]:
+    """nome -> (aba, célula) da tabela data/nomes_V4_0.csv (os endereços da V3.0 e da V4.0), lida uma vez."""
+    if not _ENDERECOS_V30:
+        _ENDERECOS_V30.update({n.nome: (n.aba, n.celula) for n in ler_tabela(TABELA_NOMES)})
+    return _ENDERECOS_V30
+
+
+def endereco_da_entrada(wb, chave: str) -> tuple[str, str]:
+    """(aba, célula) da entrada `chave`: resolve o nome definido na planilha `wb`; sem o nome (cópia da V3.0), usa o
+    endereço da tabela de nomes. Nome que aponta para algo que não é uma única célula é erro."""
+    nome = ENTRADAS_CASO[chave]
+    dn = wb.defined_names.get(nome)
+    if dn is None:
+        return _enderecos_da_tabela()[nome]
+    dest = list(dn.destinations)
+    cel = dest[0][1].replace("$", "") if len(dest) == 1 else ""
+    if not cel or ":" in cel:
+        raise ValueError(f"o nome {nome} não aponta para uma única célula ({dn.attr_text})")
+    return dest[0][0], cel
+
+
+def enderecos_das_entradas(wb) -> dict[str, tuple[str, str]]:
+    """chave -> (aba, célula) de todas as entradas do caso na planilha `wb` (ver `endereco_da_entrada`)."""
+    return {k: endereco_da_entrada(wb, k) for k in ENTRADAS_CASO}
 
 
 def caso_da_planilha(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
-    """Monta o CasoEquilibrio a partir de uma cópia recalculada; ValueError se alguma entrada não tem valor."""
+    """Monta o CasoEquilibrio a partir de uma cópia recalculada; ValueError se alguma entrada não tem valor.
+
+    Lê pelos nomes definidos da V4.0 (ou posterior); numa cópia da V3.0, sem nomes, pelos endereços da tabela.
+    """
     wb = openpyxl.load_workbook(xlsx_recalculado, data_only=True)
     x: dict[str, float] = {}
-    for nome, (aba, cel) in ENTRADAS_CASO.items():
+    for chave in ENTRADAS_CASO:
+        aba, cel = endereco_da_entrada(wb, chave)
         v = wb[aba][cel].value
         if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
             raise ValueError("a cópia precisa ser recalculada (Excel ou LibreOffice) antes da leitura: "
                              f"{aba}!{cel} sem valor")
-        x[nome] = float(v)
+        x[chave] = float(v)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         kw_f, kw_r = sm.wheel_rate(x["KsF"], x["MRF"]), sm.wheel_rate(x["KsR"], x["MRR"])
@@ -63,7 +114,7 @@ def _origens_entradas(wb) -> set[str]:
     """Rótulos de origem das raízes preenchidas de ENTRADAS_CASO (raiz sem rótulo conta como "? A confirmar")."""
     grafo = Grafo(wb)
     achados = set()
-    for no in ENTRADAS_CASO.values():
+    for no in enderecos_das_entradas(wb).values():
         for aba, cel in grafo.raizes_preenchidas(no):
             rotulo = origem_da_raiz(wb, aba, cel)
             achados.add(CONF if rotulo == SEM_ROTULO else rotulo)

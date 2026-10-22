@@ -535,14 +535,21 @@ with tempfile.TemporaryDirectory(prefix="dds_eq019_") as _tmp:
     _f = os.path.join(_tmp, "sem_valores.xlsx")
     _wb = openpyxl.Workbook()
     _wb.remove(_wb.active)
-    for _aba in sorted({a for a, _ in cp.ENTRADAS_CASO.values()}):
+    _end = cp.enderecos_das_entradas(_wb)   # planilha sem nomes definidos: cai nos endereços da tabela
+    for _aba in sorted({a for a, _ in _end.values()}):
         _wb.create_sheet(_aba)
-    for _aba, _cel in cp.ENTRADAS_CASO.values():
+    for _aba, _cel in _end.values():
         _wb[_aba][_cel].value = "=1+1"
     _wb.save(_f)
     ok_019a = raises(lambda: cp.caso_da_planilha(_f, TIR), ValueError, "precisa ser recalculada")
-ok_019b = (len(cp.ENTRADAS_CASO) == 23 and cp.ENTRADAS_CASO["DF"] == ("08_VEHICLE_STATE", "B8")
-           and cp.ENTRADAS_CASO["bal"] == ("08_VEHICLE_STATE", "B9"))
+ok_019b = (len(cp.ENTRADAS_CASO) == 23 and cp.ENTRADAS_CASO["DF"] == "ent_08_downforce_total"
+           and cp.ENTRADAS_CASO["bal"] == "ent_08_aero_balance_fracao_dianteira"
+           and _end["DF"] == ("08_VEHICLE_STATE", "B8") and _end["bal"] == ("08_VEHICLE_STATE", "B9"))
+_V40 = os.path.join(HERE, "..", "excel", "FSAE_EV_Suspension_Fase1_V4_0.xlsx")
+if os.path.exists(_V40):   # só leitura: os 23 nomes da V4.0 apontam para os mesmos endereços da tabela (V3.0)
+    _wb40 = openpyxl.load_workbook(_V40, read_only=False)
+    ok_019b = ok_019b and cp.enderecos_das_entradas(_wb40) == _end
+    _wb40.close()
 check("TC-EQ-019: planilha sem valor calculado -> ValueError 'precisa ser recalculada'; mapa de entradas",
       ok_019a and ok_019b, f"{ok_019a}/{ok_019b}")
 

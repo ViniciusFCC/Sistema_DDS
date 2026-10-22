@@ -301,8 +301,8 @@ k037 = math.radians(0.123) / G   # +0,123 °/g em rad/(m/s²); ParcelasK só de 
 t037, e037 = _sem_excecao(lambda: el.texto_k(
     el.ParcelasK(ay_ms2=0.0, k_pneus=k037, k_transferencia=0.0, k_deslocamento=0.0, k_camber=0.0,
                  k_roll_steer=0.0, k_total=k037, dphi_day=0.0, motivo=None), "◐ Dado do T09"))
-esp037 = ("DEMONSTRATIVO · K = +0,12 °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; "
-          "sem compliance, torque de alinhamento e tração) · Subesterço")
+esp037 = ("DEMONSTRATIVO · K = +0,12 °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e "
+          "camber estático) + camber + roll steer; sem compliance, torque de alinhamento e tração) · Subesterço")
 check("TC-EQ-037: texto_k com pior origem '◐ Dado do T09' e K = +0,123 °/g é o texto exato da spec §6",
       t037 == esp037, e037 or f"obtido={t037!r}")
 
