@@ -38,7 +38,7 @@ k_roll_steer e K N/A com "… a confirmar" e o resto das parcelas igual ao Pytho
 O log traz o tempo de recálculo de cada cópia e o número de células com fórmula de cada aba (insumo do portão da Task 4).
 "Passou" = a planilha reproduz o oráculo; não é validação física.
 """
-import dataclasses, math, sys, tempfile, time
+import dataclasses, math, os, re, sys, tempfile, threading, time
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
 from pathlib import Path
 import openpyxl
@@ -122,6 +122,236 @@ def recalcular(caminho: Path) -> tuple[dict, float]:
         rc._libreoffice(str(caminho.resolve()), 900)
     t_motor = time.perf_counter() - t0
     return rc._resumo(str(caminho.resolve())), t_motor
+
+
+# --- Modo --medir: custo de recálculo da tabela de troca da barra dianteira (portão da Task 4; não é teste) ---
+def _re_nomes(nomes):
+    return re.compile(r"(?<![A-Za-z0-9_.!'])(" + "|".join(sorted(map(re.escape, nomes), key=len, reverse=True))
+                      + r")(?![A-Za-z0-9_.])")
+
+
+def _clonar_grade(wb, aba, nova, i):
+    """Cópia da aba de grade `aba` como `nova` com um K_φF próprio (H1 = K_φF·(1 + 0,05·i), TESTE de medição: o
+    valor só dá um custo, não um resultado do carro; i = 0 reproduz a original). Os nomes do resumo da própria aba
+    viram células locais e K_φF e o denominador da rolagem (16) passam a ler H1 e I1."""
+    ws = wb.copy_worksheet(wb[aba])
+    ws.title = nova
+    local = {ae.NOME_RESUMO[(aba, k)]: f"$B${ae.LINHA_RESUMO0 + j}" for j, (k, _, _) in enumerate(ae.RESUMO_GRADE)}
+    kphi, den = ae.V40["KphiF"], ae.NOME16["den"]
+    local[kphi], local[den] = "$H$1", "$I$1"
+    rx = _re_nomes(local)
+    for lin in ws.iter_rows():
+        for c in lin:
+            if isinstance(c.value, str) and c.value.startswith("="):
+                c.value = rx.sub(lambda m: local[m.group(1)], c.value)
+    ws["G1"] = "TESTE de medição: K_φF da linha, K_φF·(1 + 0,05·i), e o denominador da rolagem com ele"
+    ws["H1"] = f"={kphi}*(1+0.05*{i})"
+    ws["I1"] = f"={den}+($H$1-{kphi})"
+    return ws
+
+
+def _clonar_k19(wb, i):
+    """Linha de a_y = 0 do cálculo auxiliar da 19 (ângulos, parcelas e K da 1ª linha) lendo a cópia `M{i}_17`. Não copia
+    a célula que cita outra linha da 19 (só a inclinação do Richardson, kI, que não entra no K); devolve essas células."""
+    src, ws = wb[ae.ABA19], wb.create_sheet(f"M{i}_19")
+    r0, pulou = ae.LINHA_AUX19, []
+    for c in src[r0]:
+        if isinstance(c.value, str) and c.value.startswith("="):
+            f = c.value.replace(f"'{ae.ABA17}'!", f"'M{i}_17'!")
+            local = re.sub(r'"[^"]*"', "", re.sub(r"'[^']*'![$A-Z0-9:]+", "", f))
+            if any(int(m.group(1)) != r0 for m in re.finditer(r"(?<![A-Za-z0-9_$!:'])\$?[A-Z]{1,3}\$?(\d+)(?![A-Za-z0-9_(])", local)):
+                pulou.append(c.coordinate)
+            else:
+                ws[c.coordinate] = f
+    return pulou
+
+
+def _variante(tmp, nome, n, refinada, k19):
+    """Cópia da V4.1 com `n` análises de par extras (grade pedida, mais a refinada se `refinada`, mais o K da 1ª linha
+    do passo 1 se `k19`); `n` = 0 é a V4.1 como gerada. Devolve (caminho, células da 19 não copiadas)."""
+    wb = openpyxl.load_workbook(ae.extrair_v40(tmp))
+    fora = []
+    try:
+        ae.montar(wb)
+        ae.acrescentar_nomes(wb)
+        for i in range(n):
+            _clonar_grade(wb, ae.ABA17, f"M{i}_17", i)
+            if refinada:
+                _clonar_grade(wb, ae.ABA18, f"M{i}_18", i)
+            if k19:
+                fora = _clonar_k19(wb, i)
+        wb.calculation.fullCalcOnLoad = True
+        saida = (Path(tmp) / f"{nome}.xlsx").resolve()
+        wb.save(saida)
+    finally:
+        wb.close()
+    return saida, fora
+
+
+def _motor_recalc(motor, caminho):
+    t0 = time.perf_counter()
+    (rc._excel_recalc if motor == "excel" else rc._libreoffice)(str(caminho.resolve()), 1800)
+    return time.perf_counter() - t0
+
+
+def _excel_detalhado(caminho, aba, cel):
+    """No Excel: CalculateFull sozinho (sem gravar o arquivo) e o recálculo automático ao trocar o K_ARB dianteiro
+    (06_SUSPENSION, célula `aba`!`cel`), que é o que a equipe sentiria ao editar. Numa cópia; o arquivo não é salvo."""
+    xl = rc._abrir_excel()
+    vigia = threading.Timer(1800, rc._matar_excel)
+    vigia.start()
+    try:
+        wb = xl.Workbooks.Open(str(caminho.resolve()), UpdateLinks=0, ReadOnly=False)
+        try:
+            xl.Calculation = -4105   # xlCalculationAutomatic
+            t0 = time.perf_counter()
+            xl.CalculateFull()
+            t_full = time.perf_counter() - t0
+            c = wb.Worksheets(aba).Range(cel)
+            v = c.Value2
+            t0 = time.perf_counter()
+            c.Value2 = v * 1.01
+            t_edit = time.perf_counter() - t0
+        finally:
+            wb.Close(SaveChanges=False)
+    finally:
+        vigia.cancel()
+    return t_full, t_edit
+
+
+def _estat(v):
+    return f"{min(v):.1f} / {sum(v) / len(v):.1f} / {max(v):.1f}"
+
+
+def _igual(a, b):
+    return a == b or (num(a) and num(b) and abs(a - b) <= 1e-12 * max(abs(a), abs(b)))
+
+
+def medir(repeticoes=3, rep_lo=None):
+    if os.environ.get("DDS_RECALC") or MOTOR != "excel":
+        motores = [MOTOR]
+    else:
+        motores = ["excel"] + (["libreoffice"] if rc._soffice() else [])
+    tmp = Path(tempfile.mkdtemp())
+    wbn = openpyxl.load_workbook(ae.extrair_v40(tmp))
+    ae.acrescentar_nomes(wbn)   # só para ler o destino de um nome (ae._destino)
+    aba_k, cel_k = ae._destino(wbn, "ent_06_k_arb_dianteiro")
+    wbn.close()
+    # (rótulo, n, refinada, k19): 0 = V4.1 como gerada; P = pedida (17); R = pedida + refinada; RK = R + K da 1ª linha
+    var = [("0", 0, False, False)] + [(f"{v}{n}", n, v != "P", v == "RK") for v in ("P", "R", "RK") for n in (1, 3, 5)]
+    arquivos, erros_clone = {}, {}
+    for rot, n, ref, k19 in var:
+        arquivos[rot], fora = _variante(tmp, rot, n, ref, k19)
+        if fora:
+            erros_clone[rot] = fora
+        print(f"  variante {rot}: {arquivos[rot].stat().st_size / 1e6:.1f} MB; células da 19 não copiadas: {fora}")
+    res = {m: {} for m in motores}
+    conf = {}
+    for m in motores:
+        for rot, *_ in var:
+            ts = [_motor_recalc(m, arquivos[rot]) for _ in range(rep_lo if m == "libreoffice" and rep_lo else repeticoes)]
+            info = rc._resumo(str(arquivos[rot].resolve()))
+            res[m][rot] = (ts, info["total_formulas"], info["total_errors"], info["error_summary"])
+            print(f"  {m} {rot}: {_estat(ts)} s; {info['total_formulas']} fórmulas; {info['total_errors']} erros", flush=True)
+        # Conferência das cópias: a cópia i = 0 (K_φF × 1) tem de dar o que a 17, a 18 e a 19 dão
+        wv = openpyxl.load_workbook(arquivos["RK1"], data_only=True)
+        linhas = []
+        for aba, cp_ in ((ae.ABA17, "M0_17"), (ae.ABA18, "M0_18")):
+            for j, (k, _, _) in enumerate(ae.RESUMO_GRADE):
+                a, b = wv[aba][f"B{ae.LINHA_RESUMO0 + j}"].value, wv[cp_][f"B{ae.LINHA_RESUMO0 + j}"].value
+                linhas.append((aba, k, a, b, _igual(a, b)))
+        kt = f"{ae.CL19['kTot']}{ae.LINHA_AUX19}"
+        a, b = wv[ae.ABA19][kt].value, wv["M0_19"][kt].value
+        linhas.append((ae.ABA19, f"K total, cálculo auxiliar, a_y = 0 ({kt})", a, b, _igual(a, b)))
+        wv.close()
+        conf[m] = linhas
+    det = {}
+    if "excel" in motores:
+        for rot, *_ in var:
+            det[rot] = [_excel_detalhado(arquivos[rot], aba_k, cel_k) for _ in range(repeticoes)]
+            print(f"  excel (detalhe) {rot}: CalculateFull {_estat([a for a, _ in det[rot]])} s; "
+                  f"troca do K_ARB {_estat([b for _, b in det[rot]])} s", flush=True)
+    wbf = openpyxl.load_workbook(arquivos["0"])
+    cel = {a: sum(1 for lin in wbf[a].iter_rows() for c in lin if isinstance(c.value, str) and c.value.startswith("="))
+           for a in (ae.ABA16, ae.ABA17, ae.ABA18, ae.ABA19)}
+    k0 = sum(1 for c in wbf[ae.ABA19][ae.LINHA_AUX19] if isinstance(c.value, str) and c.value.startswith("="))
+    wbf.close()
+    escrever_documento(motores, var, res, det, conf, cel, k0, erros_clone, repeticoes, rep_lo)
+
+
+def escrever_documento(motores, var, res, det, conf, cel, k0, erros_clone, repeticoes, rep_lo=None):
+    L = ["# Incremento 4 (V4.1): custo de recálculo da tabela de troca da barra dianteira (portão)", "",
+         "Gerado por `uv run python -X utf8 tests/test_workbook_v4_1.py --medir`. É uma medição feita antes de a tabela "
+         "existir; ela não implementa a tabela. Os valores de K_φF das cópias são de TESTE: só dão um custo, não um "
+         "resultado do carro.", "",
+         "## O que foi medido e como", "",
+         f"- Base: a V4.1 como gerada (V4.0 da tag `v4.0` + `aba_equilibrio.montar`), com as abas 16, 17, 18 e 19 "
+         f"({cel[ae.ABA16]}, {cel[ae.ABA17]}, {cel[ae.ABA18]} e {cel[ae.ABA19]} células com fórmula). A linha \"0\" é essa "
+         "base, que já traz uma análise na grade pedida e outra na refinada (as do K_ARB dianteiro da 06).",
+         "- Uma linha da tabela de troca = uma análise de par completa com o K_ARB dianteiro trocado. Para medir, cada linha é "
+         "uma cópia das abas 17 (e 18) dentro do mesmo arquivo (`M<i>_17`, `M<i>_18`), feita por `copy_worksheet` e reescrita "
+         "no texto das fórmulas: os nomes do resumo da própria aba viram células locais, e o K_φF e o denominador da rolagem "
+         "(16) passam a ler duas células próprias (H1 e I1), com K_φF·(1 + 0,05·i). Isso troca só a entrada da cadeia; o resto "
+         "(cargas, termos do PAC2002, Fy por α, capacidade, bisseção da saturação) é o mesmo cálculo. A cópia i = 0 tem de "
+         "reproduzir a original (conferência abaixo). `montar` não foi alterado.",
+         "- Variantes: P = grade pedida (17) por linha; R = pedida + refinada (17 + 18) por linha; RK = R + o K da 1ª linha do "
+         f"passo 1 (a linha de a_y = 0 do cálculo auxiliar da 19, {k0} células com fórmula, lendo a cópia da 17; sem a tabela "
+         "de 0 a 0,4 g). \"Linhas\" são linhas extras além da base; o total de análises é 1 + linhas.",
+         f"- Motores: {', '.join(motores)}; {repeticoes} recálculos por arquivo (mín / média / máx, em segundos; LibreOffice com {rep_lo or repeticoes}). O tempo do "
+         "motor é abrir, recalcular tudo (CalculateFull no Excel, calculateAll no LibreOffice), gravar e fechar; o do "
+         "LibreOffice inclui as duas partidas do programa. Erros = células com #VALUE!, #DIV/0! etc. depois do recálculo.",
+         "- No Excel, além disso: `CalculateFull` sozinho e o recálculo automático ao trocar o K_ARB dianteiro "
+         "(06_SUSPENSION) numa cópia aberta, que é o que a equipe sentiria ao editar. O arquivo não é gravado.", ""]
+    for m in motores:
+        L += [f"## Resultados: {m}", "",
+              "| Variante | Linhas extras | Análises pedida / refinada | Fórmulas | Erros | Motor mín / média / máx (s) | Δ média vs. base (s) | Δ por linha (s) |",
+              "|---|---|---|---|---|---|---|---|"]
+        t0 = sum(res[m]["0"][0]) / len(res[m]["0"][0])
+        for rot, n, ref, k19 in var:
+            ts, nf, ne, _ = res[m][rot]
+            mean = sum(ts) / len(ts)
+            L.append(f"| {rot} | {n} | {1 + n} / {1 + n if ref or n == 0 else 1} | {nf} | {ne} | {_estat(ts)} | "
+                     f"{mean - t0:+.1f} | {'-' if n == 0 else f'{(mean - t0) / n:.1f}'} |")
+        L.append("")
+    if det:
+        L += ["## Excel: CalculateFull sozinho e troca de uma entrada", "",
+              "| Variante | CalculateFull mín / média / máx (s) | Troca do K_ARB dianteiro, recálculo automático, mín / média / máx (s) |",
+              "|---|---|---|"]
+        for rot, *_ in var:
+            L.append(f"| {rot} | {_estat([a for a, _ in det[rot]])} | {_estat([b for _, b in det[rot]])} |")
+        L.append("")
+    L += ["## Conferência das cópias", "",
+          "Com K_φF × 1 (i = 0), a cópia tem de dar o mesmo que a aba original (resumo da 17 e da 18, e o K total da linha de "
+          "a_y = 0 da 19). Arquivo RK1, depois do recálculo de cada motor:", ""]
+    for m in motores:
+        ok = all(x[4] for x in conf[m])
+        L += [f"- {m}: {sum(1 for x in conf[m] if x[4])} de {len(conf[m])} itens iguais" + ("" if ok else " (DIVERGÊNCIA, ver abaixo)")]
+        for aba, k, a, b, igual in conf[m]:
+            if not igual:
+                L.append(f"  - {aba} {k}: original {a!r}, cópia {b!r}")
+    L += ['## Leitura dos números (sugestão, não limiar)', '', '- A coluna "Motor" inclui abrir e gravar o arquivo, que domina e oscila de uma execução para outra (no Excel, a base foi de 1,2 a 7,3 s). O recálculo em si, o que a equipe sentiria ao editar, está na tabela do `CalculateFull` e da troca do K_ARB: nesta medição ficou abaixo de 1 s em todas as variantes, inclusive 5 linhas com pedida + refinada (cerca de 140 mil fórmulas).', '- O custo cresce aproximadamente com o número de linhas e com o tamanho da grade (a refinada pesa cerca de 2,4 vezes a pedida em células). Nenhuma variante deu erro de fórmula.', '- Sugestão: com esses números, o tempo de recálculo parece não ser o fator limitante até 5 linhas; o tamanho da tabela pode ser decidido pelo que ela precisa mostrar. Sem limiar registrado, isso não decide sozinho.', '']
+    L += ["", f"Células da linha de a_y = 0 da 19 que citam outra linha e por isso não foram copiadas: {erros_clone.get('RK1') or 'nenhuma'}.", "",
+          "## Limites desta medição", "",
+          "- Um computador, um Excel e um LibreOffice (os da máquina do projeto); o tempo da equipe depende do computador de cada um.",
+          "- As cópias levam também as 10 células de pior origem (coluna E, linhas 4 a 13) de cada aba, que uma linha real talvez "
+          "não precise; é pouco perto da grade.",
+          "- A cópia da 19 cobre só o K da 1ª linha (parcelas em a_y = 0). Os ângulos de Richardson (kI) e a tabela de 0 a 0,4 g "
+          "não entram.",
+          "- Não há limiar de tempo registrado (spec §9, item 10): o tempo, sozinho, não decide o tamanho.", "",
+          "## Decisão pedida ao usuário", "",
+          "1. Quantos valores de K_ARB dianteiro a tabela de troca deve ter? A grade é de exibição, rotulada, e não uma meta.",
+          "2. Cada linha deve também medir a resolução (rodar a grade refinada, variantes R e RK), ou basta a grade pedida (P)?",
+          "", "A resposta entra no EDR-060. A Task 5 (a tabela) só começa depois dela."]
+    caminho = _RAIZ / "docs" / "v4-1" / "inc4-viabilidade-tabela-de-troca.md"
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text("\n".join(L) + "\n", encoding="utf-8")
+    print(f"documento: {caminho}")
+
+
+if "--medir" in sys.argv:
+    _arg = lambda n: int(sys.argv[sys.argv.index(n) + 1]) if n in sys.argv else None
+    medir(_arg("--repeticoes") or 3, _arg("--repeticoes-lo"))
+    sys.exit(0)
 
 
 def comparar_linhas(ws, linhas, n_alfa, pedida, caso, falhas, rotulo):
