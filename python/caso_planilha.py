@@ -146,6 +146,7 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
       arquivo, para que o caso seja o que a planilha avalia (uma cópia de teste pode escalar, por exemplo, LMUY).
     - Chaves (spec 7.4): o raio entra com h2, h3, h8 ou h9 (no Python, o raio liga o cos δ_ref); h2 usa o % Ackermann;
       h7, o CG lateral; h8 troca a downforce fixa por CzA e ρ (downforce_N = 0); h9 usa CdA, Crr e ρ.
+    - Roll steer de cada eixo (SUS-415, 07_KINEMATICS B82/B83), que só o passo 1 usa (k_roll_steer).
     - Entrada inválida para a planilha (chave ligada com entrada vazia, texto numa entrada numérica, h3 desligada com
       h2/h8/h9): ValueError com o mesmo motivo que a 16 mostra (aba_equilibrio.VERIFICACOES, na mesma ordem); idem para
       a instabilidade de rolagem e o Ackermann fora do alcance.
@@ -177,13 +178,17 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
         if k in ds.p:
             ds.p[k] = float(v)
     raio = float(x["R"]) if any(h[k] for k in ("h2", "h3", "h8", "h9")) else None
+    # Roll steer (SUS-415, 07_KINEMATICS B82/B83, °/° = rad/rad): só o passo 1 usa (k_roll_steer). Sem número, o K da
+    # 19 fica N/A com o motivo, e o limite segue; aqui fica 0, o padrão "sem dado" do CasoEquilibrio.
+    eps = {"F": x["epsF"], "R": x["epsR"]}
+    rs = {e: float(v) for e, v in eps.items()} if all(ae._eh_numero(v) for v in eps.values()) else {"F": 0.0, "R": 0.0}
     gF = camber_gradient_from_body(*(2 * [_m.radians(float(x["dgF"])) * 1000.0]), cfg.track_front)
     gR = camber_gradient_from_body(*(2 * [_m.radians(float(x["dgR"])) * 1000.0]), cfg.track_rear)
     caso = CasoEquilibrio(
         cfg, ds, downforce_N=0.0 if h["h8"] else base["DF"], aero_balance_front=base["bal"],
         toe_rad={c: _m.radians(float(x[f"toe{c}"])) for c in ae.CANTOS},
         camber_estatico_rad={c: _m.radians(float(x[f"gs{c}"])) for c in ae.CANTOS},
-        ganho_camber={"FL": gF["L"], "FR": gF["R"], "RL": gR["L"], "RR": gR["R"]},
+        ganho_camber={"FL": gF["L"], "FR": gF["R"], "RL": gR["L"], "RR": gR["R"]}, roll_steer=rs,
         raio_m=raio, ackermann_pct=float(x["pct"]) if h["h2"] else None,
         cg_lateral_m=float(x["cg"]) if h["h7"] else 0.0,
         cza_m2=float(x["cza"]) if h["h8"] else None,
@@ -197,15 +202,16 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
     return espelhar(caso) if x["sentido"] == "Direita" else caso
 
 
-def pior_origem_do_caso_v41(xlsx_formulas: Path) -> str:
+def pior_origem_do_caso_v41(xlsx_formulas: Path, linear: bool = False) -> str:
     """Pior origem que a 16_EQUILIBRIO mostra (res_16_pior_origem...), pela mesma regra: raízes preenchidas dos nós da
     V4.0 que o limite usa (raizes.Grafo), a origem do pneu (10_TIRE I84) e as entradas da 16 pela coluna E, cada termo
-    condicional só quando a chave o usa (aba_equilibrio.termos_pior_origem). Abre a planilha só para leitura, sem
+    condicional só quando a chave o usa (aba_equilibrio.termos_pior_origem). linear=True: a pior origem do K do passo 1
+    (19_EQ_LINEAR e o K da 16), que inclui também o roll steer da 07_KINEMATICS. Abre a planilha só para leitura, sem
     data_only (as chaves são valores digitados). Origem vazia ou fora da lista conta como "? A confirmar"."""
     import aba_equilibrio as ae
     wb = openpyxl.load_workbook(xlsx_formulas, data_only=False)
     try:
-        termos = ae.termos_pior_origem(wb)
+        termos = ae.termos_pior_origem(wb, linear)
         chaves = {k: _valor_por_nome(wb, ae.NOME_ENT[k]) for k in ("h2", "h3", "h7", "h8", "h9")}
         return ae.pior_origem_de_valores(termos, lambda aba, cel: wb[aba][cel].value, chaves)
     finally:

@@ -1,4 +1,4 @@
-"""Abas do equilíbrio no limite da V4.1 (incremento 4): 16_EQUILIBRIO, 17_EQ_PAR e 18_EQ_PAR_FINA.
+"""Abas do equilíbrio da V4.1 (incremento 4): 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA e 19_EQ_LINEAR.
 
 A análise de par do Milliken (§7.1, p. 283-286) em fórmulas do Excel, com as regras do EDR-056 (entrada do pneu
 limitada à faixa do .tir, com aviso; Fz <= 0 = descolamento; NEUTRO só dentro da resolução numérica medida por
@@ -10,7 +10,13 @@ origem da F17, plano docs/superpowers/plans/2026-10-21-v4-1-inc4-equilibrio-na-p
   (curva à esquerda equivalente; com "Direita", o espelho de `equilibrio.espelhar`), a bisseção do Ackermann e o
   resultado no limite (saturações, resolução, veredito, C_N, limitações, tempo de volta, pior origem);
 - 17_EQ_PAR: grade pedida, a_y = k·0,05 g (k = 0…40) e 25 valores de α;
-- 18_EQ_PAR_FINA: grade refinada, a_y = k·0,025 g (k = 0…80) e 49 valores de α (`analise_par`: passo/2, 2·n − 1).
+- 18_EQ_PAR_FINA: grade refinada, a_y = k·0,025 g (k = 0…80) e 49 valores de α (`analise_par`: passo/2, 2·n − 1);
+- 19_EQ_LINEAR: passo 1 (F13-F15; oráculo `equilibrio_linear.tabela_linear`): gradiente de subesterço K pelas parcelas
+  do Gillespie cap. 6 em a_y = k·0,05 g (k = 0…8), com a rigidez do eixo no ponto de operação α_0 (o mesmo modelo de Fy
+  do passo 2), os ângulos necessários por Newton (decisão 5: N_NEWTON iterações em colunas fixas, bandeira de
+  convergência e a raiz conferida contra o intervalo da bissecção do Python) e a inclinação do passo 2 (Richardson na
+  1ª linha). O K da 1ª linha vai para a 16 (res_16_k_total e parcelas), com V_char e V_crit (F16). O roll steer entra
+  pelas entradas SUS-415 da 07_KINEMATICS (B82/B83), e a pior origem do K inclui a origem delas (PIOR_K).
 
 Decisões (plano, "Decisões do plano"; registrar no EDR-060):
 - um sentido de curva por vez (decisão 2); diferencial aberto declarado em texto (decisão 3);
@@ -42,10 +48,13 @@ from openpyxl.utils import get_column_letter as COL
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 
+import equilibrio_linear as _el
+import tire_model as _tm
 from atualizar_planilha import ABAS_ORIGEM, COR_ORIGEM, NOME_LISTA, ORIGENS_LISTA, CONF, celulas_de_entrada
 from caso_planilha import ENTRADAS_CASO
 from nomes_v4_0 import NOME_VALIDO, Nome, ler_tabela, parece_referencia, slug
 from raizes import Grafo, linha
+from suspension_model import G
 
 RAIZ = Path(__file__).resolve().parent.parent
 TAG_V40 = "v4.0"
@@ -77,7 +86,9 @@ V40 = {**ENTRADAS_CASO,
        "gsFL": "ent_10_camber_gama_projeto_topo_para_fora_b", "gsFR": "ent_10_camber_gama_projeto_topo_para_fora_c",
        "gsRL": "ent_10_camber_gama_projeto_topo_para_fora_d", "gsRR": "ent_10_camber_gama_projeto_topo_para_fora_e",
        "s_a": "res_10_s_alfa_alfa_arquivo_s_alfa_alfa_iso", "s_f": "res_10_s_fy_fy_iso_s_fy_fy_arquivo",
-       "s_g": "res_10_s_gama_gama_arquivo_s_gama_gama_projeto", "eixos": "ent_10_sistema_de_eixos_do_arquivo_declarado_sa"}
+       "s_g": "res_10_s_gama_gama_arquivo_s_gama_gama_projeto", "eixos": "ent_10_sistema_de_eixos_do_arquivo_declarado_sa",
+       # roll steer de cada eixo (SUS-415, 07_KINEMATICS B82/B83, °/° = rad/rad): só no passo 1 (k_roll_steer, 19)
+       "epsF": "ent_07_roll_steer_dianteiro_epsilon_f", "epsR": "ent_07_roll_steer_traseiro_epsilon_r"}
 # Resultados da V4.0 que as fórmulas usam além das 23 entradas do caso (o "base válida" confere que são números).
 V40_DERIVADOS = ("ms", "hs", "msF", "msR", "KphiF", "KphiR", "zs", "stFL", "stFR", "stRL", "stRR")
 # Coeficientes do .tir na 10_TIRE (B86:B175 e B177); as fórmulas usam os nomes ent_10_<coeficiente>.
@@ -329,6 +340,56 @@ def _nomes_resumo(aba: str) -> dict[str, tuple[str, str]]:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Layout da 19_EQ_LINEAR (passo 1; o layout das células está em `_aba19`)
+# ---------------------------------------------------------------------------------------------------------------------
+ABA19 = "19_EQ_LINEAR"
+H_RIG = "0.000001"        # tire_model._H_RIGIDEZ: passo da diferença central em α e em γ [rad] (constante, não raiz)
+H_AY = "(0.0001*9.81)"    # equilibrio_linear._H_AY_DESLOCAMENTO = 1e-4·G: passo da diferença central em a_y [m/s²]
+assert float(H_RIG) == _tm._H_RIGIDEZ and 0.0001 * 9.81 == _el._H_AY_DESLOCAMENTO, "passos do passo 1 fora do Python"
+N_NEWTON = 8              # iterações do Newton depois da 1ª, −req/C (decisão 5 do plano)
+N_LIN19 = 9               # a_y = k·0,05 g, k = 0…8 (equilibrio_linear.tabela_linear, faixa linear até 0,4 g)
+# Pontos da a_y dos ângulos necessários: (a_y como texto da fórmula, aba de origem dos termos, linha k nessa grade).
+# k = 0…8 usam a linha k da 17_EQ_PAR (mesma a_y); 0,005 g e 0,01 g (Richardson da 1ª linha) usam a mini-grade da 19
+# (linhas k = 1 e 2 com passo 0,005 g), com a capacidade do eixo, que angulos_necessarios confere.
+PONTOS19 = tuple([(f"{k}*0.05*9.81", ABA17, k) for k in range(N_LIN19)] + [("0.005*9.81", ABA19, 1),
+                                                                               ("0.01*9.81", ABA19, 2)])
+PONTOS19_AY = tuple([k * 0.05 * G for k in range(N_LIN19)] + [0.005 * G, 0.01 * G])   # os mesmos, no Python
+# Resultados por linha (tabela do topo da 19): chave -> (rótulo, unidade). As parcelas ficam em SI, rad/(m/s²).
+ROTULO19 = {
+    "ay_g": ("a_y em g", "g"),
+    "kP": ("K pneus", "rad/(m/s²)"),
+    "kT": ("K transferência", "rad/(m/s²)"),
+    "kD": ("K deslocamento com a carga", "rad/(m/s²)"),
+    "kC": ("K camber", "rad/(m/s²)"),
+    "kRS": ("K roll steer", "rad/(m/s²)"),
+    "kTot": ("K total", "rad/(m/s²)"),
+    "kI": ("K inclinação do passo 2", "rad/(m/s²)"),
+    "kTotg": ("K total em °/g", "°/g"),
+    "mot": ("Motivo do N/A do K", "-"),
+    "motI": ("Motivo do N/A da inclinação", "-"),
+}
+QTD19 = tuple(ROTULO19)
+COL19 = {q: COL(2 + i) for i, q in enumerate(QTD19)}      # A = k; B… = resultados; depois, a pior origem
+COL_PIOR19 = COL(2 + len(QTD19))
+LINHA_TAB19 = 5           # 1ª linha da tabela (k = 0); cabeçalho na 4
+# 16_EQUILIBRIO: o K da 1ª linha (chave da 19, família, referência)
+K16 = (("kP", "F14", "equilibrio_linear.parcelas_k (Gillespie eq. 6-15)"),
+       ("kT", "F14", "equilibrio_linear.parcelas_k (Gillespie p. 215-217, forma exata)"),
+       ("kD", "F14", "equilibrio_linear._parcela_deslocamento (EDR-057)"),
+       ("kC", "F14", "equilibrio_linear.parcela_camber (Gillespie eq. 6-56)"),
+       ("kRS", "F14", "equilibrio_linear.parcelas_k (Gillespie eq. 6-57, SUS-415)"),
+       ("kTot", "F14", "equilibrio_linear.parcelas_k"),
+       ("kI", "F15", "equilibrio_linear.tabela_linear (Richardson 2·S(0,005 g) − S(0,01 g))"),
+       ("kTotg", "F14", "equilibrio_linear.para_graus_por_g (exibição)"))
+CHAVES16_K = tuple(k for k, _, _ in K16) + ("kmot", "vchar", "vcrit")
+
+
+def celula_pior19(k: int) -> str:
+    """Célula da pior origem do K na linha k da tabela da 19."""
+    return f"{COL_PIOR19}{LINHA_TAB19 + k}"
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Layout da 16_EQUILIBRIO
 # ---------------------------------------------------------------------------------------------------------------------
 @dataclass
@@ -342,6 +403,7 @@ class _Linha16:
     familia: str = ""
     pior: bool = False        # coluna E com a pior origem viva (resultado do limite)
     obs: str = ""
+    pior_chave: str = "PIOR"  # PIOR (limite) ou PIOR_K (passo 1, com o roll steer da 07_KINEMATICS)
 
 
 def _faixa(aba: str, col: str, n_linhas: int) -> str:
@@ -385,8 +447,8 @@ def _layout16() -> list[_Linha16]:
     sec = lambda t: L.append(_Linha16("secao", rotulo=t))
     txt = lambda t: L.append(_Linha16("texto", rotulo=t))
 
-    def res(chave, rotulo, formula, unidade="-", familia="", ref="", pior=False, obs=""):
-        L.append(_Linha16("res", chave, rotulo, formula, unidade, ref, familia, pior, obs))
+    def res(chave, rotulo, formula, unidade="-", familia="", ref="", pior=False, obs="", pior_chave="PIOR"):
+        L.append(_Linha16("res", chave, rotulo, formula, unidade, ref, familia, pior, obs, pior_chave))
 
     ok = "{ok}=1"
     # Verificação das entradas (F1)
@@ -550,6 +612,19 @@ def _layout16() -> list[_Linha16]:
         '2*PI()*SQRT({R}/{aylim}),"N/A: raio do skidpad R deve ser > 0"),"N/A: raio do skidpad R não é número")),"N/A")',
         "s", "F16", "spec 7.2", True)
     res("pior", "Pior origem das entradas (ao vivo)", "={PIOR}", "-", "F17", "raizes.Grafo; EDR-035, fase 2", True)
+    # Gradiente de subesterço K na 1ª linha do passo 1 (F14-F16; a tabela de 0 a 0,4 g fica na 19_EQ_LINEAR)
+    sec("Gradiente de subesterço K em a_y = 0 (passo 1, Gillespie cap. 6; tabela de 0 a 0,4 g na 19_EQ_LINEAR)")
+    for chave, fam, ref in K16:
+        rot, un = ROTULO19[chave]
+        res(chave, rot, f"={{a19_{chave}_0}}", un, fam, ref, True, pior_chave="PIOR_K")
+    res("kmot", "Motivo do N/A do K", "={a19_mot_0}", "-", "F14", "equilibrio_linear.parcelas_k", True,
+        pior_chave="PIOR_K")
+    res("vchar", "Velocidade característica V_char = √(L/K) (só com K > 0)",
+        '=IF(ISNUMBER({kTot}),IF({kTot}>0,SQRT({L}/{kTot}),"N/A"),"N/A")', "m/s", "F16",
+        "equilibrio_linear.velocidade_caracteristica (Gillespie eq. 6-18)", True, pior_chave="PIOR_K")
+    res("vcrit", "Velocidade crítica V_crit = √(−L/K) (só com K < 0)",
+        '=IF(ISNUMBER({kTot}),IF({kTot}<0,SQRT(-{L}/{kTot}),"N/A"),"N/A")', "m/s", "F16",
+        "equilibrio_linear.velocidade_critica (Gillespie p. 203-204)", True, pior_chave="PIOR_K")
     return L
 
 
@@ -582,6 +657,10 @@ def _nomes_v41() -> list[Nome]:
         for k, rot, _ in RESUMO_GRADE:
             nome, cel = _nomes_resumo(aba)[k]
             base.append((f"{aba}:{k}", nome, cel, rot))
+    for k in range(N_LIN19):   # tabela do passo 1: um nome por resultado e linha
+        for q in QTD19:
+            rot = f"{ROTULO19[q][0]} linha {k}"
+            base.append((f"{ABA19}:{q}:{k}", _nome_res(ABA19, rot), f"{COL19[q]}{LINHA_TAB19 + k}", rot))
     cont: dict[str, int] = {}
     for _, nome, _, _ in base:
         cont[nome] = cont.get(nome, 0) + 1
@@ -603,6 +682,7 @@ _NOME_POR_CELULA = {(n.aba, n.celula): n.nome for n in NOMES_V41}
 NOME16 = {ln.chave: _NOME_POR_CELULA[(ABA16, f"B{LINHAS16[ln.chave]}")] for ln in _LAYOUT16 if ln.tipo == "res"}
 NOME_RESUMO = {(aba, k): _NOME_POR_CELULA[(aba, cel)] for aba in (ABA17, ABA18)
                for k, (_, cel) in _nomes_resumo(aba).items()}
+NOME19 = {(q, k): _NOME_POR_CELULA[(ABA19, f"{COL19[q]}{LINHA_TAB19 + k}")] for q in QTD19 for k in range(N_LIN19)}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -610,10 +690,15 @@ NOME_RESUMO = {(aba, k): _NOME_POR_CELULA[(aba, cel)] for aba in (ABA17, ABA18)
 # ---------------------------------------------------------------------------------------------------------------------
 # Nós da V4.0 cujas raízes entram na pior origem, com a condição (None = sempre). O 08 B8 (downforce fixa) só conta
 # com a h8 desligada; o % Ackermann só com a h2 ligada.
-def _nos_pior_origem() -> list[tuple[str, str | None]]:
+def _nos_pior_origem(linear: bool = False) -> list[tuple[str, str | None]]:
+    """Nós da pior origem do limite; com linear=True (K do passo 1), também o roll steer da 07_KINEMATICS (SUS-415), que
+    só o passo 1 usa. As outras entradas são as mesmas: o passo 1 usa o mesmo modelo de Fy do eixo e, nos ângulos
+    necessários, a mesma capacidade do eixo (com a tração da h9)."""
     nos = [(V40[k], "nao_h8" if k == "DF" else None) for k in ENTRADAS_CASO]
     nos += [(V40[k], None) for k in ("dgF", "dgR", "gsFL", "gsFR", "gsRL", "gsRR")]
     nos += [(V40["pct"], "h2")]
+    if linear:
+        nos += [(V40["epsF"], None), (V40["epsR"], None)]
     return nos
 
 
@@ -642,8 +727,9 @@ def _destino(wb, nome: str) -> tuple[str, str]:
     return dest[0][0], dest[0][1].replace("$", "")
 
 
-def termos_pior_origem(wb) -> list[tuple[str, str, frozenset | None]]:
-    """(aba, célula de Origem, condições) da pior origem do limite; condições = None (sempre) ou o conjunto de chaves
+def termos_pior_origem(wb, linear: bool = False) -> list[tuple[str, str, frozenset | None]]:
+    """(aba, célula de Origem, condições) da pior origem do limite (linear=True: do K do passo 1, com o roll steer;
+    `_nos_pior_origem`); condições = None (sempre) ou o conjunto de chaves
     de CONDICOES (vale se alguma valer). Raízes vazias não entram (raizes.Grafo.raizes_preenchidas), como no 14_DASHBOARD;
     a origem do pneu (10_TIRE I84) entra sempre; as entradas da 16 entram pela coluna E, com a condição de uso."""
     g = Grafo(wb)
@@ -657,7 +743,7 @@ def termos_pior_origem(wb) -> list[tuple[str, str, frozenset | None]]:
         else:
             termos[cel] = (termos.get(cel) or frozenset()) | {cond}
 
-    for nome, cond in _nos_pior_origem():
+    for nome, cond in _nos_pior_origem(linear):
         for raiz in g.raizes_preenchidas(_destino(wb, nome)):
             add(_origem_da_raiz(*raiz), cond)
     for k, cond in ENT16_PIOR:
@@ -711,10 +797,11 @@ class _Ctx:
         self.registro.append({"aba": ws.title, "cel": cel, "familia": familia, "formula": texto})
 
 
-def _mapa_base(cols17: dict, termos) -> dict:
+def _mapa_base(cols17: dict, termos, termos_k) -> dict:
     m = _Subst()
     partes = [dict(V40), {f"P_{k}": nome_coef(k) for k in COEF_TIR}, {e.chave: NOME_ENT[e.chave] for e in ENTRADAS16},
               dict(NOME16), {f"a{aba[:2]}_{k}": nome for (aba, k), nome in NOME_RESUMO.items()},
+              {f"a19_{q}_{k}": nome for (q, k), nome in NOME19.items()},
               {f"c17_{_cabecalho(n)}": letra for n, letra in cols17.items()},
               {f"G_{k}": f"'{ABA16}'!$G${r}" for k, r in LINHAS16.items() if k.startswith("vf")}]
     for p in partes:
@@ -728,6 +815,7 @@ def _mapa_base(cols17: dict, termos) -> dict:
     m["ack_alcance"] = f"'{ABA16}'!$L${LINHA_ENTRADA0 - 1}"
     pior = _formula_pior(termos)
     m["PIOR"] = pior.format_map(m)
+    m["PIOR_K"] = _formula_pior(termos_k).format_map(m)
     return m
 
 
@@ -777,7 +865,7 @@ def _aba16(ctx: _Ctx, est: dict) -> None:
             ant = f'IF(G{r - 1}<>"-",G{r - 1},B{r})' if i > 0 else f"=B{r}"
             ctx.put(ws, f"G{r}", "F1", ant if i == 0 else "=" + ant)
         if ln.pior:
-            ctx.put(ws, f"E{r}", "F17", "={PIOR}")
+            ctx.put(ws, f"E{r}", "F17", "={" + ln.pior_chave + "}")
         if ln.obs:
             ws[f"F{r}"] = ln.obs
     _bissecao(ctx, ws)
@@ -907,6 +995,52 @@ def _mf(T: dict, x: str) -> str:
     return (f"{T['Dy']}*SIN({{Cy}}*ATAN({T['By']}*{x}-{Ey}*({T['By']}*{x}-ATAN({T['By']}*{x}))))+{T['SVy']}")
 
 
+def _expr_termos(FZ: str, GF: str, T: dict) -> dict:
+    """Termos do PAC2002 de uma roda (F7; tire_model.pure_fy0 com κ = 0), sem o "=": FZ e GF são as células (ou
+    expressões) de Fz e γ do pneu já limitados à faixa (EDR-056); T, as células dos próprios termos (um termo usa outro).
+    Ey sai nos três ramos do sinal de α + SHy (Eyn, Ey0, Eyp), escolhidos em `_mf`."""
+    P = lambda nome: f"{{P_{nome}}}"
+    expr = {
+        "dfz": f"({FZ}-{{fz0}})/{{fz0}}",
+        "gy": f"{GF}*{P('LGAY')}",
+        "Ky": (f"{P('PKY1')}*{{fz0}}*SIN(2*ATAN({FZ}/({P('PKY2')}*{{fz0}})))*(1-{P('PKY3')}*ABS({T['gy']}))"
+               f"*{P('LKY')}"),
+        "SHy": f"({P('PHY1')}+{P('PHY2')}*{T['dfz']})*{P('LHY')}+{P('PHY3')}*{T['gy']}*{P('LKYG')}",
+        "muy": f"({P('PDY1')}+{P('PDY2')}*{T['dfz']})*(1-{P('PDY3')}*{T['gy']}*{T['gy']})*{P('LMUY')}",
+        "Dy": f"{T['muy']}*{FZ}",
+        "By": f"{T['Ky']}/({{Cy}}*{T['Dy']}+{EPS})",
+        "SVy": (f"{FZ}*(({P('PVY1')}+{P('PVY2')}*{T['dfz']})*{P('LVY')}"
+                f"+({P('PVY3')}+{P('PVY4')}*{T['dfz']})*{T['gy']}*{P('LKYG')})*{P('LMUY')}"),
+    }
+    for t, s in (("Eyn", -1), ("Ey0", 0), ("Eyp", 1)):
+        expr[t] = (f"MIN(({P('PEY1')}+{P('PEY2')}*{T['dfz']})*(1-({P('PEY3')}+{P('PEY4')}*{T['gy']})*({s}))"
+                   f"*{P('LEY')},1)")
+    return expr
+
+
+def _formulas_cargas(ay: str, R: dict, guarda: str = "{ok}=1") -> dict:
+    """Fórmulas (com "=") da família F4 numa a_y: φ, downforce, ΔFz lateral de cada eixo e Fz por roda
+    (equilibrio.cargas). R: chave ("phi", "DF", "dFF", "dFR") -> célula onde cada uma fica; ay: célula da a_y."""
+    phi, DF = R["phi"], R["DF"]
+    f = {"phi": f'=IF({guarda},{{ms}}*{ay}*{{h2r}}/{{den}},"N/A")',
+         "DF": f'=IF({guarda},IF({{h8}}=1,0.5*{{rho}}*{{cza}}*(ABS({ay})*{{R}}),{{DF}}),"N/A")',
+         "dFF": f'=IF(ISNUMBER({phi}),({{KphiF}}*{phi}+{ay}*{{cF}})/{{tF}},"N/A")',
+         "dFR": f'=IF(ISNUMBER({phi}),({{KphiR}}*{phi}+{ay}*{{cR}})/{{tR}},"N/A")'}
+    aero = {"F": f"{DF}*{{bal}}/2", "R": f"{DF}*(1-{{bal}})/2"}
+    for c in CANTOS:
+        e = c[0]
+        dlat, dy = R[f"dF{e}"], f"{{dFy{e}}}"
+        s1, s2 = ("-", "+") if c.endswith("L") else ("+", "-")
+        f[f"Fz_{c}"] = f'=IF(ISNUMBER({phi}),{{st{c}}}{s1}{dlat}+{aero[e]}{s2}{dy},"N/A")'
+    return f
+
+
+def _txt_descolamento(c: str, fz: str) -> str:
+    """Texto (fórmula, sem o "=") do motivo de descolamento da roda c (equilibrio._descolamento)."""
+    return (f'"Fz_{c} = "&{_f(fz, 1)}&" N ≤ 0: descolamento, fora do domínio do modelo de transferência de carga '
+            f'(SUS-104)"')
+
+
 def _linha_grade(ctx, ws, cl, k, r, passo, n_alfa, pedida, alfa_arq):
     C = lambda n: f"{cl[n]}{r}"
     put = lambda n, fam, f: ctx.put(ws, C(n), fam, f)
@@ -914,40 +1048,18 @@ def _linha_grade(ctx, ws, cl, k, r, passo, n_alfa, pedida, alfa_arq):
     put("ay", "F4", f"={k}*{passo}*9.81")
     put("ay_g", "F4", f"={C('ay')}/9.81")
     ay, phi = C("ay"), C("phi")
-    put("phi", "F4", f'=IF({{ok}}=1,{{ms}}*{ay}*{{h2r}}/{{den}},"N/A")')
-    put("DF", "F4", f'=IF({{ok}}=1,IF({{h8}}=1,0.5*{{rho}}*{{cza}}*(ABS({ay})*{{R}}),{{DF}}),"N/A")')
-    put("dFF", "F4", f'=IF(ISNUMBER({phi}),({{KphiF}}*{phi}+{ay}*{{cF}})/{{tF}},"N/A")')
-    put("dFR", "F4", f'=IF(ISNUMBER({phi}),({{KphiR}}*{phi}+{ay}*{{cR}})/{{tR}},"N/A")')
-    DF = C("DF")
-    aero = {"F": f"{DF}*{{bal}}/2", "R": f"{DF}*(1-{{bal}})/2"}
+    f4 = _formulas_cargas(ay, {n: C(n) for n in ("phi", "DF", "dFF", "dFR")})
+    for n in ("phi", "DF", "dFF", "dFR"):
+        put(n, "F4", f4[n])
     for c in CANTOS:
-        e = c[0]
-        dlat, dy = C(f"dF{e}"), f"{{dFy{e}}}"
-        s1, s2 = ("-", "+") if c.endswith("L") else ("+", "-")
-        put(f"Fz_{c}", "F4", f'=IF(ISNUMBER({phi}),{{st{c}}}{s1}{dlat}+{aero[e]}{s2}{dy},"N/A")')
+        put(f"Fz_{c}", "F4", f4[f"Fz_{c}"])
         put(f"gam_{c}", "F5", f'=IF(ISNUMBER({phi}),{{gs_{c}}}+{{ge_{c}}}*{phi},"N/A")')
         fz, gm = C(f"Fz_{c}"), C(f"gam_{c}")
         put(f"Fzu_{c}", "F6", f'=IF(ISNUMBER({fz}),MIN(MAX({fz},{{P_FZMIN}}),{{P_FZMAX}}),"N/A")')
         put(f"gf_{c}", "F6", f'=IF(ISNUMBER({gm}),MIN(MAX({{s_g}}*{gm},{{P_CAMMIN}}),{{P_CAMMAX}}),"N/A")')
         # Termos do PAC2002 por roda (F7), com Fz e γ limitados (o pneu não extrapola, EDR-056)
         FZ, GF = C(f"Fzu_{c}"), C(f"gf_{c}")
-        T = {t: C((t, c)) for t in TERMOS}
-        P = lambda nome: f"{{P_{nome}}}"
-        expr = {
-            "dfz": f"({FZ}-{{fz0}})/{{fz0}}",
-            "gy": f"{GF}*{P('LGAY')}",
-            "Ky": (f"{P('PKY1')}*{{fz0}}*SIN(2*ATAN({FZ}/({P('PKY2')}*{{fz0}})))*(1-{P('PKY3')}*ABS({T['gy']}))"
-                   f"*{P('LKY')}"),
-            "SHy": f"({P('PHY1')}+{P('PHY2')}*{T['dfz']})*{P('LHY')}+{P('PHY3')}*{T['gy']}*{P('LKYG')}",
-            "muy": f"({P('PDY1')}+{P('PDY2')}*{T['dfz']})*(1-{P('PDY3')}*{T['gy']}*{T['gy']})*{P('LMUY')}",
-            "Dy": f"{T['muy']}*{FZ}",
-            "By": f"{T['Ky']}/({{Cy}}*{T['Dy']}+{EPS})",
-            "SVy": (f"{FZ}*(({P('PVY1')}+{P('PVY2')}*{T['dfz']})*{P('LVY')}"
-                    f"+({P('PVY3')}+{P('PVY4')}*{T['dfz']})*{T['gy']}*{P('LKYG')})*{P('LMUY')}"),
-        }
-        for t, s in (("Eyn", -1), ("Ey0", 0), ("Eyp", 1)):
-            expr[t] = (f"MIN(({P('PEY1')}+{P('PEY2')}*{T['dfz']})*(1-({P('PEY3')}+{P('PEY4')}*{T['gy']})*({s}))"
-                       f"*{P('LEY')},1)")
+        expr = _expr_termos(FZ, GF, {t: C((t, c)) for t in TERMOS})
         for t in TERMOS:
             put((t, c), "F7", f'=IF(ISNUMBER({FZ}),{expr[t]},"N/A")')
     # Tração na traseira (F9): Fx exigido, pico de Fx pela forma fechada e fator da elipse de atrito
@@ -979,8 +1091,7 @@ def _linha_grade(ctx, ws, cl, k, r, passo, n_alfa, pedida, alfa_arq):
                                f'"excede",SQRT(1-({C("fxr")}/2/{fxm})^2)))))'))
     # Capacidade e saturação de cada eixo (F6, F8, F10, F11)
     for e, (cL, cR) in RODAS_EIXO.items():
-        desc = lambda c: (f'"Fz_{c} = "&{_f(C(f"Fz_{c}"), 1)}&" N ≤ 0: descolamento, fora do domínio do modelo de '
-                          f'transferência de carga (SUS-104)"')
+        desc = lambda c: _txt_descolamento(c, C(f"Fz_{c}"))
         tracao = ""
         if e == "R":
             fl, fr = C(("fat", "RL")), C(("fat", "RR"))
@@ -1028,22 +1139,323 @@ def _linha_grade(ctx, ws, cl, k, r, passo, n_alfa, pedida, alfa_arq):
                 put(("x", c, lim), "F6", f'=IF(AND({incl},{mot}="-"),IF({cond},{exc},-1),-1)')
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 19_EQ_LINEAR: passo 1 (F13-F15; oráculo equilibrio_linear.tabela_linear e parcelas_k)
+# ---------------------------------------------------------------------------------------------------------------------
+LINHA_AUX19 = 24          # cálculo auxiliar: uma linha por ponto de PONTOS19 (cabeçalho na 23)
+LINHA_MINI19 = LINHA_AUX19 + len(PONTOS19) + 4   # mini-grade (k = 0, 1, 2 com passo 0,005 g; cabeçalho na anterior)
+SINAIS = ("mais", "menos")
+M_ALFA0 = "ângulo de referência exigido em a_y = 0 indisponível (ponto de operação da rigidez do eixo)"
+SUF_DESL = " (vizinhança da diferença central do deslocamento do pneu)"
+M_INCL0 = "ângulos necessários indisponíveis em 0, 0,005 g ou 0,01 g"
+M_INCL = "ângulos necessários indisponíveis nesta linha ou na anterior"
+CL17 = _colunas(N_ALFA, True)
+CL_MINI = _colunas(N_ALFA, False)
+
+
+def _colunas19() -> dict:
+    """Colunas do cálculo auxiliar da 19 (uma linha por ponto). Newton em todos os pontos; rigidez, deslocamento e
+    parcelas só nas linhas k = 0…8; rigidez de camber só na linha k = 0 (a de a_y = 0)."""
+    nomes = ["p", "ay", "ay_g"]
+    for e in "FR":
+        nomes += [f"req_{e}", f"ck_{e}", f"tol_{e}", f"fA_{e}"] + [("y", e, j) for j in range(N_NEWTON + 2)]
+        nomes += [("d", e, j) for j in range(N_NEWTON + 1)] + [("a", e, j) for j in range(1, N_NEWTON + 2)]
+        nomes += [f"{n}_{e}" for n in ("raiz", "conv", "apico", "int", "ang", "diag")]
+    nomes += ["a0ok"] + [f"{n}_{e}" for e in "FR" for n in ("desc", "c", "m", "cv")]
+    for s in SINAIS:
+        nomes += [f"{n}_{s}" for n in ("ays", "phi", "DF", "dFF", "dFR")]
+        nomes += [f"{g}_{s}_{c}" for g in ("Fz", "Fzu") for c in CANTOS] + [(t, s, c) for c in CANTOS for t in TERMOS]
+        nomes += [f"F0_{s}_{e}" for e in "FR"]
+    nomes += ["mD", "kD"] + [f"cen_{c}" for c in CANTOS]
+    for s in SINAIS:
+        nomes += [f"gc_{s}_{c}" for c in CANTOS] + [(t, "g" + s, c) for c in CANTOS for t in TERMOS]
+        nomes += [f"Fc_{s}_{e}" for e in "FR"]
+    nomes += ["cg_F", "cg_R", "dphi", "kP", "kT", "kC", "kRS", "kTot", "mEps"] + [f"I{i}" for i in range(6)]
+    nomes += ["J", "mot", "kI", "motI"]
+    return {n: COL(j + 1) for j, n in enumerate(nomes)}
+
+
+CL19 = _colunas19()
+
+
+def celula_aux19(chave, p: int) -> str:
+    """Célula do cálculo auxiliar da 19 (chave de `_colunas19`) no ponto p de PONTOS19."""
+    return f"{CL19[chave]}{LINHA_AUX19 + p}"
+
+
+def _src(p: int, n) -> str:
+    """Célula, na grade de origem do ponto p (17 ou mini-grade da 19), da coluna n de `_colunas`."""
+    _, aba, k = PONTOS19[p]
+    if aba == ABA17:
+        return f"'{ABA17}'!${CL17[n]}${PRIMEIRA_LINHA + k}"
+    return f"${CL_MINI[n]}${LINHA_MINI19 + k}"
+
+
+def _x_roda(roda: str, alfa: str, T: dict) -> str:
+    """α + SHy no referencial do arquivo (tire_model.wheel_forces: espelho nas rodas L e s_α), como a grade de α da 17."""
+    a = f"({alfa})+{{da_{roda}}}"
+    return f"({{s_a}}*(-({a}))+{T['SHy']})" if roda.endswith("L") else f"({{s_a}}*({a})+{T['SHy']})"
+
+
+def _fy_eixo19(e: str, alfa: str, TT: dict) -> str:
+    """Σ Fy [N, ISO] do eixo em α_ref = alfa, sem a elipse da tração: equilibrio._fy_eixo_limitado sem `fatores`, que é
+    o que _rigidez_eixo, _forca_deslocamento e angulos_necessarios usam. TT: roda -> células dos termos (F7)."""
+    l, r = RODAS_EIXO[e]
+    fyl = f"-({{s_f}}*({_mf(TT[l], _x_roda(l, alfa, TT[l]))}))"
+    fyr = f"{{s_f}}*({_mf(TT[r], _x_roda(r, alfa, TT[r]))})"
+    return f"({fyl}+{fyr})*{{cosf}}" if e == "F" else f"({fyl}+{fyr})"
+
+
+def _dmf(T: dict, x: str) -> str:
+    """Derivada da fórmula mágica (de `_mf`) em x: D·cos(C·atan φ)·C/(1 + φ²)·B·(1 − E + E/(1 + (B·x)²))."""
+    E = f"CHOOSE(SIGN({x})+2,{T['Eyn']},{T['Ey0']},{T['Eyp']})"
+    u = f"{T['By']}*{x}"
+    ph = f"({u}-{E}*({u}-ATAN({u})))"
+    return f"{T['Dy']}*COS({{Cy}}*ATAN({ph}))*{{Cy}}/(1+{ph}^2)*{T['By']}*(1-{E}+{E}/(1+({u})^2))"
+
+
+def _dfy_eixo19(e: str, alfa: str, TT: dict) -> str:
+    """∂(Σ Fy do eixo)/∂α_ref: s_f·s_α·(f'(x_L) + f'(x_R)) (o espelho da roda L e o da força se cancelam), × cos δ_ref
+    na frente. Só a direção do passo do Newton depende dela; a raiz e a bandeira de convergência usam a própria Fy."""
+    l, r = RODAS_EIXO[e]
+    s = f"{{s_f}}*{{s_a}}*({_dmf(TT[l], _x_roda(l, alfa, TT[l]))}+{_dmf(TT[r], _x_roda(r, alfa, TT[r]))})"
+    return f"{s}*{{cosf}}" if e == "F" else s
+
+
+def _aba19(ctx: _Ctx, est: dict) -> None:
+    ws = ctx.wb.create_sheet(ABA19)
+    ws["A1"] = ("19_EQ_LINEAR — passo 1: gradiente de subesterço K pelas parcelas (Gillespie cap. 6), a_y = k·0,05 g "
+                "(k = 0…8), e a inclinação do passo 2 (equilibrio_linear.tabela_linear)")
+    _estilo(ws["A1"], est, "titulo")
+    ws["A2"] = ("K em rad/(m/s²) (K > 0 = subesterço) e em °/g só na coluna de exibição. Parcelas: pneus (eq. 6-15), "
+                "transferência (forma exata pelo PAC2002), deslocamento com a carga (ply steer, conicidade, toe e camber "
+                "estático; EDR-057), camber (eq. 6-56) e roll steer (eq. 6-57, SUS-415). Sem compliance, torque de "
+                "alinhamento e tração. C_α do eixo = inclinação do passo 2 em α_0 (ângulo exigido em a_y = 0); ângulos "
+                "necessários por Newton (decisão 5 do plano).")
+    ws["A3"] = "Tabela do passo 1 (uma linha por a_y)"
+    _estilo(ws["A3"], est, "secao")
+    ws["A4"] = "k"
+    for q in QTD19:
+        ws[f"{COL19[q]}4"] = f"{ROTULO19[q][0]} [{ROTULO19[q][1]}]"
+        _estilo(ws[f"{COL19[q]}4"], est, "cab")
+    ws[f"{COL_PIOR19}4"] = "Pior origem das entradas do K (ao vivo)"
+    _estilo(ws[f"{COL_PIOR19}4"], est, "cab")
+    A = lambda chave, p: celula_aux19(chave, p)
+    fam_q = {"ay_g": "F15", "kI": "F15", "motI": "F15"}
+    for k in range(N_LIN19):
+        r = LINHA_TAB19 + k
+        ws[f"A{r}"] = k
+        for q in QTD19:
+            if q == "ay_g":
+                f = f"={A('ay', k)}/9.81"
+            elif q == "kTotg":
+                f = f'=IF(ISNUMBER({A("kTot", k)}),DEGREES({A("kTot", k)})*9.81,"N/A")'
+            else:
+                f = f"={A(q, k)}"
+            ctx.put(ws, f"{COL19[q]}{r}", fam_q.get(q, "F14"), f)
+            _estilo(ws[f"{COL19[q]}{r}"], est, "calc")
+        ctx.put(ws, celula_pior19(k), "F17", "={PIOR_K}")
+    # Cálculo auxiliar (sem nome): uma linha por ponto
+    ws[f"A{LINHA_AUX19 - 2}"] = ("Cálculo auxiliar: ângulos necessários por Newton (F15) em cada ponto; rigidez do eixo "
+                                 "(F13), deslocamento (F14) e parcelas nas linhas k = 0…8; rigidez de camber (F13) em a_y = 0")
+    _estilo(ws[f"A{LINHA_AUX19 - 2}"], est, "secao")
+    for n, letra in CL19.items():
+        ws[f"{letra}{LINHA_AUX19 - 1}"] = _cabecalho(n)
+    for p in range(len(PONTOS19)):
+        _linha19(ctx, ws, p)
+    # Mini-grade: a capacidade do eixo em 0,005 g e 0,01 g (angulos_necessarios confere req <= capacidade)
+    ws[f"A{LINHA_MINI19 - 2}"] = ("Mini-grade (F4-F11, as fórmulas da 17_EQ_PAR com passo 0,005 g, k = 0…2): cargas, "
+                                  "termos do pneu e capacidade do eixo nos pontos 0,005 g e 0,01 g do Richardson")
+    _estilo(ws[f"A{LINHA_MINI19 - 2}"], est, "secao")
+    for n, letra in CL_MINI.items():
+        ws[f"{letra}{LINHA_MINI19 - 1}"] = _cabecalho(n)
+    alfa17 = {(roda, i): f"'{ABA17}'!${COL(2 + i)}${LINHA_ALFA + 2 + j}"
+              for i in range(N_ALFA) for j, roda in enumerate(CANTOS)}
+    for k in range(3):
+        _linha_grade(ctx, ws, CL_MINI, k, LINHA_MINI19 + k, "0.005", N_ALFA, False, alfa17)
+    ws.freeze_panes = f"B{LINHA_TAB19}"
+    ws.column_dimensions["A"].width = 12
+
+
+def _linha19(ctx: _Ctx, ws, p: int) -> None:
+    """Uma linha do cálculo auxiliar da 19 (ponto p de PONTOS19)."""
+    r = LINHA_AUX19 + p
+    C = lambda n: f"{CL19[n]}{r}"
+    C0 = lambda n: f"${CL19[n]}${LINHA_AUX19}"          # a mesma coluna na linha de a_y = 0
+    put = lambda n, fam, f: ctx.put(ws, C(n), fam, f)
+    ws[C("p")] = p
+    put("ay", "F15", f"={PONTOS19[p][0]}")
+    put("ay_g", "F15", f"={C('ay')}/9.81")
+    TT = {roda: {t: _src(p, (t, roda)) for t in TERMOS} for roda in CANTOS}
+    # Ângulos necessários (F15; equilibrio_linear.angulos_necessarios): Newton em colunas fixas a partir de α = 0 (o 1º
+    # passo dá −req/C no carro simétrico), N_NEWTON iterações depois dele; bandeira |folga| < 1e-9·req (1e-9 N se
+    # req = 0); a raiz tem de cair no intervalo da bissecção do Python ([α_pico, 0] ou [0, A]), senão N/A.
+    for e in "FR":
+        TE = {roda: TT[roda] for roda in RODAS_EIXO[e]}
+        req, ck, tol, fA = C(f"req_{e}"), C(f"ck_{e}"), C(f"tol_{e}"), C(f"fA_{e}")
+        y = lambda j: C(("y", e, j))
+        d = lambda j: C(("d", e, j))
+        a = lambda j: C(("a", e, j))
+        cap = _src(p, f"cap_{e}")
+        put(f"req_{e}", "F15", f'=IF({{ok}}=1,{_src(p, "req_" + e)},"N/A")')
+        put(f"ck_{e}", "F15", f'=IF(AND(ISNUMBER({cap}),ISNUMBER({req})),IF({req}<={cap},1,0),0)')
+        put(f"tol_{e}", "F15", f'=IF(ISNUMBER({req}),IF({req}<>0,1E-9*ABS({req}),1E-9),"N/A")')
+        put(f"fA_{e}", "F15", f'=IF({ck}=1,{_fy_eixo19(e, "{amp}", TE)}-{req},"N/A")')
+        put(("y", e, 0), "F15", f'=IF({ck}=1,{_fy_eixo19(e, "0", TE)}-{req},"N/A")')
+        put(("d", e, 0), "F15", f'=IF({ck}=1,{_dfy_eixo19(e, "0", TE)},"N/A")')
+        put(("a", e, 1), "F15", f'=IF(ISNUMBER({d(0)}),IF({d(0)}<>0,-{y(0)}/{d(0)},"N/A"),"N/A")')
+        for j in range(1, N_NEWTON + 2):
+            put(("y", e, j), "F15", f'=IF(ISNUMBER({a(j)}),{_fy_eixo19(e, a(j), TE)}-{req},"N/A")')
+            if j <= N_NEWTON:
+                put(("d", e, j), "F15", f'=IF(ISNUMBER({a(j)}),{_dfy_eixo19(e, a(j), TE)},"N/A")')
+                put(("a", e, j + 1), "F15", (f'=IF(AND(ISNUMBER({a(j)}),ISNUMBER({d(j)})),IF({d(j)}<>0,'
+                                             f'{a(j)}-{y(j)}/{d(j)},"N/A"),"N/A")'))
+        yN, aN = y(N_NEWTON + 1), a(N_NEWTON + 1)
+        raiz, conv, apico, intv = C(f"raiz_{e}"), C(f"conv_{e}"), C(f"apico_{e}"), C(f"int_{e}")
+        put(f"raiz_{e}", "F15", f'=IF({ck}<>1,"N/A",IF(ABS({y(0)})<{tol},0,{aN}))')
+        put(f"conv_{e}", "F15", (f'=IF({ck}<>1,0,IF(ABS({y(0)})<{tol},1,IF(ISNUMBER({yN}),'
+                                 f'IF(ABS({yN})<{tol},1,0),0)))'))
+        put(f"apico_{e}", "F15", (f"=IF({ck}=1,INDEX('{ABA17}'!$B${LINHA_ALFA + 1}:${COL(1 + N_ALFA)}${LINHA_ALFA + 1},"
+                                  f'{_src(p, "idx_" + e)}),"N/A")'))
+        put(f"int_{e}", "F15", (f'=IF({conv}<>1,0,IF(ABS({y(0)})<{tol},1,IF({y(0)}<0,IF(AND({raiz}>={apico},{raiz}<=0),'
+                                f'1,0),IF({fA}>0,0,IF(AND({raiz}>=0,{raiz}<={{amp}}),1,0)))))'))
+        put(f"ang_{e}", "F15", f'=IF(AND({ck}=1,{conv}=1,{intv}=1),{raiz},"N/A")')
+        put(f"diag_{e}", "F15", (f'=IF({ck}<>1,"eixo sem capacidade ou exigência acima dela",IF({conv}<>1,'
+                                 f'"Newton sem convergência em {N_NEWTON + 1} passos",IF({intv}<>1,'
+                                 f'"raiz fora do intervalo da bissecção do Python","-")))'))
+    if p >= N_LIN19:
+        return
+    # Rigidez do eixo em α_0 (F13; equilibrio_linear._rigidez_eixo), com Fz e γ da linha (limitados, EDR-056)
+    if p == 0:
+        put("a0ok", "F13", f'=IF(AND(ISNUMBER({C("ang_F")}),ISNUMBER({C("ang_R")})),1,0)')
+    a0ok = C0("a0ok")
+    for e in "FR":
+        TE = {roda: TT[roda] for roda in RODAS_EIXO[e]}
+        l, rr = RODAS_EIXO[e]
+        fzl, fzr = _src(p, f"Fz_{l}"), _src(p, f"Fz_{rr}")
+        desc, c, m = C(f"desc_{e}"), C(f"c_{e}"), C(f"m_{e}")
+        put(f"desc_{e}", "F13", (f'=IF({{ok}}<>1,"N/A",IF({fzl}<=0,{_txt_descolamento(l, fzl)},'
+                                 f'IF({fzr}<=0,{_txt_descolamento(rr, fzr)},"-")))'))
+        a0 = C0(f"ang_{e}")
+        put(f"c_{e}", "F13", (f'=IF(AND({a0ok}=1,{desc}="-"),-({_fy_eixo19(e, a0 + "+" + H_RIG, TE)}'
+                              f'-{_fy_eixo19(e, a0 + "-" + H_RIG, TE)})/(2*{H_RIG}),"N/A")'))
+        put(f"m_{e}", "F13", (f'=IF({a0ok}<>1,"-",IF({desc}<>"-",{desc},IF({c}>0,"-","C_α do eixo {e} = "&{_f(c, 1)}'
+                              f'&" N/rad ≤ 0")))'))
+        put(f"cv_{e}", "F13", f'=IF(AND(ISNUMBER({c}),{m}="-"),{c},"N/A")')
+    cvF, cvR, cvF0, cvR0 = C("cv_F"), C("cv_R"), C0("cv_F"), C0("cv_R")
+    cv_ok = f"AND(ISNUMBER({cvF}),ISNUMBER({cvR}))"
+    # Deslocamento com a carga (F14; _parcela_deslocamento): F0 do eixo em α_0 com o Fz de a_y ± h e o γ da linha
+    for s, sinal in zip(SINAIS, ("+", "-")):
+        ays = C(f"ays_{s}")
+        put(f"ays_{s}", "F14", f"={C('ay')}{sinal}{H_AY}")
+        f4 = _formulas_cargas(ays, {n: C(f"{n}_{s}") for n in ("phi", "DF", "dFF", "dFR")})
+        for n in ("phi", "DF", "dFF", "dFR"):
+            put(f"{n}_{s}", "F14", f4[n])
+        for c in CANTOS:
+            fz = C(f"Fz_{s}_{c}")
+            put(f"Fz_{s}_{c}", "F14", f4[f"Fz_{c}"])
+            put(f"Fzu_{s}_{c}", "F14", f'=IF(ISNUMBER({fz}),MIN(MAX({fz},{{P_FZMIN}}),{{P_FZMAX}}),"N/A")')
+            FZ = C(f"Fzu_{s}_{c}")
+            expr = _expr_termos(FZ, _src(p, f"gf_{c}"), {t: C((t, s, c)) for t in TERMOS})
+            for t in TERMOS:
+                put((t, s, c), "F14", f'=IF(ISNUMBER({FZ}),{expr[t]},"N/A")')
+    descs = [(c, C(f"Fz_{s}_{c}")) for e in "FR" for s in SINAIS for c in RODAS_EIXO[e]]
+    md = '"-"'
+    for c, fz in reversed(descs):
+        md = f'IF({fz}<=0,{_txt_descolamento(c, fz)}&"{SUF_DESL}",{md})'
+    put("mD", "F14", f'=IF({cv_ok},{md},"-")')
+    for s in SINAIS:
+        for e in "FR":
+            TE = {roda: {t: C((t, s, roda)) for t in TERMOS} for roda in RODAS_EIXO[e]}
+            put(f"F0_{s}_{e}", "F14", f'=IF(AND({cv_ok},{C("mD")}="-"),{_fy_eixo19(e, C0("ang_" + e), TE)},"N/A")')
+    F0 = lambda s, e: C(f"F0_{s}_{e}")
+    put("kD", "F14", (f'=IF(AND(ISNUMBER({F0("mais", "F")}),ISNUMBER({F0("mais", "R")})),'
+                      f'-({F0("mais", "F")}-{F0("menos", "F")})/(2*{H_AY})/{cvF}'
+                      f'+({F0("mais", "R")}-{F0("menos", "R")})/(2*{H_AY})/{cvR},"N/A")'))
+    # Rigidez de camber do eixo em a_y = 0 (F13; _rigidez_camber_eixo): γ_eixo ± h, R recebe +, L recebe −; o centro do
+    # estêncil de cada roda fica em [CAMMIN + h, CAMMAX − h] no referencial do pneu
+    if p == 0:
+        cv0_ok = f"AND(ISNUMBER({cvF0}),ISNUMBER({cvR0}))"
+        for c in CANTOS:
+            put(f"cen_{c}", "F13", (f'=IF({cv0_ok},MIN(MAX({_src(p, "gf_" + c)},{{P_CAMMIN}}+{H_RIG}),'
+                                    f'{{P_CAMMAX}}-{H_RIG})/{{s_g}},"N/A")'))
+        for s in SINAIS:
+            for c in CANTOS:
+                mais_na_roda = (s == "mais") == c.endswith("R")     # d = +h: R ganha +h, L perde h (e o contrário)
+                gc = C(f"gc_{s}_{c}")
+                put(f"gc_{s}_{c}", "F13", (f'=IF(ISNUMBER({C("cen_" + c)}),{{s_g}}*({C("cen_" + c)}'
+                                           f'{"+" if mais_na_roda else "-"}{H_RIG}),"N/A")'))
+                expr = _expr_termos(_src(p, f"Fzu_{c}"), gc, {t: C((t, "g" + s, c)) for t in TERMOS})
+                for t in TERMOS:
+                    put((t, "g" + s, c), "F13", f'=IF(ISNUMBER({gc}),{expr[t]},"N/A")')
+            for e in "FR":
+                TE = {roda: {t: C((t, "g" + s, roda)) for t in TERMOS} for roda in RODAS_EIXO[e]}
+                put(f"Fc_{s}_{e}", "F13", (f'=IF(ISNUMBER({C("gc_" + s + "_" + RODAS_EIXO[e][0])}),'
+                                           f'{_fy_eixo19(e, C0("ang_" + e), TE)},"N/A")'))
+        for e in "FR":
+            put(f"cg_{e}", "F13", (f'=IF(ISNUMBER({C("Fc_mais_" + e)}),-({C("Fc_mais_" + e)}-{C("Fc_menos_" + e)})'
+                                   f'/(2*{H_RIG}),"N/A")'))
+    # Parcelas (F14; parcelas_k): W_f e W_r sem aero (09_LOADS), C_α de eixo em a_y = 0 (k_pneus) e na linha
+    ay_ref = C("ay") if p > 0 else "(1E-6*9.81)"    # parcelas_k: em a_y = 0, ∂φ/∂a_y com a_y = 1e-6·G
+    put("dphi", "F14", f'=IF({{ok}}=1,({{ms}}*{ay_ref}*{{h2r}}/{{den}})/{ay_ref},"N/A")')
+    wf, wr = "({stFL}+{stFR})", "({stRL}+{stRR})"
+    kP, kT, kD, kC, kRS = (C(n) for n in ("kP", "kT", "kD", "kC", "kRS"))
+    put("kP", "F14", f'=IF(AND(ISNUMBER({cvF0}),ISNUMBER({cvR0})),({wf}/{cvF0}-{wr}/{cvR0})/9.81,"N/A")')
+    put("kT", "F14", f'=IF(AND(ISNUMBER({kP}),{cv_ok}),({wf}/{cvF}-{wr}/{cvR})/9.81-{kP},"N/A")')
+    put("kC", "F14", (f'=IF(AND(ISNUMBER({cvF0}),ISNUMBER({cvR0}),ISNUMBER({C("dphi")})),({C0("cg_F")}/{cvF0}'
+                      f'*(({{ge_FR}}-{{ge_FL}})/2)-{C0("cg_R")}/{cvR0}*(({{ge_RR}}-{{ge_RL}})/2))*{C("dphi")},"N/A")'))
+    put("kRS", "F14", f'=IF(AND(ISNUMBER({{epsF}}),ISNUMBER({{epsR}}),ISNUMBER({C("dphi")})),({{epsF}}-{{epsR}})*{C("dphi")},"N/A")')
+    put("kTot", "F14", (f'=IF(AND(ISNUMBER({kP}),ISNUMBER({kT}),ISNUMBER({kD}),ISNUMBER({kC}),ISNUMBER({kRS})),'
+                        f'{kP}+{kT}+{kD}+{kC}+{kRS},"N/A")'))
+    rot = _rotulos_v40()
+    msg = lambda k: f'IF(ISBLANK({{{k}}}),"{rot[V40[k]]} a confirmar","{rot[V40[k]]} não é número")'
+    put("mEps", "F14", f'=IF(AND(ISNUMBER({{epsF}}),ISNUMBER({{epsR}})),"-",IF(ISNUMBER({{epsF}}),{msg("epsR")},{msg("epsF")}))')
+    # Motivo do N/A (parcelas_k): a lista do Python, sem repetir, na ordem; o roll steer sem dado vai por último
+    itens = [f'=IF({a0ok}=1,{C0("m_F")},"{M_ALFA0}")', f"={C0('m_R')}", f"={C('m_F')}", f"={C('m_R')}",
+             f"={C('mD')}", f"={C('mEps')}"]
+    for i, f in enumerate(itens):
+        put(f"I{i}", "F14", f)
+    partes = []
+    for i in range(6):
+        cond = [f'{C("I" + str(i))}<>"-"'] + [f'NOT(EXACT({C("I" + str(i))},{C("I" + str(j))}))' for j in range(i)]
+        partes.append(f'IF(AND({",".join(cond)}),{C("I" + str(i))}&"; ","")')
+    # J começa por "#" para nunca ficar vazio (célula de fórmula sem valor é erro no teste); "#" sozinho = sem motivo
+    put("J", "F14", '="#"&' + "&".join(partes))
+    put("mot", "F14", f'=IF({{ok}}<>1,{{status}},IF(LEN({C("J")})=1,"-",MID({C("J")},2,LEN({C("J")})-3)))')
+    # Inclinação do passo 2 (F15; tabela_linear): Richardson na 1ª linha, diferença entre linhas nas outras
+    ang = lambda e, q: celula_aux19(f"ang_{e}", q)
+    dif = lambda q: f"({ang('F', q)}-{ang('R', q)})"
+    if p == 0:
+        pts = (0, N_LIN19, N_LIN19 + 1)
+        isn = ",".join(f"ISNUMBER({ang(e, q)})" for q in pts for e in "FR")
+        S = lambda q: f"(-({dif(q)}-{dif(0)})/{celula_aux19('ay', q)})"
+        put("kI", "F15", f'=IF(AND({isn}),2*{S(N_LIN19)}-{S(N_LIN19 + 1)},"N/A")')
+        m_i = M_INCL0
+    else:
+        isn = ",".join(f"ISNUMBER({ang(e, q)})" for q in (p, p - 1) for e in "FR")
+        put("kI", "F15", (f'=IF(AND({isn}),-({dif(p)}-{dif(p - 1)})/({C("ay")}-{celula_aux19("ay", p - 1)}),'
+                          f'"N/A")'))
+        m_i = M_INCL
+    put("motI", "F15", f'=IF({{ok}}<>1,{{status}},IF(ISNUMBER({C("kI")}),"-","{m_i}"))')
+
+
 def montar(wb) -> list[dict]:
-    """Escreve as abas 16_EQUILIBRIO, 17_EQ_PAR e 18_EQ_PAR_FINA no workbook da V4.0 (aberto pelo openpyxl, com os
+    """Escreve as abas 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA e 19_EQ_LINEAR no workbook da V4.0 (aberto pelo openpyxl, com os
     nomes definidos da V4.0) e devolve o registro [{aba, cel, familia, formula}] de toda célula com fórmula escrita.
     Não acrescenta os nomes novos (`acrescentar_nomes`) nem salva."""
-    for aba in (ABA16, ABA17, ABA18):
+    for aba in (ABA16, ABA17, ABA18, ABA19):
         if aba in wb.sheetnames:
             raise ValueError(f"a aba {aba} já existe")
     if wb.sheetnames[-1] != "15_CHANGELOG":
         raise ValueError(f"a última aba deveria ser 15_CHANGELOG; é {wb.sheetnames[-1]}")
-    termos = termos_pior_origem(wb)
+    termos, termos_k = termos_pior_origem(wb), termos_pior_origem(wb, linear=True)
     ctx = _Ctx(wb)
-    ctx.mapa = _mapa_base(_colunas(N_ALFA, True), termos)
+    ctx.mapa = _mapa_base(_colunas(N_ALFA, True), termos, termos_k)
     est = _estilos(wb)
     _aba16(ctx, est)
     _aba_grade(ctx, est, ABA17)
     _aba_grade(ctx, est, ABA18)
+    _aba19(ctx, est)
     return ctx.registro
 
 
