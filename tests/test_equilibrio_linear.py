@@ -251,6 +251,9 @@ EXTRAS_034 = (
     ("toe dianteiro 0,25° (teste)", dict(toe_rad={"FL": TOE_TESTE, "FR": TOE_TESTE, "RL": 0.0, "RR": 0.0})),
     ("R = 8,0 m (teste)", dict(raio_m=8.0)),
     ("R = 8,0 m e Ackermann 100 % (teste)", dict(raio_m=8.0, ackermann_pct=100.0)),
+    # h8: aero com V² = a_y·R (ρ = 1,2 kg/m³ e CzA = 2,0 m², valores de teste, NÃO são do carro). A downforce vai com
+    # |a_y|, o Fz tem um bico em a_y = 0 e só a derivada de um lado em 0+ (a que o passo 2 enxerga) fecha a igualdade.
+    ("h8: R = 8,0 m, ρ = 1,2, CzA = 2,0 (teste)", dict(raio_m=8.0, rho_kg_m3=1.2, cza_m2=2.0)),
 )
 for rotulo, extra in EXTRAS_034:
     for rot_g, ganho in (("sem ganho", {c: 0.0 for c in eq.CANTOS}), ("ganho de teste", GANHO_TESTE)):
@@ -262,8 +265,40 @@ _, p34_0, d34_0 = _comparar_034(ds0, {c: 0.0 for c in eq.CANTOS})
 det_034.append(f"ds0 (sem deslocamentos): {d34_0}")
 check("TC-EQ-034: k_inclinacao da 1ª linha (passo 2, Richardson das secantes de 0,005 e 0,01 g) = k_pneus + k_deslocamento + k_camber "
       "(passo 1), rel < 1e-3, com e sem ganho de camber, também com toe dianteiro 0,25°, R = 8,0 m e R = 8,0 m com "
-      "Ackermann 100 % (veículo e entradas de teste, .tir real, sem roll steer: o passo 2 não tem roll steer)",
+      "Ackermann 100 %, e com a aerodinâmica da h8 (R 8 m, ρ 1,2, CzA 2,0; derivada de um lado em a_y = 0) (veículo e entradas "
+      "de teste, .tir real, sem roll steer: o passo 2 não tem roll steer)",
       len(ok_034) == 2 + 2 * len(EXTRAS_034) and all(ok_034), " | ".join(det_034))
+
+# Derivada de um lado em a_y = 0 (decisão do usuário e ruling do controlador, 2026-10-22): k_deslocamento da 1ª linha
+# = (−3·F0(0) + 4·F0(h) − F0(2h))/(2h) escrito à parte aqui; sem a h8 só difere da central por O(h²).
+def _k_desl_um_lado(caso, central=False):
+    h = el._H_AY_DESLOCAMENTO
+    alfa_0, _ = el._alfa_operacao(caso)
+    fz0, gam0 = eq.cargas(caso, 0.0), eq.camber(caso, 0.0)
+    k = 0.0
+    for eixo, sinal, a0 in (("F", -1.0, alfa_0[0]), ("R", 1.0, alfa_0[1])):
+        c = el._rigidez_eixo(caso, eixo, fz0, gam0, a0)[0]
+        F = lambda ay: el._forca_deslocamento(caso, eixo, ay, gam0, a0)[0]
+        d = (F(h) - F(-h)) / (2 * h) if central else (-3 * F(0.0) + 4 * F(h) - F(2 * h)) / (2 * h)
+        k += sinal * d / c
+    return k
+
+
+caso_h8 = eq.CasoEquilibrio(cfg=cfg_b, ds=ds, ganho_camber={c: 0.0 for c in eq.CANTOS}, raio_m=8.0, rho_kg_m3=1.2,
+                            cza_m2=2.0)
+caso_sem8 = eq.CasoEquilibrio(cfg=cfg_b, ds=ds, ganho_camber={c: 0.0 for c in eq.CANTOS}, raio_m=8.0)
+p_h8, e_h8 = _sem_excecao(lambda: el.parcelas_k(caso_h8, 0.0))
+p_s8, e_s8 = _sem_excecao(lambda: el.parcelas_k(caso_sem8, 0.0))
+um, cen = _k_desl_um_lado(caso_h8), _k_desl_um_lado(caso_h8, central=True)
+um_s, cen_s = _k_desl_um_lado(caso_sem8), _k_desl_um_lado(caso_sem8, central=True)
+check("TC-EQ-034b: k_deslocamento em a_y = 0 = derivada de um lado de 2ª ordem (−3F0(0) + 4F0(h) − F0(2h))/(2h), com a h8 "
+      "(R 8 m, ρ 1,2, CzA 2,0, teste) rel < 1e-9 e a central se afasta dele (bico da downforce em |a_y|) mais de 20 vezes o "
+      "truncamento sem a h8 (rel < 1e-6 contra a central)",
+      p_h8 is not None and p_s8 is not None and p_h8.k_deslocamento is not None and p_s8.k_deslocamento is not None
+      and abs(p_h8.k_deslocamento - um) < 1e-9 * abs(um) and abs(um - cen) > 20 * abs(um_s - cen_s)
+      and abs(p_s8.k_deslocamento - um_s) < 1e-9 * abs(um_s) and abs(um_s - cen_s) < 1e-6 * abs(um_s),
+      f"{e_h8 or ''}{e_s8 or ''} h8: py={getattr(p_h8, 'k_deslocamento', None)!r} um_lado={um!r} central={cen!r} "
+      f"(rel {abs(um - cen) / abs(um):.2e}); sem h8: um_lado={um_s!r} central={cen_s!r} (rel {abs(um_s - cen_s) / abs(um_s):.2e})")
 
 # ---------------- TC-EQ-035 : sinal do camber (EDR-002) ----------------
 # Braços paralelos iguais na frente (gradiente de eixo +1, Gillespie p. 234): só de teste.

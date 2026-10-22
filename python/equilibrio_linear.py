@@ -230,6 +230,9 @@ def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict, alfa_0: float)
     return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0), None
 
 
+SUF_DESLOCAMENTO = " (vizinhança da derivada do deslocamento do pneu)"
+
+
 def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float, alfa_0: tuple):
     """(k_deslocamento [rad/(m/s²)], motivo): parcela do deslocamento do pneu que varia com a carga.
 
@@ -242,20 +245,32 @@ def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float, alfa_0: t
     `_rigidez_eixo`) e precisa dar W·a_y/G. Logo −(α − α_0) = (W·a_y/G − F0)/C, e o K do Gillespie (ângulos
     positivos), −d(α_f − α_r)/da_y, recebe do F0 a parcela k_deslocamento = −(dF0_f/da_y)/C_f + (dF0_r/da_y)/C_r,
     com C de eixo da linha. dF0/da_y por diferença central
-    no Fz de a_y ± _H_AY_DESLOCAMENTO, com o γ da linha fixo (o empuxo de camber variando com a_y é k_camber); em
-    a_y = 0, a diferença central em torno de 0 é o próprio limite a_y → 0. Com o dataset sem deslocamentos, F0 não
-    depende de Fz e a parcela some. As parcelas do Gillespie (pp. 202-226) usam só o C_α e não têm este termo; ele
-    existe no pneu PAC2002 e no passo 2 (ruling do controlador, Task 4).
+    no Fz de a_y ± _H_AY_DESLOCAMENTO, com o γ da linha fixo (o empuxo de camber variando com a_y é k_camber). Em
+    a_y = 0 a diferença central em torno de 0 vale só quando F0 é par em a_y; com a downforce da h8 (V² = a_y·R,
+    |a_y|), o Fz tem um bico em 0 e a central dá o valor errado (zero). Nessa linha usa-se a derivada de um lado em
+    0+, de 2ª ordem, (−3·F0(0) + 4·F0(h) − F0(2h))/(2h), que é a que a inclinação do passo 2 enxerga (ruling do
+    controlador, 2026-10-22); sem h8 o valor muda só no erro de truncamento O(h²). Com o dataset sem deslocamentos,
+    F0 não depende de Fz e a parcela some. As parcelas do Gillespie (pp. 202-226) usam só o C_α e não têm este
+    termo; ele existe no pneu PAC2002 e no passo 2 (ruling do controlador, Task 4).
     """
     h = _H_AY_DESLOCAMENTO
     gam = _eq.camber(caso, ay_ms2)
+    um_lado = ay_ms2 == 0.0
     k = 0.0
     for eixo, c, sinal, a0 in (("F", c_f, -1.0, alfa_0[0]), ("R", c_r, 1.0, alfa_0[1])):
-        f_mais, m1 = _forca_deslocamento(caso, eixo, ay_ms2 + h, gam, a0)
-        f_menos, m2 = _forca_deslocamento(caso, eixo, ay_ms2 - h, gam, a0)
-        if m1 is not None or m2 is not None:
-            return None, (m1 or m2) + " (vizinhança da diferença central do deslocamento do pneu)"
-        k += sinal * (f_mais - f_menos) / (2.0 * h) / c
+        if um_lado:
+            pts = [_forca_deslocamento(caso, eixo, m * h, gam, a0) for m in (0.0, 1.0, 2.0)]
+        else:
+            pts = [_forca_deslocamento(caso, eixo, ay_ms2 + h, gam, a0),
+                   _forca_deslocamento(caso, eixo, ay_ms2 - h, gam, a0)]
+        motivos = [m for _, m in pts if m is not None]
+        if motivos:
+            return None, motivos[0] + SUF_DESLOCAMENTO
+        if um_lado:
+            derivada = (-3.0 * pts[0][0] + 4.0 * pts[1][0] - pts[2][0]) / (2.0 * h)
+        else:
+            derivada = (pts[0][0] - pts[1][0]) / (2.0 * h)
+        k += sinal * derivada / c
     return k, None
 
 
