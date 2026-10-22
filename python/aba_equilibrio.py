@@ -243,6 +243,16 @@ def _eh_numero(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and abs(v) != float("inf")
 
 
+def motivo_roll_steer(x: dict) -> str | None:
+    """Motivo do N/A do K por falta do roll steer (07_KINEMATICS B82/B83), o mesmo texto da coluna mEps da 19, ou None.
+    x: chave -> valor lido da cópia recalculada (chaves "epsF" e "epsR"). Só o passo 1 usa o roll steer."""
+    rot = _rotulos_v40()
+    for k in ("epsF", "epsR"):
+        if not _eh_numero(x.get(k)):
+            return f"{rot[V40[k]]} a confirmar" if x.get(k) is None else f"{rot[V40[k]]} não é número"
+    return None
+
+
 def motivo_das_entradas(x: dict) -> str | None:
     """Primeira verificação que falha (a mesma ordem e o mesmo texto da planilha), sem as duas que dependem de conta
     (instabilidade de rolagem e alcance do Ackermann, que caso_planilha confere pelo Python). `x`: chave -> valor lido

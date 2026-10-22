@@ -136,7 +136,7 @@ def valores_v41(wb) -> dict:
     return x
 
 
-def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
+def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path, passo1: bool = True) -> CasoEquilibrio:
     """O CasoEquilibrio que a 16_EQUILIBRIO da V4.1 calcula, lido por nomes de uma cópia recalculada.
 
     - Entradas da V4.0 pelos nomes de ENTRADAS_CASO; as novas pelos nomes ent_16_* (aba_equilibrio.NOME_ENT); o camber
@@ -146,7 +146,10 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
       arquivo, para que o caso seja o que a planilha avalia (uma cópia de teste pode escalar, por exemplo, LMUY).
     - Chaves (spec 7.4): o raio entra com h2, h3, h8 ou h9 (no Python, o raio liga o cos δ_ref); h2 usa o % Ackermann;
       h7, o CG lateral; h8 troca a downforce fixa por CzA e ρ (downforce_N = 0); h9 usa CdA, Crr e ρ.
-    - Roll steer de cada eixo (SUS-415, 07_KINEMATICS B82/B83), que só o passo 1 usa (k_roll_steer).
+    - Roll steer de cada eixo (SUS-415, 07_KINEMATICS B82/B83), que só o passo 1 usa (k_roll_steer). passo1=True (o
+      padrão): lido, e sem número dá ValueError com o motivo da 19 (aba_equilibrio.motivo_roll_steer), que é o N/A do K
+      na planilha; o limite da planilha segue valendo. passo1=False: caso só para o passo 2 (analise_par), sem ler o roll
+      steer (fica no padrão 0 do CasoEquilibrio); esse caso não deve ir a parcelas_k.
     - Entrada inválida para a planilha (chave ligada com entrada vazia, texto numa entrada numérica, h3 desligada com
       h2/h8/h9): ValueError com o mesmo motivo que a 16 mostra (aba_equilibrio.VERIFICACOES, na mesma ordem); idem para
       a instabilidade de rolagem e o Ackermann fora do alcance.
@@ -178,10 +181,13 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path) -> CasoEquilibrio:
         if k in ds.p:
             ds.p[k] = float(v)
     raio = float(x["R"]) if any(h[k] for k in ("h2", "h3", "h8", "h9")) else None
-    # Roll steer (SUS-415, 07_KINEMATICS B82/B83, °/° = rad/rad): só o passo 1 usa (k_roll_steer). Sem número, o K da
-    # 19 fica N/A com o motivo, e o limite segue; aqui fica 0, o padrão "sem dado" do CasoEquilibrio.
-    eps = {"F": x["epsF"], "R": x["epsR"]}
-    rs = {e: float(v) for e, v in eps.items()} if all(ae._eh_numero(v) for v in eps.values()) else {"F": 0.0, "R": 0.0}
+    # Roll steer (SUS-415, 07_KINEMATICS B82/B83, °/° = rad/rad): só o passo 1 usa (k_roll_steer). Sem número, nunca 0
+    # em silêncio: com passo1=True, ValueError com o motivo que a 19 mostra (aba_equilibrio.motivo_roll_steer); com
+    # passo1=False (caso só para o passo 2), o roll steer não é lido e fica no padrão do CasoEquilibrio.
+    m_rs = ae.motivo_roll_steer(x)
+    if passo1 and m_rs is not None:
+        raise ValueError(m_rs)
+    rs = {"F": float(x["epsF"]), "R": float(x["epsR"])} if passo1 else {"F": 0.0, "R": 0.0}
     gF = camber_gradient_from_body(*(2 * [_m.radians(float(x["dgF"])) * 1000.0]), cfg.track_front)
     gR = camber_gradient_from_body(*(2 * [_m.radians(float(x["dgR"])) * 1000.0]), cfg.track_rear)
     caso = CasoEquilibrio(

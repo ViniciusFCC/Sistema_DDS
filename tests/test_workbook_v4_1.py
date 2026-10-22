@@ -32,7 +32,9 @@ do Python (|Δ| <= 1e-6 °/g; a identidade com rel. <= 1e-6 vai ao log como ACHA
 comparar_k); na 16, o
 K da 1ª linha (res_16_k_total e as parcelas), V_char e V_crit (velocidade_caracteristica/critica) e a pior origem do K
 (pior_origem_do_caso_v41(..., linear=True), que inclui o roll steer da 07_KINEMATICS). Caso com entradas inválidas: todo K
-é N/A com o motivo da situação das entradas.
+é N/A com o motivo da situação das entradas. Roll steer (07_KINEMATICS B82/B83): RS1 = C2 com ε_f 0,05 e ε_r −0,03 °/°
+(TESTE; k_roll_steer ≠ 0 bate com o Python); RS2 = C2 com ε_f vazio (caso_da_planilha_v41 levanta o motivo; a planilha dá
+k_roll_steer e K N/A com "… a confirmar" e o resto das parcelas igual ao Python). O passo 2 usa o caso com passo1=False.
 O log traz o tempo de recálculo de cada cópia e o número de células com fórmula de cada aba (insumo do portão da Task 4).
 "Passou" = a planilha reproduz o oráculo; não é validação física.
 """
@@ -79,9 +81,15 @@ C4 = {**C3, ENT["R"]: 8.0, ENT["h2"]: 1, ENT["h3"]: 1, ENT["cg"]: 0.010, ENT["h7
 C4b = {**C4, "ent_07_angulo_da_roda_dianteira_interna_deltai": 22}
 C5 = {**C2, "ent_05_altura_do_cg_total": 0.7}
 RF1 = {**C4, ENT["cza"]: None}
+# Roll steer (SUS-415, 07_KINEMATICS B82/B83, °/°; valores de TESTE, só nas cópias): RS1 com ε_f ≠ ε_r (k_roll_steer ≠ 0,
+# pega sinal trocado em ε_f − ε_r; sobre o C2, cujo K sem roll steer é 0); RS2 com ε_f vazio (K N/A "… a confirmar").
+EPS_F, EPS_R = "ent_07_roll_steer_dianteiro_epsilon_f", "ent_07_roll_steer_traseiro_epsilon_r"
+RS1 = {**C2, EPS_F: 0.05, EPS_R: -0.03}
+RS2 = {**C2, EPS_F: None}
 # nome, alterações, veredito esperado (None = só a comparação com o Python), motivo esperado (prefixo) ou None
 CASOS = [("C1", {}, None, None), ("C2", C2, eq.NEUTRO, None), ("C3", C3, eq.PUSH, None), ("C3b", C3b, eq.LOOSE, None),
-         ("C4", C4, None, None), ("C4b", C4b, None, None), ("C5", C5, eq.NA, "Fz_"), ("RF1", RF1, eq.NA, "CzA a confirmar")]
+         ("C4", C4, None, None), ("C4b", C4b, None, None), ("C5", C5, eq.NA, "Fz_"), ("RF1", RF1, eq.NA, "CzA a confirmar"),
+         ("RS1", RS1, None, None), ("RS2", RS2, None, None)]
 
 
 def num(v) -> bool:
@@ -155,7 +163,7 @@ def comparar_caso(nome, copia, esperado, prefixo, falhas):
     wb = openpyxl.load_workbook(copia, data_only=True)
     r16 = {k: valor(wb, n) for k, n in ae.NOME16.items()}
     try:
-        caso = cp.caso_da_planilha_v41(copia, TIR)
+        caso = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
     except ValueError as e:   # entradas inválidas: a planilha tem de mostrar o mesmo motivo, como N/A
         wb.close()
         ok = r16["status"] == str(e) and r16["ver"] == eq.NA and r16["mot"] == str(e)
@@ -263,9 +271,17 @@ def comparar_k(nome, copia, falhas):
     angs = [(ws19[ae.celula_aux19("ang_F", p)].value, ws19[ae.celula_aux19("ang_R", p)].value)
             for p in range(len(ae.PONTOS19))]
     wb.close()
+    m_rs = None   # motivo do roll steer sem dado (só o passo 1 o usa): k_roll_steer e k_total N/A, o resto compara
+    e = None      # motivo das entradas inválidas (texto)
     try:
         caso = cp.caso_da_planilha_v41(copia, TIR)
-    except ValueError as e:   # entradas inválidas: todo K N/A com o motivo da situação das entradas
+    except ValueError as erro:
+        try:
+            caso = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
+            m_rs = str(erro)
+        except ValueError as erro2:
+            caso, e = None, str(erro2)
+    if caso is None:   # entradas inválidas: todo K N/A com o motivo da situação das entradas
         for k, ln in enumerate(lin):
             if not (ln["kTot"] == "N/A" and ln["mot"] == str(e) and ln["kI"] == "N/A" and ln["motI"] == str(e)):
                 falhas.append(f"{nome} linha {k}: entradas inválidas ({e}); planilha K={ln['kTot']!r} motivo={ln['mot']!r} "
@@ -279,6 +295,9 @@ def comparar_k(nome, copia, falhas):
         falhas.append(f"{nome}: tabela_linear com {len(tab)} linhas, planilha com {ae.N_LIN19}")
     for k, (ln, row) in enumerate(zip(lin, tab)):
         p = row["parcelas"]
+        if m_rs is not None:   # o que o Python daria sem o dado: as duas parcelas None e o motivo no fim da lista
+            p = dataclasses.replace(p, k_roll_steer=None, k_total=None,
+                                    motivo="; ".join(m for m in (p.motivo, m_rs) if m))
         for q, py in (("kP", p.k_pneus), ("kT", p.k_transferencia), ("kD", p.k_deslocamento), ("kC", p.k_camber),
                       ("kRS", p.k_roll_steer), ("kTot", p.k_total), ("kI", row["k_inclinacao"])):
             if not k_igual(ln[q], py, f"{nome} linha {k} {q}"):
@@ -314,6 +333,13 @@ def comparar_k(nome, copia, falhas):
                 falhas.append(f"{nome} ponto {p_i} α_{e}: planilha {a_sh!r} Python {a_py!r} (outra raiz?)")
     # Igualdade da 1ª linha (spec §6): na planilha e, para registro, no Python
     l0, p0 = lin[0], tab[0]["parcelas"]
+    if m_rs is not None:
+        p0 = dataclasses.replace(p0, k_roll_steer=None, k_total=None)
+        if not (l0["kRS"] == "N/A" and l0["mot"] == m_rs and m_rs.endswith("a confirmar")):
+            falhas.append(f"{nome}: roll steer sem dado; planilha k_roll_steer={l0['kRS']!r} motivo={l0['mot']!r}, "
+                          f"esperado N/A com {m_rs!r}")
+    if nome == "RS1" and not (num(l0["kRS"]) and l0["kRS"] != 0.0):
+        falhas.append(f"RS1: k_roll_steer da planilha {l0['kRS']!r} deveria ser ≠ 0 (ε_f ≠ ε_r)")
     rel_sh = rel_py = None
     # O check é que a planilha reproduz o resíduo do Python: |resíduo_planilha − resíduo_Python| <= TOL_K em °/g, com
     # resíduo = k_inclinacao − (k_pneus + k_deslocamento + k_camber). A identidade em si, rel. <= TOL_IGUAL, só vai ao log
@@ -359,7 +385,9 @@ def comparar_k(nome, copia, falhas):
     if pior16 != pior:
         falhas.append(f"{nome} 16 pior origem do K: planilha {pior16!r} Python {pior!r}")
     kt = p0.k_total
-    return (f"{nome}: K(0) = {'N/A' if kt is None else f'{el.para_graus_por_g(kt):+.4f} °/g'} (motivo {p0.motivo!r}); "
+    krs = '' if p0.k_roll_steer in (None, 0.0) else f", k_roll_steer {el.para_graus_por_g(p0.k_roll_steer):+.4f} °/g"
+    return (f"{nome}: K(0) = {'N/A' if kt is None else f'{el.para_graus_por_g(kt):+.4f} °/g'}{krs} "
+            f"(motivo {l0['mot']!r}); "
             f"igualdade da 1ª linha: planilha {rel_sh if rel_sh is None else f'{rel_sh:.2e} ({crit_sh})'}, "
             f"Python {rel_py if rel_py is None else f'{rel_py:.2e} ({crit_py})'}")
 
@@ -388,11 +416,11 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
             print(f"  CÉLULAS com fórmula em {aba}: {n}")
         wbf.close()
     if nome == "C3":
-        caso_c3 = cp.caso_da_planilha_v41(copia, TIR)
+        caso_c3 = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
     resumos.append(comparar_caso(nome, copia, esperado, prefixo, falhas))
     resumos5.append(comparar_k(nome, copia, falhas5))
     if nome == "RF3":
-        caso = cp.caso_da_planilha_v41(copia, TIR)
+        caso = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
         r = eq.analise_par(caso)
         _, _, sr2 = eq._varredura(caso, ae.AY_MAX_G, ae.PASSO_G / 2.0, 2 * ae.N_ALFA - 1)
         if not (r.ay_sat_r is not None and sr2.ay_sat is None and r.resolucao_ms2 == ae.PASSO_G * G):
@@ -415,7 +443,7 @@ print(f"  MAIOR diferença do K planilha × Python ({MOTOR}): {DIF5['k'][0]:.2e}
 for a5 in ACHADOS5:
     print(f"  ACHADO (não decide o check; o Python dá o mesmo): {a5}")
 check("TC-WB41-005: passo 1 em fórmulas (19_EQ_LINEAR e o K na 16) == equilibrio_linear.tabela_linear nos casos C1-C5, "
-      "C3b, C4b e nas variantes RF1/RF3 (parcelas, k_total e k_inclinacao por linha, |Δ| <= 1e-6 °/g; motivos; ângulos "
+      "C3b, C4b e nas variantes RF1/RF3/RS1/RS2 (parcelas, k_total e k_inclinacao por linha, |Δ| <= 1e-6 °/g; motivos; ângulos "
       "do Newton = bissecção, rel. <= 1e-8; resíduo da igualdade da 1ª linha = o do Python, |Δ| <= 1e-6 °/g; K, V_char, "
       "V_crit e pior origem na 16)",
       not falhas5, f"{len(falhas5)} divergência(s): {falhas5[:8]}")
