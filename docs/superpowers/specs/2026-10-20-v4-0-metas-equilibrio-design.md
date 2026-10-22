@@ -201,8 +201,9 @@ TLLTD não adotado por ser target sem decisão da equipe).
   (gradiente da SAE, p. 227): a igualdade só é exigida na primeira linha; acima dela, k_total e k_inclinacao
   diferem por definição. O roll steer só existe no passo 1 (o passo 2 não esterça a traseira), e a igualdade vale
   sem ele (EDR-057, 2026-10-21).
-- **Exibição:** "K = +x °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; sem compliance,
-  torque de alinhamento e tração)" (EDR-057, 2026-10-21), nunca "K total" com parcela faltando; parcelas lado a
+- **Exibição:** "K = +x °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e camber
+  estático) + camber + roll steer; sem compliance, torque de alinhamento e tração)" (EDR-057, 2026-10-21; rótulo
+  revisto no incremento 4, 2026-10-21), nunca "K total" com parcela faltando; parcelas lado a
   lado com porcentagem; rótulo Subesterço /
   Sobresterço pelo sinal (banda de neutro só por EDR); velocidade característica (K > 0) e crítica (K < 0)
   (Gillespie p. 203-204); pior origem ao lado.
