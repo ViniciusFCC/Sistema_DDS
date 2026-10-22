@@ -1367,7 +1367,7 @@ LINHA_AUX19 = 24          # cálculo auxiliar: uma linha por ponto de PONTOS19 (
 LINHA_MINI19 = LINHA_AUX19 + len(PONTOS19) + 4   # mini-grade (k = 0, 1, 2 com passo 0,005 g; cabeçalho na anterior)
 SINAIS = ("mais", "menos")
 M_ALFA0 = "ângulo de referência exigido em a_y = 0 indisponível (ponto de operação da rigidez do eixo)"
-SUF_DESL = " (vizinhança da diferença central do deslocamento do pneu)"
+SUF_DESL = " (vizinhança da derivada do deslocamento do pneu)"
 M_INCL0 = "ângulos necessários indisponíveis em 0, 0,005 g ou 0,01 g"
 M_INCL = "ângulos necessários indisponíveis nesta linha ou na anterior"
 CL17 = _colunas(N_ALFA, True)
@@ -1579,10 +1579,13 @@ def _linha19(ctx: _Ctx, ws, p: int, r: int | None = None, aba_grade: str | None 
         put(f"cv_{e}", "F13", f'=IF(AND(ISNUMBER({c}),{m}="-"),{c},"N/A")')
     cvF, cvR, cvF0, cvR0 = C("cv_F"), C("cv_R"), C0("cv_F"), C0("cv_R")
     cv_ok = f"AND(ISNUMBER({cvF}),ISNUMBER({cvR}))"
-    # Deslocamento com a carga (F14; _parcela_deslocamento): F0 do eixo em α_0 com o Fz de a_y ± h e o γ da linha
+    # Deslocamento com a carga (F14; _parcela_deslocamento): F0 do eixo em α_0 com o Fz de a_y ± h e o γ da linha.
+    # Na linha de a_y = 0 (p = 0) a derivada é de um lado (EDR-060, ruling de 2026-10-22): "mais" = a_y + h, "menos" =
+    # a_y + 2h, e F0(0) sai dos próprios termos da linha; nas outras, "mais" = a_y + h e "menos" = a_y − h.
+    um_lado = p == 0
     for s, sinal in zip(SINAIS, ("+", "-")):
         ays = C(f"ays_{s}")
-        put(f"ays_{s}", "F14", f"={C('ay')}{sinal}{H_AY}")
+        put(f"ays_{s}", "F14", f"={C('ay')}+2*{H_AY}" if (um_lado and s == "menos") else f"={C('ay')}{sinal}{H_AY}")
         f4 = _formulas_cargas(ays, {n: C(f"{n}_{s}") for n in ("phi", "DF", "dFF", "dFR")})
         for n in ("phi", "DF", "dFF", "dFR"):
             put(f"{n}_{s}", "F14", f4[n])
@@ -1604,9 +1607,13 @@ def _linha19(ctx: _Ctx, ws, p: int, r: int | None = None, aba_grade: str | None 
             TE = {roda: {t: C((t, s, roda)) for t in TERMOS} for roda in RODAS_EIXO[e]}
             put(f"F0_{s}_{e}", "F14", f'=IF(AND({cv_ok},{C("mD")}="-"),{_fy_eixo19(e, C0("ang_" + e), TE)},"N/A")')
     F0 = lambda s, e: C(f"F0_{s}_{e}")
+    if um_lado:   # (−3·F0(0) + 4·F0(h) − F0(2h))/(2h), com F0(0) nos termos da linha (já limitados, EDR-056)
+        f00 = {e: _fy_eixo19(e, C("ang_" + e), {roda: TT[roda] for roda in RODAS_EIXO[e]}) for e in "FR"}
+        der = lambda e: f'(-3*{f00[e]}+4*{F0("mais", e)}-{F0("menos", e)})/(2*{H_AY})'
+    else:
+        der = lambda e: f'({F0("mais", e)}-{F0("menos", e)})/(2*{H_AY})'
     put("kD", "F14", (f'=IF(AND(ISNUMBER({F0("mais", "F")}),ISNUMBER({F0("mais", "R")})),'
-                      f'-({F0("mais", "F")}-{F0("menos", "F")})/(2*{H_AY})/{cvF}'
-                      f'+({F0("mais", "R")}-{F0("menos", "R")})/(2*{H_AY})/{cvR},"N/A")'))
+                      f'-{der("F")}/{cvF}+{der("R")}/{cvR},"N/A")'))
     # Rigidez de camber do eixo em a_y = 0 (F13; _rigidez_camber_eixo): γ_eixo ± h, R recebe +, L recebe −; o centro do
     # estêncil de cada roda fica em [CAMMIN + h, CAMMAX − h] no referencial do pneu
     if p == 0:
