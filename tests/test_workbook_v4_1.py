@@ -946,6 +946,9 @@ def conferir_fixos(copia, falhas):
             falhas.append(f"16 F{r_ver} (ao lado do veredito): {ws16[f'F{r_ver}'].value!r}, esperado o aviso de robustez")
         if not str(ws16[f"F{r_k}"].value or "").startswith(REGIMES):
             falhas.append(f"16 F{r_k} (ao lado do K): {ws16[f'F{r_k}'].value!r}, esperado {REGIMES!r}…")
+        nota = ws16[f"B{r_ver}"].comment
+        if nota is None or nota.text != ae.NOTA_VEREDITO or "p. 315" not in nota.text:
+            falhas.append(f"16 B{r_ver} (veredito): sem a nota na célula do Milliken p. 315 (spec 7.3, item 1)")
         textos14 = [str(c.value) for lin in ws14.iter_rows() for c in lin if isinstance(c.value, str)]
         for t in (AVISO, REGIMES, DIFERENCIAL):
             if not any(t in x for x in textos14):
