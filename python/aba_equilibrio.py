@@ -1,4 +1,4 @@
-"""Abas do equilíbrio da V4.1 (incremento 4): 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA e 19_EQ_LINEAR.
+"""Abas do equilíbrio da V4.1 (incremento 4): 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA, 19_EQ_LINEAR e 20_EQ_TROCA.
 
 A análise de par do Milliken (§7.1, p. 283-286) em fórmulas do Excel, com as regras do EDR-056 (entrada do pneu
 limitada à faixa do .tir, com aviso; Fz <= 0 = descolamento; NEUTRO só dentro da resolução numérica medida por
@@ -16,7 +16,14 @@ origem da F17, plano docs/superpowers/plans/2026-10-21-v4-1-inc4-equilibrio-na-p
   do passo 2), os ângulos necessários por Newton (decisão 5: N_NEWTON iterações em colunas fixas, bandeira de
   convergência e a raiz conferida contra o intervalo da bissecção do Python) e a inclinação do passo 2 (Richardson na
   1ª linha). O K da 1ª linha vai para a 16 (res_16_k_total e parcelas), com V_char e V_crit (F16). O roll steer entra
-  pelas entradas SUS-415 da 07_KINEMATICS (B82/B83), e a pior origem do K inclui a origem delas (PIOR_K).
+  pelas entradas SUS-415 da 07_KINEMATICS (B82/B83), e a pior origem do K inclui a origem delas (PIOR_K);
+- 20_EQ_TROCA: tabela de troca da barra dianteira (F18; spec §5, itens 3 a 5): K_ARB dianteiro × FATORES20 do valor da
+  06_SUSPENSION B10 (grade de exibição rotulada, não metas; decisão do usuário de 2026-10-22), com K_φF, λ_f, K, S_f,
+  S_r, a_y limite, resolução, veredito e C_N por linha, e o custo do comportamento (a_y do acerto neutro pelo
+  cruzamento das saturações na tabela, por interpolação, menos o a_y limite atual; "limiar não definido"). O ×1 referencia
+  a 16 e a 19; cada linha extra tem a aba auxiliar 20a…20d (grade pedida, grade refinada e a linha do K em a_y = 0),
+  gerada pelas mesmas funções das famílias F4-F15 com o mapa da linha (`_mapa_linha`: K_φF, rolagem, situação e
+  veredito próprios), e o bloco "cálculo por linha" da 20 com as regras do veredito da 16 (`_regras_limite`).
 
 Decisões (plano, "Decisões do plano"; registrar no EDR-060):
 - um sentido de curva por vez (decisão 2); diferencial aberto declarado em texto (decisão 3);
@@ -400,6 +407,72 @@ def celula_pior19(k: int) -> str:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Layout da 20_EQ_TROCA (tabela de troca da barra dianteira, F18; spec §5, itens 3 a 5; o layout está em `_aba20`)
+# ---------------------------------------------------------------------------------------------------------------------
+ABA20 = "20_EQ_TROCA"
+# Grade de EXIBIÇÃO do K_ARB dianteiro (decisão do usuário, 2026-10-22; EDR-060): fatores sobre o valor digitado na
+# 06_SUSPENSION B10. Não são metas. O ×1 é a própria análise da 16-19 (referenciada, não recalculada).
+FATORES20 = (0.5, 0.75, 1.0, 1.5, 2.0)
+J_ATUAL = FATORES20.index(1.0)
+# Abas auxiliares das linhas extras (uma por linha: grade pedida, grade refinada e a linha do K em a_y = 0)
+AUX20 = {j: f"20{'abcd'[i]}_TROCA" for i, j in enumerate(j for j in range(len(FATORES20)) if j != J_ATUAL)}
+DESLOC_FINA20 = 70        # a grade refinada fica 70 linhas abaixo da pedida na aba auxiliar (resumo em 74…83)
+LINHA_K20 = PRIMEIRA_LINHA + DESLOC_FINA20 + GRADES[ABA18][1] + 4   # linha do K (cabeçalho na anterior)
+TAB20 = (   # chave, rótulo, unidade (colunas B… da tabela; A = rótulo da linha)
+    ("fator", "Fator sobre o K_ARB dianteiro da 06", "-"),
+    ("karb", "K_ARB dianteiro", "N·m/rad"),
+    ("kphi", "K_φF", "N·m/rad"),
+    ("lam", "λ_f = K_φF/(K_φF + K_φR)", "-"),
+    ("k", "K em a_y = 0", "rad/(m/s²)"),
+    ("kg", "K em °/g", "°/g"),
+    ("kmot", "Motivo do N/A do K", "-"),
+    ("sf", "S_f", "m/s²"),
+    ("sr", "S_r", "m/s²"),
+    ("aylim", "a_y limite", "m/s²"),
+    ("resol", "Resolução", "m/s²"),
+    ("sfg", "S_f em g", "g"),
+    ("srg", "S_r em g", "g"),
+    ("aylimg", "a_y limite em g", "g"),
+    ("ver", "Veredito no limite", "-"),
+    ("cn", "C_N residual", "-"),
+    ("mot", "Motivo do N/A do veredito", "-"),
+    ("d", "S_r − S_f", "m/s²"),
+    ("cruz", "a_y do cruzamento S_f = S_r com a próxima linha", "m/s²"),
+    ("pos", "Ordem do cruzamento", "-"),
+    ("neu", "|S_r − S_f| se NEUTRO", "m/s²"),
+    ("pior", "Pior origem da linha (limite e K)", "-"),
+)
+COL20 = {k: COL(2 + i) for i, (k, _, _) in enumerate(TAB20)}
+LINHA_TAB20 = 5           # 1ª linha da tabela (×0,5); cabeçalho na 4
+CUSTO20 = (   # chave, rótulo, unidade (custo do comportamento, spec §5, itens 4 e 5)
+    ("ayn", "a_y do acerto neutro (cruzamento das saturações na tabela)", "m/s²"),
+    ("ayng", "a_y do acerto neutro em g", "g"),
+    ("aynm", "Motivo do N/A do neutro", "-"),
+    ("perda", "Custo do comportamento: a_y do neutro − a_y limite atual", "m/s²"),
+    ("perdag", "Custo do comportamento em g", "g"),
+    ("perdam", "Motivo do N/A do custo", "-"),
+    ("limiar", "Veredito do custo", "-"),
+)
+LINHA_CUSTO20 = LINHA_TAB20 + len(FATORES20) + 2
+LINHA20 = {k: LINHA_CUSTO20 + i for i, (k, _, _) in enumerate(CUSTO20)}
+LINHA_BLOCO20 = LINHA_CUSTO20 + len(CUSTO20) + 3   # cálculo por linha (rótulos das linhas na anterior)
+M_NEUTRO_FORA = ("neutro fora da faixa da tabela (S_r − S_f sem troca de sinal entre linhas vizinhas e nenhuma linha "
+                 "NEUTRO; sem extrapolação)")
+M_LIMIAR = "limiar não definido"
+
+
+def rotulo_linha20(j: int) -> str:
+    """Rótulo da linha j da tabela de troca ("×0,5", …; o ×1 marcado como atual)."""
+    f = f"×{FATORES20[j]:g}".replace(".", ",")
+    return f + " (atual: 06_SUSPENSION B10)" if j == J_ATUAL else f
+
+
+def celula20(chave: str, j: int) -> str:
+    """Célula da coluna `chave` (TAB20) na linha j da tabela de troca."""
+    return f"{COL20[chave]}{LINHA_TAB20 + j}"
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Layout da 16_EQUILIBRIO
 # ---------------------------------------------------------------------------------------------------------------------
 @dataclass
@@ -450,6 +523,66 @@ def _cond_verif(vf: Verificacao) -> str:
     if vf.cond is not None:
         corpo = f'IF({CONDICOES[vf.cond][0]},{corpo},"-")'
     return corpo
+
+
+def _regras_limite(res, aba17: str = ABA17) -> None:
+    """Linhas S_f … C_N do resultado no limite (F11, F12, F16; equilibrio.analise_par com as regras do EDR-056), pela
+    função `res` de `_layout16`. aba17: a aba da grade pedida cujas colunas o C_N lê (17_EQ_PAR na 16; a aba auxiliar
+    de uma linha da tabela de troca, 20a…20d, na 20_EQ_TROCA). As chaves {a17_*}/{a18_*} do mapa dizem de que resumo
+    saem S, V e o motivo; as chaves das próprias linhas ({S_F}, {resol}, …) dizem onde cada uma fica."""
+    for e in "FR":
+        nome = "dianteiro" if e == "F" else "traseiro"
+        res(f"S_{e}", f"Saturação do eixo {nome} S_{e.lower()} (grade pedida)", f"={{a17_S_{e}}}", "m/s²", "F16",
+            "equilibrio.analise_par", True)
+    for e in "FR":
+        res(f"S2_{e}", f"S_{e.lower()} na grade refinada", f"={{a18_S_{e}}}", "m/s²", "F16", "equilibrio._resolucao", True)
+    for e in "FR":
+        res(f"V_{e}", f"Último a_y válido V_{e.lower()} (grade pedida)", f"={{a17_V_{e}}}", "m/s²", "F16",
+            "equilibrio._saturacao", True)
+    for e in "FR":
+        res(f"M_{e}", f"Motivo de o eixo {'dianteiro' if e == 'F' else 'traseiro'} não saturar", f"={{a17_MOT_{e}}}",
+            "-", "F16", "equilibrio._saturacao", True)
+    for e in "FR":
+        res(f"dif_{e}", f"|S_{e.lower()} − S_{e.lower()} refinada| (ou o passo, se só uma grade satura)",
+            f'=IF(AND(ISNUMBER({{S_{e}}}),ISNUMBER({{S2_{e}}})),ABS({{S_{e}}}-{{S2_{e}}}),'
+            f'IF(OR(ISNUMBER({{S_{e}}}),ISNUMBER({{S2_{e}}})),0.05*9.81,"-"))', "m/s²", "F12", "equilibrio._resolucao", True)
+    res("resol", "Resolução numérica das saturações (EDR-056, item 2)",
+        '=IF(AND({dif_F}="-",{dif_R}="-"),"N/A",MAX(IF(ISNUMBER({dif_F}),{dif_F},0),IF(ISNUMBER({dif_R}),{dif_R},0),'
+        '1E-9*9.81))', "m/s²", "F12", "equilibrio._resolucao", True)
+    res("push1", "Só a frente satura e a traseira segue válida até S_f + resolução",
+        '=IF(ISNUMBER({S_F}),IF({V_R}>={S_F}+{resol},1,0),0)', "0/1", "F12", "equilibrio.analise_par", True)
+    res("loose1", "Só a traseira satura e a frente segue válida até S_r + resolução",
+        '=IF(ISNUMBER({S_R}),IF({V_F}>={S_R}+{resol},1,0),0)', "0/1", "F12", "equilibrio.analise_par", True)
+    res("ver", "Veredito no limite (PUSH, LOOSE, NEUTRO ou N/A)",
+        '=IF({ok}<>1,"N/A",IF(AND(ISNUMBER({S_F}),ISNUMBER({S_R})),IF(ABS({S_R}-{S_F})<={resol},"NEUTRO",'
+        'IF({S_R}-{S_F}>0,"PUSH","LOOSE")),IF({push1}=1,"PUSH",IF({loose1}=1,"LOOSE","N/A"))))', "-", "F12",
+        "equilibrio.analise_par (EDR-056, itens 2 e 3; Milliken p. 320)", True)
+    res("mot", "Motivo do N/A",
+        '=IF({ver}<>"N/A","-",IF({ok}<>1,{status},IF(ISNUMBER({S_F}),{M_R},IF(ISNUMBER({S_R}),{M_F},'
+        'IF({V_F}<={V_R},{M_F},{M_R})))))', "-", "F12", "equilibrio.analise_par", True)
+    res("aylim", "a_y limite (a menor saturação)",
+        '=IF({ok}<>1,"N/A",IF(AND(ISNUMBER({S_F}),ISNUMBER({S_R})),MIN({S_F},{S_R}),IF(ISNUMBER({S_F}),{S_F},'
+        'IF(ISNUMBER({S_R}),{S_R},"N/A"))))', "m/s²", "F16", "equilibrio.analise_par", True)
+    n17 = GRADES[ABA17][1]
+    ay17 = _faixa(aba17, "{c17_ay}", n17)
+    res("kcn", "Linha k do eixo saturado (intervalo do C_N)",
+        '=IF({ver}="PUSH",{a17_POS_F},IF({ver}="LOOSE",{a17_POS_R},"-"))', "-", "F12", "equilibrio.analise_par", True)
+    fR, fF = _faixa(aba17, "{c17_folga_R}", n17), _faixa(aba17, "{c17_folga_F}", n17)
+    res("ma", "Folga do outro eixo na linha k",
+        f'=IF({{ver}}="PUSH",INDEX({fR},{{kcn}}),IF({{ver}}="LOOSE",INDEX({fF},{{kcn}}),"-"))', "N", "F12",
+        "equilibrio.analise_par", True)
+    res("mb", "Folga do outro eixo na linha k + 1",
+        f'=IF({{ver}}="PUSH",INDEX({fR},{{kcn}}+1),IF({{ver}}="LOOSE",INDEX({fF},{{kcn}}+1),"-"))', "N", "F12",
+        "equilibrio.analise_par", True)
+    res("la", "a_y da linha k", f'=IF(ISNUMBER({{kcn}}),INDEX({ay17},{{kcn}}),"-")', "m/s²", "F12",
+        "equilibrio.analise_par", True)
+    res("lb", "a_y da linha k + 1", f'=IF(ISNUMBER({{kcn}}),INDEX({ay17},{{kcn}}+1),"-")', "m/s²", "F12",
+        "equilibrio.analise_par", True)
+    res("fint", "Folga do outro eixo em a_y limite (interpolada)",
+        '=IF(ISNUMBER({kcn}),{ma}+({mb}-{ma})*({aylim}-{la})/({lb}-{la}),"-")', "N", "F12", "equilibrio.analise_par", True)
+    res("cn", "C_N residual no limite (Milliken §8.4, p. 311-312)",
+        '=IF({ver}="PUSH",{fint}*{b}/({m}*9.81*{L}),IF({ver}="LOOSE",-{fint}*{a}/({m}*9.81*{L}),"N/A"))', "-", "F12",
+        "equilibrio.analise_par (spec 7.2)", True)
 
 
 def _layout16() -> list[_Linha16]:
@@ -545,59 +678,8 @@ def _layout16() -> list[_Linha16]:
     txt("Diferencial: aberto (h10), o único tipo que a planilha implementa (spec 7.4); Fx igual nas duas rodas traseiras.")
     # Resultado no limite (F11, F12, F16)
     sec("Resultado no limite (grade pedida 0,05 g e 25 α; resolução pela grade refinada 0,025 g e 49 α; EDR-056)")
-    for e in "FR":
-        nome = "dianteiro" if e == "F" else "traseiro"
-        res(f"S_{e}", f"Saturação do eixo {nome} S_{e.lower()} (grade pedida)", f"={{a17_S_{e}}}", "m/s²", "F16",
-            "equilibrio.analise_par", True)
-    for e in "FR":
-        res(f"S2_{e}", f"S_{e.lower()} na grade refinada", f"={{a18_S_{e}}}", "m/s²", "F16", "equilibrio._resolucao", True)
-    for e in "FR":
-        res(f"V_{e}", f"Último a_y válido V_{e.lower()} (grade pedida)", f"={{a17_V_{e}}}", "m/s²", "F16",
-            "equilibrio._saturacao", True)
-    for e in "FR":
-        res(f"M_{e}", f"Motivo de o eixo {'dianteiro' if e == 'F' else 'traseiro'} não saturar", f"={{a17_MOT_{e}}}",
-            "-", "F16", "equilibrio._saturacao", True)
-    for e in "FR":
-        res(f"dif_{e}", f"|S_{e.lower()} − S_{e.lower()} refinada| (ou o passo, se só uma grade satura)",
-            f'=IF(AND(ISNUMBER({{S_{e}}}),ISNUMBER({{S2_{e}}})),ABS({{S_{e}}}-{{S2_{e}}}),'
-            f'IF(OR(ISNUMBER({{S_{e}}}),ISNUMBER({{S2_{e}}})),0.05*9.81,"-"))', "m/s²", "F12", "equilibrio._resolucao", True)
-    res("resol", "Resolução numérica das saturações (EDR-056, item 2)",
-        '=IF(AND({dif_F}="-",{dif_R}="-"),"N/A",MAX(IF(ISNUMBER({dif_F}),{dif_F},0),IF(ISNUMBER({dif_R}),{dif_R},0),'
-        '1E-9*9.81))', "m/s²", "F12", "equilibrio._resolucao", True)
-    res("push1", "Só a frente satura e a traseira segue válida até S_f + resolução",
-        '=IF(ISNUMBER({S_F}),IF({V_R}>={S_F}+{resol},1,0),0)', "0/1", "F12", "equilibrio.analise_par", True)
-    res("loose1", "Só a traseira satura e a frente segue válida até S_r + resolução",
-        '=IF(ISNUMBER({S_R}),IF({V_F}>={S_R}+{resol},1,0),0)', "0/1", "F12", "equilibrio.analise_par", True)
-    res("ver", "Veredito no limite (PUSH, LOOSE, NEUTRO ou N/A)",
-        '=IF({ok}<>1,"N/A",IF(AND(ISNUMBER({S_F}),ISNUMBER({S_R})),IF(ABS({S_R}-{S_F})<={resol},"NEUTRO",'
-        'IF({S_R}-{S_F}>0,"PUSH","LOOSE")),IF({push1}=1,"PUSH",IF({loose1}=1,"LOOSE","N/A"))))', "-", "F12",
-        "equilibrio.analise_par (EDR-056, itens 2 e 3; Milliken p. 320)", True)
-    res("mot", "Motivo do N/A",
-        '=IF({ver}<>"N/A","-",IF({ok}<>1,{status},IF(ISNUMBER({S_F}),{M_R},IF(ISNUMBER({S_R}),{M_F},'
-        'IF({V_F}<={V_R},{M_F},{M_R})))))', "-", "F12", "equilibrio.analise_par", True)
-    res("aylim", "a_y limite (a menor saturação)",
-        '=IF({ok}<>1,"N/A",IF(AND(ISNUMBER({S_F}),ISNUMBER({S_R})),MIN({S_F},{S_R}),IF(ISNUMBER({S_F}),{S_F},'
-        'IF(ISNUMBER({S_R}),{S_R},"N/A"))))', "m/s²", "F16", "equilibrio.analise_par", True)
+    _regras_limite(res)
     n17 = GRADES[ABA17][1]
-    ay17 = _faixa(ABA17, "{c17_ay}", n17)
-    res("kcn", "Linha k do eixo saturado (intervalo do C_N)",
-        '=IF({ver}="PUSH",{a17_POS_F},IF({ver}="LOOSE",{a17_POS_R},"-"))', "-", "F12", "equilibrio.analise_par", True)
-    fR, fF = _faixa(ABA17, "{c17_folga_R}", n17), _faixa(ABA17, "{c17_folga_F}", n17)
-    res("ma", "Folga do outro eixo na linha k",
-        f'=IF({{ver}}="PUSH",INDEX({fR},{{kcn}}),IF({{ver}}="LOOSE",INDEX({fF},{{kcn}}),"-"))', "N", "F12",
-        "equilibrio.analise_par", True)
-    res("mb", "Folga do outro eixo na linha k + 1",
-        f'=IF({{ver}}="PUSH",INDEX({fR},{{kcn}}+1),IF({{ver}}="LOOSE",INDEX({fF},{{kcn}}+1),"-"))', "N", "F12",
-        "equilibrio.analise_par", True)
-    res("la", "a_y da linha k", f'=IF(ISNUMBER({{kcn}}),INDEX({ay17},{{kcn}}),"-")', "m/s²", "F12",
-        "equilibrio.analise_par", True)
-    res("lb", "a_y da linha k + 1", f'=IF(ISNUMBER({{kcn}}),INDEX({ay17},{{kcn}}+1),"-")', "m/s²", "F12",
-        "equilibrio.analise_par", True)
-    res("fint", "Folga do outro eixo em a_y limite (interpolada)",
-        '=IF(ISNUMBER({kcn}),{ma}+({mb}-{ma})*({aylim}-{la})/({lb}-{la}),"-")', "N", "F12", "equilibrio.analise_par", True)
-    res("cn", "C_N residual no limite (Milliken §8.4, p. 311-312)",
-        '=IF({ver}="PUSH",{fint}*{b}/({m}*9.81*{L}),IF({ver}="LOOSE",-{fint}*{a}/({m}*9.81*{L}),"N/A"))', "-", "F12",
-        "equilibrio.analise_par (spec 7.2)", True)
     for k, rot in (("S_F", "S_f"), ("S_R", "S_r"), ("aylim", "a_y limite"), ("resol", "Resolução")):
         res(f"{k}_g", f"{rot} em g", f'=IF(ISNUMBER({{{k}}}),{{{k}}}/9.81,"N/A")', "g", "F16", "exibição", True)
     # Limitações (EDR-056, item 1): uma por roda e limite, o pior caso das linhas usadas no veredito
@@ -671,6 +753,13 @@ def _nomes_v41() -> list[Nome]:
         for q in QTD19:
             rot = f"{ROTULO19[q][0]} linha {k}"
             base.append((f"{ABA19}:{q}:{k}", _nome_res(ABA19, rot), f"{COL19[q]}{LINHA_TAB19 + k}", rot))
+    for j in range(len(FATORES20)):   # tabela de troca: um nome por resultado e linha (o fator é a grade de exibição)
+        for q, rot0, _ in TAB20:
+            if q != "fator":
+                rot = f"Linha {j} {rot0}"
+                base.append((f"{ABA20}:{q}:{j}", _nome_res(ABA20, rot), celula20(q, j), rot))
+    for q, rot, _ in CUSTO20:
+        base.append((f"{ABA20}:{q}", _nome_res(ABA20, rot), f"B{LINHA20[q]}", rot))
     cont: dict[str, int] = {}
     for _, nome, _, _ in base:
         cont[nome] = cont.get(nome, 0) + 1
@@ -693,6 +782,9 @@ NOME16 = {ln.chave: _NOME_POR_CELULA[(ABA16, f"B{LINHAS16[ln.chave]}")] for ln i
 NOME_RESUMO = {(aba, k): _NOME_POR_CELULA[(aba, cel)] for aba in (ABA17, ABA18)
                for k, (_, cel) in _nomes_resumo(aba).items()}
 NOME19 = {(q, k): _NOME_POR_CELULA[(ABA19, f"{COL19[q]}{LINHA_TAB19 + k}")] for q in QTD19 for k in range(N_LIN19)}
+NOME20 = {(q, j): _NOME_POR_CELULA[(ABA20, celula20(q, j))] for q, _, _ in TAB20 if q != "fator"
+          for j in range(len(FATORES20))}
+NOME20_CUSTO = {q: _NOME_POR_CELULA[(ABA20, f"B{LINHA20[q]}")] for q, _, _ in CUSTO20}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -938,26 +1030,38 @@ def _validacoes16(ws) -> None:
                                                                    fill=PatternFill("solid", start_color=cor, end_color=cor)))
 
 
-def _aba_grade(ctx: _Ctx, est: dict, aba: str) -> None:
-    passo, n_lin, n_alfa, pedida = GRADES[aba]
-    ws = ctx.wb.create_sheet(aba)
-    cl = _colunas(n_alfa, pedida)
-    ws["A1"] = (f"{aba} — grade {'pedida' if pedida else 'refinada'} da análise de par: a_y = k·{passo.replace('.', ',')} g "
-                f"(k = 0…{n_lin - 1}), {n_alfa} valores de α (equilibrio.analise_par)")
-    _estilo(ws["A1"], est, "titulo")
-    ws["A2"] = ("Cálculo auxiliar: uma linha por a_y. Fz e γ por roda (F4, F5), entrada limitada à faixa do .tir (F6, "
+def _aba_grade(ctx: _Ctx, est: dict, aba: str, grade: str | None = None, ws=None, desloc: int = 0) -> None:
+    """Uma grade da análise de par (F4-F11). Sem `grade`: a aba de grade da V4.1 `aba` (17 ou 18), com os nomes do resumo
+    (res_17_/res_18_), a pior origem ao lado e, na pedida, o excesso das limitações. Com `grade` (ABA17 ou ABA18): a mesma
+    grade numa aba auxiliar da tabela de troca (`aba`, planilha `ws`, linhas deslocadas de `desloc`), com o mapa de
+    fórmulas da linha (K_φF e situação próprios; `_mapa_linha`), sem nomes, sem pior origem e sem as limitações, que a
+    tabela não mostra. As fórmulas saem das mesmas funções (`_linha_grade`), então o catálogo vale célula a célula."""
+    principal = grade is None
+    grade = aba if principal else grade
+    passo, n_lin, n_alfa, pedida = GRADES[grade]
+    lim = pedida and principal          # excesso das limitações (x) só na 17 da V4.1
+    if ws is None:
+        ws = ctx.wb.create_sheet(aba)
+    cl = _colunas(n_alfa, lim)
+    d = desloc
+    p0 = PRIMEIRA_LINHA + d
+    ws[f"A{1 + d}"] = ((f"{aba} — " if principal else "") + f"grade {'pedida' if pedida else 'refinada'} da análise de par: "
+                       f"a_y = k·{passo.replace('.', ',')} g (k = 0…{n_lin - 1}), {n_alfa} valores de α (equilibrio.analise_par)")
+    _estilo(ws[f"A{1 + d}"], est, "titulo")
+    ws[f"A{2 + d}"] = ("Cálculo auxiliar: uma linha por a_y. Fz e γ por roda (F4, F5), entrada limitada à faixa do .tir (F6, "
                 "EDR-056), termos do PAC2002 (F7), Fy do eixo por α (F8), tração (F9), capacidade (F10), folga e saturação "
                 "(F11). Com \"Direita\", os cantos são os do carro espelhado (FL = roda interna).")
-    ws["A3"] = "Resumo da grade"
-    _estilo(ws["A3"], est, "secao")
-    rs = _nomes_resumo(aba)
-    a = lambda n: f"{cl[n]}{PRIMEIRA_LINHA}:{cl[n]}{PRIMEIRA_LINHA + n_lin - 1}"
-    a1 = lambda n: f"{cl[n]}{PRIMEIRA_LINHA + 1}:{cl[n]}{PRIMEIRA_LINHA + n_lin - 1}"   # k = 1…n
+    ws[f"A{3 + d}"] = "Resumo da grade"
+    _estilo(ws[f"A{3 + d}"], est, "secao")
+    rs = _nomes_resumo(aba) if principal else {k: ("", f"B{LINHA_RESUMO0 + d + i}") for i, (k, _, _) in
+                                                enumerate(RESUMO_GRADE)}
+    a = lambda n: f"{cl[n]}{p0}:{cl[n]}{p0 + n_lin - 1}"
+    a1 = lambda n: f"{cl[n]}{p0 + 1}:{cl[n]}{p0 + n_lin - 1}"   # k = 1…n
     ult = n_lin
     resumo = {}
     for e in "FR":
         cand, pref, ay, mot = a1(f"cand_{e}"), a(f"pref_{e}"), a("ay"), a(f"mot_{e}")
-        S, POS, INV = (f"{{a{aba[:2]}_{x}_{e}}}" for x in ("S", "POS", "INV"))
+        S, POS, INV = (f"{{a{grade[:2]}_{x}_{e}}}" for x in ("S", "POS", "INV"))
         resumo[f"S_{e}"] = f'=IF(COUNT({cand})=0,"N/A",MIN({cand}))'
         resumo[f"POS_{e}"] = f'=IF(ISNUMBER({S}),MATCH({S},{cand},0),"-")'
         resumo[f"INV_{e}"] = f'=IF(INDEX({pref},{ult}),"-",MATCH(FALSE,{pref},0))'
@@ -966,14 +1070,15 @@ def _aba_grade(ctx: _Ctx, est: dict, aba: str) -> None:
         resumo[f"MOT_{e}"] = (f'=IF(ISNUMBER({S}),"-",IF(ISNUMBER({INV}),INDEX({mot},{INV})&" em a_y = "&'
                               f'{_g(f"INDEX({ay},{INV})/9.81")}&" g","não satura até "&{_g(f"INDEX({ay},{ult})/9.81")}&" g"))')
     for i, (k, rot, un) in enumerate(RESUMO_GRADE):
-        r = LINHA_RESUMO0 + i
+        r = LINHA_RESUMO0 + d + i
         ws[f"A{r}"], ws[f"C{r}"], ws[f"D{r}"] = rot, un, "F11; equilibrio._saturacao"
         _estilo(ws[f"A{r}"], est, "rotulo")
         ctx.put(ws, rs[k][1], "F11", resumo[k])
         _estilo(ws[rs[k][1]], est, "calc")
-        ctx.put(ws, f"E{r}", "F17", "={PIOR}")
+        if principal:
+            ctx.put(ws, f"E{r}", "F17", "={PIOR}")
     # Grade de α (F8): α_ref_i = −A·i/(n − 1) e α no referencial do arquivo por roda, s_α·espelho·(α_ref + Δα)
-    ra = LINHA_ALFA
+    ra = LINHA_ALFA + d
     ws[f"A{ra - 1}"] = "Grade de α (F8; equilibrio.grade_alfa) e α no referencial do arquivo por roda (tire_model.wheel_forces)"
     _estilo(ws[f"A{ra - 1}"], est, "secao")
     ws[f"A{ra}"], ws[f"A{ra + 1}"] = "i", "α_ref [rad]"
@@ -990,12 +1095,13 @@ def _aba_grade(ctx: _Ctx, est: dict, aba: str) -> None:
             ctx.put(ws, f"{c}{rr}", "F8", f'=IF(ISNUMBER({c}${ra + 1}),{corpo},"N/A")')
             alfa_arq[(roda, i)] = f"${c}${rr}"
     # Tabela por linha
-    rc = PRIMEIRA_LINHA - 1
+    rc = p0 - 1
     for n, letra in cl.items():
         ws[f"{letra}{rc}"] = _cabecalho(n)
     for k in range(n_lin):
-        _linha_grade(ctx, ws, cl, k, PRIMEIRA_LINHA + k, passo, n_alfa, pedida, alfa_arq)
-    ws.freeze_panes = f"D{PRIMEIRA_LINHA}"
+        _linha_grade(ctx, ws, cl, k, p0 + k, passo, n_alfa, lim, alfa_arq)
+    if principal:
+        ws.freeze_panes = f"D{PRIMEIRA_LINHA}"
     ws.column_dimensions["A"].width = 58
 
 
@@ -1287,16 +1393,30 @@ def _aba19(ctx: _Ctx, est: dict) -> None:
     ws.column_dimensions["A"].width = 12
 
 
-def _linha19(ctx: _Ctx, ws, p: int) -> None:
-    """Uma linha do cálculo auxiliar da 19 (ponto p de PONTOS19)."""
-    r = LINHA_AUX19 + p
+def _linha19(ctx: _Ctx, ws, p: int, r: int | None = None, aba_grade: str | None = None) -> None:
+    """Uma linha do cálculo auxiliar da 19 (ponto p de PONTOS19).
+
+    Com `aba_grade` (tabela de troca, 20_EQ_TROCA): só o K da 1ª linha (p = 0, sem a inclinação de Richardson, que cita
+    outras linhas), na linha `r` da aba auxiliar `ws`, lendo a grade pedida da linha da tabela (a aba `aba_grade`, nas
+    linhas de PRIMEIRA_LINHA) com o mapa de fórmulas da linha (`_mapa_linha`)."""
+    so_k = aba_grade is not None
+    if so_k and p != 0:
+        raise ValueError("a linha da tabela de troca só tem o K da 1ª linha (p = 0)")
+    r = LINHA_AUX19 + p if r is None else r
+    r0 = r if so_k else LINHA_AUX19
     C = lambda n: f"{CL19[n]}{r}"
-    C0 = lambda n: f"${CL19[n]}${LINHA_AUX19}"          # a mesma coluna na linha de a_y = 0
+    C0 = lambda n: f"${CL19[n]}${r0}"          # a mesma coluna na linha de a_y = 0
     put = lambda n, fam, f: ctx.put(ws, C(n), fam, f)
+    if so_k:
+        _src_ = lambda _p, n: f"'{aba_grade}'!${CL_MINI[n]}${PRIMEIRA_LINHA}"   # as colunas da 17 sem as limitações
+        alfa_ref = f"'{aba_grade}'!$B${LINHA_ALFA + 1}:${COL(1 + N_ALFA)}${LINHA_ALFA + 1}"
+    else:
+        _src_ = _src
+        alfa_ref = f"'{ABA17}'!$B${LINHA_ALFA + 1}:${COL(1 + N_ALFA)}${LINHA_ALFA + 1}"
     ws[C("p")] = p
     put("ay", "F15", f"={PONTOS19[p][0]}")
     put("ay_g", "F15", f"={C('ay')}/9.81")
-    TT = {roda: {t: _src(p, (t, roda)) for t in TERMOS} for roda in CANTOS}
+    TT = {roda: {t: _src_(p, (t, roda)) for t in TERMOS} for roda in CANTOS}
     # Ângulos necessários (F15; equilibrio_linear.angulos_necessarios): Newton em colunas fixas a partir de α = 0 (o 1º
     # passo dá −req/C no carro simétrico), N_NEWTON iterações depois dele; bandeira |folga| < 1e-9·req (1e-9 N se
     # req = 0); a raiz tem de cair no intervalo da bissecção do Python ([α_pico, 0] ou [0, A]), senão N/A.
@@ -1306,8 +1426,8 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
         y = lambda j: C(("y", e, j))
         d = lambda j: C(("d", e, j))
         a = lambda j: C(("a", e, j))
-        cap = _src(p, f"cap_{e}")
-        put(f"req_{e}", "F15", f'=IF({{ok}}=1,{_src(p, "req_" + e)},"N/A")')
+        cap = _src_(p, f"cap_{e}")
+        put(f"req_{e}", "F15", f'=IF({{ok}}=1,{_src_(p, "req_" + e)},"N/A")')
         put(f"ck_{e}", "F15", f'=IF(AND(ISNUMBER({cap}),ISNUMBER({req})),IF({req}<={cap},1,0),0)')
         put(f"tol_{e}", "F15", f'=IF(ISNUMBER({req}),IF({req}<>0,1E-9*ABS({req}),1E-9),"N/A")')
         put(f"fA_{e}", "F15", f'=IF({ck}=1,{_fy_eixo19(e, "{amp}", TE)}-{req},"N/A")')
@@ -1325,8 +1445,8 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
         put(f"raiz_{e}", "F15", f'=IF({ck}<>1,"N/A",IF(ABS({y(0)})<{tol},0,{aN}))')
         put(f"conv_{e}", "F15", (f'=IF({ck}<>1,0,IF(ABS({y(0)})<{tol},1,IF(ISNUMBER({yN}),'
                                  f'IF(ABS({yN})<{tol},1,0),0)))'))
-        put(f"apico_{e}", "F15", (f"=IF({ck}=1,INDEX('{ABA17}'!$B${LINHA_ALFA + 1}:${COL(1 + N_ALFA)}${LINHA_ALFA + 1},"
-                                  f'{_src(p, "idx_" + e)}),"N/A")'))
+        put(f"apico_{e}", "F15", (f"=IF({ck}=1,INDEX({alfa_ref},"
+                                  f'{_src_(p, "idx_" + e)}),"N/A")'))
         put(f"int_{e}", "F15", (f'=IF({conv}<>1,0,IF(ABS({y(0)})<{tol},1,IF({y(0)}<0,IF(AND({raiz}>={apico},{raiz}<=0),'
                                 f'1,0),IF({fA}>0,0,IF(AND({raiz}>=0,{raiz}<={{amp}}),1,0)))))'))
         put(f"ang_{e}", "F15", f'=IF(AND({ck}=1,{conv}=1,{intv}=1),{raiz},"N/A")')
@@ -1342,7 +1462,7 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
     for e in "FR":
         TE = {roda: TT[roda] for roda in RODAS_EIXO[e]}
         l, rr = RODAS_EIXO[e]
-        fzl, fzr = _src(p, f"Fz_{l}"), _src(p, f"Fz_{rr}")
+        fzl, fzr = _src_(p, f"Fz_{l}"), _src_(p, f"Fz_{rr}")
         desc, c, m = C(f"desc_{e}"), C(f"c_{e}"), C(f"m_{e}")
         put(f"desc_{e}", "F13", (f'=IF({{ok}}<>1,"N/A",IF({fzl}<=0,{_txt_descolamento(l, fzl)},'
                                  f'IF({fzr}<=0,{_txt_descolamento(rr, fzr)},"-")))'))
@@ -1366,7 +1486,7 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
             put(f"Fz_{s}_{c}", "F14", f4[f"Fz_{c}"])
             put(f"Fzu_{s}_{c}", "F14", f'=IF(ISNUMBER({fz}),MIN(MAX({fz},{{P_FZMIN}}),{{P_FZMAX}}),"N/A")')
             FZ = C(f"Fzu_{s}_{c}")
-            expr = _expr_termos(FZ, _src(p, f"gf_{c}"), {t: C((t, s, c)) for t in TERMOS})
+            expr = _expr_termos(FZ, _src_(p, f"gf_{c}"), {t: C((t, s, c)) for t in TERMOS})
             for t in TERMOS:
                 put((t, s, c), "F14", f'=IF(ISNUMBER({FZ}),{expr[t]},"N/A")')
     descs = [(c, C(f"Fz_{s}_{c}")) for e in "FR" for s in SINAIS for c in RODAS_EIXO[e]]
@@ -1387,7 +1507,7 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
     if p == 0:
         cv0_ok = f"AND(ISNUMBER({cvF0}),ISNUMBER({cvR0}))"
         for c in CANTOS:
-            put(f"cen_{c}", "F13", (f'=IF({cv0_ok},MIN(MAX({_src(p, "gf_" + c)},{{P_CAMMIN}}+{H_RIG}),'
+            put(f"cen_{c}", "F13", (f'=IF({cv0_ok},MIN(MAX({_src_(p, "gf_" + c)},{{P_CAMMIN}}+{H_RIG}),'
                                     f'{{P_CAMMAX}}-{H_RIG})/{{s_g}},"N/A")'))
         for s in SINAIS:
             for c in CANTOS:
@@ -1395,7 +1515,7 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
                 gc = C(f"gc_{s}_{c}")
                 put(f"gc_{s}_{c}", "F13", (f'=IF(ISNUMBER({C("cen_" + c)}),{{s_g}}*({C("cen_" + c)}'
                                            f'{"+" if mais_na_roda else "-"}{H_RIG}),"N/A")'))
-                expr = _expr_termos(_src(p, f"Fzu_{c}"), gc, {t: C((t, "g" + s, c)) for t in TERMOS})
+                expr = _expr_termos(_src_(p, f"Fzu_{c}"), gc, {t: C((t, "g" + s, c)) for t in TERMOS})
                 for t in TERMOS:
                     put((t, "g" + s, c), "F13", f'=IF(ISNUMBER({gc}),{expr[t]},"N/A")')
             for e in "FR":
@@ -1432,6 +1552,8 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
     # J começa por "#" para nunca ficar vazio (célula de fórmula sem valor é erro no teste); "#" sozinho = sem motivo
     put("J", "F14", '="#"&' + "&".join(partes))
     put("mot", "F14", f'=IF({{ok}}<>1,{{status}},IF(LEN({C("J")})=1,"-",MID({C("J")},2,LEN({C("J")})-3)))')
+    if so_k:
+        return
     # Inclinação do passo 2 (F15; tabela_linear): Richardson na 1ª linha, diferença entre linhas nas outras
     ang = lambda e, q: celula_aux19(f"ang_{e}", q)
     dif = lambda q: f"({ang('F', q)}-{ang('R', q)})"
@@ -1449,11 +1571,209 @@ def _linha19(ctx: _Ctx, ws, p: int) -> None:
     put("motI", "F15", f'=IF({{ok}}<>1,{{status}},IF(ISNUMBER({C("kI")}),"-","{m_i}"))')
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 20_EQ_TROCA: tabela de troca da barra dianteira (F18; spec §5, itens 3 a 5). Oráculo: equilibrio.analise_par e
+# equilibrio_linear.parcelas_k no caso da planilha com o K_ARB dianteiro × fator (K_φF por suspension_model.
+# roll_stiffness_axle), mais o cruzamento das saturações e o custo, que o teste (TC-WB41-006) calcula pela mesma regra.
+# ---------------------------------------------------------------------------------------------------------------------
+# Resultados da V4.0 que só a 20 usa (K_φF de cada linha pela fórmula da 06_SUSPENSION B22, SUS-206, e o λ_f do ×1)
+V40_20 = {"kw2F": "res_06_roll_stiffness_sem_arb_e_sem_pneu_k_wt_f",
+          "kt2F": "res_06_rigidez_de_rolagem_do_par_de_pneus_diant",
+          "lam06": "res_06_distribuicao_de_rigidez_dianteira_lambda"}
+
+
+def _linhas_veredito(aba17: str) -> list[_Linha16]:
+    """As linhas S_f … C_N de `_regras_limite` lendo a grade pedida da aba `aba17`."""
+    out: list[_Linha16] = []
+
+    def res(chave, rotulo, formula, unidade="-", familia="", ref="", pior=False, obs="", pior_chave="PIOR"):
+        out.append(_Linha16("res", chave, rotulo, formula, unidade, ref, familia, pior, obs, pior_chave))
+    _regras_limite(res, aba17)
+    return out
+
+
+I_DEN = next(i for i, vf in enumerate(VERIFICACOES) if vf.tipo == "den")
+I_ACK = next(i for i, vf in enumerate(VERIFICACOES) if vf.tipo == "ack")
+assert (I_DEN, I_ACK) == (len(VERIFICACOES) - 2, len(VERIFICACOES) - 1), "a situação da linha supõe den e ack no fim"
+_LAYOUT16_POR_CHAVE = {ln.chave: ln for ln in _LAYOUT16 if ln.tipo == "res"}
+# Cálculo por linha (as linhas extras; o ×1 é a 16): rolagem com o K_φF da linha, a situação das entradas da linha (a
+# instabilidade de rolagem depende do K_φF) e as regras do veredito. Chave -> (rótulo, família)
+BLOCO20 = (("den", "K_φF + K_φR − m_s·g·h2 da linha", "F4"),
+           ("vden", "Verificação: " + MSG_DEN + " (linha)", "F1"),
+           ("status", "Situação das entradas da linha", "F1"),
+           ("ok", "Linha válida (situação = OK)", "F1"))
+CHAVES_VEREDITO = tuple(ln.chave for ln in _linhas_veredito(ABA17))
+LINHA_BLOCO = {k: LINHA_BLOCO20 + i for i, k in enumerate([k for k, _, _ in BLOCO20] + list(CHAVES_VEREDITO))}
+EXTRAS20 = tuple(AUX20)                       # j das linhas extras, na ordem das colunas do bloco
+COL_BLOCO = {j: COL(2 + i) for i, j in enumerate(EXTRAS20)}
+
+
+def _mapa_linha(mapa: dict, j: int) -> _Subst:
+    """Mapa de fórmulas da linha extra j: o da V4.1 com o K_φF da linha (coluna K_φF da tabela), a rolagem, a situação
+    e o veredito do bloco da linha, e o resumo das grades da aba auxiliar. Tudo o resto (entradas, pneu, chaves) é o
+    mesmo da 16."""
+    m = _Subst(mapa)
+    aux, col = AUX20[j], COL_BLOCO[j]
+    m["KphiF"] = f"'{ABA20}'!${COL20['kphi']}${LINHA_TAB20 + j}"
+    for k, r in LINHA_BLOCO.items():
+        m[k] = f"'{ABA20}'!${col}${r}"
+    for i, (k, _, _) in enumerate(RESUMO_GRADE):
+        m[f"a17_{k}"] = f"'{aux}'!$B${LINHA_RESUMO0 + i}"
+        m[f"a18_{k}"] = f"'{aux}'!$B${LINHA_RESUMO0 + DESLOC_FINA20 + i}"
+    return m
+
+
+def _aba_aux20(ctx: _Ctx, est: dict, j: int) -> None:
+    """Aba auxiliar da linha extra j: grade pedida (linhas da 17), grade refinada (DESLOC_FINA20 abaixo) e a linha do K em
+    a_y = 0 (LINHA_K20), com as mesmas funções das abas 17, 18 e 19 e o mapa da linha."""
+    aux = AUX20[j]
+    ws = ctx.wb.create_sheet(aux)
+    _aba_grade(ctx, est, aux, grade=ABA17, ws=ws)
+    _aba_grade(ctx, est, aux, grade=ABA18, ws=ws, desloc=DESLOC_FINA20)
+    ws["A1"] = f"{aux} — linha {rotulo_linha20(j)} da 20_EQ_TROCA (K_ARB dianteiro × fator; TESTE de exibição): " + ws["A1"].value
+    ws[f"A{LINHA_K20 - 2}"] = ("K em a_y = 0 da linha (F13-F15, as fórmulas da linha k = 0 do cálculo auxiliar da "
+                               "19_EQ_LINEAR, sem a inclinação de Richardson)")
+    _estilo(ws[f"A{LINHA_K20 - 2}"], est, "secao")
+    for n, letra in CL19.items():
+        ws[f"{letra}{LINHA_K20 - 1}"] = _cabecalho(n)
+    _linha19(ctx, ws, 0, r=LINHA_K20, aba_grade=aux)
+    ws.freeze_panes = f"D{PRIMEIRA_LINHA}"
+
+
+def _formulas_tab20(j: int) -> dict:
+    """Fórmulas (com "=" e {chaves}) da linha j da tabela. O ×1 referencia a 16 e a 06 (não recalcula)."""
+    c = lambda q: celula20(q, j)
+    n = len(FATORES20)
+    f = {}
+    if j == J_ATUAL:
+        f.update(karb="={KarbF}", kphi="={KphiF}", lam="={lam06}", k="={kTot}", kg="={kTotg}", kmot="={kmot}",
+                 sf="={S_F}", sr="={S_R}", aylim="={aylim}", resol="={resol}", sfg="={S_F_g}", srg="={S_R_g}",
+                 aylimg="={aylim_g}", ver="={ver}", cn="={cn}", mot="={mot}")
+    else:
+        aux, col = AUX20[j], COL_BLOCO[j]
+        b = lambda k: f"${col}${LINHA_BLOCO[k]}"
+        g = lambda x: f'=IF(ISNUMBER({x}),{x}/9.81,"N/A")'
+        f.update(karb=f"={c('fator')}*{{KarbF}}",
+                 kphi=f'=IF({{base_ok}}=1,1/(1/({{kw2F}}+{c("karb")})+1/{{kt2F}}),"N/A")',
+                 lam=f'=IF(ISNUMBER({c("kphi")}),{c("kphi")}/({c("kphi")}+{{KphiR}}),"N/A")',
+                 k=f"='{aux}'!${CL19['kTot']}${LINHA_K20}",
+                 kg=f'=IF(ISNUMBER({c("k")}),DEGREES({c("k")})*9.81,"N/A")',
+                 kmot=f"='{aux}'!${CL19['mot']}${LINHA_K20}",
+                 sf=f"={b('S_F')}", sr=f"={b('S_R')}", aylim=f"={b('aylim')}", resol=f"={b('resol')}",
+                 sfg=g(c("sf")), srg=g(c("sr")), aylimg=g(c("aylim")),
+                 ver=f"={b('ver')}", cn=f"={b('cn')}", mot=f"={b('mot')}")
+    sf, sr, d = c("sf"), c("sr"), c("d")
+    f["d"] = f'=IF(AND(ISNUMBER({sf}),ISNUMBER({sr})),{sr}-{sf},"-")'
+    if j < n - 1:   # cruzamento com a próxima linha: interpolação linear de S_f e S_r entre as duas (spec §5, item 4)
+        d1, sf1 = celula20("d", j + 1), celula20("sf", j + 1)
+        f["cruz"] = (f'=IF(ISNUMBER({d}),IF({d}=0,{sf},IF(ISNUMBER({d1}),IF({d}*{d1}<0,'
+                     f'{sf}+({sf1}-{sf})*{d}/({d}-{d1}),"-"),"-")),"-")')
+    else:
+        f["cruz"] = f'=IF(ISNUMBER({d}),IF({d}=0,{sf},"-"),"-")'
+    f["pos"] = f'=IF(ISNUMBER({c("cruz")}),{j + 1},"-")'
+    f["neu"] = f'=IF(AND({c("ver")}="NEUTRO",ISNUMBER({d})),ABS({d}),"-")'
+    f["pior"] = "={PIOR_K}"
+    return f
+
+
+def _formulas_custo20() -> dict:
+    n = len(FATORES20)
+    rng = lambda q: f"${COL20[q]}${LINHA_TAB20}:${COL20[q]}${LINHA_TAB20 + n - 1}"
+    B = lambda q: f"B{LINHA20[q]}"
+    return {
+        "ayn": (f'=IF({{ok}}<>1,"N/A",IF(COUNT({rng("pos")})>0,INDEX({rng("cruz")},MIN({rng("pos")})),'
+                f'IF(COUNT({rng("neu")})>0,INDEX({rng("aylim")},MATCH(MIN({rng("neu")}),{rng("neu")},0)),"N/A")))'),
+        "ayng": f'=IF(ISNUMBER({B("ayn")}),{B("ayn")}/9.81,"N/A")',
+        "aynm": f'=IF({{ok}}<>1,{{status}},IF(ISNUMBER({B("ayn")}),"-","{M_NEUTRO_FORA}"))',
+        "perda": f'=IF(AND(ISNUMBER({B("ayn")}),ISNUMBER({{aylim}})),{B("ayn")}-{{aylim}},"N/A")',
+        "perdag": f'=IF(ISNUMBER({B("perda")}),{B("perda")}/9.81,"N/A")',
+        "perdam": (f'=IF(ISNUMBER({B("perda")}),"-",IF(NOT(ISNUMBER({B("ayn")})),{B("aynm")},'
+                   f'"a_y limite do acerto atual N/A (16_EQUILIBRIO): "&{{mot}}))'),
+        "limiar": f'=IF(ISNUMBER({B("perda")}),"{M_LIMIAR}","N/A")',
+    }
+
+
+def _aba20(ctx: _Ctx, est: dict) -> None:
+    ws = ctx.wb.create_sheet(ABA20)
+    m = _Subst(ctx.mapa)
+    m.update(V40_20)
+    ct = _Ctx(ctx.wb, ctx.registro, m)
+    ws["A1"] = ("20_EQ_TROCA — tabela de troca da barra dianteira (spec §5, itens 3 a 5): K_ARB dianteiro × "
+                + "; ".join(f"{x:g}".replace(".", ",") for x in FATORES20) + " do valor digitado na 06_SUSPENSION B10")
+    _estilo(ws["A1"], est, "titulo")
+    ws["A2"] = ("Os fatores são uma grade de EXIBIÇÃO rotulada, não metas (decisão do usuário, 2026-10-22; EDR-060). O ×1 é a "
+                "análise da 16_EQUILIBRIO e da 19_EQ_LINEAR (referenciada); as outras linhas usam as mesmas fórmulas nas abas "
+                + ", ".join(AUX20.values()) + ", com o K_φF da linha (SUS-206). Resultados DEMONSTRATIVOS enquanto a pior "
+                "origem não for \"● Dado do TX\" (D16). SI nas colunas de cálculo; g e °/g só nas de exibição.")
+    ws["A3"] = "Tabela de troca (uma linha por valor de K_ARB dianteiro; λ_f, K, saturações, veredito e C_N)"
+    _estilo(ws["A3"], est, "secao")
+    ws["A4"] = "Linha"
+    for q, rot, un in TAB20:
+        ws[f"{COL20[q]}4"] = f"{rot} [{un}]"
+        _estilo(ws[f"{COL20[q]}4"], est, "cab")
+    fam = {"d": "F18", "cruz": "F18", "pos": "F18", "neu": "F18", "pior": "F17"}
+    for j in range(len(FATORES20)):
+        r = LINHA_TAB20 + j
+        ws[f"A{r}"] = rotulo_linha20(j)
+        ws[celula20("fator", j)] = FATORES20[j]
+        for q, formula in _formulas_tab20(j).items():
+            ct.put(ws, celula20(q, j), fam.get(q, "F18"), formula)
+            _estilo(ws[celula20(q, j)], est, "calc")
+    # Custo do comportamento (spec §5, itens 4 e 5)
+    ws[f"A{LINHA_CUSTO20 - 1}"] = ("Custo do comportamento (spec §5, item 4): a_y do acerto neutro, pelo cruzamento das "
+                                   "saturações na tabela (interpolação; nunca S_r − S_f), menos o a_y limite atual (×1)")
+    _estilo(ws[f"A{LINHA_CUSTO20 - 1}"], est, "secao")
+    fc = _formulas_custo20()
+    for q, rot, un in CUSTO20:
+        r = LINHA20[q]
+        ws[f"A{r}"], ws[f"C{r}"], ws[f"D{r}"] = rot, un, "F18; spec §5, itens 4 e 5"
+        _estilo(ws[f"A{r}"], est, "rotulo")
+        ct.put(ws, f"B{r}", "F18", fc[q])
+        _estilo(ws[f"B{r}"], est, "calc")
+        ct.put(ws, f"E{r}", "F17", "={PIOR_K}")
+    ws[f"F{LINHA20['limiar']}"] = ("Limiar do custo só por EDR da equipe (spec §5, item 5); até lá a célula mostra o custo "
+                                   "sem veredito.")
+    # Cálculo por linha (linhas extras): as mesmas famílias da 16 com o mapa da linha
+    ws[f"A{LINHA_BLOCO20 - 2}"] = ("Cálculo por linha (as linhas extras; o ×1 é a 16_EQUILIBRIO): rolagem e situação com o "
+                                   "K_φF da linha e as regras do veredito do EDR-056 (as fórmulas da 16)")
+    _estilo(ws[f"A{LINHA_BLOCO20 - 2}"], est, "secao")
+    ws[f"A{LINHA_BLOCO20 - 1}"] = "Linha da tabela"
+    for j in EXTRAS20:
+        ws[f"{COL_BLOCO[j]}{LINHA_BLOCO20 - 1}"] = rotulo_linha20(j)
+        _estilo(ws[f"{COL_BLOCO[j]}{LINHA_BLOCO20 - 1}"], est, "cab")
+    g_ant = f"{{G_vf{I_DEN - 1}}}"
+    ack = f"{{vf{I_ACK}}}"
+    for j in EXTRAS20:
+        ml = _mapa_linha(m, j)
+        cl = _Ctx(ctx.wb, ctx.registro, ml)
+        col = COL_BLOCO[j]
+        linhas = {"den": (_LAYOUT16_POR_CHAVE["den"].formula, "F4"),
+                  "vden": ("=" + _cond_verif(VERIFICACOES[I_DEN]), "F1"),
+                  "status": (f'=IF({g_ant}<>"-",{g_ant},IF({{vden}}<>"-",{{vden}},IF({ack}<>"-",{ack},"OK")))', "F1"),
+                  "ok": (_LAYOUT16_POR_CHAVE["ok"].formula, "F1")}
+        rot = {k: (r_, f_) for k, r_, f_ in BLOCO20}
+        for ln in _linhas_veredito(AUX20[j]):
+            linhas[ln.chave] = (ln.formula, ln.familia)
+            rot[ln.chave] = (ln.rotulo, ln.familia)
+        for k, (formula, familia) in linhas.items():
+            r = LINHA_BLOCO[k]
+            if j == EXTRAS20[0]:
+                ws[f"A{r}"] = rot[k][0]
+                _estilo(ws[f"A{r}"], est, "rotulo")
+            cl.put(ws, f"{col}{r}", familia, formula)
+            _estilo(ws[f"{col}{r}"], est, "calc")
+    ws.freeze_panes = f"B{LINHA_TAB20}"
+    ws.column_dimensions["A"].width = 62
+    for j in EXTRAS20:
+        _aba_aux20(_Ctx(ctx.wb, ctx.registro, _mapa_linha(m, j)), est, j)
+
+
 def montar(wb) -> list[dict]:
-    """Escreve as abas 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA e 19_EQ_LINEAR no workbook da V4.0 (aberto pelo openpyxl, com os
+    """Escreve as abas 16_EQUILIBRIO, 17_EQ_PAR, 18_EQ_PAR_FINA, 19_EQ_LINEAR, 20_EQ_TROCA e 20a…20d_TROCA no workbook da
+    V4.0 (aberto pelo openpyxl, com os
     nomes definidos da V4.0) e devolve o registro [{aba, cel, familia, formula}] de toda célula com fórmula escrita.
     Não acrescenta os nomes novos (`acrescentar_nomes`) nem salva."""
-    for aba in (ABA16, ABA17, ABA18, ABA19):
+    for aba in (ABA16, ABA17, ABA18, ABA19, ABA20, *AUX20.values()):
         if aba in wb.sheetnames:
             raise ValueError(f"a aba {aba} já existe")
     if wb.sheetnames[-1] != "15_CHANGELOG":
@@ -1466,6 +1786,7 @@ def montar(wb) -> list[dict]:
     _aba_grade(ctx, est, ABA17)
     _aba_grade(ctx, est, ABA18)
     _aba19(ctx, est)
+    _aba20(ctx, est)
     return ctx.registro
 
 
