@@ -4,7 +4,7 @@ Recalcula CÓPIAS (aba_equilibrio.copia_v41: V4.0 da tag v4.0 + abas 16-18 + nom
 (COM) ou pelo LibreOffice (recalculo_planilha.py; DDS_RECALC=excel|libreoffice força um). A V4.0 de referência em excel/
 e a V3.0 viva nunca são abertas para escrita. Sem motor: NÃO EXECUTÁVEL (código 3), que nunca conta como aprovado.
 Uso: uv run python -X utf8 tests/test_workbook_v4_1.py
-Namespace TC-WB41-xxx (IDs autorizados pelo usuário: 001 a 006; este script tem, por enquanto, o 004).
+Namespace TC-WB41-xxx (IDs autorizados pelo usuário: 001 a 006; este script tem, por enquanto, o 004 e o 005).
 
 TC-WB41-004: em cada caso (valores de TESTE, só nas cópias; não são o carro), o caso que a 16_EQUILIBRIO calcula, lido
 por nomes (caso_planilha.caso_da_planilha_v41), vai a equilibrio.analise_par, e a planilha tem de dar o mesmo:
@@ -22,6 +22,17 @@ Variantes do Review Focus: RF1 = C4 sem CzA (N/A "CzA a confirmar" na planilha e
 resultado da h8 desligada); RF3 = C3 com LKY × 0,9 e LMUY escalado até o eixo traseiro saturar na grade pedida e não
 na refinada, perto de 2 g (resolução = passo da grade pedida, regra de equilibrio._resolucao); RF4 está no C1 (limitação que só a grade refinada
 teria não entra no aviso: a planilha agrega só a 17, como equilibrio._limitacoes).
+TC-WB41-005: nas MESMAS cópias recalculadas (sem recalcular de novo), o passo 1 da 19_EQ_LINEAR contra
+equilibrio_linear.tabela_linear(caso, pior_origem=...) (a_y = k·0,05 g, k = 0…8): parcelas k_pneus, k_transferência,
+k_deslocamento, k_camber, k_roll_steer e k_total por linha (|Δ| <= 1e-6 °/g; N/A onde o Python dá None), motivo do N/A
+(texto exato), k_inclinacao e o motivo dela; os ângulos necessários do Newton (decisão 5 do plano) contra a bissecção de
+angulos_necessarios nos 11 pontos (0…0,4 g, 0,005 g e 0,01 g; |Δα| <= 1e-8·max(|α|, 1e-3): outra raiz é falha, Review
+Focus 2); a igualdade da 1ª linha k_pneus + k_deslocamento + k_camber = k_inclinacao, com o resíduo da planilha igual ao
+do Python (|Δ| <= 1e-6 °/g; a identidade com rel. <= 1e-6 vai ao log como ACHADO: o próprio Python não chega lá, ver
+comparar_k); na 16, o
+K da 1ª linha (res_16_k_total e as parcelas), V_char e V_crit (velocidade_caracteristica/critica) e a pior origem do K
+(pior_origem_do_caso_v41(..., linear=True), que inclui o roll steer da 07_KINEMATICS). Caso com entradas inválidas: todo K
+é N/A com o motivo da situação das entradas.
 O log traz o tempo de recálculo de cada cópia e o número de células com fórmula de cada aba (insumo do portão da Task 4).
 "Passou" = a planilha reproduz o oráculo; não é validação física.
 """
@@ -32,6 +43,7 @@ import openpyxl
 import aba_equilibrio as ae
 import caso_planilha as cp
 import equilibrio as eq
+import equilibrio_linear as el
 import recalculo_planilha as rc
 from suspension_model import G
 
@@ -216,8 +228,145 @@ def lmuy_rf3(caso_c3) -> float:
     return caso_c3.ds.p["LMUY"] * 0.5 * (f_ped + f_fina)
 
 
-# --- TC-WB41-004 ---
+# --- TC-WB41-005: passo 1 (19_EQ_LINEAR e K na 16) × equilibrio_linear.tabela_linear ---
+TOL_K = 1e-6        # °/g (parcelas, k_total, k_inclinacao)
+TOL_IGUAL = 1e-6    # relativo: k_pneus + k_deslocamento + k_camber = k_inclinacao na 1ª linha
+TOL_ANG = 1e-8      # relativo a max(|α|, 1e-3): mesma raiz do Newton e da bissecção
+DIF5 = {"k": [0.0, ""], "ang": [0.0, ""], "igual_planilha": [0.0, ""], "igual_python": [0.0, ""]}
+ACHADOS5 = []       # identidade da 1ª linha acima de TOL_IGUAL (vai ao log; não decide o check: ver comparar_k)
+
+
+def _maior(chave, x, onde):
+    if x > DIF5[chave][0]:
+        DIF5[chave][:] = [x, onde]
+
+
+def k_igual(sh, py, onde) -> bool:
+    """sh (planilha, rad/(m/s²) ou "N/A") e py (Python, rad/(m/s²) ou None) iguais a TOL_K em °/g."""
+    if py is None:
+        return sh == "N/A"
+    if not num(sh):
+        return False
+    d = abs(el.para_graus_por_g(sh) - el.para_graus_por_g(py))
+    _maior("k", d, onde)
+    return d <= TOL_K
+
+
+def comparar_k(nome, copia, falhas):
+    """Compara o passo 1 da cópia recalculada com equilibrio_linear; devolve o resumo (texto) do caso."""
+    wb = openpyxl.load_workbook(copia, data_only=True)
+    lin = [{q: valor(wb, ae.NOME19[(q, k)]) for q in ae.QTD19} for k in range(ae.N_LIN19)]
+    r16 = {k: valor(wb, ae.NOME16[k]) for k in ae.CHAVES16_K}
+    pior16 = wb[ae.ABA16][f"E{ae.LINHAS16['kTot']}"].value
+    pior19 = [wb[ae.ABA19][ae.celula_pior19(k)].value for k in range(ae.N_LIN19)]
+    ws19 = wb[ae.ABA19]
+    angs = [(ws19[ae.celula_aux19("ang_F", p)].value, ws19[ae.celula_aux19("ang_R", p)].value)
+            for p in range(len(ae.PONTOS19))]
+    wb.close()
+    try:
+        caso = cp.caso_da_planilha_v41(copia, TIR)
+    except ValueError as e:   # entradas inválidas: todo K N/A com o motivo da situação das entradas
+        for k, ln in enumerate(lin):
+            if not (ln["kTot"] == "N/A" and ln["mot"] == str(e) and ln["kI"] == "N/A" and ln["motI"] == str(e)):
+                falhas.append(f"{nome} linha {k}: entradas inválidas ({e}); planilha K={ln['kTot']!r} motivo={ln['mot']!r} "
+                              f"inclinação={ln['kI']!r} motivo={ln['motI']!r}")
+        if not (r16["kTot"] == "N/A" and r16["kmot"] == str(e)):
+            falhas.append(f"{nome} 16: K={r16['kTot']!r} motivo={r16['kmot']!r}, esperado N/A com {e}")
+        return f"{nome}: K N/A pelas entradas ({e})"
+    pior = cp.pior_origem_do_caso_v41(copia, linear=True)
+    tab = el.tabela_linear(caso, pior_origem=pior)
+    if len(tab) != ae.N_LIN19:
+        falhas.append(f"{nome}: tabela_linear com {len(tab)} linhas, planilha com {ae.N_LIN19}")
+    for k, (ln, row) in enumerate(zip(lin, tab)):
+        p = row["parcelas"]
+        for q, py in (("kP", p.k_pneus), ("kT", p.k_transferencia), ("kD", p.k_deslocamento), ("kC", p.k_camber),
+                      ("kRS", p.k_roll_steer), ("kTot", p.k_total), ("kI", row["k_inclinacao"])):
+            if not k_igual(ln[q], py, f"{nome} linha {k} {q}"):
+                falhas.append(f"{nome} linha {k} {q}: planilha {ln[q]!r} Python {py!r}")
+        if p.k_total is None:
+            if ln["kTotg"] != "N/A":
+                falhas.append(f"{nome} linha {k} K em °/g: planilha {ln['kTotg']!r}, Python None")
+        elif not (num(ln["kTotg"]) and abs(ln["kTotg"] - el.para_graus_por_g(p.k_total)) <= TOL_K):
+            falhas.append(f"{nome} linha {k} K em °/g: planilha {ln['kTotg']!r} Python {el.para_graus_por_g(p.k_total)!r}")
+        if ln["mot"] != (p.motivo or "-"):
+            falhas.append(f"{nome} linha {k} motivo: planilha {ln['mot']!r} Python {p.motivo!r}")
+        if ln["motI"] != (row["motivo_inclinacao"] or "-"):
+            falhas.append(f"{nome} linha {k} motivo da inclinação: planilha {ln['motI']!r} Python {row['motivo_inclinacao']!r}")
+        if not perto(ln["ay_g"], row["ay_g"], onde=f"{nome} a_y"):
+            falhas.append(f"{nome} linha {k} a_y: planilha {ln['ay_g']!r} Python {row['ay_g']!r}")
+        if pior19[k] != pior:
+            falhas.append(f"{nome} linha {k} pior origem do K: planilha {pior19[k]!r} Python {pior!r}")
+    # Newton (planilha) × bissecção (Python) nos 11 pontos: a mesma raiz, ou N/A onde o Python dá None
+    for p_i, ay in enumerate(ae.PONTOS19_AY):
+        py = el.angulos_necessarios(caso, ay)
+        sh = angs[p_i]
+        if py is None:
+            if all(num(x) for x in sh):
+                falhas.append(f"{nome} ponto {p_i}: Python sem ângulos (None), planilha {sh!r}")
+            continue
+        for e, a_sh, a_py in (("F", sh[0], py[0]), ("R", sh[1], py[1])):
+            if not num(a_sh):
+                falhas.append(f"{nome} ponto {p_i} α_{e}: planilha {a_sh!r}, Python {a_py!r}")
+                continue
+            d = abs(a_sh - a_py) / max(abs(a_py), 1e-3)
+            _maior("ang", d, f"{nome} ponto {p_i} α_{e}")
+            if d > TOL_ANG:
+                falhas.append(f"{nome} ponto {p_i} α_{e}: planilha {a_sh!r} Python {a_py!r} (outra raiz?)")
+    # Igualdade da 1ª linha (spec §6): na planilha e, para registro, no Python
+    l0, p0 = lin[0], tab[0]["parcelas"]
+    rel_sh = rel_py = None
+    # O check é que a planilha reproduz o resíduo do Python: |resíduo_planilha − resíduo_Python| <= TOL_K em °/g, com
+    # resíduo = k_inclinacao − (k_pneus + k_deslocamento + k_camber). A identidade em si, rel. <= TOL_IGUAL, só vai ao log
+    # (achado da Task 3): o próprio Python não chega a 1e-6 (resíduo de truncamento do Richardson; com a h8, a downforce
+    # 0,5·ρ·CzA·|a_y|·R tem a derivada lateral em a_y = 0 que a diferença central do deslocamento cancela e a inclinação,
+    # de um lado só, vê). Com K(0) abaixo de TOL_K (carro simétrico: C2, C5) o relativo não tem sentido e o log mostra o
+    # absoluto.
+    def residuo(kp, kd, kc, ki):
+        soma = kp + kd + kc
+        if abs(el.para_graus_por_g(soma)) < TOL_K:
+            return ki - soma, abs(el.para_graus_por_g(ki - soma)), "abs °/g"
+        return ki - soma, abs(ki - soma) / abs(soma), "rel"
+    crit_sh = crit_py = ""
+    res_sh = res_py = None
+    if all(num(l0[q]) for q in ("kP", "kD", "kC", "kI")):
+        res_sh, rel_sh, crit_sh = residuo(l0["kP"], l0["kD"], l0["kC"], l0["kI"])
+        if crit_sh == "rel":
+            _maior("igual_planilha", rel_sh, nome)
+    if None not in (p0.k_pneus, p0.k_deslocamento, p0.k_camber, tab[0]["k_inclinacao"]):
+        res_py, rel_py, crit_py = residuo(p0.k_pneus, p0.k_deslocamento, p0.k_camber, tab[0]["k_inclinacao"])
+        if crit_py == "rel":
+            _maior("igual_python", rel_py, nome)
+    if (res_sh is None) != (res_py is None):
+        falhas.append(f"{nome}: igualdade da 1ª linha calculável só de um lado (planilha {res_sh!r}, Python {res_py!r})")
+    elif res_sh is not None:
+        d = abs(el.para_graus_por_g(res_sh) - el.para_graus_por_g(res_py))
+        _maior("k", d, f"{nome} resíduo da igualdade")
+        if d > TOL_K:
+            falhas.append(f"{nome}: resíduo da igualdade da 1ª linha na planilha difere do Python em {d:.2e} °/g")
+        if crit_sh == "rel" and rel_sh > TOL_IGUAL:
+            ACHADOS5.append(f"{nome}: identidade da 1ª linha com rel. {rel_sh:.2e} > {TOL_IGUAL:g} (Python {rel_py:.2e})")
+    # 16: o K da 1ª linha, V_char e V_crit
+    for q in ("kP", "kT", "kD", "kC", "kRS", "kTot", "kI", "kTotg"):
+        if r16[q] != l0[q]:
+            falhas.append(f"{nome} 16 {q}: {r16[q]!r} ≠ 19 linha 0 {l0[q]!r}")
+    if r16["kmot"] != l0["mot"]:
+        falhas.append(f"{nome} 16 motivo do K: {r16['kmot']!r} ≠ 19 linha 0 {l0['mot']!r}")
+    L = caso.cfg.wheelbase
+    for q, py in (("vchar", None if p0.k_total is None else el.velocidade_caracteristica(L, p0.k_total)),
+                  ("vcrit", None if p0.k_total is None else el.velocidade_critica(L, p0.k_total))):
+        if not sat_igual(r16[q], py):
+            falhas.append(f"{nome} 16 {q}: planilha {r16[q]!r} Python {py!r}")
+    if pior16 != pior:
+        falhas.append(f"{nome} 16 pior origem do K: planilha {pior16!r} Python {pior!r}")
+    kt = p0.k_total
+    return (f"{nome}: K(0) = {'N/A' if kt is None else f'{el.para_graus_por_g(kt):+.4f} °/g'} (motivo {p0.motivo!r}); "
+            f"igualdade da 1ª linha: planilha {rel_sh if rel_sh is None else f'{rel_sh:.2e} ({crit_sh})'}, "
+            f"Python {rel_py if rel_py is None else f'{rel_py:.2e} ({crit_py})'}")
+
+
+# --- TC-WB41-004 e TC-WB41-005 (as mesmas cópias recalculadas) ---
 falhas, resumos, tempos = [], [], []
+falhas5, resumos5 = [], []
 base = ae.extrair_v40(Path(tempfile.mkdtemp()))
 info_b, t_b = recalcular(base)
 print(f"  V4.0 da tag (referência de tempo): {t_b:.1f} s no motor, {info_b['total_formulas']} fórmulas, "
@@ -234,13 +383,14 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
         falhas.append(f"{nome}: {info['total_errors']} erro(s) de fórmula {info['error_summary']}")
     if nome == "C1":
         wbf = openpyxl.load_workbook(copia)
-        for aba in (ae.ABA16, ae.ABA17, ae.ABA18):
+        for aba in (ae.ABA16, ae.ABA17, ae.ABA18, ae.ABA19):
             n = sum(1 for lin in wbf[aba].iter_rows() for c in lin if isinstance(c.value, str) and c.value.startswith("="))
             print(f"  CÉLULAS com fórmula em {aba}: {n}")
         wbf.close()
     if nome == "C3":
         caso_c3 = cp.caso_da_planilha_v41(copia, TIR)
     resumos.append(comparar_caso(nome, copia, esperado, prefixo, falhas))
+    resumos5.append(comparar_k(nome, copia, falhas5))
     if nome == "RF3":
         caso = cp.caso_da_planilha_v41(copia, TIR)
         r = eq.analise_par(caso)
@@ -257,6 +407,18 @@ check("TC-WB41-004: análise de par em fórmulas (16-18) == equilibrio.analise_p
       "variantes RF1/RF3 (Fz, γ, capacidade, motivo e folga por linha, rel. <= 1e-9; S_f, S_r, resolução, veredito, "
       "motivo, a_y limite, C_N, limitações, tempo de volta, pior origem); 0 erros de fórmula",
       not falhas, f"{len(falhas)} divergência(s): {falhas[:8]}")
+for s5 in resumos5:
+    print("  " + s5)
+print(f"  MAIOR diferença do K planilha × Python ({MOTOR}): {DIF5['k'][0]:.2e} °/g ({DIF5['k'][1]}); ângulos (rel.): "
+      f"{DIF5['ang'][0]:.2e} ({DIF5['ang'][1]}); igualdade da 1ª linha: planilha {DIF5['igual_planilha'][0]:.2e} "
+      f"({DIF5['igual_planilha'][1]}), Python {DIF5['igual_python'][0]:.2e} ({DIF5['igual_python'][1]})")
+for a5 in ACHADOS5:
+    print(f"  ACHADO (não decide o check; o Python dá o mesmo): {a5}")
+check("TC-WB41-005: passo 1 em fórmulas (19_EQ_LINEAR e o K na 16) == equilibrio_linear.tabela_linear nos casos C1-C5, "
+      "C3b, C4b e nas variantes RF1/RF3 (parcelas, k_total e k_inclinacao por linha, |Δ| <= 1e-6 °/g; motivos; ângulos "
+      "do Newton = bissecção, rel. <= 1e-8; resíduo da igualdade da 1ª linha = o do Python, |Δ| <= 1e-6 °/g; K, V_char, "
+      "V_crit e pior origem na 16)",
+      not falhas5, f"{len(falhas5)} divergência(s): {falhas5[:8]}")
 
 print("\n--- Resumo ---"); p = sum(1 for _, s in results if s == "PASS"); f = len(results) - p
 print(f"{p} PASS, {f} FAIL, de {len(results)} testes")
