@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 60 registros. APPROVED: 22 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22)
+Total: 60 registros. APPROVED: 23 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 6 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia)
 
 | ID | Título | Status |
 |---|---|---|
@@ -96,7 +96,7 @@ Total: 60 registros. APPROVED: 22 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DE
 | EDR-057 | Método do equilíbrio no Python (incremento 2 da V4.0) | APPROVED_WITH_CONDITIONS |
 | EDR-058 | Fonte de verdade da V4.0: gerada da tag v3.0, com nomes definidos e dados da equipe migrados por chave | APPROVED |
 | EDR-059 | Domínio "Equilíbrio / dirigibilidade" na faixa SUS-10XX (revisão do EDR-005) | APPROVED |
-| EDR-060 | Equilíbrio na planilha V4.1 | APPROVED_WITH_CONDITIONS |
+| EDR-060 | Equilíbrio na planilha V4.1 | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1338,7 +1338,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-060 — Equilíbrio na planilha V4.1
 
 - **Date:** 2026-10-22
-- **Status:** APPROVED_WITH_CONDITIONS
+- **Status:** APPROVED (2026-10-22; antes APPROVED_WITH_CONDITIONS)
 - **Context:** O incremento 4 da V4.1 (plano `docs/superpowers/plans/2026-10-21-v4-1-inc4-equilibrio-na-planilha.md`; spec `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md`, §5 itens 3 e 4, §6, §7.1 a §7.4, §7.6 item 4, §8.2, §9, §10 e §12.1) leva à planilha, em fórmulas, o que o Python já tinha (`equilibrio.py` no EDR-056, `equilibrio_linear.py` no EDR-057): o gradiente de subesterço K pelas parcelas, a análise de par no limite com as regras do EDR-056, as chaves de hipótese, a tabela de troca da barra dianteira, a exibição da §7.3, o dashboard e as páginas "o que o modelo cobre" e "cadeia de decisão". O usuário autorizou o plano em 2026-10-21 (itens 1 a 5, 6a, 6b, 6c e 7) e decidiu em 2026-10-22 as questões que a implementação levantou. O Python é o oráculo de cada bloco (EDR-004).
 - **Question:** Que decisões de método, de fórmula e de alteração em células existentes a V4.1 adota?
 - **Alternatives:** As de cada item abaixo; as rejeitadas estão no plano e no ledger do incremento (`.superpowers/sdd/2026-10-21-v4-1-inc4-equilibrio-na-planilha/progress.md`, fora do Git).
@@ -1375,7 +1375,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Affected_Artifacts:** `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx`; `python/aba_equilibrio.py`; `python/gerar_v4_1.py`; `python/caso_planilha.py`; `python/equilibrio_linear.py`; `data/nomes_V4_1.csv`; `tools/comparar_planilhas.py`; `tools/rodar_testes.py`; `tools/relatorio_inc4.py`; `docs/v4-1/inc4-equilibrio-na-planilha.md`; `docs/v4-1/inc4-viabilidade-tabela-de-troca.md`; `docs/registro-de-versoes-V4_1.md`; `docs/registro-de-versoes-V4_1-celulas.md`; especificação da V4.0 (§6, §7.4 h7, §7.6 item 4); CLAUDE.md.
 - **Affected_Tests:** TC-WB41-001 a TC-WB41-006; TC-EQ-034 (h8); mutação da planilha do equilíbrio (5 mutantes).
 - **Dependencies:** EDR-004, EDR-013, EDR-022, EDR-036, EDR-038, EDR-044, EDR-050, EDR-055, EDR-056, EDR-057, EDR-058, EDR-059.
-- **Approval_Conditions:** O usuário confere o relatório do incremento 4 (`docs/v4-1/inc4-equilibrio-na-planilha.md`), em especial a seção 5 (robustez ao pneu) e a seção 6 (tabela de troca). Pendente.
+- **Approval_Conditions:** O usuário confere o relatório do incremento 4 (`docs/v4-1/inc4-equilibrio-na-planilha.md`), em especial a seção 5 (robustez ao pneu) e a seção 6 (tabela de troca). **Cumprida em 2026-10-22:** o usuário conferiu o relatório e aprovou ("Conferi o relatório e aprovo"). Os itens PENDING_CONFIRMATION do item 8 continuam pendentes: a aprovação do registro não os decide.
 - **Reopening_Criteria:** O usuário discorda de alguma escolha ao conferir o relatório; pneu real (R60A) ou OptimumTire; limiar de custo definido pela equipe (spec §9, item 10); troca da viva para a V4.1.
 - **Related_Decisions:** EDR-004, EDR-013, EDR-022, EDR-044, EDR-051, EDR-055, EDR-056, EDR-057, EDR-058, EDR-059.
 - **Source_Conversation_or_Document:** Conversa de 2026-10-21 (plano do incremento 4; "Autorizo tudo"; item 7 derivado do SUS-404); conversa de 2026-10-22 (portão da Task 4: tamanho da tabela de troca; κ, `13_VALIDATION`, μ efetivo, h3 e h8); plano e ledger do incremento 4; help do Adams 2024.1 PAC2002, pp. 82-83.
