@@ -31,6 +31,10 @@ FORMULAS_ESPERADAS_V40 = FORMULAS_ESPERADAS_V30  # nenhuma fórmula muda na V4.0
 ENTREGUE_XLSX_V41 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 FORMULAS_ESPERADAS_V41 = FORMULAS_ESPERADAS_V40 + 117181 + 1   # + a C43 da 13_VALIDATION (Task 8b)
 
+ENTREGUE_XLSX_V42 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
+# A V4.2 desta etapa (origens do T11 e D16) não acrescenta fórmula: as metas (Task 3) somam as suas a este número.
+FORMULAS_ESPERADAS_V42 = 117569
+
 
 def _formula(v) -> str | None:
     """Texto da fórmula da célula, ou None se a célula não tiver fórmula."""
