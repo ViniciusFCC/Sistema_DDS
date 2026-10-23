@@ -238,7 +238,7 @@ def main() -> int:
     w(f"- Planilha: `{V41.relative_to(RAIZ).as_posix()}` (SHA-256 antes `{h_antes}`; depois igual: só uma cópia temporária "
       "foi recalculada)")
     w(f"- Motor de recálculo da cópia: {motor} ({detalhe_motor}); {resumo_rec['total_formulas']} fórmulas, "
-      f"{resumo_rec['total_errors']} erros, {n(t_rec, 1)} s (abrir, recalcular tudo, gravar e fechar)")
+      f"{resumo_rec['total_errors']} erros, {n(t_rec, 1)} s (recálculo pelo motor, incluindo a partida do programa, mais a leitura do `_resumo` pelo openpyxl; ver a seção 7)")
     w(f"- Pneu: `{TIR.relative_to(RAIZ).as_posix()}` (SHA-256 `{sha256(TIR)}`), em ISO_TYDEX (EDR-039)")
     w(f"- Varredura: `{VARREDURA.relative_to(RAIZ).as_posix()}` ({var['edr']}, origem \"{var['origem']}\")")
     w(f"- Python {platform.python_version()}, openpyxl {version('openpyxl')}, numpy {version('numpy')}")
@@ -297,6 +297,16 @@ def main() -> int:
               f"roll steer {n(el.para_graus_por_g(par.k_roll_steer) if par.k_roll_steer is not None else None, 4)}, "
               f"total {n(el.para_graus_por_g(par.k_total) if par.k_total is not None else None, 4)} (Python).")
         w("")
+        w("O caso nominal dá N/A (a planilha e o Python concordam): nenhum eixo satura dentro da grade de 2 g. A causa não foi "
+          "investigada. Há duas hipóteses, nenhuma verificada: o teto de 2 g da grade estar perto da capacidade do pneu do TTC "
+          "sem escala (na varredura da seção 5, com LMUY = 0,8 o caso satura em LOOSE, e com LMUY maior não satura), ou o "
+          "camber em curva estar no limite do pneu pelo ganho demonstrativo (seção 4).")
+        w("")
+        if par is not None and par.k_camber is not None and par.k_total is not None:
+            w(f"O texto \"Sobresterço\" do K ({n(el.para_graus_por_g(par.k_total), 2)} °/g) vem quase todo da parcela de camber "
+              f"({n(el.para_graus_por_g(par.k_camber), 2)} °/g), que sai do ganho de camber demonstrativo implausível "
+              "(∂γ/∂φ ≈ −5,7 rad/rad, do SUS-404 = −0,6 °/mm; seção 4). Não é resultado do carro.")
+            w("")
         w(f"Tempo de volta no skidpad (SUS-1007): planilha `{pl['tvolta']}` (precisa do raio R, que está vazio).")
     w("")
 
@@ -340,6 +350,16 @@ def main() -> int:
             vs[r.veredito] = vs.get(r.veredito, 0) + 1
         w("")
         w("Contagem por veredito: " + ", ".join(f"{k} {v}" for k, v in vs.items()) + ".")
+        w("")
+        n_na = vs.get(eq.NA, 0)
+        n_pu = vs.get(eq.PUSH, 0)
+        n_lo = vs.get(eq.LOOSE, 0)
+        w(f"Leitura do resumo: houve {n_lo} {eq.LOOSE}, {n_na} {eq.NA} e {n_pu} {eq.PUSH}. Se não há {eq.PUSH}, o sinal não se "
+          f"inverte em nenhum ponto. O {robusto[0]} vem da regra de `equilibrio.veredito_robusto`, que trata qualquer mistura de "
+          f"vereditos, inclusive de {eq.LOOSE} com {eq.NA}, como não conclusivo; a spec §7.6 item 3 só fala em inversão de "
+          "push/loose, e essa regra mais estrita é pendência de decisão do usuário (EDR-060, item 8, PENDING_CONFIRMATION). "
+          f"O que de fato depende do pneu aqui é o carro saturar antes de 2 g ou não ({eq.NA} = não satura até o teto da grade). "
+          "Não se deve ler a frase \"o sinal depende do pneu\" como uma inversão entre PUSH e LOOSE.")
     else:
         w("Sem varredura: o caso é inválido para o Python.")
     w("")
@@ -373,10 +393,14 @@ def main() -> int:
     w("## 7. Tempos de recálculo")
     w("")
     w(f"- Cópia da V4.1 inteira ({resumo_rec['total_formulas']} fórmulas): {n(t_rec, 1)} s no motor {motor} "
-      "(abrir, recalcular tudo, gravar e fechar; uma execução, incluindo a partida do programa). As medições anteriores do "
-      "incremento (Tasks 5 e 6, mesmo motor) deram 8,8 s no Excel e 10,6 s no LibreOffice para a V4.1 da época (117532 a 117568 fórmulas); a diferença para "
-      "esta execução não foi investigada: em 2026-10-22, quatro execuções deste mesmo relatório deram 22,9 s, 66,5 s, 67,9 s "
-      "e 66,7 s no mesmo computador. O tempo medido aqui não é um limite nem uma garantia.")
+      "(`t_rec`: tempo de `rc.recalcular`, que soma o recálculo pelo motor (abrir, recalcular tudo, gravar e fechar), a partida do "
+      "programa, por ser a primeira chamada de uma execução, e a leitura do `_resumo` pelo openpyxl, que carrega o arquivo mais de uma vez "
+      "e varre as células à procura de erros; uma execução). **Não é comparável** aos 8,8 s (Excel) e 10,6 s (LibreOffice) das Tasks 5 e 6 "
+      "(V4.1 da época, 117532 a 117568 fórmulas): essas medidas cronometram só o recálculo do motor (`_excel_recalc` no Excel), "
+      "sem a partida nem o `_resumo`. Em 2026-10-22, quatro execuções deste mesmo relatório deram 22,9 s, 66,5 s, 67,9 s e 66,7 s no "
+      "mesmo computador. Não verificado: a diferença entre as execuções pode vir de um processo do Excel residual de rodadas anteriores "
+      "ou da inspeção do antivírus ao gravar o arquivo temporário; nenhuma das duas hipóteses foi testada. O tempo medido aqui não é "
+      "um limite nem uma garantia.")
     w("- Fórmulas por aba nova: " + ", ".join(f"{k} {v}" for k, v in formulas_por_aba.items()
                                               if k[:2] in ("16", "17", "18", "19", "20", "21", "22")) + ".")
     w(f"- Medição do portão da Task 4, com o Excel recalculando só a troca do K_ARB (recálculo automático): "
