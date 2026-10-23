@@ -364,6 +364,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Dependencies:** —
 - **Approval_Conditions:** —
 - **Reopening_Criteria:** Esclarecimento sobre o propósito de S-001.
+- **Nota (2026-10-22):** o projeto atual é o T11, em definição (usuário). A planilha ainda não tem dados do T11; os que existem são do TX/E05 e do T09/E03. O TX/E05 passa a ser, como o T09/E03, referência para o T11, e não baseline. Ajustar a lista Origens e o prefixo DEMONSTRATIVO (D16) na V4.2.
 - **Related_Decisions:** EDR-025
 - **Source_Conversation_or_Document:** DR-004; comentários de células
 
@@ -1293,6 +1294,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
   4. **Dados por chave:** `python/dados_planilha.py` e `tools/migrar_dados_v3_v4.py` levam os dados da V3.0 viva para uma cópia da V4.0 pelos nomes. Conflito é listado no relatório e nunca sobrescrito; célula alterada na viva fora dos nomes de dado aborta com código 2, e também comentário, hiperlink, imagem ou gráfico diferente da tag, que a ferramenta não migra; a saída nunca fica em `excel/`.
   5. **Equivalência:** TC-WB40-005 (valor de cada resultado pelo nome igual ao da V3.0 pelo endereço, no Excel e no LibreOffice) e TC-WB40-006 (nomes válidos nos dois motores).
   6. **Viva da equipe:** continua a V3.0, na pasta compartilhada da equipe (usuário, 2026-10-20). Caminho da pasta e responsável pelos retratos `dados:`: a informar (usuário, 2026-10-21). A migração roda quando o usuário fornecer o arquivo.
+     *Nota (2026-10-22):* o usuário informou a pasta (Google Drive da equipe, `T11 - Tupã\2. Projeto\Mecanica\Suspensao\Documentacao\Planilha DDS`) e assumiu a responsabilidade pela planilha e pelos retratos `dados:`. Por delegação do usuário ("tome as decisões pensando no que for melhor para a arquitetura, usabilidade e valor do projeto"), a viva da equipe passou a ser a cópia da V4.1 de referência (tag `v4.1`) nessa pasta: a V3.0 viva não tinha dados da equipe (SHA-256 igual ao do arquivo da tag `v3.0`), então não houve migração.
   7. **Versão seguinte:** a partir do incremento 4 a versão é V4.1, numa conversa nova (usuário, 2026-10-21).
 - **Rationale:** Gerar da tag dá uma origem imutável e regenerável (CA-07), sem depender do estado da viva, que pode estar sendo preenchida. Manter as fórmulas iguais (D13) deixa o CA-07 por texto e a equivalência por valor com a V3.0 como prova de que nada mudou no cálculo. A migração por chave não depende de endereço, e por isso continua valendo quando a reescrita do incremento 7 mexer no layout.
 - **Evidence:** `tests/test_v4_0.py` (TC-WB40-001 a 004) e `tests/test_workbook_v4_0.py` (TC-WB40-005 e 006), registrados em `tools/rodar_testes.py`; `docs/registro-de-versoes-V4_0-celulas.md`. `tests/test_workbook_v4_0.py` 2/2 no Excel via COM, na suíte (`tools/rodar_testes.py`), e 2/2 no LibreOffice (`DDS_RECALC=libreoffice`, 2026-10-21, cerca de 57 s).
