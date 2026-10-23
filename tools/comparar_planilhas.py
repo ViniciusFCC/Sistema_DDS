@@ -32,8 +32,9 @@ ENTREGUE_XLSX_V41 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 FORMULAS_ESPERADAS_V41 = FORMULAS_ESPERADAS_V40 + 117181 + 1   # + a C43 da 13_VALIDATION (Task 8b)
 
 ENTREGUE_XLSX_V42 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
-# A V4.2 desta etapa (origens do T11 e D16) não acrescenta fórmula: as metas (Task 3) somam as suas a este número.
-FORMULAS_ESPERADAS_V42 = 117569
+# V4.2 (incremento 5, EDR-061): as 117569 da V4.1 (B188 e B189 da 16_EQUILIBRIO com o texto novo do D16) mais 58 das metas
+# (aba_metas: famílias G1-G6; 56 na 03_TARGETS e 2 no 14_DASHBOARD). Constante fixa, de propósito.
+FORMULAS_ESPERADAS_V42 = 117627   # 117569 + 58
 
 
 def _formula(v) -> str | None:
