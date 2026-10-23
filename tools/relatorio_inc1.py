@@ -310,7 +310,7 @@ def main() -> int:
 
     # --- nominal ---
     res = eq.analise_par(caso, **GRADE)
-    txt_nominal = eq.texto_veredito(res, pior_caso)
+    txt_nominal = eq.texto_veredito(res, pior_caso, origem_do_carro=TX)
     fx = fim_dominio(res)
     lim_det = detalhe_limitacoes(caso, res)
 
@@ -320,7 +320,7 @@ def main() -> int:
     varr = eq.varredura_pneu(caso, fatores, **GRADE)
     t_varr = time.perf_counter() - t0
     robusto = eq.veredito_robusto([r.veredito for _, r in varr])
-    txt_robusto = eq.texto_veredito(res, pior_var, robusto)
+    txt_robusto = eq.texto_veredito(res, pior_var, robusto, origem_do_carro=TX)
 
     # --- nota de resolução: cenário do TC-EQ-011 (veículo de teste, LMUY 0,45 só de teste) ---
     ds_011 = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.45})
@@ -330,8 +330,8 @@ def main() -> int:
             r011[(lf, passo)] = eq.analise_par(eq.CasoEquilibrio(cfg=veiculo_teste_011(lf), ds=ds_011),
                                                **{**GRADE, "passo_g": passo})
 
-    textos = [txt_nominal, txt_robusto] + [eq.texto_veredito(r, pior_var) for _, r in varr]
-    textos += [eq.texto_veredito(r, pior(ORIGEM_TESTE)) for r in r011.values()]
+    textos = [txt_nominal, txt_robusto] + [eq.texto_veredito(r, pior_var, origem_do_carro=TX) for _, r in varr]
+    textos += [eq.texto_veredito(r, pior(ORIGEM_TESTE), origem_do_carro=TX) for r in r011.values()]
 
     md: list[str] = []
     w = md.append
@@ -541,7 +541,7 @@ def main() -> int:
         dif = None if (r.ay_sat_f is None or r.ay_sat_r is None) else (r.ay_sat_r - r.ay_sat_f) / G
         w(f"| {n(lf, 1)} | {n(passo, 2)} | {g_de(r.ay_sat_f, 4)} | {g_de(r.ay_sat_r, 4)} | {pequeno(dif)} | "
           f"{pequeno(None if r.resolucao_ms2 is None else r.resolucao_ms2 / G)} | "
-          f"{eq.texto_veredito(r, pior(ORIGEM_TESTE))} |")
+          f"{eq.texto_veredito(r, pior(ORIGEM_TESTE), origem_do_carro=TX)} |")
     w("")
     for lf in (0.5, 0.7):
         va, vb = r011[(lf, 0.05)].veredito, r011[(lf, 0.01)].veredito
@@ -570,7 +570,7 @@ def main() -> int:
         f2 = fim_dominio(r)
         dif = None if (r.ay_sat_f is None or r.ay_sat_r is None) else (r.ay_sat_r - r.ay_sat_f) / G
         w("| " + " | ".join(n(comb[k], 1) for k in fatores)
-          + f" | {eq.texto_veredito(r, pior_var)} | {n(None if r.ay_sat_f is None else r.ay_sat_f / G, 4)} | "
+          + f" | {eq.texto_veredito(r, pior_var, origem_do_carro=TX)} | {n(None if r.ay_sat_f is None else r.ay_sat_f / G, 4)} | "
           f"{n(None if r.ay_sat_r is None else r.ay_sat_r / G, 4)} | {pequeno(dif)} | "
           f"{pequeno(None if r.resolucao_ms2 is None else r.resolucao_ms2 / G)} | {g_de(r.ay_lim, 4)} | "
           f"{g_de(f2['linha'].ay_ms2, 2) if f2 else '—'} | {len(r.limitacoes)} |")
