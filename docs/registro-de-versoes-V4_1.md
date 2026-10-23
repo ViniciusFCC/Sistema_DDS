@@ -52,9 +52,9 @@ não é validação física (Validation = NOT_VALIDATED, EDR-022).
 - EDR-060 aprovado em 2026-10-22: o usuário conferiu o relatório `docs/v4-1/inc4-equilibrio-na-planilha.md`;
   os itens PENDING_CONFIRMATION do item 8 continuam pendentes.
 - PR #17 mesclado em 2026-10-22; tag anotada `v4.1` no merge (05d8fb5), publicada em 2026-10-22.
-- Nome da versão do incremento 5 em diante: a definir com o usuário.
-- Caminho da pasta compartilhada da viva e responsável pelos retratos `dados:` (EDR-051, EDR-058): a informar; a troca
-  da viva para a V4.0 ou a V4.1 é decisão do usuário.
+- Incremento 5 em diante: V4.2 (usuário, 2026-10-22).
+- Viva da equipe desde 2026-10-22: cópia da V4.1 no Google Drive da equipe (`T11 - Tupã\2. Projeto\Mecanica\Suspensao\Documentacao\Planilha DDS`), com LEIA-ME e .docx da documentação; responsável: o usuário (EDR-058, nota de 2026-10-22).
+- Projeto atual: T11, sem dados na planilha ainda; ajustar Origens e o prefixo D16 na V4.2 (EDR-012, nota de 2026-10-22).
 - Pneu do carro (R60A) ou dataset do OptimumTire: o equilíbrio usa o `.tir` provisório do TTC (EDR-038, EDR-055).
 - Limitações conhecidas do EDR-060 (item 8): grades extras da tabela de troca sob o {ok} global; pior origem do K
   conservadora na tabela de troca; "Neutro" só com K = 0 exato; rótulo "Δt" com o tempo de volta absoluto; κ limitado
