@@ -6,10 +6,10 @@ Todos os números deste relatório são **demonstrativos**: o caso vem da planil
 
 ## 1. Origem
 
-- Data: 2026-10-22T22:27:26
-- Commit: `158916667eceba8363c623dceeeef31027ce9ba2` (ramo `feat/v4-1-inc4-equilibrio`; árvore sem mudanças pendentes)
+- Data: 2026-10-22T22:37:14
+- Commit: `da8dd929fa4d4f922b2e8fc2abf2e5678d2b6dfe` (ramo `feat/v4-1-inc4-equilibrio`; árvore sem mudanças pendentes)
 - Planilha: `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` (SHA-256 antes `4193ffc5a8dffe824e0fae18a2c53d65117bf51a1956d22cb24c40cf355fdd3b`; depois igual: só uma cópia temporária foi recalculada)
-- Motor de recálculo da cópia: excel (Excel 16.0 via COM, PID 20780); 117569 fórmulas, 0 erros, 20,4 s (abrir, recalcular tudo, gravar e fechar)
+- Motor de recálculo da cópia: excel (Excel 16.0 via COM, PID 39460); 117569 fórmulas, 0 erros, 18,6 s (recálculo pelo motor, incluindo a partida do programa, mais a leitura do `_resumo` pelo openpyxl; ver a seção 7)
 - Pneu: `data/Hoosier_R25B_13x7_TTC_provisional.tir` (SHA-256 `f3bc80fda4145d53da06f69c8c0fcffbddfbbf73f4aab4149e1caa386c77c796`), em ISO_TYDEX (EDR-039)
 - Varredura: `data/varredura_pneu_exploratoria.json` (EDR-055, origem "○ Arbitrário / demonstrativo")
 - Python 3.13.16, openpyxl 3.1.5, numpy 2.5.4
@@ -62,6 +62,10 @@ K do passo 1 (gradiente de subesterço, parcelas do Gillespie cap. 6): Python `D
 
 Parcelas de K em a_y = 0, em °/g: pneus 0,0076, transferência de carga 0,0000, deslocamento com a carga -0,0235, camber -0,1205, roll steer 0,0000, total -0,1364 (Python).
 
+O caso nominal dá N/A (a planilha e o Python concordam): nenhum eixo satura dentro da grade de 2 g. A causa não foi investigada. Há duas hipóteses, nenhuma verificada: o teto de 2 g da grade estar perto da capacidade do pneu do TTC sem escala (na varredura da seção 5, com LMUY = 0,8 o caso satura em LOOSE, e com LMUY maior não satura), ou o camber em curva estar no limite do pneu pelo ganho demonstrativo (seção 4).
+
+O texto "Sobresterço" do K (-0,14 °/g) vem quase todo da parcela de camber (-0,12 °/g), que sai do ganho de camber demonstrativo implausível (∂γ/∂φ ≈ −5,7 rad/rad, do SUS-404 = −0,6 °/mm; seção 4). Não é resultado do carro.
+
 Tempo de volta no skidpad (SUS-1007): planilha `N/A` (precisa do raio R, que está vazio).
 
 ## 4. Limitações do modelo e deste relatório
@@ -77,7 +81,7 @@ Tempo de volta no skidpad (SUS-1007): planilha `N/A` (precisa do raio R, que est
 
 ## 5. Robustez ao pneu (EDR-055)
 
-`equilibrio.varredura_pneu` sobre `caso_planilha.caso_da_planilha_v41`: LFZO, LMUY e LKY × {0,8; 1,0; 1,2} em produto cartesiano (27 combinações). Os multiplicadores são exploratórios, origem "○ Arbitrário / demonstrativo", e nunca uma faixa do pneu (EDR-022). Tempo da varredura no Python: 7,2 s.
+`equilibrio.varredura_pneu` sobre `caso_planilha.caso_da_planilha_v41`: LFZO, LMUY e LKY × {0,8; 1,0; 1,2} em produto cartesiano (27 combinações). Os multiplicadores são exploratórios, origem "○ Arbitrário / demonstrativo", e nunca uma faixa do pneu (EDR-022). Tempo da varredura no Python: 5,7 s.
 
 | LFZO | LMUY | LKY | Veredito | a_y limite | C_N | Motivo do N/A |
 |---|---|---|---|---|---|---|
@@ -113,6 +117,8 @@ Resumo (`veredito_robusto`, spec 7.6 item 3): **NÃO CONCLUSIVO**, o sinal depen
 
 Contagem por veredito: LOOSE 9, N/A 18.
 
+Leitura do resumo: houve 9 LOOSE, 18 N/A e 0 PUSH. Se não há PUSH, o sinal não se inverte em nenhum ponto. O NÃO CONCLUSIVO vem da regra de `equilibrio.veredito_robusto`, que trata qualquer mistura de vereditos, inclusive de LOOSE com N/A, como não conclusivo; a spec §7.6 item 3 só fala em inversão de push/loose, e essa regra mais estrita é pendência de decisão do usuário (EDR-060, item 8, PENDING_CONFIRMATION). O que de fato depende do pneu aqui é o carro saturar antes de 2 g ou não (N/A = não satura até o teto da grade). Não se deve ler a frase "o sinal depende do pneu" como uma inversão entre PUSH e LOOSE.
+
 Robusto aqui significa apenas "o sinal não mudou com esta perturbação demonstrativa"; não valida o pneu.
 
 ## 6. Tabela de troca da barra dianteira (20_EQ_TROCA)
@@ -131,7 +137,7 @@ a_y do acerto neutro (cruzamento das saturações, spec 5 item 4): planilha N/A 
 
 ## 7. Tempos de recálculo
 
-- Cópia da V4.1 inteira (117569 fórmulas): 20,4 s no motor excel (abrir, recalcular tudo, gravar e fechar; uma execução, incluindo a partida do programa). As medições anteriores do incremento (Tasks 5 e 6, mesmo motor) deram 8,8 s no Excel e 10,6 s no LibreOffice para a V4.1 da época (117532 a 117568 fórmulas); a diferença para esta execução não foi investigada: em 2026-10-22, quatro execuções deste mesmo relatório deram 22,9 s, 66,5 s, 67,9 s e 66,7 s no mesmo computador. O tempo medido aqui não é um limite nem uma garantia.
+- Cópia da V4.1 inteira (117569 fórmulas): 18,6 s no motor excel (`t_rec`: tempo de `rc.recalcular`, que soma o recálculo pelo motor (abrir, recalcular tudo, gravar e fechar), a partida do programa, por ser a primeira chamada de uma execução, e a leitura do `_resumo` pelo openpyxl, que carrega o arquivo mais de uma vez e varre as células à procura de erros; uma execução). **Não é comparável** aos 8,8 s (Excel) e 10,6 s (LibreOffice) das Tasks 5 e 6 (V4.1 da época, 117532 a 117568 fórmulas): essas medidas cronometram só o recálculo do motor (`_excel_recalc` no Excel), sem a partida nem o `_resumo`. Em 2026-10-22, quatro execuções deste mesmo relatório deram 22,9 s, 66,5 s, 67,9 s e 66,7 s no mesmo computador. Não verificado: a diferença entre as execuções pode vir de um processo do Excel residual de rodadas anteriores ou da inspeção do antivírus ao gravar o arquivo temporário; nenhuma das duas hipóteses foi testada. O tempo medido aqui não é um limite nem uma garantia.
 - Fórmulas por aba nova: 16_EQUILIBRIO 1080, 17_EQ_PAR 6826, 18_EQ_PAR_FINA 16058, 19_EQ_LINEAR 2817, 20_EQ_TROCA 227, 20a_TROCA 22536, 20b_TROCA 22536, 20c_TROCA 22536, 20d_TROCA 22536, 21_COBERTURA 5, 22_CADEIA 17.
 - Medição do portão da Task 4, com o Excel recalculando só a troca do K_ARB (recálculo automático): `docs/v4-1/inc4-viabilidade-tabela-de-troca.md`. Lá, o recálculo completo (CalculateFull) com a tabela de 5 linhas e a grade refinada ficou em cerca de 0,3 s e a troca de uma entrada em cerca de 0,4 s; no LibreOffice, o recálculo com abrir e gravar ficou entre 11 e 12 s. Sem limiar registrado, o tempo não decide nada sozinho (spec §9, item 10).
 
