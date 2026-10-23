@@ -7,8 +7,9 @@ Uso:
 
 Sem --v41, o arquivo da tag v4.1 é extraído (git show, binário) para uma pasta temporária: nunca se usa a V4.1 da
 árvore nem a viva do Drive. A tabela dos nomes que a V4.2 acrescenta vem de data/nomes_V4_2.csv (a tabela completa é a
-de data/nomes_V4_0.csv, mais data/nomes_V4_1.csv, mais essa). Nesta etapa do incremento ela só tem o cabeçalho: as
-metas (03_TARGETS, 23_LISTAS, 14_DASHBOARD) entram na Task 3. Com --nomes-csv, o CSV é regravado só com o cabeçalho.
+de data/nomes_V4_0.csv, mais data/nomes_V4_1.csv, mais essa); o gerador recusa um CSV diferente de `aba_metas.NOMES_V42`,
+porque as fórmulas das metas usam esses nomes. Com --nomes-csv CAMINHO, o CSV é regravado em CAMINHO a partir de NOMES_V42 e
+é esse CSV que o gerador lê (sem a opção, lê data/nomes_V4_2.csv).
 
 O que esta etapa muda em relação à V4.1 (EDR-062; plano docs/superpowers/plans/2026-10-23-v4-2-inc5-metas-e-coerencia.md,
 decisão 1 e autorização 5 (a), (b), (d) e (e)):
@@ -21,9 +22,12 @@ decisão 1 e autorização 5 (a), (b), (d) e (e)):
 - regra: os textos que explicam a Origem e o literal `"● Dado do TX"` do `EXACT` das fórmulas 16_EQUILIBRIO B188 e B189
   (prefixo DEMONSTRATIVO do D16) passam a citar o T11 (`origens.MAPA_REGRA_V41_V42`). Nada mais muda nessas fórmulas;
 - a emenda da h7 na 21_COBERTURA (texto da spec §7.4, linha 7);
+- as fichas de meta (EDR-061; `aba_metas.montar`, fórmulas por família do catálogo G1-G6): colunas H a Q da 03_TARGETS (mais as
+  auxiliares ocultas R:U), as linhas TARGET-006 e 007, a aba 23_LISTAS no fim, o bloco de metas do 14_DASHBOARD (A49:B51) e as
+  listas de vocabulário com nome definido; as notas da 03_TARGETS A11 e A12 descem para A14 e A15 (`aba_metas.alteracoes_03`);
 - a versão na 00_README A3 e a linha 22 do 15_CHANGELOG.
 O 04_DECISION_REGISTER e o 15_CHANGELOG ficam como estão (registro histórico). As 117569 fórmulas da V4.1 e os 1145
-nomes ficam iguais, salvo as duas fórmulas acima. A saída nunca fica em excel/ nem por cima da origem: a recusa vem
+nomes ficam iguais, salvo as duas fórmulas acima; as fórmulas novas são só as das metas. A saída nunca fica em excel/ nem por cima da origem: a recusa vem
 antes de abrir qualquer arquivo.
 """
 from __future__ import annotations
@@ -36,6 +40,7 @@ from pathlib import Path
 
 import openpyxl
 
+import aba_metas
 import origens
 from atualizar_planilha import ABAS_ORIGEM, escrever_registro
 from nomes_v4_0 import escrever_tabela, ler_tabela
@@ -57,6 +62,7 @@ REF_LISTA = ("EDR-062, decisão 1 (lista Origens: 6 rótulos nas mesmas posiçõ
 REF_REGRA = ("EDR-062, decisão 1 (substituição de regra: o texto e o literal do D16 passam a falar do T11); "
              "plano, autorização 5 (a) e (b); teste: TC-WB42-001")
 REF_H7 = "EDR-060 item 8 (emenda da h7 deferida do incremento 4, spec §7.4 linha 7); plano, autorização 5 (d); teste: TC-WB42-001"
+REF_NOVAS = "EDR-061; catálogo de fórmulas do plano (famílias G1-G6)"
 REF_VERSAO = "EDR-062; plano, autorização 5 (e) (padrão da V4.0 e da V4.1); teste: TC-WB42-001"
 
 # colunas de Origem por aba: E e a oculta H (guarda a Origem anterior, para o aviso de troca) nas abas de entrada;
@@ -90,11 +96,12 @@ def _changelog() -> list[tuple[str, str]]:
     lin = LINHA_CHANGELOG
     return [
         (f"A{lin}", "2026-10"),
-        (f"B{lin}", "V4.2, metas e coerencia (incremento 5), etapa do projeto T11: lista Origens com o T11 e \"outro carro\" "
+        (f"B{lin}", "V4.2, metas e coerencia (incremento 5): fichas de meta na 03_TARGETS (colunas H a Q, TARGET-006 e 007), aba "
+                    "23_LISTAS (vocabularios e relacoes), bloco de metas no 14_DASHBOARD; lista Origens com o T11 e \"outro carro\" "
                     "(TX, T09), prefixo DEMONSTRATIVO do D16 pelo T11, emenda da h7 na 21_COBERTURA. Gerada da tag v4.1 por "
                     "python/gerar_v4_2.py."),
-        (f"C{lin}", f"EDR-062 (projeto T11: Origens e prefixo D16), EDR-060 (h7). Plano: {PLANO}. Registro celula a celula: "
-                    f"{REGISTRO}. NOT_VALIDATED fisicamente."),
+        (f"C{lin}", f"EDR-061 (metas e coerencia), EDR-062 (projeto T11: Origens e prefixo D16), EDR-060 (h7). Plano: {PLANO}. "
+                    f"Registro celula a celula: {REGISTRO}. NOT_VALIDATED fisicamente."),
     ]
 
 
@@ -153,6 +160,8 @@ def alteracoes_v4_2(wb) -> list[dict]:
     if antes != H7_ANTES:
         raise ValueError(f"{H7[0]}!{H7[1]}: texto inesperado na V4.1: {antes!r}")
     out.append({"aba": H7[0], "cel": H7[1], "antes": antes, "novo": H7_NOVO, "ref": REF_H7})
+    # (c) 03_TARGETS: título, notas A11 e A12 e as duas que descem
+    out += aba_metas.alteracoes_03(wb)
     # (e) versão e changelog
     out.append({"aba": "00_README", "cel": "A3", "antes": wb["00_README"]["A3"].value, "novo": TEXTO_A3,
                 "ref": REF_VERSAO})
@@ -232,7 +241,8 @@ INTRO_REGISTRO = (
     "texto de antes e o de depois: a Origem das células de dado do TX e do T09 (`◐ Dado de outro carro (TX, T09)`), a lista "
     "Origens e o significado dos dois rótulos novos, os textos que explicam a Origem, o literal `\"● Dado do T11\"` do `EXACT` "
     "do D16 (16_EQUILIBRIO B188 e B189), a emenda da h7 (21_COBERTURA D12), a versão (00_README A3) e a linha 22 do "
-    "15_CHANGELOG. As 117569 fórmulas da V4.1 e os 1145 nomes ficam iguais.\n\n")
+    "15_CHANGELOG, e a 03_TARGETS (A3, A11 e A12, e as notas que descem para A14 e A15). As 117569 fórmulas da V4.1 e os 1146 nomes "
+    "ficam iguais (salvo B188 e B189); as fórmulas novas das metas vêm depois, uma linha por aba e família (G1-G6).\n\n")
 
 
 def escrever_registro_v42(registro: list[dict], caminho: Path) -> None:
@@ -242,10 +252,40 @@ def escrever_registro_v42(registro: list[dict], caminho: Path) -> None:
     caminho.write_text(INTRO_REGISTRO + caminho.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
 
 
-def gerar(v41: Path | None, saida: Path, registro: Path | None = None) -> None:
-    """Abre a V4.1 (`v41`, ou a extraída da tag v4.1), aplica `alteracoes_v4_2`, confere que não sobrou rótulo antigo e
-    grava `saida`. Com `registro`, grava também o registro célula a célula (.md). A recusa de `saida` vem antes de abrir
-    qualquer arquivo."""
+def conferir_tabela(tabela: list) -> None:
+    """A tabela (data/nomes_V4_2.csv) tem de ser exatamente `aba_metas.NOMES_V42`: as fórmulas das metas usam esses nomes."""
+    if list(tabela) != list(aba_metas.NOMES_V42):
+        dif = sorted(n.nome for n in set(tabela) ^ set(aba_metas.NOMES_V42))[:5]
+        raise ValueError(f"data/nomes_V4_2.csv difere de aba_metas.NOMES_V42 (regrave com --nomes-csv): {dif}")
+
+
+def resumo_novas(novas: list[dict]) -> list[dict]:
+    """Linhas do registro para as fórmulas novas, uma por aba e família: quantas células e a fórmula da primeira."""
+    grupos: dict[tuple[str, str], list[dict]] = {}
+    for r in novas:
+        grupos.setdefault((r["aba"], r["familia"]), []).append(r)
+    return [{"aba": aba, "cel": f"{len(rs)} células ({rs[0]['cel']} … {rs[-1]['cel']})", "antes": None,
+             "novo": f"família {fam}; exemplo {rs[0]['cel']}: {rs[0]['formula']}", "ref": REF_NOVAS}
+            for (aba, fam), rs in grupos.items()]
+
+
+def montar_v42(wb) -> tuple[list[dict], list[dict]]:
+    """Workbook da V4.1 (aberto, da tag v4.1) -> V4.2 em memória: as alterações em células existentes (`alteracoes_v4_2`), as metas
+    (`aba_metas.montar`) e os nomes da V4.2. Devolve (registro das alterações e das fórmulas novas por aba e família, fórmulas
+    novas [{aba, cel, familia, formula}]). Não salva. Usado por `gerar` e por `copia_v42`."""
+    reg = aplicar(wb, alteracoes_v4_2(wb))
+    novas = aba_metas.montar(wb)
+    aba_metas.acrescentar_nomes(wb)
+    return reg + resumo_novas(novas), novas
+
+
+def gerar(v41: Path | None, saida: Path, registro: Path | None = None, csv_nomes: Path | None = None,
+          nomes: list | None = None) -> tuple[list[dict], list[dict]]:
+    """Abre a V4.1 (`v41`, ou a extraída da tag v4.1), aplica `alteracoes_v4_2`, escreve as metas (`aba_metas.montar`), acrescenta
+    os nomes da V4.2, confere que não sobrou rótulo antigo e grava `saida`. Com `registro`, grava também o registro célula a célula
+    (.md). A tabela de nomes é `nomes`, ou a lida de `csv_nomes` (padrão: data/nomes_V4_2.csv), e tem de ser `aba_metas.NOMES_V42`
+    (ValueError, antes de abrir a planilha). A recusa de `saida` vem antes de abrir qualquer arquivo. Devolve (as alterações, as
+    fórmulas novas [{aba, cel, familia, formula}])."""
     saida = Path(saida)
     with tempfile.TemporaryDirectory(prefix="dds_v42_") as tmp:
         if v41 is None:
@@ -254,11 +294,10 @@ def gerar(v41: Path | None, saida: Path, registro: Path | None = None) -> None:
         else:
             _recusar(Path(v41), saida)
             origem = Path(v41)
-        if ler_tabela(CSV_NOMES):
-            raise NotImplementedError("data/nomes_V4_2.csv com nomes: as metas entram na Task 3")
+        conferir_tabela(ler_tabela(csv_nomes or CSV_NOMES) if nomes is None else nomes)
         wb = openpyxl.load_workbook(origem)
         try:
-            reg = aplicar(wb, alteracoes_v4_2(wb))
+            reg, novas = montar_v42(wb)
             sobra = rotulos_antigos_restantes(wb)
             if sobra:
                 raise ValueError(f"rótulo antigo (Dado do TX / Dado do T09) ainda presente: {sobra[:5]}")
@@ -268,6 +307,28 @@ def gerar(v41: Path | None, saida: Path, registro: Path | None = None) -> None:
             wb.close()
     if registro is not None:
         escrever_registro_v42(reg, Path(registro))
+    return reg, novas
+
+
+def copia_v42(tmp: Path, alteracoes: dict | None = None, nome: str = "V4_2_copia.xlsx") -> Path:
+    """Helper de teste: a V4.2 como o gerador a monta (V4.1 da tag v4.1 + `montar_v42`) + `alteracoes` (nome definido -> valor;
+    None esvazia a célula), gravada em `tmp/nome`. Os valores de teste ficam só nessa cópia. Recusa caminho em excel/."""
+    from aba_equilibrio import _destino
+    tmp = Path(tmp)
+    saida = (tmp / nome).resolve()
+    _recusar(tmp / "V4_1_tag.xlsx", saida)
+    origem = extrair_v41(tmp)
+    wb = openpyxl.load_workbook(origem)
+    try:
+        montar_v42(wb)
+        for nome_def, valor in (alteracoes or {}).items():
+            aba, cel = _destino(wb, nome_def)
+            wb[aba][cel].value = valor
+        wb.calculation.fullCalcOnLoad = True
+        wb.save(saida)
+    finally:
+        wb.close()
+    return saida
 
 
 def main() -> None:
@@ -276,11 +337,11 @@ def main() -> None:
     p.add_argument("--saida", type=Path, default=SAIDA_PADRAO)
     p.add_argument("--registro", type=Path, default=None, help="registro célula a célula (.md)")
     p.add_argument("--nomes-csv", type=Path, default=None,
-                   help="regrava a tabela de nomes da V4.2 (CSV, só o cabeçalho nesta etapa) antes de gerar")
+                   help="regrava a tabela de nomes da V4.2 (CSV) em CAMINHO, a partir de aba_metas.NOMES_V42, e gera lendo esse CSV")
     a = p.parse_args()
     if a.nomes_csv is not None:
-        escrever_tabela([], a.nomes_csv)
-    gerar(a.v41, a.saida, a.registro)
+        escrever_tabela(aba_metas.NOMES_V42, a.nomes_csv)
+    gerar(a.v41, a.saida, a.registro, csv_nomes=a.nomes_csv)
     print(f"salvo {a.saida}")
 
 
