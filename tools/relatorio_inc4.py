@@ -42,6 +42,7 @@ import aba_equilibrio as ae  # noqa: E402
 import caso_planilha as cp  # noqa: E402
 import equilibrio as eq  # noqa: E402
 import equilibrio_linear as el  # noqa: E402
+import origens  # noqa: E402
 import recalculo_planilha as rc  # noqa: E402
 from raizes import PIOR_PRIMEIRO  # noqa: E402
 from suspension_model import G  # noqa: E402
@@ -208,9 +209,9 @@ def main() -> int:
 
     # --- Python: nominal, K, varredura ---
     res = eq.analise_par(caso, **GRADE) if caso is not None else None
-    txt_py = eq.texto_veredito(res, pior_caso) if res is not None else None
+    txt_py = eq.texto_veredito(res, pior_caso, origem_do_carro=origens.TX_V41) if res is not None else None
     par = el.parcelas_k(caso, 0.0) if caso is not None else None
-    txt_k_py = el.texto_k(par, pior_k) if par is not None else None
+    txt_k_py = el.texto_k(par, pior_k, origem_do_carro=origens.TX_V41) if par is not None else None
     t0 = time.perf_counter()
     varr = eq.varredura_pneu(caso, fatores, **GRADE) if caso is not None else []
     t_varr = time.perf_counter() - t0
@@ -344,7 +345,7 @@ def main() -> int:
               f"{n(r.c_n, 4)} | {r.motivo or '-'} |")
         w("")
         w(f"Resumo (`veredito_robusto`, spec 7.6 item 3): **{robusto[0]}**, {robusto[1]}. Texto de exibição com a "
-          f"robustez: `{eq.texto_veredito(res, pior_var, robusto)}`.")
+          f"robustez: `{eq.texto_veredito(res, pior_var, robusto, origem_do_carro=origens.TX_V41)}`.")
         vs = {}
         for _, r in varr:
             vs[r.veredito] = vs.get(r.veredito, 0) + 1

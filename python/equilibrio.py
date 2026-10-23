@@ -24,6 +24,7 @@ import math
 import dataclasses
 from dataclasses import dataclass, field
 
+import origens
 from kinematics_model import ackermann_inner_ideal_deg
 from suspension_model import (G, VehicleConfig, combined_fz_corner, downforce_por_velocidade, lateral_dfz,
                               static_fz_corner, static_fz_corner_cg_lateral)
@@ -864,7 +865,9 @@ def varredura_pneu(caso: CasoEquilibrio, fatores: dict, **kw) -> list:
 def veredito_robusto(vereditos: list) -> tuple:
     """Resume os vereditos da varredura (spec 7.6, item 3): só PUSH puro ou LOOSE puro é robusto.
 
-    NEUTRO conta como inversão; qualquer mistura (inclusive com N/A) é NÃO CONCLUSIVO.
+    Qualquer mistura (inclusive com N/A) é NÃO CONCLUSIVO, porque um ponto N/A não tem veredito. O motivo distingue
+    os dois casos (EDR-060 item 8 x): PUSH e LOOSE juntos, ou NEUTRO em algum ponto, é "o sinal depende do pneu";
+    um só sinal misturado com N/A é "N/A em parte da varredura (sem inversão de sinal)".
     """
     if not vereditos:
         return (NA, "robustez ao pneu não avaliada")
@@ -873,7 +876,9 @@ def veredito_robusto(vereditos: list) -> tuple:
         return (vereditos[0], "mesmo sinal na varredura exploratória do pneu")
     if unicos == {NA}:
         return (NA, "N/A em toda a varredura")
-    return (NAO_CONCLUSIVO, "o sinal depende do pneu")
+    if (PUSH in unicos and LOOSE in unicos) or NEUTRO in unicos:
+        return (NAO_CONCLUSIVO, "o sinal depende do pneu")
+    return (NAO_CONCLUSIVO, "N/A em parte da varredura (sem inversão de sinal)")
 
 
 _ROTULO = {PUSH: "▲ PUSH: sai de frente (final understeer)",
@@ -881,12 +886,15 @@ _ROTULO = {PUSH: "▲ PUSH: sai de frente (final understeer)",
            NEUTRO: "● NEUTRO no limite"}
 
 
-def texto_veredito(res: ResultadoPar, pior_origem: str, robusto: tuple | None = None) -> str:
-    """Texto exato de exibição (spec 7.3). Prefixo "DEMONSTRATIVO · " se a pior origem não for o TX (D16)."""
+def texto_veredito(res: ResultadoPar, pior_origem: str, robusto: tuple | None = None, *,
+                   origem_do_carro: str = origens.T11) -> str:
+    """Texto exato de exibição (spec 7.3). Prefixo "DEMONSTRATIVO · " se a pior origem não for a do carro do projeto
+    (D16; `origem_do_carro`, T11 na V4.2, `origens.TX_V41` para reproduzir a V4.1). Com robustez NÃO CONCLUSIVO o
+    texto é "? NÃO CONCLUSIVO: " + motivo (EDR-060 item 8 x)."""
     if robusto is not None and robusto[0] == NAO_CONCLUSIVO:
-        texto = "? NÃO CONCLUSIVO: o sinal depende do pneu"
+        texto = "? NÃO CONCLUSIVO: " + robusto[1]
     elif res.veredito == NA:
         texto = "N/A: " + (res.motivo or "")
     else:
         texto = _ROTULO[res.veredito]
-    return texto if pior_origem == "● Dado do TX" else "DEMONSTRATIVO · " + texto
+    return texto if pior_origem == origem_do_carro else "DEMONSTRATIVO · " + texto

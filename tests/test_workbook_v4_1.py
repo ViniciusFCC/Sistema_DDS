@@ -78,6 +78,7 @@ import aba_equilibrio as ae
 import caso_planilha as cp
 import equilibrio as eq
 import equilibrio_linear as el
+import origens
 import recalculo_planilha as rc
 import gerar_v4_1
 import tire_model as tm
@@ -520,7 +521,8 @@ def comparar_caso(nome, copia, esperado, prefixo, falhas):
             falhas.append(f"{nome}: Python ValueError({e!s}); planilha situação={r16['status']!r} "
                           f"veredito={r16['ver']!r} motivo={r16['mot']!r}")
         ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(SimpleNamespace(veredito=eq.NA, motivo=str(e)),
-                                                        cp.pior_origem_do_caso_v41(copia))}
+                                                        cp.pior_origem_do_caso_v41(copia),
+                                                        origem_do_carro=origens.TX_V41)}
         return f"{nome}: N/A pelas entradas ({e})"
     res = eq.analise_par(caso)
     fina, sf2, sr2 = eq._varredura(caso, ae.AY_MAX_G, ae.PASSO_G / 2.0, 2 * ae.N_ALFA - 1)
@@ -550,7 +552,7 @@ def comparar_caso(nome, copia, esperado, prefixo, falhas):
     pior = cp.pior_origem_do_caso_v41(copia)
     if r16["pior"] != pior:
         falhas.append(f"{nome} pior origem: planilha {r16['pior']!r} Python {pior!r}")
-    ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(res, pior)}
+    ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(res, pior, origem_do_carro=origens.TX_V41)}
     if esperado is not None and res.veredito != esperado:
         falhas.append(f"{nome}: veredito do Python {res.veredito} ≠ esperado no plano {esperado} (achado, não ajuste)")
     if prefixo is not None and not (res.motivo or "").startswith(prefixo):
@@ -639,10 +641,11 @@ def comparar_k(nome, copia, falhas):
         if not (r16["kTot"] == "N/A" and r16["kmot"] == str(e)):
             falhas.append(f"{nome} 16: K={r16['kTot']!r} motivo={r16['kmot']!r}, esperado N/A com {e}")
         ESPERADO6[nome]["txt_k"] = el.texto_k(SimpleNamespace(k_total=None, motivo=str(e)),
-                                              cp.pior_origem_do_caso_v41(copia, linear=True))
+                                              cp.pior_origem_do_caso_v41(copia, linear=True),
+                                              origem_do_carro=origens.TX_V41)
         return f"{nome}: K N/A pelas entradas ({e})"
     pior = cp.pior_origem_do_caso_v41(copia, linear=True)
-    tab = el.tabela_linear(caso, pior_origem=pior)
+    tab = el.tabela_linear(caso, pior_origem=pior, origem_do_carro=origens.TX_V41)
     if len(tab) != ae.N_LIN19:
         falhas.append(f"{nome}: tabela_linear com {len(tab)} linhas, planilha com {ae.N_LIN19}")
     for k, (ln, row) in enumerate(zip(lin, tab)):
@@ -651,7 +654,7 @@ def comparar_k(nome, copia, falhas):
             p = dataclasses.replace(p, k_roll_steer=None, k_total=None,
                                     motivo="; ".join(m for m in (p.motivo, m_rs) if m))
         if k == 0:   # texto de exibição do K (TC-WB41-006, parte 2): o da 1ª linha, com o motivo já juntado
-            ESPERADO6[nome]["txt_k"] = el.texto_k(p, pior)
+            ESPERADO6[nome]["txt_k"] = el.texto_k(p, pior, origem_do_carro=origens.TX_V41)
         for q, py in (("kP", p.k_pneus), ("kT", p.k_transferencia), ("kD", p.k_deslocamento), ("kC", p.k_camber),
                       ("kRS", p.k_roll_steer), ("kTot", p.k_total), ("kI", row["k_inclinacao"])):
             if not k_igual(ln[q], py, f"{nome} linha {k} {q}"):
@@ -1005,7 +1008,8 @@ def esperado_origem(nome, copia, pior, falhas):
     com `pior`; a cópia tem de mostrar essa pior origem, sem prefixo com TX e com prefixo com T09."""
     res = eq.analise_par(cp.caso_da_planilha_v41(copia, TIR, passo1=False))
     p = el.parcelas_k(cp.caso_da_planilha_v41(copia, TIR), 0.0)
-    ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(res, pior), "txt_k": el.texto_k(p, pior)}
+    ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(res, pior, origem_do_carro=origens.TX_V41),
+                       "txt_k": el.texto_k(p, pior, origem_do_carro=origens.TX_V41)}
     for k, t in ESPERADO6[nome].items():
         if t.startswith(PREFIXO) != (pior != TX):
             falhas.append(f"{nome}: texto esperado {t!r} com o prefixo errado para a pior origem {pior!r}")
