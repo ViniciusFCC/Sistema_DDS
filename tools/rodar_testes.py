@@ -39,10 +39,14 @@ TESTES = [
     ("equilíbrio", "tests/test_equilibrio.py", 28, "planos dos incrementos 1 e 2 da V4.0"),
     ("equilíbrio linear", "tests/test_equilibrio_linear.py", 18, "plano do incremento 2 da V4.0"),
     ("V4.0 (nomes e dados)", "tests/test_v4_0.py", 4, "plano do incremento 3 da V4.0"),
+    ("V4.1 (estrutura e CA-07)", "tests/test_v4_1.py", 2, "plano do incremento 4 da V4.1 (TC-WB41-001 e 002)"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
-           "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha"]
-MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6)]
+           "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1"]
+MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
+           ("tests/mutation_planilha_equilibrio.py", 5)]
+# A mutação da planilha recalcula cópias pelo Excel (6 execuções do teste, de minutos cada): o limite de 1800 s dos outros não basta.
+TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200}
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
@@ -50,7 +54,8 @@ RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
 PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de-versoes-V3_0.md"),
              ("tests/test_workbook_suspensao.py", 15, "suspensão da V3.0 (15 com a 2ª rodada da revisão metodológica); registro-de-versoes-V3_0.md"),
-             ("tests/test_workbook_v4_0.py", 2, "V4.0; plano do incremento 3")]
+             ("tests/test_workbook_v4_0.py", 2, "V4.0; plano do incremento 3"),
+             ("tests/test_workbook_v4_1.py", 5, "V4.1 (TC-WB41-003 a 006, parte 1 e 2 do 006); plano do incremento 4")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
@@ -92,7 +97,7 @@ def bloco(titulo: str, texto: str) -> list[str]:
 def versao_planilhas() -> tuple[bool, list[str]]:
     """Fase B, passo 3: a versão da planilha fica no nome do arquivo (EDR-043) e no
     texto de 00_README!A3 ("Versão do workbook: V2.4 ..."). Confere que os dois batem
-    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0 e a V4.0 (EDR-058) têm de estar entre elas."""
+    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0, a V4.0 (EDR-058) e a V4.1 (EDR-060) têm de estar entre elas."""
     linhas, ok = [], True
     arquivos = sorted((RAIZ / "excel").glob("FSAE_EV_Suspension_Fase1_V*.xlsx"))
     for f in arquivos:
@@ -109,7 +114,7 @@ def versao_planilhas() -> tuple[bool, list[str]]:
         linhas.append(f"- `excel/{f.name}`: A3 diz {lido}: **{'PASS' if bate else 'FAIL'}**")
     if not arquivos:
         ok, linhas = False, ["- nenhuma planilha encontrada em `excel/`: **FAIL**"]
-    for obrigatoria in (CAMINHO_V30, CAMINHO_V40):
+    for obrigatoria in (CAMINHO_V30, CAMINHO_V40, CAMINHO_V41):
         if RAIZ / obrigatoria not in arquivos:
             ok = False
             linhas.append(f"- `{obrigatoria}` não encontrada: **FAIL**")
@@ -124,6 +129,7 @@ def git(*args: str) -> str:
 TAG_V30 = "v3.0"
 CAMINHO_V30 = "excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx"
 CAMINHO_V40 = "excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx"
+CAMINHO_V41 = "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 
 
 def referencia_v30(pasta: Path) -> tuple[Path, str]:
@@ -191,7 +197,7 @@ def main() -> None:
     # --- Mutação (CA-06) ---
     md += ["## Mutação (CA-06)", ""]
     for script, esperado in MUTACAO:
-        r = rodar([script])
+        r = rodar([script], timeout=TIMEOUT_MUTACAO.get(script, 1800))
         linhas = r.stdout.splitlines()
         pre = [l for l in linhas if l.startswith("PRE-CHECAGEM")]
         pre_ok = any(l.startswith("PRE-CHECAGEM OK") for l in pre)
@@ -250,10 +256,20 @@ def main() -> None:
                                                          estrutura=True)
         else:
             ok7c, r7c = False, [f"CA-07 FAIL: gerar_v4_0 não gerou a V4.0 ou falta {CAMINHO_V40}", cauda(r40.stderr)]
+        # V4.1 = V4.0 da tag v4.0 + python/gerar_v4_1.py (equilíbrio em fórmulas; EDR-060), comparada com a de excel/ inclusive a estrutura
+        out41 = Path(tmp) / "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
+        r41 = rodar(["python/gerar_v4_1.py", "--saida", str(out41)])
+        md.append(f"- V4.1: `python/gerar_v4_1.py --saida <tmp>/V4_1.xlsx` (a V4.0 sai da tag `v4.0`), código {r41.returncode}")
+        if r41.returncode == 0 and out41.exists() and (RAIZ / CAMINHO_V41).exists():
+            ok7d, r7d = comparar_planilhas.comparar_xlsx(out41, RAIZ / CAMINHO_V41, comparar_planilhas.FORMULAS_ESPERADAS_V41,
+                                                         estrutura=True)
+        else:
+            ok7d, r7d = False, [f"CA-07 FAIL: gerar_v4_1 não gerou a V4.1 ou falta {CAMINHO_V41}", cauda(r41.stderr)]
     resumo.append(("CA-07", "planilha vs V2.4 entregue", "PASS" if ok7 else "FAIL"))
     resumo.append(("CA-08", "layout vs entregue", "PASS" if ok8 else "FAIL"))
     resumo.append(("CA-07", "planilha vs V3.0 de referência", "PASS" if ok7b else "FAIL"))
     resumo.append(("CA-07", "planilha vs V4.0 de referência (com nomes definidos)", "PASS" if ok7c else "FAIL"))
+    resumo.append(("CA-07", "planilha vs V4.1 de referência (equilíbrio em fórmulas)", "PASS" if ok7d else "FAIL"))
     # CA-07 da planilha viva (EDR-051): tudo igual à referência menos as células de entrada (atualizar_planilha.celulas_de_entrada)
     sys.path.insert(0, str(RAIZ / "python"))
     import atualizar_planilha  # noqa: E402
@@ -262,7 +278,7 @@ def main() -> None:
     md += [f"- Referência da V3.0: {ORIGEM_REF30}. A regeneração e os testes CA-09 usam a referência; a planilha da árvore "
            "é o arquivo vivo e só passa pela verificação de estrutura.", "",
            "```text", *r7, *r8, "--- V3.0 (regeneração vs referência) ---", *r7b, "--- V3.0 viva ---", *r7v,
-           "--- V4.0 (regeneração vs excel/) ---", *r7c, "```", ""]
+           "--- V4.0 (regeneração vs excel/) ---", *r7c, "--- V4.1 (regeneração vs excel/) ---", *r7d, "```", ""]
 
     # --- Versão gravada na planilha (fase B, passo 3) ---
     ok_ver, linhas_ver = versao_planilhas()
@@ -274,7 +290,7 @@ def main() -> None:
     # --- Teste da planilha, Excel x Python (CA-09, EDR-044) ---
     md += ["## Teste da planilha (CA-09)", ""]
     for script, esperado, fonte in PLANILHAS:
-        args = [str(REF30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [
+        args = [str(REF30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith("_v4_1.py") else [
             str(REF30), str(RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"), str(RAIZ / "data" / "layout_V2_4.json"),
             str(RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir")]
         r = rodar([script, *args])

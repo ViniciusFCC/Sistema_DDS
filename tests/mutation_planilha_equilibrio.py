@@ -12,8 +12,10 @@ Padrão de tests/mutation_equilibrio.py: pré-checagem do original; "detectado" 
 linha [FAIL] de TC-WB41-004, 005 ou 006 (o TC-WB41-003 não conta: ele não exercita a lógica mutada). A cópia mutada do
 gerador fica numa pasta temporária posta no PYTHONPATH, antes do python/ instalado pelo uv; o teste roda do repositório
 (precisa de data/, só leitura) e gera todas as planilhas em pastas temporárias dele. A sonda confirma que o
-aba_equilibrio importado é a cópia. O arquivo do repositório não muda. Cada mutante roda o test_workbook_v4_1.py inteiro
-(~11 recálculos de cópias): leva minutos por mutante. DDS_RECALC=excel|libreoffice vale como no teste.
+aba_equilibrio importado é a cópia. O arquivo do repositório não muda. Cada mutante roda o test_workbook_v4_1.py só com
+os casos de CASOS (variável DDS_CASOS: C1, C3, C4b, ORG_TX e ORG_T09, 5 recálculos de cópias; o TC-WB41-003 e os outros
+casos não rodam): leva minutos por mutante. O motor é o Excel (DDS_RECALC=excel fixo no ambiente do mutante). A troca a↔b
+só é pega pelo C1 (os casos C2 a C4 têm a = b).
 Roda como script: uv run python -X utf8 tests/mutation_planilha_equilibrio.py
 Código de saída: 0 = todos detectados; 1 = algum mutante escapou; 2 = pré-checagem falhou; 3 = sem motor de recálculo.
 """
