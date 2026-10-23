@@ -23,9 +23,9 @@ Foco declarado: completar a planilha (EDR-019).
 - V4.0 (incrementos 1 a 3) concluída no código (EDR-058): `excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx` é a
   referência, com 698 nomes definidos e as mesmas 387 fórmulas da V3.0. A viva da equipe continua a V3.0, na pasta
   compartilhada (caminho e responsável a informar), até o usuário decidir a troca (`docs/registro-de-versoes-V4_0.md`).
-- V4.1 (incremento 4, equilíbrio na planilha) concluída no código, no ramo `feat/v4-1-inc4-equilibrio` (PR #17 mesclado
-  em 2026-10-22; tag pendente; EDR-059 e EDR-060 APPROVED, relatório `docs/v4-1/inc4-equilibrio-na-planilha.md`):
-  `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` é a referência, com as abas 16 a 22 (mais 20a a 20d), 117569 fórmulas e
+- V4.1 (incremento 4, equilíbrio na planilha) concluída (PR #17 mesclado em 2026-10-22; tag `v4.1` no
+  merge 05d8fb5; EDR-059 e EDR-060 APPROVED, relatório `docs/v4-1/inc4-equilibrio-na-planilha.md`):
+  `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` é a referência (imutável: o arquivo na tag `v4.1`), com as abas 16 a 22 (mais 20a a 20d), 117569 fórmulas e
   1145 nomes (698 da V4.0 e 447 de `data/nomes_V4_1.csv`). A viva da equipe continua a V3.0. O incremento 5 em diante
   parte da V4.1; o nome da versão seguinte fica a definir com o usuário (`docs/registro-de-versoes-V4_1.md`).
 
