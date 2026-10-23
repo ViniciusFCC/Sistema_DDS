@@ -51,7 +51,8 @@ não é validação física (Validation = NOT_VALIDATED, EDR-022).
 
 - EDR-060 aprovado em 2026-10-22: o usuário conferiu o relatório `docs/v4-1/inc4-equilibrio-na-planilha.md`;
   os itens PENDING_CONFIRMATION do item 8 continuam pendentes.
-- PR #17 mesclado em 2026-10-22; tag da V4.1 a definir com o usuário. O nome da versão do incremento 5 em diante também.
+- PR #17 mesclado em 2026-10-22; tag anotada `v4.1` no merge (05d8fb5), publicada em 2026-10-22.
+- Nome da versão do incremento 5 em diante: a definir com o usuário.
 - Caminho da pasta compartilhada da viva e responsável pelos retratos `dados:` (EDR-051, EDR-058): a informar; a troca
   da viva para a V4.0 ou a V4.1 é decisão do usuário.
 - Pneu do carro (R60A) ou dataset do OptimumTire: o equilíbrio usa o `.tir` provisório do TTC (EDR-038, EDR-055).
