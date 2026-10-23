@@ -51,4 +51,4 @@ uv run python -X utf8 tools/migrar_dados_v3_v4.py <viva_V3_0.xlsx>
 - EDR-057 está APPROVED_WITH_CONDITIONS: o usuário confere as escolhas de método no relatório do incremento 2.
 - A reescrita das 387 fórmulas para nomes fica para o incremento 7 (D13).
 - `python/caso_planilha.py` ainda lê o caso por endereço (`ENTRADAS_CASO`, cópia do `ENTRADAS` de
-  `tests/test_workbook_suspensao.py`); a troca das duas pelos nomes definidos fica para o incremento 4 (V4.1).
+  `tests/test_workbook_suspensao.py`); a troca das duas pelos nomes definidos fica para o incremento 4 (V4.1). *(Nota de 2026-10-22: feito na V4.1; `caso_planilha.caso_da_planilha_v41` lê o caso pelos nomes. A leitura por endereço continua só para a V3.0.)*

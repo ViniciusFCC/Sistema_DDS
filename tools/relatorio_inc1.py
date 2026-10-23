@@ -148,7 +148,7 @@ def entradas_e_origens(copia_recalc: Path, copia_formulas: Path) -> list[dict]:
     wf = openpyxl.load_workbook(copia_formulas, data_only=False)
     grafo = Grafo(wf)
     saida = []
-    for nome, (aba, cel) in cp.ENTRADAS_CASO.items():
+    for nome, (aba, cel) in cp.enderecos_das_entradas(wf).items():
         linha = int(re.sub(r"[A-Z]", "", cel))
         ws = wv[aba]
         rot = []

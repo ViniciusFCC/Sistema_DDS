@@ -201,8 +201,9 @@ TLLTD não adotado por ser target sem decisão da equipe).
   (gradiente da SAE, p. 227): a igualdade só é exigida na primeira linha; acima dela, k_total e k_inclinacao
   diferem por definição. O roll steer só existe no passo 1 (o passo 2 não esterça a traseira), e a igualdade vale
   sem ele (EDR-057, 2026-10-21).
-- **Exibição:** "K = +x °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; sem compliance,
-  torque de alinhamento e tração)" (EDR-057, 2026-10-21), nunca "K total" com parcela faltando; parcelas lado a
+- **Exibição:** "K = +x °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e camber
+  estático) + camber + roll steer; sem compliance, torque de alinhamento e tração)" (EDR-057, 2026-10-21; rótulo
+  revisto no incremento 4, 2026-10-21), nunca "K total" com parcela faltando; parcelas lado a
   lado com porcentagem; rótulo Subesterço /
   Sobresterço pelo sinal (banda de neutro só por EDR); velocidade característica (K > 0) e crítica (K < 0)
   (Gillespie p. 203-204); pior origem ao lado.
@@ -272,7 +273,7 @@ como teste do máximo numérico.
 | 4 | Camber em curva | Gillespie eq. 6-50; §7.2 | Linear | Não linear | Capacidade |
 | 5 | Três massas, RC fixo, rolagem linear | EDR-009/011 | Sim | RC(φ), K_φ(φ) | Cresce com a rolagem |
 | 6 | Termo gravitacional da rolagem | EDR-046 | Sim | Sim | — |
-| 7 | CG lateral, dois sentidos de curva | §7.2 | Sim (entrada, 0 até medir) | Sim | Um sentido piora |
+| 7 | CG lateral, dois sentidos de curva | §7.2 | Sim (entrada, 0 até medir; um sentido por vez, pela entrada "Sentido da curva": o outro se vê trocando o sentido; EDR-060, 2026-10-22) | Sim | Um sentido piora |
 | 8 | Aero com V = √(a_y·R) | Milliken cap. 3; EDR-013 | Sim (CzA, balanço, R; 0 ou a confirmar) | Sim | Subestima a_y em alta velocidade |
 | 9 | Força de tração na traseira | Gillespie p. 222; §7.1 | Elipse de atrito normalizada, com semieixos nos picos puros do PAC2002 (Gillespie pp. 364-365; Milliken p. 59; a fórmula normalizada não está impressa em nenhum dos dois, e é a simplificação adotada); Fx por arrasto, rolamento e arrasto do pneu dianteiro F_yf·tan δ_ref; CdA e Crr a confirmar (EDR-057, 2026-10-21) | PAC2002 combinado | Superestima a traseira (puxa para push) |
 | 10 | Diferencial | Milliken cap. 20 | Aberto, declarado; tipo real a confirmar | Aberto, autoblocante, travado | Travado puxa para push |
@@ -315,6 +316,9 @@ Amplitude: EDR-055. Tratamento da faixa do pneu: EDR-056.
 4. **Onde roda:** primeiro no Python (incremento 1, exploratório; incremento 2, em `equilibrio.py` com teste);
    na planilha, só se o incremento 1 mostrar que o recálculo aguenta; senão o Python gera o relatório e a planilha
    mostra o veredito nominal com o aviso "robustez ao pneu: ver relatório", sem copiar números (seção 7.5).
+   *(EDR-060, 2026-10-22: na V4.1 foi esta a saída. A planilha mostra o veredito nominal com o aviso "robustez ao pneu: ver
+   relatório docs/v4-1/inc4-equilibrio-na-planilha.md (não recalculada na planilha)"; o relatório é gerado por
+   `tools/relatorio_inc4.py` com `equilibrio.varredura_pneu` sobre o caso lido da planilha.)*
 5. **Com o pneu real** (R60A, OptimumTire), a varredura roda de novo; a conclusão vale para o pneu testado.
 
 ## 8. Arquitetura

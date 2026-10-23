@@ -22,8 +22,12 @@ Foco declarado: completar a planilha (EDR-019).
 - Não há hardpoints reais do CAD (Fusion): toda a cinemática usa geometria sintética.
 - V4.0 (incrementos 1 a 3) concluída no código (EDR-058): `excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx` é a
   referência, com 698 nomes definidos e as mesmas 387 fórmulas da V3.0. A viva da equipe continua a V3.0, na pasta
-  compartilhada (caminho e responsável a informar), até o usuário decidir a troca. Do incremento 4 em diante a
-  versão é a V4.1, numa conversa nova (`docs/registro-de-versoes-V4_0.md`).
+  compartilhada (caminho e responsável a informar), até o usuário decidir a troca (`docs/registro-de-versoes-V4_0.md`).
+- V4.1 (incremento 4, equilíbrio na planilha) concluída no código, no ramo `feat/v4-1-inc4-equilibrio` (PR #17 mesclado
+  em 2026-10-22; tag pendente; EDR-059 e EDR-060 APPROVED, relatório `docs/v4-1/inc4-equilibrio-na-planilha.md`):
+  `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` é a referência, com as abas 16 a 22 (mais 20a a 20d), 117569 fórmulas e
+  1145 nomes (698 da V4.0 e 447 de `data/nomes_V4_1.csv`). A viva da equipe continua a V3.0. O incremento 5 em diante
+  parte da V4.1; o nome da versão seguinte fica a definir com o usuário (`docs/registro-de-versoes-V4_1.md`).
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
@@ -37,11 +41,11 @@ Foco declarado: completar a planilha (EDR-019).
   nunca regrave os logs existentes. Um teste só: `uv run python -X utf8 tests/<script>.py`. Os testes são
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
-- Esperado na V4.0: pneu 43, oráculos 5, suspensão 54, cinemática 76, hardpoints 35,
-  equilíbrio 28, equilíbrio linear 18 (incrementos 1 e 2), V4.0 nomes e dados 4 (`tests/test_v4_0.py`, incremento 3), mutação 25/25 do pneu e 6/6 do equilíbrio, autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença; V4.0 regenerada da tag `v3.0` com as mesmas 387 fórmulas e os 698 nomes, 0 diferença.
+- Esperado na V4.1: pneu 43, oráculos 5, suspensão 54, cinemática 76, hardpoints 35,
+  equilíbrio 28, equilíbrio linear 18 (incrementos 1 e 2), V4.0 nomes e dados 4 (`tests/test_v4_0.py`, incremento 3), V4.1 estrutura e CA-07 2 (`tests/test_v4_1.py`, TC-WB41-001 e 002), mutação 25/25 do pneu, 6/6 do equilíbrio e 5/5 da planilha do equilíbrio (`tests/mutation_planilha_equilibrio.py`, só Excel, minutos), autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença; V4.0 regenerada da tag `v3.0` com as mesmas 387 fórmulas e os 698 nomes, 0 diferença; V4.1 regenerada da tag `v4.0` com 117569 fórmulas e os 1145 nomes, 0 diferença.
   `tests/test_workbook.py` 19/19 (pneu) e `tests/test_workbook_suspensao.py` 15/15 (suspensão),
   ambos na V3.0 de referência (arquivo da tag `v3.0`; antes da tag, o da árvore), e `tests/test_workbook_v4_0.py` 2/2
-  (V4.0 de `excel/`): recalculam cópias pelo Excel via COM ou, sem Excel, pelo
+  (V4.0 de `excel/`) e `tests/test_workbook_v4_1.py` 5/5 (V4.1 de `excel/`; TC-WB41-003 a 006): recalculam cópias pelo Excel via COM ou, sem Excel, pelo
   LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois eles
   saem NÃO EXECUTÁVEL, que nunca conta como aprovado.
 - Planilha vigente: V3.0, **fechada em 2026-10-20** (EDR-051). `excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx`
@@ -51,8 +55,8 @@ Foco declarado: completar a planilha (EDR-019).
   com a referência em tudo menos as células de entrada (`atualizar_planilha.celulas_de_entrada()`). Mudança
   de fórmula ou estrutura entra na próxima planilha gerada, nunca editando a planilha à mão. A **V4.0** já existe
   (fundação: nomes definidos, fórmulas iguais às da V3.0; os textos da V3.0 que dizem "V3.1" se referem a ela); a
-  próxima planilha com mudança de fórmula ou estrutura é a **V4.1**, do incremento 4 em diante, numa conversa nova
-  (usuário, 2026-10-21).
+  **V4.1** (equilíbrio em fórmulas) também já existe; a próxima planilha com mudança de fórmula ou estrutura sai a
+  partir do incremento 5, com versão a definir com o usuário.
 - V4.0 de referência (EDR-058): `python/gerar_v4_0.py` a gera da tag `v3.0` em `build/` (nunca em `excel/`; a cópia
   para `excel/` é um commit próprio), com os nomes de `data/nomes_V4_0.csv` (`python/nomes_v4_0.py`); só mudam
   00_README A3 e a linha 20 do 15_CHANGELOG (`docs/registro-de-versoes-V4_0-celulas.md`). Migração dos dados da viva,
@@ -62,6 +66,14 @@ Foco declarado: completar a planilha (EDR-019).
   (`dados: ...`), com `tools/extrato_entradas.py` para o diff legível. A metodologia segue a literatura, principalmente o
   Milliken (usuário, 2026-10-19; `docs/revisao-metodologica.md`). Os livros e o OCR ficam
   em `references/` (fora do Git); busque no `.md`, mas confira a equação na imagem do PDF.
+- V4.1 de referência (EDR-059, EDR-060): `python/gerar_v4_1.py` a gera da tag `v4.0` em `build/` (nunca em `excel/`; a
+  cópia para `excel/` é um commit próprio), com `python/aba_equilibrio.py` (famílias de fórmula F1-F19; o texto exato de
+  cada célula sai do gerador, e `docs/registro-de-versoes-V4_1-celulas.md` resume por aba e família) e os nomes de
+  `data/nomes_V4_1.csv`. Células existentes alteradas: 10_TIRE (Fz, α, γ e κ limitados à faixa, EDR-056), 13_VALIDATION
+  B40:B43/C43, textos da §12.1 e 00_README A3, A37, A53. O caso da planilha lido por nomes é
+  `caso_planilha.caso_da_planilha_v41`. O relatório que a célula de robustez cita (varredura do pneu, EDR-055, que NÃO
+  é recalculada na planilha) sai de `uv run python -X utf8 tools/relatorio_inc4.py --sobrescrever` (Excel ou
+  LibreOffice, em cópia). Os únicos IDs novos desse incremento são SUS-1001 a SUS-1008, EDR-059, EDR-060 e TC-WB41-001 a 006.
 - Rode os testes afetados antes de dizer que uma tarefa terminou.
 
 ## Fontes de verdade

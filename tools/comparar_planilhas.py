@@ -26,6 +26,10 @@ FORMULAS_ESPERADAS_V30 = 387  # 356 + 6 da 1ª rodada de feedback (EDR-050) + 19
 # V4.0 (incremento 3, EDR-058): gerada da tag v3.0 por python/gerar_v4_0.py; só acrescenta nomes definidos.
 ENTREGUE_XLSX_V40 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_0.xlsx"
 FORMULAS_ESPERADAS_V40 = FORMULAS_ESPERADAS_V30  # nenhuma fórmula muda na V4.0
+# V4.1 (incremento 4, EDR-060): gerada da tag v4.0 por python/gerar_v4_1.py; as 387 da V4.0 (215 da 10_TIRE com o texto
+# novo do EDR-056) mais as 117181 de aba_equilibrio.montar (abas 16 a 22 e bloco do 14_DASHBOARD).
+ENTREGUE_XLSX_V41 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
+FORMULAS_ESPERADAS_V41 = FORMULAS_ESPERADAS_V40 + 117181 + 1   # + a C43 da 13_VALIDATION (Task 8b)
 
 
 def _formula(v) -> str | None:
