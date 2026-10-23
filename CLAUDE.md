@@ -15,19 +15,25 @@ Foco declarado: completar a planilha (EDR-019).
   o `_V2.0`, versão do schema; os outros dados mantêm o sufixo de origem). A planilha em
   `excel/` mantém a versão no nome. Docstrings e textos de células em `build_workbook.py`
   ainda citam os nomes `_V2_x` de propósito: não os "corrija" (quebra o CA-07).
-- Carro atual: TX/E05. O T09/E03 é só referência histórica, nunca baseline (EDR-012).
-  Freio dentro da roda, em volta do cubo; motor no chassi, atrás (usuário, 2026-10-19;
+- Projeto atual: **T11**, em fase de projeto e de definição de diretrizes e dados (usuário, 2026-10-22). A planilha
+  ainda não tem nenhum dado do T11: os dados que existem são os do TX/E05 e do T09/E03 que já estão nela. O T09/E03
+  continua só referência histórica, nunca baseline (EDR-012); o TX/E05 passa a ser o carro anterior, também só
+  referência para o T11. O rótulo "● Dado do TX" da lista Origens e o prefixo DEMONSTRATIVO (D16) ainda tratam o TX
+  como o carro do projeto: ajustar na V4.2.
+  Freio dentro da roda, em volta do cubo; motor no chassi, atrás (usuário, 2026-10-19, antes de o T11 ser informado: confirmar se vale para o T11;
   define a linha do anti-dive e do anti-squat, EDR-048). Mola, MR, barra e RC da
-  planilha são valores demonstrativos (T09/E03), não do TX.
+  planilha são valores demonstrativos (T09/E03), não do TX nem do T11.
 - Não há hardpoints reais do CAD (Fusion): toda a cinemática usa geometria sintética.
 - V4.0 (incrementos 1 a 3) concluída no código (EDR-058): `excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx` é a
-  referência, com 698 nomes definidos e as mesmas 387 fórmulas da V3.0. A viva da equipe continua a V3.0, na pasta
-  compartilhada (caminho e responsável a informar), até o usuário decidir a troca (`docs/registro-de-versoes-V4_0.md`).
+  referência, com 698 nomes definidos e as mesmas 387 fórmulas da V3.0. Foi a referência até a V4.1 (`docs/registro-de-versoes-V4_0.md`).
 - V4.1 (incremento 4, equilíbrio na planilha) concluída (PR #17 mesclado em 2026-10-22; tag `v4.1` no
   merge 05d8fb5; EDR-059 e EDR-060 APPROVED, relatório `docs/v4-1/inc4-equilibrio-na-planilha.md`):
   `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` é a referência (imutável: o arquivo na tag `v4.1`), com as abas 16 a 22 (mais 20a a 20d), 117569 fórmulas e
-  1145 nomes (698 da V4.0 e 447 de `data/nomes_V4_1.csv`). A viva da equipe continua a V3.0. O incremento 5 em diante
-  parte da V4.1; o nome da versão seguinte fica a definir com o usuário (`docs/registro-de-versoes-V4_1.md`).
+  1145 nomes (698 da V4.0 e 447 de `data/nomes_V4_1.csv`). Desde 2026-10-22 a **planilha viva da equipe é a cópia
+  da V4.1** no Google Drive da equipe, `H:\.shortcut-targets-by-id\1Kytf4APy0OtH5Aq5PqlOwH5UY65YMX5U\T11 - Tupã\2. Projeto\Mecanica\Suspensao\Documentacao\Planilha DDS\`, com a documentação
+  (LEIA-ME e .docx dos documentos do repositório) em `Documentacao\`; responsável pela planilha e pelos retratos `dados:`: o usuário (Vinicius
+  Caetano). A V3.0 viva de `excel/` não tinha dados da equipe (SHA igual ao da tag `v3.0`), então a troca não precisou de
+  migração. O incremento 5 em diante é a **V4.2** (usuário, 2026-10-22), numa conversa nova (`docs/registro-de-versoes-V4_1.md`).
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
@@ -48,8 +54,9 @@ Foco declarado: completar a planilha (EDR-019).
   (V4.0 de `excel/`) e `tests/test_workbook_v4_1.py` 5/5 (V4.1 de `excel/`; TC-WB41-003 a 006): recalculam cópias pelo Excel via COM ou, sem Excel, pelo
   LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois eles
   saem NÃO EXECUTÁVEL, que nunca conta como aprovado.
-- Planilha vigente: V3.0, **fechada em 2026-10-20** (EDR-051). `excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx`
-  é o arquivo vivo da equipe; a referência imutável é o mesmo arquivo na tag `v3.0`. A V3.0 de referência é
+- Planilha V3.0, **fechada em 2026-10-20** (EDR-051). `excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx`
+  foi o arquivo vivo da equipe até 2026-10-22 (hoje a viva é a cópia da V4.1 no Drive; o CA-07 "viva × referência"
+  da suíte ainda olha este arquivo, a rever na V4.2); a referência imutável é o mesmo arquivo na tag `v3.0`. A V3.0 de referência é
   gerada da V2.4 por `python/atualizar_planilha.py` (toda célula alterada fica em `alteracoes()`, com fonte e EDR);
   o script recusa gravar por cima da planilha viva. CA-07: a regeneração bate com a referência, e a viva bate
   com a referência em tudo menos as células de entrada (`atualizar_planilha.celulas_de_entrada()`). Mudança
