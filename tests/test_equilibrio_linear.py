@@ -247,10 +247,22 @@ for rotulo, ganho in (("sem ganho de camber", {c: 0.0 for c in eq.CANTOS}), ("co
 # Rigidez do eixo no ponto de operação (toe, raio e Ackermann entram no C do passo 1 como no passo 2). Valores de
 # teste, NÃO são setup do carro: toe dianteiro 0,25° nas duas rodas (toe-out, EDR-002), R = 8,0 m e Ackermann 100 %.
 TOE_TESTE = math.radians(0.25)
+TOE_ATRAS_TESTE = math.radians(0.10)
+CAMBER_F_TESTE, CAMBER_R_TESTE = math.radians(-1.5), math.radians(-1.0)
 EXTRAS_034 = (
     ("toe dianteiro 0,25° (teste)", dict(toe_rad={"FL": TOE_TESTE, "FR": TOE_TESTE, "RL": 0.0, "RR": 0.0})),
     ("R = 8,0 m (teste)", dict(raio_m=8.0)),
     ("R = 8,0 m e Ackermann 100 % (teste)", dict(raio_m=8.0, ackermann_pct=100.0)),
+    # h8: aero com V² = a_y·R (ρ = 1,2 kg/m³ e CzA = 2,0 m², valores de teste, NÃO são do carro). A downforce vai com
+    # |a_y|, o Fz tem um bico em a_y = 0 e só a derivada de um lado em 0+ (a que o passo 2 enxerga) fecha a igualdade.
+    # Com toe (0,25° na frente, 0,10° atrás), camber estático (−1,5° na frente, −1,0° atrás) e CG lateral de 10 mm
+    # (todos de teste), a diferença central falha o TC-EQ-034 (2,04e-3 contra o limite de 1e-3, medido nesta Task 9 com a central trocada de volta temporariamente; o revisor da
+    # Task 8b mediu 4,01e-3 com outros valores) e a derivada de um lado passa (3,94e-5).
+    ("h8: R = 8,0 m, ρ = 1,2, CzA = 2,0, toe 0,25°/0,10°, camber estático −1,5°/−1,0°, CG lateral 10 mm (teste)",
+     dict(raio_m=8.0, rho_kg_m3=1.2, cza_m2=2.0,
+          toe_rad={"FL": TOE_TESTE, "FR": TOE_TESTE, "RL": TOE_ATRAS_TESTE, "RR": TOE_ATRAS_TESTE},
+          camber_estatico_rad={"FL": CAMBER_F_TESTE, "FR": CAMBER_F_TESTE, "RL": CAMBER_R_TESTE, "RR": CAMBER_R_TESTE},
+          cg_lateral_m=0.010)),
 )
 for rotulo, extra in EXTRAS_034:
     for rot_g, ganho in (("sem ganho", {c: 0.0 for c in eq.CANTOS}), ("ganho de teste", GANHO_TESTE)):
@@ -262,7 +274,8 @@ _, p34_0, d34_0 = _comparar_034(ds0, {c: 0.0 for c in eq.CANTOS})
 det_034.append(f"ds0 (sem deslocamentos): {d34_0}")
 check("TC-EQ-034: k_inclinacao da 1ª linha (passo 2, Richardson das secantes de 0,005 e 0,01 g) = k_pneus + k_deslocamento + k_camber "
       "(passo 1), rel < 1e-3, com e sem ganho de camber, também com toe dianteiro 0,25°, R = 8,0 m e R = 8,0 m com "
-      "Ackermann 100 % (veículo e entradas de teste, .tir real, sem roll steer: o passo 2 não tem roll steer)",
+      "Ackermann 100 %, e com a aerodinâmica da h8 (R 8 m, ρ 1,2, CzA 2,0) somada a toe, camber estático e CG lateral (derivada de um lado em a_y = 0) (veículo e entradas "
+      "de teste, .tir real, sem roll steer: o passo 2 não tem roll steer)",
       len(ok_034) == 2 + 2 * len(EXTRAS_034) and all(ok_034), " | ".join(det_034))
 
 # ---------------- TC-EQ-035 : sinal do camber (EDR-002) ----------------
@@ -301,8 +314,8 @@ k037 = math.radians(0.123) / G   # +0,123 °/g em rad/(m/s²); ParcelasK só de 
 t037, e037 = _sem_excecao(lambda: el.texto_k(
     el.ParcelasK(ay_ms2=0.0, k_pneus=k037, k_transferencia=0.0, k_deslocamento=0.0, k_camber=0.0,
                  k_roll_steer=0.0, k_total=k037, dphi_day=0.0, motivo=None), "◐ Dado do T09"))
-esp037 = ("DEMONSTRATIVO · K = +0,12 °/g (pneus + transferência + deslocamento do pneu + camber + roll steer; "
-          "sem compliance, torque de alinhamento e tração) · Subesterço")
+esp037 = ("DEMONSTRATIVO · K = +0,12 °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e "
+          "camber estático) + camber + roll steer; sem compliance, torque de alinhamento e tração) · Subesterço")
 check("TC-EQ-037: texto_k com pior origem '◐ Dado do T09' e K = +0,123 °/g é o texto exato da spec §6",
       t037 == esp037, e037 or f"obtido={t037!r}")
 

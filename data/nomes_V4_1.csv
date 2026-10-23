@@ -1,0 +1,448 @@
+nome,aba,celula,papel,sus_id,rotulo
+ent_16_sentido_da_curva,16_EQUILIBRIO,B4,ent,,Sentido da curva
+org_16_sentido_da_curva,16_EQUILIBRIO,E4,org,,Sentido da curva
+fte_16_sentido_da_curva,16_EQUILIBRIO,F4,fte,,Sentido da curva
+ent_16_toe_fl,16_EQUILIBRIO,B5,ent,,Toe FL
+org_16_toe_fl,16_EQUILIBRIO,E5,org,,Toe FL
+fte_16_toe_fl,16_EQUILIBRIO,F5,fte,,Toe FL
+ent_16_toe_fr,16_EQUILIBRIO,B6,ent,,Toe FR
+org_16_toe_fr,16_EQUILIBRIO,E6,org,,Toe FR
+fte_16_toe_fr,16_EQUILIBRIO,F6,fte,,Toe FR
+ent_16_toe_rl,16_EQUILIBRIO,B7,ent,,Toe RL
+org_16_toe_rl,16_EQUILIBRIO,E7,org,,Toe RL
+fte_16_toe_rl,16_EQUILIBRIO,F7,fte,,Toe RL
+ent_16_toe_rr,16_EQUILIBRIO,B8,ent,,Toe RR
+org_16_toe_rr,16_EQUILIBRIO,E8,org,,Toe RR
+fte_16_toe_rr,16_EQUILIBRIO,F8,fte,,Toe RR
+ent_16_raio_do_skidpad_r,16_EQUILIBRIO,B9,ent,,Raio do skidpad R
+org_16_raio_do_skidpad_r,16_EQUILIBRIO,E9,org,,Raio do skidpad R
+fte_16_raio_do_skidpad_r,16_EQUILIBRIO,F9,fte,,Raio do skidpad R
+ent_16_cg_lateral_y_cg,16_EQUILIBRIO,B10,ent,,CG lateral (y_CG)
+org_16_cg_lateral_y_cg,16_EQUILIBRIO,E10,org,,CG lateral (y_CG)
+fte_16_cg_lateral_y_cg,16_EQUILIBRIO,F10,fte,,CG lateral (y_CG)
+ent_16_cza,16_EQUILIBRIO,B11,ent,,CzA
+org_16_cza,16_EQUILIBRIO,E11,org,,CzA
+fte_16_cza,16_EQUILIBRIO,F11,fte,,CzA
+ent_16_rho_densidade_do_ar,16_EQUILIBRIO,B12,ent,,ρ (densidade do ar)
+org_16_rho_densidade_do_ar,16_EQUILIBRIO,E12,org,,ρ (densidade do ar)
+fte_16_rho_densidade_do_ar,16_EQUILIBRIO,F12,fte,,ρ (densidade do ar)
+ent_16_cda,16_EQUILIBRIO,B13,ent,,CdA
+org_16_cda,16_EQUILIBRIO,E13,org,,CdA
+fte_16_cda,16_EQUILIBRIO,F13,fte,,CdA
+ent_16_crr_resistencia_ao_rolamento,16_EQUILIBRIO,B14,ent,,Crr (resistência ao rolamento)
+org_16_crr_resistencia_ao_rolamento,16_EQUILIBRIO,E14,org,,Crr (resistência ao rolamento)
+fte_16_crr_resistencia_ao_rolamento,16_EQUILIBRIO,F14,fte,,Crr (resistência ao rolamento)
+ent_16_chave_h2_ackermann_sus_414,16_EQUILIBRIO,B15,ent,,Chave h2: Ackermann (SUS-414)
+org_16_chave_h2_ackermann_sus_414,16_EQUILIBRIO,E15,org,,Chave h2: Ackermann (SUS-414)
+fte_16_chave_h2_ackermann_sus_414,16_EQUILIBRIO,F15,fte,,Chave h2: Ackermann (SUS-414)
+ent_16_chave_h3_cos_delta_ref_na_frente,16_EQUILIBRIO,B16,ent,,Chave h3: cos δ_ref na frente
+org_16_chave_h3_cos_delta_ref_na_frente,16_EQUILIBRIO,E16,org,,Chave h3: cos δ_ref na frente
+fte_16_chave_h3_cos_delta_ref_na_frente,16_EQUILIBRIO,F16,fte,,Chave h3: cos δ_ref na frente
+ent_16_chave_h7_cg_lateral,16_EQUILIBRIO,B17,ent,,Chave h7: CG lateral
+org_16_chave_h7_cg_lateral,16_EQUILIBRIO,E17,org,,Chave h7: CG lateral
+fte_16_chave_h7_cg_lateral,16_EQUILIBRIO,F17,fte,,Chave h7: CG lateral
+ent_16_chave_h8_aero_com_v_a_yr,16_EQUILIBRIO,B18,ent,,Chave h8: aero com V = √(a_y·R)
+org_16_chave_h8_aero_com_v_a_yr,16_EQUILIBRIO,E18,org,,Chave h8: aero com V = √(a_y·R)
+fte_16_chave_h8_aero_com_v_a_yr,16_EQUILIBRIO,F18,fte,,Chave h8: aero com V = √(a_y·R)
+ent_16_chave_h9_tracao_na_traseira,16_EQUILIBRIO,B19,ent,,Chave h9: tração na traseira
+org_16_chave_h9_tracao_na_traseira,16_EQUILIBRIO,E19,org,,Chave h9: tração na traseira
+fte_16_chave_h9_tracao_na_traseira,16_EQUILIBRIO,F19,fte,,Chave h9: tração na traseira
+res_16_verificacao_sentido_da_curva_invalido_us,16_EQUILIBRIO,B22,res,,Verificação: sentido da curva inválido (use Esquerda ou Direita)
+res_16_verificacao_chave_h2_deve_ser_0_ou_1,16_EQUILIBRIO,B23,res,,Verificação: chave h2 deve ser 0 ou 1
+res_16_verificacao_chave_h3_deve_ser_0_ou_1,16_EQUILIBRIO,B24,res,,Verificação: chave h3 deve ser 0 ou 1
+res_16_verificacao_chave_h7_deve_ser_0_ou_1,16_EQUILIBRIO,B25,res,,Verificação: chave h7 deve ser 0 ou 1
+res_16_verificacao_chave_h8_deve_ser_0_ou_1,16_EQUILIBRIO,B26,res,,Verificação: chave h8 deve ser 0 ou 1
+res_16_verificacao_chave_h9_deve_ser_0_ou_1,16_EQUILIBRIO,B27,res,,Verificação: chave h9 deve ser 0 ou 1
+res_16_verificacao_toe_fl,16_EQUILIBRIO,B28,res,,Verificação: toe FL
+res_16_verificacao_toe_fr,16_EQUILIBRIO,B29,res,,Verificação: toe FR
+res_16_verificacao_toe_rl,16_EQUILIBRIO,B30,res,,Verificação: toe RL
+res_16_verificacao_toe_rr,16_EQUILIBRIO,B31,res,,Verificação: toe RR
+res_16_verificacao_sistema_de_eixos_do_pneu_10,16_EQUILIBRIO,B32,res,,Verificação: sistema de eixos do pneu (10_TIRE B11) inválido
+res_16_verificacao_coeficiente_do_pneu_10_tire,16_EQUILIBRIO,B33,res,,Verificação: coeficiente do pneu (10_TIRE B86:B177) não é número
+res_16_verificacao_camber_gain_dianteiro_dcambe,16_EQUILIBRIO,B34,res,,Verificação: Camber Gain dianteiro (dCamber/dz) (07_KINEMATICS B23)
+res_16_verificacao_camber_gain_traseiro_dcamber,16_EQUILIBRIO,B35,res,,Verificação: Camber Gain traseiro (dCamber/dz) (07_KINEMATICS B24)
+res_16_verificacao_camber_gama_projeto_topo_par_b36,16_EQUILIBRIO,B36,res,,Verificação: Camber γ (projeto: + = topo para fora) (10_TIRE B24)
+res_16_verificacao_camber_gama_projeto_topo_par_b37,16_EQUILIBRIO,B37,res,,Verificação: Camber γ (projeto: + = topo para fora) (10_TIRE C24)
+res_16_verificacao_camber_gama_projeto_topo_par_b38,16_EQUILIBRIO,B38,res,,Verificação: Camber γ (projeto: + = topo para fora) (10_TIRE D24)
+res_16_verificacao_camber_gama_projeto_topo_par_b39,16_EQUILIBRIO,B39,res,,Verificação: Camber γ (projeto: + = topo para fora) (10_TIRE E24)
+res_16_verificacao_massa_total_com_piloto_05_ve,16_EQUILIBRIO,B40,res,,Verificação: Massa total (com piloto) (05_VEHICLE B4)
+res_16_verificacao_altura_do_cg_total_05_vehicl,16_EQUILIBRIO,B41,res,,Verificação: Altura do CG (total) (05_VEHICLE B5)
+res_16_verificacao_wheelbase_l_05_vehicle_b6,16_EQUILIBRIO,B42,res,,Verificação: Wheelbase (L) (05_VEHICLE B6)
+res_16_verificacao_front_track_t_f_05_vehicle_b,16_EQUILIBRIO,B43,res,,Verificação: Front Track (t_F) (05_VEHICLE B7)
+res_16_verificacao_rear_track_t_r_05_vehicle_b8,16_EQUILIBRIO,B44,res,,Verificação: Rear Track (t_R) (05_VEHICLE B8)
+res_16_verificacao_cg_eixo_dianteiro_a_05_vehic,16_EQUILIBRIO,B45,res,,Verificação: CG -> eixo dianteiro (a) (05_VEHICLE B9)
+res_16_verificacao_cg_eixo_traseiro_b_05_vehicl,16_EQUILIBRIO,B46,res,,Verificação: CG -> eixo traseiro (b) (05_VEHICLE B10)
+res_16_verificacao_massa_nao_suspensa_dianteira,16_EQUILIBRIO,B47,res,,Verificação: Massa não-suspensa dianteira (05_VEHICLE B14)
+res_16_verificacao_massa_nao_suspensa_traseira,16_EQUILIBRIO,B48,res,,Verificação: Massa não-suspensa traseira (05_VEHICLE B15)
+res_16_verificacao_altura_cg_nao_suspenso_diant,16_EQUILIBRIO,B49,res,,Verificação: Altura CG não-suspenso dianteiro (05_VEHICLE B16)
+res_16_verificacao_altura_cg_nao_suspenso_trase,16_EQUILIBRIO,B50,res,,Verificação: Altura CG não-suspenso traseiro (05_VEHICLE B17)
+res_16_verificacao_spring_rate_dianteiro_06_sus,16_EQUILIBRIO,B51,res,,Verificação: Spring Rate dianteiro (06_SUSPENSION B4)
+res_16_verificacao_spring_rate_traseiro_06_susp,16_EQUILIBRIO,B52,res,,Verificação: Spring Rate traseiro (06_SUSPENSION B5)
+res_16_verificacao_motion_ratio_dianteiro_wheel,16_EQUILIBRIO,B53,res,,Verificação: Motion Ratio dianteiro [wheel/spring] (06_SUSPENSION B6)
+res_16_verificacao_motion_ratio_traseiro_wheel,16_EQUILIBRIO,B54,res,,Verificação: Motion Ratio traseiro [wheel/spring] (06_SUSPENSION B7)
+res_16_verificacao_k_arb_dianteiro_06_suspensio,16_EQUILIBRIO,B55,res,,Verificação: K_ARB dianteiro (06_SUSPENSION B10)
+res_16_verificacao_k_arb_traseiro_06_suspension,16_EQUILIBRIO,B56,res,,Verificação: K_ARB traseiro (06_SUSPENSION B11)
+res_16_verificacao_roll_center_dianteiro_rh_est,16_EQUILIBRIO,B57,res,,Verificação: Roll Center dianteiro (RH estático) (06_SUSPENSION B14)
+res_16_verificacao_roll_center_traseiro_rh_esta,16_EQUILIBRIO,B58,res,,Verificação: Roll Center traseiro (RH estático) (06_SUSPENSION B15)
+res_16_verificacao_rigidez_vertical_do_pneu_dia,16_EQUILIBRIO,B59,res,,Verificação: Rigidez vertical do pneu - dianteiro (K_T) (06_SUSPENSION B47)
+res_16_verificacao_rigidez_vertical_do_pneu_tra,16_EQUILIBRIO,B60,res,,Verificação: Rigidez vertical do pneu - traseiro (K_T) (06_SUSPENSION B48)
+res_16_verificacao_downforce_total_08_vehicle_s,16_EQUILIBRIO,B61,res,,Verificação: Downforce total (08_VEHICLE_STATE B8)
+res_16_verificacao_aero_balance_fracao_dianteir,16_EQUILIBRIO,B62,res,,Verificação: Aero Balance (fração dianteira) (08_VEHICLE_STATE B9)
+res_16_verificacao_resultado_da_v4_0_sem_valor,16_EQUILIBRIO,B63,res,,"Verificação: resultado da V4.0 sem valor numérico (05_VEHICLE, 06_SUSPENSION ou 09_LOADS)"
+res_16_verificacao_h3_cos_delta_ref_desligada_c,16_EQUILIBRIO,B64,res,,"Verificação: h3 (cos δ_ref) desligada com h2, h8 ou h9 ligada: no Python o raio R liga o cos δ_ref (EDR-057, item 5); ligue a h3"
+res_16_verificacao_raio_do_skidpad_r_b65,16_EQUILIBRIO,B65,res,,Verificação: raio do skidpad R
+res_16_verificacao_raio_do_skidpad_r_b66,16_EQUILIBRIO,B66,res,,Verificação: raio do skidpad R
+res_16_verificacao_ackermann_07_kinematics_b75,16_EQUILIBRIO,B67,res,,Verificação: % Ackermann (07_KINEMATICS B75)
+res_16_verificacao_cg_lateral,16_EQUILIBRIO,B68,res,,Verificação: CG lateral
+res_16_verificacao_cza,16_EQUILIBRIO,B69,res,,Verificação: CzA
+res_16_verificacao_rho_b70,16_EQUILIBRIO,B70,res,,Verificação: ρ
+res_16_verificacao_rho_b71,16_EQUILIBRIO,B71,res,,Verificação: ρ
+res_16_verificacao_cda_b72,16_EQUILIBRIO,B72,res,,Verificação: CdA
+res_16_verificacao_cda_b73,16_EQUILIBRIO,B73,res,,Verificação: CdA
+res_16_verificacao_crr_b74,16_EQUILIBRIO,B74,res,,Verificação: Crr
+res_16_verificacao_crr_b75,16_EQUILIBRIO,B75,res,,Verificação: Crr
+res_16_verificacao_instabilidade_de_rolagem_m_s,16_EQUILIBRIO,B76,res,,"Verificação: instabilidade de rolagem: m_s·g·h2 >= K_φF + K_φR (SUS-103, Milliken p. 682)"
+res_16_verificacao_l_r_fora_do_alcance_da_geome,16_EQUILIBRIO,B77,res,,Verificação: L/R fora do alcance da geometria de Ackermann (SUS-414); revise o raio
+res_16_situacao_das_entradas,16_EQUILIBRIO,B78,res,,Situação das entradas
+res_16_caso_valido_situacao_ok,16_EQUILIBRIO,B80,res,,Caso válido (situação = OK)
+res_16_curva_a_direita_analise_no_espelho,16_EQUILIBRIO,B81,res,,Curva à direita (análise no espelho)
+res_16_raio_ativo_h2_h3_h8_ou_h9_ligada,16_EQUILIBRIO,B82,res,,"Raio ativo (h2, h3, h8 ou h9 ligada)"
+res_16_resultados_da_v4_0_usados_com_valor_nume,16_EQUILIBRIO,B83,res,,Resultados da V4.0 usados com valor numérico
+res_16_delta_ref_l_r,16_EQUILIBRIO,B84,res,,δ_ref = L/R
+res_16_cos_delta_ref_frente_1_sem_raio,16_EQUILIBRIO,B85,res,,cos δ_ref (frente; 1 sem raio)
+res_16_tan_delta_ref_arrasto_do_pneu_dianteiro,16_EQUILIBRIO,B86,res,,"tan δ_ref (arrasto do pneu dianteiro, h9)"
+res_16_cy_pcy1lcy,16_EQUILIBRIO,B87,res,,Cy = PCY1·LCY
+res_16_f_z0_lfzofnomin,16_EQUILIBRIO,B88,res,,F'z0 = LFZO·FNOMIN
+res_16_dgama_dz_dianteiro_07_kinematics_mm_rad,16_EQUILIBRIO,B90,res,,"dγ/dz dianteiro (07_KINEMATICS, °/mm → rad/m)"
+res_16_gama_phi_fl_real_t_2_dgama_dz_1,16_EQUILIBRIO,B91,res,,∂γ/∂φ FL (real) = −(t/2)·dγ/dz − 1
+res_16_gama_phi_fr_real_t_2_dgama_dz_1,16_EQUILIBRIO,B92,res,,∂γ/∂φ FR (real) = (t/2)·dγ/dz + 1
+res_16_dgama_dz_traseiro_07_kinematics_mm_rad_m,16_EQUILIBRIO,B93,res,,"dγ/dz traseiro (07_KINEMATICS, °/mm → rad/m)"
+res_16_gama_phi_rl_real_t_2_dgama_dz_1,16_EQUILIBRIO,B94,res,,∂γ/∂φ RL (real) = −(t/2)·dγ/dz − 1
+res_16_gama_phi_rr_real_t_2_dgama_dz_1,16_EQUILIBRIO,B95,res,,∂γ/∂φ RR (real) = (t/2)·dγ/dz + 1
+res_16_toe_fl_da_analise,16_EQUILIBRIO,B97,res,,Toe FL da análise
+res_16_toe_fr_da_analise,16_EQUILIBRIO,B98,res,,Toe FR da análise
+res_16_toe_rl_da_analise,16_EQUILIBRIO,B99,res,,Toe RL da análise
+res_16_toe_rr_da_analise,16_EQUILIBRIO,B100,res,,Toe RR da análise
+res_16_camber_estatico_fl_da_analise_10_tire_b2,16_EQUILIBRIO,B101,res,,Camber estático FL da análise (10_TIRE B24:E24)
+res_16_camber_estatico_fr_da_analise_10_tire_b2,16_EQUILIBRIO,B102,res,,Camber estático FR da análise (10_TIRE B24:E24)
+res_16_camber_estatico_rl_da_analise_10_tire_b2,16_EQUILIBRIO,B103,res,,Camber estático RL da análise (10_TIRE B24:E24)
+res_16_camber_estatico_rr_da_analise_10_tire_b2,16_EQUILIBRIO,B104,res,,Camber estático RR da análise (10_TIRE B24:E24)
+res_16_gama_phi_fl_da_analise,16_EQUILIBRIO,B105,res,,∂γ/∂φ FL da análise
+res_16_gama_phi_fr_da_analise,16_EQUILIBRIO,B106,res,,∂γ/∂φ FR da análise
+res_16_gama_phi_rl_da_analise,16_EQUILIBRIO,B107,res,,∂γ/∂φ RL da análise
+res_16_gama_phi_rr_da_analise,16_EQUILIBRIO,B108,res,,∂γ/∂φ RR da análise
+res_16_cg_lateral_da_analise,16_EQUILIBRIO,B109,res,,CG lateral da análise
+res_16_ackermann_usado_h2,16_EQUILIBRIO,B111,res,,% Ackermann usado (h2)
+res_16_delta_da_roda_externa_fr_da_analise,16_EQUILIBRIO,B112,res,,δ da roda externa (FR da análise)
+res_16_delta_da_roda_interna_fl_da_analise,16_EQUILIBRIO,B113,res,,δ da roda interna (FL da análise)
+res_16_deltaalfa_fl_toe_ackermann,16_EQUILIBRIO,B114,res,,Δα FL (toe + Ackermann)
+res_16_deltaalfa_fr_toe_ackermann,16_EQUILIBRIO,B115,res,,Δα FR (toe + Ackermann)
+res_16_deltaalfa_rl_toe_ackermann,16_EQUILIBRIO,B116,res,,Δα RL (toe + Ackermann)
+res_16_deltaalfa_rr_toe_ackermann,16_EQUILIBRIO,B117,res,,Δα RR (toe + Ackermann)
+res_16_amplitude_da_grade_de_alfa_a_min_alpmin,16_EQUILIBRIO,B118,res,,"Amplitude da grade de α A = min(|ALPMIN|, ALPMAX) − max|Δα|"
+res_16_h2_h_s_z_s_braco_de_rolagem,16_EQUILIBRIO,B120,res,,h2 = h_s − z_s (braço de rolagem)
+res_16_k_phif_k_phir_m_sgh2,16_EQUILIBRIO,B121,res,,K_φF + K_φR − m_s·g·h2
+res_16_m_s_fz_f_m_ufh_uf,16_EQUILIBRIO,B122,res,,"m_s,F·z_F + m_uF·h_uF"
+res_16_m_s_rz_r_m_urh_ur,16_EQUILIBRIO,B123,res,,"m_s,R·z_R + m_uR·h_uR"
+res_16_deltafz_do_cg_lateral_por_roda_frente_w,16_EQUILIBRIO,B124,res,,"ΔFz do CG lateral por roda, frente (W_F·y/t_F)"
+res_16_deltafz_do_cg_lateral_por_roda_traseira,16_EQUILIBRIO,B125,res,,"ΔFz do CG lateral por roda, traseira (W_R·y/t_R)"
+res_16_aerodinamica_usada,16_EQUILIBRIO,B126,res,,Aerodinâmica usada
+res_16_saturacao_do_eixo_dianteiro_s_f_grade_pe,16_EQUILIBRIO,B129,res,,Saturação do eixo dianteiro S_f (grade pedida)
+res_16_saturacao_do_eixo_traseiro_s_r_grade_ped,16_EQUILIBRIO,B130,res,,Saturação do eixo traseiro S_r (grade pedida)
+res_16_s_f_na_grade_refinada,16_EQUILIBRIO,B131,res,,S_f na grade refinada
+res_16_s_r_na_grade_refinada,16_EQUILIBRIO,B132,res,,S_r na grade refinada
+res_16_ultimo_a_y_valido_v_f_grade_pedida,16_EQUILIBRIO,B133,res,,Último a_y válido V_f (grade pedida)
+res_16_ultimo_a_y_valido_v_r_grade_pedida,16_EQUILIBRIO,B134,res,,Último a_y válido V_r (grade pedida)
+res_16_motivo_de_o_eixo_dianteiro_nao_saturar,16_EQUILIBRIO,B135,res,,Motivo de o eixo dianteiro não saturar
+res_16_motivo_de_o_eixo_traseiro_nao_saturar,16_EQUILIBRIO,B136,res,,Motivo de o eixo traseiro não saturar
+res_16_s_f_s_f_refinada_ou_o_passo_se_so_uma_gr,16_EQUILIBRIO,B137,res,,"|S_f − S_f refinada| (ou o passo, se só uma grade satura)"
+res_16_s_r_s_r_refinada_ou_o_passo_se_so_uma_gr,16_EQUILIBRIO,B138,res,,"|S_r − S_r refinada| (ou o passo, se só uma grade satura)"
+res_16_resolucao_numerica_das_saturacoes_edr_05,16_EQUILIBRIO,B139,res,,"Resolução numérica das saturações (EDR-056, item 2)"
+res_16_so_a_frente_satura_e_a_traseira_segue_va,16_EQUILIBRIO,B140,res,,Só a frente satura e a traseira segue válida até S_f + resolução
+res_16_so_a_traseira_satura_e_a_frente_segue_va,16_EQUILIBRIO,B141,res,,Só a traseira satura e a frente segue válida até S_r + resolução
+res_16_veredito_no_limite_push_loose_neutro_ou,16_EQUILIBRIO,B142,res,,"Veredito no limite (PUSH, LOOSE, NEUTRO ou N/A)"
+res_16_motivo_do_n_a,16_EQUILIBRIO,B143,res,,Motivo do N/A
+res_16_a_y_limite_a_menor_saturacao,16_EQUILIBRIO,B144,res,,a_y limite (a menor saturação)
+res_16_linha_k_do_eixo_saturado_intervalo_do_c,16_EQUILIBRIO,B145,res,,Linha k do eixo saturado (intervalo do C_N)
+res_16_folga_do_outro_eixo_na_linha_k,16_EQUILIBRIO,B146,res,,Folga do outro eixo na linha k
+res_16_folga_do_outro_eixo_na_linha_k_1,16_EQUILIBRIO,B147,res,,Folga do outro eixo na linha k + 1
+res_16_a_y_da_linha_k,16_EQUILIBRIO,B148,res,,a_y da linha k
+res_16_a_y_da_linha_k_1,16_EQUILIBRIO,B149,res,,a_y da linha k + 1
+res_16_folga_do_outro_eixo_em_a_y_limite_interp,16_EQUILIBRIO,B150,res,,Folga do outro eixo em a_y limite (interpolada)
+res_16_c_n_residual_no_limite_milliken_8_4_p_31,16_EQUILIBRIO,B151,res,,"C_N residual no limite (Milliken §8.4, p. 311-312)"
+res_16_s_f_em_g,16_EQUILIBRIO,B152,res,,S_f em g
+res_16_s_r_em_g,16_EQUILIBRIO,B153,res,,S_r em g
+res_16_a_y_limite_em_g,16_EQUILIBRIO,B154,res,,a_y limite em g
+res_16_resolucao_em_g,16_EQUILIBRIO,B155,res,,Resolução em g
+res_16_limitacao_fl_fzmin,16_EQUILIBRIO,B156,res,,Limitação FL FZMIN
+res_16_limitacao_fl_fzmax,16_EQUILIBRIO,B157,res,,Limitação FL FZMAX
+res_16_limitacao_fl_cammin,16_EQUILIBRIO,B158,res,,Limitação FL CAMMIN
+res_16_limitacao_fl_cammax,16_EQUILIBRIO,B159,res,,Limitação FL CAMMAX
+res_16_limitacao_fr_fzmin,16_EQUILIBRIO,B160,res,,Limitação FR FZMIN
+res_16_limitacao_fr_fzmax,16_EQUILIBRIO,B161,res,,Limitação FR FZMAX
+res_16_limitacao_fr_cammin,16_EQUILIBRIO,B162,res,,Limitação FR CAMMIN
+res_16_limitacao_fr_cammax,16_EQUILIBRIO,B163,res,,Limitação FR CAMMAX
+res_16_limitacao_rl_fzmin,16_EQUILIBRIO,B164,res,,Limitação RL FZMIN
+res_16_limitacao_rl_fzmax,16_EQUILIBRIO,B165,res,,Limitação RL FZMAX
+res_16_limitacao_rl_cammin,16_EQUILIBRIO,B166,res,,Limitação RL CAMMIN
+res_16_limitacao_rl_cammax,16_EQUILIBRIO,B167,res,,Limitação RL CAMMAX
+res_16_limitacao_rr_fzmin,16_EQUILIBRIO,B168,res,,Limitação RR FZMIN
+res_16_limitacao_rr_fzmax,16_EQUILIBRIO,B169,res,,Limitação RR FZMAX
+res_16_limitacao_rr_cammin,16_EQUILIBRIO,B170,res,,Limitação RR CAMMIN
+res_16_limitacao_rr_cammax,16_EQUILIBRIO,B171,res,,Limitação RR CAMMAX
+res_16_limitacoes_da_entrada_do_pneu_usadas_no,16_EQUILIBRIO,B172,res,,"Limitações da entrada do pneu usadas no veredito (EDR-056, item 1)"
+res_16_tempo_de_volta_no_skidpad_t_2_r_a_y_limi,16_EQUILIBRIO,B173,res,,Tempo de volta no skidpad t = 2π·√(R/a_y limite)
+res_16_pior_origem_das_entradas_ao_vivo,16_EQUILIBRIO,B174,res,,Pior origem das entradas (ao vivo)
+res_16_k_pneus,16_EQUILIBRIO,B176,res,,K pneus
+res_16_k_transferencia,16_EQUILIBRIO,B177,res,,K transferência
+res_16_k_deslocamento_com_a_carga,16_EQUILIBRIO,B178,res,,K deslocamento com a carga
+res_16_k_camber,16_EQUILIBRIO,B179,res,,K camber
+res_16_k_roll_steer,16_EQUILIBRIO,B180,res,,K roll steer
+res_16_k_total,16_EQUILIBRIO,B181,res,,K total
+res_16_k_inclinacao_do_passo_2,16_EQUILIBRIO,B182,res,,K inclinação do passo 2
+res_16_k_total_em_g,16_EQUILIBRIO,B183,res,,K total em °/g
+res_16_motivo_do_n_a_do_k,16_EQUILIBRIO,B184,res,,Motivo do N/A do K
+res_16_velocidade_caracteristica_v_char_l_k_so,16_EQUILIBRIO,B185,res,,Velocidade característica V_char = √(L/K) (só com K > 0)
+res_16_velocidade_critica_v_crit_l_k_so_com_k_0,16_EQUILIBRIO,B186,res,,Velocidade crítica V_crit = √(−L/K) (só com K < 0)
+res_16_gradiente_de_subesterco_k_texto_de_exibi,16_EQUILIBRIO,B188,res,,"Gradiente de subesterço K (texto de exibição, linear)"
+res_16_equilibrio_no_limite_texto_de_exibicao,16_EQUILIBRIO,B189,res,,Equilíbrio no limite (texto de exibição)
+res_16_linha_de_apoio_saturacoes_a_y_limite_c_n,16_EQUILIBRIO,B190,res,,"Linha de apoio: saturações, a_y limite, C_N, custo e Δt (spec 7.3, item 2)"
+res_16_sentido_da_curva_analisado,16_EQUILIBRIO,B191,res,,Sentido da curva analisado
+res_17_saturacao_do_eixo_dianteiro_s_f,17_EQ_PAR,B4,res,,Saturação do eixo dianteiro S_f
+res_17_saturacao_do_eixo_traseiro_s_r,17_EQ_PAR,B5,res,,Saturação do eixo traseiro S_r
+res_17_linha_k_da_saturacao_dianteira,17_EQ_PAR,B6,res,,Linha k da saturação dianteira
+res_17_linha_k_da_saturacao_traseira,17_EQ_PAR,B7,res,,Linha k da saturação traseira
+res_17_primeira_linha_com_capacidade_dianteira,17_EQ_PAR,B8,res,,Primeira linha com capacidade dianteira inválida (posição)
+res_17_primeira_linha_com_capacidade_traseira_i,17_EQ_PAR,B9,res,,Primeira linha com capacidade traseira inválida (posição)
+res_17_ultimo_a_y_valido_do_eixo_dianteiro,17_EQ_PAR,B10,res,,Último a_y válido do eixo dianteiro
+res_17_ultimo_a_y_valido_do_eixo_traseiro,17_EQ_PAR,B11,res,,Último a_y válido do eixo traseiro
+res_17_motivo_de_o_eixo_dianteiro_nao_saturar,17_EQ_PAR,B12,res,,Motivo de o eixo dianteiro não saturar
+res_17_motivo_de_o_eixo_traseiro_nao_saturar,17_EQ_PAR,B13,res,,Motivo de o eixo traseiro não saturar
+res_18_saturacao_do_eixo_dianteiro_s_f,18_EQ_PAR_FINA,B4,res,,Saturação do eixo dianteiro S_f
+res_18_saturacao_do_eixo_traseiro_s_r,18_EQ_PAR_FINA,B5,res,,Saturação do eixo traseiro S_r
+res_18_linha_k_da_saturacao_dianteira,18_EQ_PAR_FINA,B6,res,,Linha k da saturação dianteira
+res_18_linha_k_da_saturacao_traseira,18_EQ_PAR_FINA,B7,res,,Linha k da saturação traseira
+res_18_primeira_linha_com_capacidade_dianteira,18_EQ_PAR_FINA,B8,res,,Primeira linha com capacidade dianteira inválida (posição)
+res_18_primeira_linha_com_capacidade_traseira_i,18_EQ_PAR_FINA,B9,res,,Primeira linha com capacidade traseira inválida (posição)
+res_18_ultimo_a_y_valido_do_eixo_dianteiro,18_EQ_PAR_FINA,B10,res,,Último a_y válido do eixo dianteiro
+res_18_ultimo_a_y_valido_do_eixo_traseiro,18_EQ_PAR_FINA,B11,res,,Último a_y válido do eixo traseiro
+res_18_motivo_de_o_eixo_dianteiro_nao_saturar,18_EQ_PAR_FINA,B12,res,,Motivo de o eixo dianteiro não saturar
+res_18_motivo_de_o_eixo_traseiro_nao_saturar,18_EQ_PAR_FINA,B13,res,,Motivo de o eixo traseiro não saturar
+res_19_a_y_em_g_linha_0,19_EQ_LINEAR,B5,res,,a_y em g linha 0
+res_19_k_pneus_linha_0,19_EQ_LINEAR,C5,res,,K pneus linha 0
+res_19_k_transferencia_linha_0,19_EQ_LINEAR,D5,res,,K transferência linha 0
+res_19_k_deslocamento_com_a_carga_linha_0,19_EQ_LINEAR,E5,res,,K deslocamento com a carga linha 0
+res_19_k_camber_linha_0,19_EQ_LINEAR,F5,res,,K camber linha 0
+res_19_k_roll_steer_linha_0,19_EQ_LINEAR,G5,res,,K roll steer linha 0
+res_19_k_total_linha_0,19_EQ_LINEAR,H5,res,,K total linha 0
+res_19_k_inclinacao_do_passo_2_linha_0,19_EQ_LINEAR,I5,res,,K inclinação do passo 2 linha 0
+res_19_k_total_em_g_linha_0,19_EQ_LINEAR,J5,res,,K total em °/g linha 0
+res_19_motivo_do_n_a_do_k_linha_0,19_EQ_LINEAR,K5,res,,Motivo do N/A do K linha 0
+res_19_motivo_do_n_a_da_inclinacao_linha_0,19_EQ_LINEAR,L5,res,,Motivo do N/A da inclinação linha 0
+res_19_a_y_em_g_linha_1,19_EQ_LINEAR,B6,res,,a_y em g linha 1
+res_19_k_pneus_linha_1,19_EQ_LINEAR,C6,res,,K pneus linha 1
+res_19_k_transferencia_linha_1,19_EQ_LINEAR,D6,res,,K transferência linha 1
+res_19_k_deslocamento_com_a_carga_linha_1,19_EQ_LINEAR,E6,res,,K deslocamento com a carga linha 1
+res_19_k_camber_linha_1,19_EQ_LINEAR,F6,res,,K camber linha 1
+res_19_k_roll_steer_linha_1,19_EQ_LINEAR,G6,res,,K roll steer linha 1
+res_19_k_total_linha_1,19_EQ_LINEAR,H6,res,,K total linha 1
+res_19_k_inclinacao_do_passo_2_linha_1,19_EQ_LINEAR,I6,res,,K inclinação do passo 2 linha 1
+res_19_k_total_em_g_linha_1,19_EQ_LINEAR,J6,res,,K total em °/g linha 1
+res_19_motivo_do_n_a_do_k_linha_1,19_EQ_LINEAR,K6,res,,Motivo do N/A do K linha 1
+res_19_motivo_do_n_a_da_inclinacao_linha_1,19_EQ_LINEAR,L6,res,,Motivo do N/A da inclinação linha 1
+res_19_a_y_em_g_linha_2,19_EQ_LINEAR,B7,res,,a_y em g linha 2
+res_19_k_pneus_linha_2,19_EQ_LINEAR,C7,res,,K pneus linha 2
+res_19_k_transferencia_linha_2,19_EQ_LINEAR,D7,res,,K transferência linha 2
+res_19_k_deslocamento_com_a_carga_linha_2,19_EQ_LINEAR,E7,res,,K deslocamento com a carga linha 2
+res_19_k_camber_linha_2,19_EQ_LINEAR,F7,res,,K camber linha 2
+res_19_k_roll_steer_linha_2,19_EQ_LINEAR,G7,res,,K roll steer linha 2
+res_19_k_total_linha_2,19_EQ_LINEAR,H7,res,,K total linha 2
+res_19_k_inclinacao_do_passo_2_linha_2,19_EQ_LINEAR,I7,res,,K inclinação do passo 2 linha 2
+res_19_k_total_em_g_linha_2,19_EQ_LINEAR,J7,res,,K total em °/g linha 2
+res_19_motivo_do_n_a_do_k_linha_2,19_EQ_LINEAR,K7,res,,Motivo do N/A do K linha 2
+res_19_motivo_do_n_a_da_inclinacao_linha_2,19_EQ_LINEAR,L7,res,,Motivo do N/A da inclinação linha 2
+res_19_a_y_em_g_linha_3,19_EQ_LINEAR,B8,res,,a_y em g linha 3
+res_19_k_pneus_linha_3,19_EQ_LINEAR,C8,res,,K pneus linha 3
+res_19_k_transferencia_linha_3,19_EQ_LINEAR,D8,res,,K transferência linha 3
+res_19_k_deslocamento_com_a_carga_linha_3,19_EQ_LINEAR,E8,res,,K deslocamento com a carga linha 3
+res_19_k_camber_linha_3,19_EQ_LINEAR,F8,res,,K camber linha 3
+res_19_k_roll_steer_linha_3,19_EQ_LINEAR,G8,res,,K roll steer linha 3
+res_19_k_total_linha_3,19_EQ_LINEAR,H8,res,,K total linha 3
+res_19_k_inclinacao_do_passo_2_linha_3,19_EQ_LINEAR,I8,res,,K inclinação do passo 2 linha 3
+res_19_k_total_em_g_linha_3,19_EQ_LINEAR,J8,res,,K total em °/g linha 3
+res_19_motivo_do_n_a_do_k_linha_3,19_EQ_LINEAR,K8,res,,Motivo do N/A do K linha 3
+res_19_motivo_do_n_a_da_inclinacao_linha_3,19_EQ_LINEAR,L8,res,,Motivo do N/A da inclinação linha 3
+res_19_a_y_em_g_linha_4,19_EQ_LINEAR,B9,res,,a_y em g linha 4
+res_19_k_pneus_linha_4,19_EQ_LINEAR,C9,res,,K pneus linha 4
+res_19_k_transferencia_linha_4,19_EQ_LINEAR,D9,res,,K transferência linha 4
+res_19_k_deslocamento_com_a_carga_linha_4,19_EQ_LINEAR,E9,res,,K deslocamento com a carga linha 4
+res_19_k_camber_linha_4,19_EQ_LINEAR,F9,res,,K camber linha 4
+res_19_k_roll_steer_linha_4,19_EQ_LINEAR,G9,res,,K roll steer linha 4
+res_19_k_total_linha_4,19_EQ_LINEAR,H9,res,,K total linha 4
+res_19_k_inclinacao_do_passo_2_linha_4,19_EQ_LINEAR,I9,res,,K inclinação do passo 2 linha 4
+res_19_k_total_em_g_linha_4,19_EQ_LINEAR,J9,res,,K total em °/g linha 4
+res_19_motivo_do_n_a_do_k_linha_4,19_EQ_LINEAR,K9,res,,Motivo do N/A do K linha 4
+res_19_motivo_do_n_a_da_inclinacao_linha_4,19_EQ_LINEAR,L9,res,,Motivo do N/A da inclinação linha 4
+res_19_a_y_em_g_linha_5,19_EQ_LINEAR,B10,res,,a_y em g linha 5
+res_19_k_pneus_linha_5,19_EQ_LINEAR,C10,res,,K pneus linha 5
+res_19_k_transferencia_linha_5,19_EQ_LINEAR,D10,res,,K transferência linha 5
+res_19_k_deslocamento_com_a_carga_linha_5,19_EQ_LINEAR,E10,res,,K deslocamento com a carga linha 5
+res_19_k_camber_linha_5,19_EQ_LINEAR,F10,res,,K camber linha 5
+res_19_k_roll_steer_linha_5,19_EQ_LINEAR,G10,res,,K roll steer linha 5
+res_19_k_total_linha_5,19_EQ_LINEAR,H10,res,,K total linha 5
+res_19_k_inclinacao_do_passo_2_linha_5,19_EQ_LINEAR,I10,res,,K inclinação do passo 2 linha 5
+res_19_k_total_em_g_linha_5,19_EQ_LINEAR,J10,res,,K total em °/g linha 5
+res_19_motivo_do_n_a_do_k_linha_5,19_EQ_LINEAR,K10,res,,Motivo do N/A do K linha 5
+res_19_motivo_do_n_a_da_inclinacao_linha_5,19_EQ_LINEAR,L10,res,,Motivo do N/A da inclinação linha 5
+res_19_a_y_em_g_linha_6,19_EQ_LINEAR,B11,res,,a_y em g linha 6
+res_19_k_pneus_linha_6,19_EQ_LINEAR,C11,res,,K pneus linha 6
+res_19_k_transferencia_linha_6,19_EQ_LINEAR,D11,res,,K transferência linha 6
+res_19_k_deslocamento_com_a_carga_linha_6,19_EQ_LINEAR,E11,res,,K deslocamento com a carga linha 6
+res_19_k_camber_linha_6,19_EQ_LINEAR,F11,res,,K camber linha 6
+res_19_k_roll_steer_linha_6,19_EQ_LINEAR,G11,res,,K roll steer linha 6
+res_19_k_total_linha_6,19_EQ_LINEAR,H11,res,,K total linha 6
+res_19_k_inclinacao_do_passo_2_linha_6,19_EQ_LINEAR,I11,res,,K inclinação do passo 2 linha 6
+res_19_k_total_em_g_linha_6,19_EQ_LINEAR,J11,res,,K total em °/g linha 6
+res_19_motivo_do_n_a_do_k_linha_6,19_EQ_LINEAR,K11,res,,Motivo do N/A do K linha 6
+res_19_motivo_do_n_a_da_inclinacao_linha_6,19_EQ_LINEAR,L11,res,,Motivo do N/A da inclinação linha 6
+res_19_a_y_em_g_linha_7,19_EQ_LINEAR,B12,res,,a_y em g linha 7
+res_19_k_pneus_linha_7,19_EQ_LINEAR,C12,res,,K pneus linha 7
+res_19_k_transferencia_linha_7,19_EQ_LINEAR,D12,res,,K transferência linha 7
+res_19_k_deslocamento_com_a_carga_linha_7,19_EQ_LINEAR,E12,res,,K deslocamento com a carga linha 7
+res_19_k_camber_linha_7,19_EQ_LINEAR,F12,res,,K camber linha 7
+res_19_k_roll_steer_linha_7,19_EQ_LINEAR,G12,res,,K roll steer linha 7
+res_19_k_total_linha_7,19_EQ_LINEAR,H12,res,,K total linha 7
+res_19_k_inclinacao_do_passo_2_linha_7,19_EQ_LINEAR,I12,res,,K inclinação do passo 2 linha 7
+res_19_k_total_em_g_linha_7,19_EQ_LINEAR,J12,res,,K total em °/g linha 7
+res_19_motivo_do_n_a_do_k_linha_7,19_EQ_LINEAR,K12,res,,Motivo do N/A do K linha 7
+res_19_motivo_do_n_a_da_inclinacao_linha_7,19_EQ_LINEAR,L12,res,,Motivo do N/A da inclinação linha 7
+res_19_a_y_em_g_linha_8,19_EQ_LINEAR,B13,res,,a_y em g linha 8
+res_19_k_pneus_linha_8,19_EQ_LINEAR,C13,res,,K pneus linha 8
+res_19_k_transferencia_linha_8,19_EQ_LINEAR,D13,res,,K transferência linha 8
+res_19_k_deslocamento_com_a_carga_linha_8,19_EQ_LINEAR,E13,res,,K deslocamento com a carga linha 8
+res_19_k_camber_linha_8,19_EQ_LINEAR,F13,res,,K camber linha 8
+res_19_k_roll_steer_linha_8,19_EQ_LINEAR,G13,res,,K roll steer linha 8
+res_19_k_total_linha_8,19_EQ_LINEAR,H13,res,,K total linha 8
+res_19_k_inclinacao_do_passo_2_linha_8,19_EQ_LINEAR,I13,res,,K inclinação do passo 2 linha 8
+res_19_k_total_em_g_linha_8,19_EQ_LINEAR,J13,res,,K total em °/g linha 8
+res_19_motivo_do_n_a_do_k_linha_8,19_EQ_LINEAR,K13,res,,Motivo do N/A do K linha 8
+res_19_motivo_do_n_a_da_inclinacao_linha_8,19_EQ_LINEAR,L13,res,,Motivo do N/A da inclinação linha 8
+res_20_linha_0_k_arb_dianteiro,20_EQ_TROCA,C5,res,,Linha 0 K_ARB dianteiro
+res_20_linha_0_k_phif,20_EQ_TROCA,D5,res,,Linha 0 K_φF
+res_20_linha_0_lambda_f_k_phif_k_phif_k_phir,20_EQ_TROCA,E5,res,,Linha 0 λ_f = K_φF/(K_φF + K_φR)
+res_20_linha_0_k_em_a_y_0,20_EQ_TROCA,F5,res,,Linha 0 K em a_y = 0
+res_20_linha_0_k_em_g,20_EQ_TROCA,G5,res,,Linha 0 K em °/g
+res_20_linha_0_motivo_do_n_a_do_k,20_EQ_TROCA,H5,res,,Linha 0 Motivo do N/A do K
+res_20_linha_0_s_f,20_EQ_TROCA,I5,res,,Linha 0 S_f
+res_20_linha_0_s_r,20_EQ_TROCA,J5,res,,Linha 0 S_r
+res_20_linha_0_a_y_limite,20_EQ_TROCA,K5,res,,Linha 0 a_y limite
+res_20_linha_0_resolucao,20_EQ_TROCA,L5,res,,Linha 0 Resolução
+res_20_linha_0_s_f_em_g,20_EQ_TROCA,M5,res,,Linha 0 S_f em g
+res_20_linha_0_s_r_em_g,20_EQ_TROCA,N5,res,,Linha 0 S_r em g
+res_20_linha_0_a_y_limite_em_g,20_EQ_TROCA,O5,res,,Linha 0 a_y limite em g
+res_20_linha_0_veredito_no_limite,20_EQ_TROCA,P5,res,,Linha 0 Veredito no limite
+res_20_linha_0_c_n_residual,20_EQ_TROCA,Q5,res,,Linha 0 C_N residual
+res_20_linha_0_motivo_do_n_a_do_veredito,20_EQ_TROCA,R5,res,,Linha 0 Motivo do N/A do veredito
+res_20_linha_0_s_r_s_f,20_EQ_TROCA,S5,res,,Linha 0 S_r − S_f
+res_20_linha_0_a_y_do_cruzamento_s_f_s_r_com_a,20_EQ_TROCA,T5,res,,Linha 0 a_y do cruzamento S_f = S_r com a próxima linha
+res_20_linha_0_ordem_do_cruzamento,20_EQ_TROCA,U5,res,,Linha 0 Ordem do cruzamento
+res_20_linha_0_s_r_s_f_se_neutro,20_EQ_TROCA,V5,res,,Linha 0 |S_r − S_f| se NEUTRO
+res_20_linha_0_pior_origem_da_linha_limite_e_k,20_EQ_TROCA,W5,res,,Linha 0 Pior origem da linha (limite e K)
+res_20_linha_1_k_arb_dianteiro,20_EQ_TROCA,C6,res,,Linha 1 K_ARB dianteiro
+res_20_linha_1_k_phif,20_EQ_TROCA,D6,res,,Linha 1 K_φF
+res_20_linha_1_lambda_f_k_phif_k_phif_k_phir,20_EQ_TROCA,E6,res,,Linha 1 λ_f = K_φF/(K_φF + K_φR)
+res_20_linha_1_k_em_a_y_0,20_EQ_TROCA,F6,res,,Linha 1 K em a_y = 0
+res_20_linha_1_k_em_g,20_EQ_TROCA,G6,res,,Linha 1 K em °/g
+res_20_linha_1_motivo_do_n_a_do_k,20_EQ_TROCA,H6,res,,Linha 1 Motivo do N/A do K
+res_20_linha_1_s_f,20_EQ_TROCA,I6,res,,Linha 1 S_f
+res_20_linha_1_s_r,20_EQ_TROCA,J6,res,,Linha 1 S_r
+res_20_linha_1_a_y_limite,20_EQ_TROCA,K6,res,,Linha 1 a_y limite
+res_20_linha_1_resolucao,20_EQ_TROCA,L6,res,,Linha 1 Resolução
+res_20_linha_1_s_f_em_g,20_EQ_TROCA,M6,res,,Linha 1 S_f em g
+res_20_linha_1_s_r_em_g,20_EQ_TROCA,N6,res,,Linha 1 S_r em g
+res_20_linha_1_a_y_limite_em_g,20_EQ_TROCA,O6,res,,Linha 1 a_y limite em g
+res_20_linha_1_veredito_no_limite,20_EQ_TROCA,P6,res,,Linha 1 Veredito no limite
+res_20_linha_1_c_n_residual,20_EQ_TROCA,Q6,res,,Linha 1 C_N residual
+res_20_linha_1_motivo_do_n_a_do_veredito,20_EQ_TROCA,R6,res,,Linha 1 Motivo do N/A do veredito
+res_20_linha_1_s_r_s_f,20_EQ_TROCA,S6,res,,Linha 1 S_r − S_f
+res_20_linha_1_a_y_do_cruzamento_s_f_s_r_com_a,20_EQ_TROCA,T6,res,,Linha 1 a_y do cruzamento S_f = S_r com a próxima linha
+res_20_linha_1_ordem_do_cruzamento,20_EQ_TROCA,U6,res,,Linha 1 Ordem do cruzamento
+res_20_linha_1_s_r_s_f_se_neutro,20_EQ_TROCA,V6,res,,Linha 1 |S_r − S_f| se NEUTRO
+res_20_linha_1_pior_origem_da_linha_limite_e_k,20_EQ_TROCA,W6,res,,Linha 1 Pior origem da linha (limite e K)
+res_20_linha_2_k_arb_dianteiro,20_EQ_TROCA,C7,res,,Linha 2 K_ARB dianteiro
+res_20_linha_2_k_phif,20_EQ_TROCA,D7,res,,Linha 2 K_φF
+res_20_linha_2_lambda_f_k_phif_k_phif_k_phir,20_EQ_TROCA,E7,res,,Linha 2 λ_f = K_φF/(K_φF + K_φR)
+res_20_linha_2_k_em_a_y_0,20_EQ_TROCA,F7,res,,Linha 2 K em a_y = 0
+res_20_linha_2_k_em_g,20_EQ_TROCA,G7,res,,Linha 2 K em °/g
+res_20_linha_2_motivo_do_n_a_do_k,20_EQ_TROCA,H7,res,,Linha 2 Motivo do N/A do K
+res_20_linha_2_s_f,20_EQ_TROCA,I7,res,,Linha 2 S_f
+res_20_linha_2_s_r,20_EQ_TROCA,J7,res,,Linha 2 S_r
+res_20_linha_2_a_y_limite,20_EQ_TROCA,K7,res,,Linha 2 a_y limite
+res_20_linha_2_resolucao,20_EQ_TROCA,L7,res,,Linha 2 Resolução
+res_20_linha_2_s_f_em_g,20_EQ_TROCA,M7,res,,Linha 2 S_f em g
+res_20_linha_2_s_r_em_g,20_EQ_TROCA,N7,res,,Linha 2 S_r em g
+res_20_linha_2_a_y_limite_em_g,20_EQ_TROCA,O7,res,,Linha 2 a_y limite em g
+res_20_linha_2_veredito_no_limite,20_EQ_TROCA,P7,res,,Linha 2 Veredito no limite
+res_20_linha_2_c_n_residual,20_EQ_TROCA,Q7,res,,Linha 2 C_N residual
+res_20_linha_2_motivo_do_n_a_do_veredito,20_EQ_TROCA,R7,res,,Linha 2 Motivo do N/A do veredito
+res_20_linha_2_s_r_s_f,20_EQ_TROCA,S7,res,,Linha 2 S_r − S_f
+res_20_linha_2_a_y_do_cruzamento_s_f_s_r_com_a,20_EQ_TROCA,T7,res,,Linha 2 a_y do cruzamento S_f = S_r com a próxima linha
+res_20_linha_2_ordem_do_cruzamento,20_EQ_TROCA,U7,res,,Linha 2 Ordem do cruzamento
+res_20_linha_2_s_r_s_f_se_neutro,20_EQ_TROCA,V7,res,,Linha 2 |S_r − S_f| se NEUTRO
+res_20_linha_2_pior_origem_da_linha_limite_e_k,20_EQ_TROCA,W7,res,,Linha 2 Pior origem da linha (limite e K)
+res_20_linha_3_k_arb_dianteiro,20_EQ_TROCA,C8,res,,Linha 3 K_ARB dianteiro
+res_20_linha_3_k_phif,20_EQ_TROCA,D8,res,,Linha 3 K_φF
+res_20_linha_3_lambda_f_k_phif_k_phif_k_phir,20_EQ_TROCA,E8,res,,Linha 3 λ_f = K_φF/(K_φF + K_φR)
+res_20_linha_3_k_em_a_y_0,20_EQ_TROCA,F8,res,,Linha 3 K em a_y = 0
+res_20_linha_3_k_em_g,20_EQ_TROCA,G8,res,,Linha 3 K em °/g
+res_20_linha_3_motivo_do_n_a_do_k,20_EQ_TROCA,H8,res,,Linha 3 Motivo do N/A do K
+res_20_linha_3_s_f,20_EQ_TROCA,I8,res,,Linha 3 S_f
+res_20_linha_3_s_r,20_EQ_TROCA,J8,res,,Linha 3 S_r
+res_20_linha_3_a_y_limite,20_EQ_TROCA,K8,res,,Linha 3 a_y limite
+res_20_linha_3_resolucao,20_EQ_TROCA,L8,res,,Linha 3 Resolução
+res_20_linha_3_s_f_em_g,20_EQ_TROCA,M8,res,,Linha 3 S_f em g
+res_20_linha_3_s_r_em_g,20_EQ_TROCA,N8,res,,Linha 3 S_r em g
+res_20_linha_3_a_y_limite_em_g,20_EQ_TROCA,O8,res,,Linha 3 a_y limite em g
+res_20_linha_3_veredito_no_limite,20_EQ_TROCA,P8,res,,Linha 3 Veredito no limite
+res_20_linha_3_c_n_residual,20_EQ_TROCA,Q8,res,,Linha 3 C_N residual
+res_20_linha_3_motivo_do_n_a_do_veredito,20_EQ_TROCA,R8,res,,Linha 3 Motivo do N/A do veredito
+res_20_linha_3_s_r_s_f,20_EQ_TROCA,S8,res,,Linha 3 S_r − S_f
+res_20_linha_3_a_y_do_cruzamento_s_f_s_r_com_a,20_EQ_TROCA,T8,res,,Linha 3 a_y do cruzamento S_f = S_r com a próxima linha
+res_20_linha_3_ordem_do_cruzamento,20_EQ_TROCA,U8,res,,Linha 3 Ordem do cruzamento
+res_20_linha_3_s_r_s_f_se_neutro,20_EQ_TROCA,V8,res,,Linha 3 |S_r − S_f| se NEUTRO
+res_20_linha_3_pior_origem_da_linha_limite_e_k,20_EQ_TROCA,W8,res,,Linha 3 Pior origem da linha (limite e K)
+res_20_linha_4_k_arb_dianteiro,20_EQ_TROCA,C9,res,,Linha 4 K_ARB dianteiro
+res_20_linha_4_k_phif,20_EQ_TROCA,D9,res,,Linha 4 K_φF
+res_20_linha_4_lambda_f_k_phif_k_phif_k_phir,20_EQ_TROCA,E9,res,,Linha 4 λ_f = K_φF/(K_φF + K_φR)
+res_20_linha_4_k_em_a_y_0,20_EQ_TROCA,F9,res,,Linha 4 K em a_y = 0
+res_20_linha_4_k_em_g,20_EQ_TROCA,G9,res,,Linha 4 K em °/g
+res_20_linha_4_motivo_do_n_a_do_k,20_EQ_TROCA,H9,res,,Linha 4 Motivo do N/A do K
+res_20_linha_4_s_f,20_EQ_TROCA,I9,res,,Linha 4 S_f
+res_20_linha_4_s_r,20_EQ_TROCA,J9,res,,Linha 4 S_r
+res_20_linha_4_a_y_limite,20_EQ_TROCA,K9,res,,Linha 4 a_y limite
+res_20_linha_4_resolucao,20_EQ_TROCA,L9,res,,Linha 4 Resolução
+res_20_linha_4_s_f_em_g,20_EQ_TROCA,M9,res,,Linha 4 S_f em g
+res_20_linha_4_s_r_em_g,20_EQ_TROCA,N9,res,,Linha 4 S_r em g
+res_20_linha_4_a_y_limite_em_g,20_EQ_TROCA,O9,res,,Linha 4 a_y limite em g
+res_20_linha_4_veredito_no_limite,20_EQ_TROCA,P9,res,,Linha 4 Veredito no limite
+res_20_linha_4_c_n_residual,20_EQ_TROCA,Q9,res,,Linha 4 C_N residual
+res_20_linha_4_motivo_do_n_a_do_veredito,20_EQ_TROCA,R9,res,,Linha 4 Motivo do N/A do veredito
+res_20_linha_4_s_r_s_f,20_EQ_TROCA,S9,res,,Linha 4 S_r − S_f
+res_20_linha_4_a_y_do_cruzamento_s_f_s_r_com_a,20_EQ_TROCA,T9,res,,Linha 4 a_y do cruzamento S_f = S_r com a próxima linha
+res_20_linha_4_ordem_do_cruzamento,20_EQ_TROCA,U9,res,,Linha 4 Ordem do cruzamento
+res_20_linha_4_s_r_s_f_se_neutro,20_EQ_TROCA,V9,res,,Linha 4 |S_r − S_f| se NEUTRO
+res_20_linha_4_pior_origem_da_linha_limite_e_k,20_EQ_TROCA,W9,res,,Linha 4 Pior origem da linha (limite e K)
+res_20_a_y_do_acerto_neutro_cruzamento_das_satu,20_EQ_TROCA,B12,res,,a_y do acerto neutro (cruzamento das saturações na tabela)
+res_20_a_y_do_acerto_neutro_em_g,20_EQ_TROCA,B13,res,,a_y do acerto neutro em g
+res_20_motivo_do_n_a_do_neutro,20_EQ_TROCA,B14,res,,Motivo do N/A do neutro
+res_20_custo_do_comportamento_a_y_do_neutro_a_y,20_EQ_TROCA,B15,res,,Custo do comportamento: a_y do neutro − a_y limite atual
+res_20_custo_do_comportamento_em_g,20_EQ_TROCA,B16,res,,Custo do comportamento em g
+res_20_motivo_do_n_a_do_custo,20_EQ_TROCA,B17,res,,Motivo do N/A do custo
+res_20_veredito_do_custo,20_EQ_TROCA,B18,res,,Veredito do custo
+res_14_gradiente_de_subesterco_k_linear_b41,14_DASHBOARD,B41,res,,Gradiente de subesterço K (linear)
+res_14_gradiente_de_subesterco_k_linear_e41,14_DASHBOARD,E41,res,,Gradiente de subesterço K (linear)
+res_14_equilibrio_no_limite_push_loose_b42,14_DASHBOARD,B42,res,,Equilíbrio no limite (push/loose)
+res_14_equilibrio_no_limite_push_loose_e42,14_DASHBOARD,E42,res,,Equilíbrio no limite (push/loose)
+res_14_saturacoes_a_y_limite_c_n_custo_e_deltat_b44,14_DASHBOARD,B44,res,,"Saturações, a_y limite, C_N, custo e Δt"
+res_14_saturacoes_a_y_limite_c_n_custo_e_deltat_e44,14_DASHBOARD,E44,res,,"Saturações, a_y limite, C_N, custo e Δt"
+res_14_sentido_da_curva_b46,14_DASHBOARD,B46,res,,Sentido da curva
