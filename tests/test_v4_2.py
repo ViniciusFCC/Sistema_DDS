@@ -1,8 +1,8 @@
 """
 Testes sem motor de recálculo da V4.2 (incremento 5, metas e coerência; projeto T11): estrutura do arquivo gerado e CA-07.
 Uso: uv run python -X utf8 tests/test_v4_2.py
-Namespace TC-WB42-xxx (IDs autorizados: 001 a 006; este script tem o 001, o 002 e o 003 (oráculo metas.py); o 004 entra na
-Task seguinte; o 005 e o 006 estão em tests/test_workbook_v4_2.py). A V4.1 de partida é o arquivo da tag v4.1,
+Namespace TC-WB42-xxx (IDs autorizados: 001 a 006; este script tem o 001, o 002, o 003 (oráculo metas.py) e o 004 (fluxo da viva);
+o 005 e o 006 estão em tests/test_workbook_v4_2.py). A V4.1 de partida é o arquivo da tag v4.1,
 extraído para uma pasta temporária; nada é gravado em excel/.
 
 TC-WB42-001 (estrutura da V4.2 gerada da tag v4.1 por gerar_v4_2.gerar; origens do T11 e D16 (Task 2) e metas (Task 3)):
@@ -33,24 +33,40 @@ excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx se ele existir (ele só vai a excel/ na
 aba_metas.NOMES_V42 e o gerador recusa um CSV diferente.
 TC-WB42-003: oráculo metas.py (sem planilha): cada estado de coerência forçado, ordem das regras, 7 METAs ao mesmo tempo (Review
 Focus 5), formato do EDR (`EDR-61`, `edr-061`), pior coerência e contador.
+TC-WB42-004: fluxo da viva sem motor (EDR-063; python/viva.py, tools/conferir_viva.py, retrato_viva.py, migrar_viva.py), em cópias
+numa pasta temporária (a "viva" de teste é a V4.1 da tag com dados de teste injetados; o Drive nem é aberto): localizar_viva;
+conferir_viva (viva fiel 0, fórmula trocada 1, EDR citado inexistente ou não aprovado 1, ausente/0 byte/lixo/bloqueada 3); retrato_viva
+(JSON, ida e volta, tipos); migrar_viva (dado e rótulo mantidos, conflito listado e não sobrescrito, célula fora dos nomes = 2,
+ilegível = 3, recusas de caminho).
 "Passou" = estrutura e regeneração conferidas; não é validação física.
 """
+import datetime as dt
+import json
+import os
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 import openpyxl
+from openpyxl.comments import Comment
 from openpyxl.worksheet.formula import ArrayFormula
 
 import aba_equilibrio as ae
 import aba_metas
+import dados_planilha as dp
 import gerar_v4_2 as g42
 import metas
 import origens
+import viva as viva_mod
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 import comparar_planilhas as cp  # noqa: E402
+import conferir_viva as conf_viva  # noqa: E402
+import migrar_viva as migr_viva  # noqa: E402
+import retrato_viva as retr_viva  # noqa: E402
 from nomes_v4_0 import NOME_VALIDO, ler_tabela, parece_referencia  # noqa: E402
 from raizes import Grafo  # noqa: E402
 
@@ -153,6 +169,258 @@ def varrer_antigos(wb):
             if any(x in f for r in regras for f in (r.formula or []) for x in ("Dado do TX", "Dado do T09")):
                 achados.append(f"{ws.title}:CF")
     return achados
+
+
+def tc_wb42_004(tmp: Path, v41: Path, v42: Path) -> None:
+    """TC-WB42-004: fluxo da viva (EDR-063) sobre cópias em pasta temporária. A "viva" de teste é a V4.1 da tag com dados de teste
+    injetados. Nada é gravado no Drive nem em excel/; o Drive nem é aberto."""
+    d41 = dp.ler_por_nome(v41)
+    nums = [n for n in sorted(d41) if n.startswith("ent_") and isinstance(d41[n], (int, float)) and not isinstance(d41[n], bool)]
+    orgs_tx = [n for n in sorted(d41) if n.startswith("org_") and d41[n] == origens.TX_V41]
+    n_num, n_org_a, n_org_b = nums[0], orgs_tx[0], orgs_tx[1]
+    novo_num = d41[n_num] + 1.5
+    base = tmp / "viva_t"
+    base.mkdir()
+    contador = [0]
+
+    def pasta() -> Path:
+        contador[0] += 1
+        p = base / f"tmp_{contador[0]}"
+        p.mkdir()
+        return p
+
+    def viva_com(nome: str, dados: dict) -> Path:
+        d = base / nome
+        d.mkdir()
+        arq = d / "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
+        dp.injetar(v41, dados, arq)
+        return arq
+
+    def editar(origem: Path, nome: str, fn) -> Path:
+        d = base / nome
+        d.mkdir()
+        arq = d / origem.name
+        wb = openpyxl.load_workbook(origem)
+        try:
+            fn(wb)
+            wb.save(arq)
+        finally:
+            wb.close()
+        return arq
+
+    # ---- constantes e utilitários de viva.py ----
+    ref41, ref42 = viva_mod.REFERENCIAS["V4.1"], viva_mod.REFERENCIAS["V4.2"]
+    const_ok = ref41.formulas == cp.FORMULAS_ESPERADAS_V41 and ref42.formulas == cp.FORMULAS_ESPERADAS_V42 \
+        and ref41.rotulos == tuple(cp.ROTULOS_ORIGEM) and ref42.rotulos == origens.ORIGENS_V42 \
+        and ref41.entradas() == ae.celulas_de_entrada_v41() and ref42.entradas() == aba_metas.celulas_de_entrada_v42() \
+        and not ref41.confere_edr and ref42.confere_edr \
+        and viva_mod.PASTA_DRIVE.name == "Planilha DDS" and "T11 - Tupã" in str(viva_mod.PASTA_DRIVE)
+    ver_ok = viva_mod.versao(v41) == "V4.1" and viva_mod.versao(v42) == "V4.2"
+    p_ref = pasta()
+    ref_tag = viva_mod.arquivo_de_referencia("V4.1", p_ref)
+    ref_tag_ok = ref_tag.read_bytes() == v41.read_bytes() and ref_tag.parent == p_ref \
+        and raises(lambda: viva_mod.referencia_da("V9.9"), viva_mod.VivaIlegivel)
+    if not viva_mod._tag_existe("v4.2") and not (RAIZ / ref42.caminho_excel).exists():   # antes da Task 7
+        ref_tag_ok = ref_tag_ok and raises(lambda: viva_mod.arquivo_de_referencia("V4.2", p_ref), viva_mod.VivaIlegivel)
+    edrs = viva_mod.edrs_aprovados(RAIZ / "docs" / "Engineering_Decision_Register.md")
+    aprovado = next(e for e in sorted(edrs) if edrs[e] == "APPROVED")
+    nao_aprov = next((e for e in sorted(edrs) if edrs[e] != "APPROVED"), None)
+    edr_ok = edrs.get("EDR-060") == "APPROVED" and edrs == edr_status() and "EDR-999" not in edrs and nao_aprov is not None
+    # localizar_viva: DDS_VIVA primeiro; senão o único arquivo da pasta; mais de um = ValueError; nada = None
+    antes_env, antes_pasta = os.environ.pop("DDS_VIVA", None), viva_mod.PASTA_DRIVE
+    try:
+        pf = base / "pasta_drive"
+        pf.mkdir()
+        viva_mod.PASTA_DRIVE = pf
+        loc_vazia = viva_mod.localizar_viva() is None
+        (pf / "FSAE_EV_Suspension_Fase1_V4_1.xlsx").write_bytes(b"x")
+        (pf / "~$FSAE_EV_Suspension_Fase1_V4_1.xlsx").write_bytes(b"x")     # arquivo de bloqueio do Excel: ignorado
+        (pf / "Hardpoints_Tupa_v4_validado.xlsx").write_bytes(b"x")         # outro arquivo da pasta: ignorado
+        loc_um = viva_mod.localizar_viva() == pf / "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
+        (pf / "FSAE_EV_Suspension_Fase1_V4_2.xlsx").write_bytes(b"x")
+        loc_dois = raises(viva_mod.localizar_viva, ValueError)
+        os.environ["DDS_VIVA"] = str(base / "qualquer.xlsx")
+        loc_env = viva_mod.localizar_viva() == base / "qualquer.xlsx"
+        del os.environ["DDS_VIVA"]
+        viva_mod.PASTA_DRIVE = base / "nao_montado"
+        loc_nada = viva_mod.localizar_viva() is None
+    finally:
+        viva_mod.PASTA_DRIVE = antes_pasta
+        os.environ.pop("DDS_VIVA", None)
+        if antes_env is not None:
+            os.environ["DDS_VIVA"] = antes_env
+    loc_ok = all((loc_vazia, loc_um, loc_dois, loc_env, loc_nada))
+
+    # ---- conferir_viva ----
+    viva_fiel = viva_com("fiel", {n_num: novo_num, n_org_a: origens.T09_V41, n_org_b: origens.EST})
+    cod_fiel, rel_fiel, ver_fiel = conf_viva.conferir(viva_fiel, pasta())
+    fiel_ok = cod_fiel == 0 and ver_fiel == "V4.1" and "CA-07 (viva) PASS" in rel_fiel and any("SHA-256" in l for l in rel_fiel)
+
+    def trocar_formula(wb):
+        wb["16_EQUILIBRIO"]["B188"].value = wb["16_EQUILIBRIO"]["B188"].value + '&""'
+
+    def alterar_estrutura(wb):
+        wb["01_SETUP"]["A1"].value = "texto de estrutura alterado"
+
+    viva_formula = editar(viva_fiel, "formula", trocar_formula)
+    cod_f, rel_f, _ = conf_viva.conferir(viva_formula, pasta())
+    formula_ok = cod_f == 1 and any("16_EQUILIBRIO!B188" in l and "fórmula" in l for l in rel_f)
+    viva_estr = editar(viva_fiel, "estrutura", alterar_estrutura)
+    cod_e, rel_e, _ = conf_viva.conferir(viva_estr, pasta())
+    estr_ok = cod_e == 1 and any("01_SETUP!A1" in l for l in rel_e)
+    viva_origem = viva_com("origem_ruim", {n_org_a: origens.T11})       # rótulo da V4.2 numa viva V4.1: fora da lista da V4.1
+    cod_o, rel_o, _ = conf_viva.conferir(viva_origem, pasta())
+    origem_ok = cod_o == 1 and any("origem fora da lista" in l for l in rel_o)
+    nome_viva = "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
+    ausente = base / "ausente" / nome_viva
+    zero, lixo = base / "zero", base / "lixo"
+    zero.mkdir()
+    lixo.mkdir()
+    (zero / nome_viva).write_bytes(b"")
+    (lixo / nome_viva).write_bytes(b"isto nao e um xlsx")
+    c_aus, r_aus, _ = conf_viva.conferir(ausente, pasta())
+    c_zero, r_zero, _ = conf_viva.conferir(zero / nome_viva, pasta())
+    c_lixo, r_lixo, _ = conf_viva.conferir(lixo / nome_viva, pasta())
+    copia_orig = shutil.copyfile
+    try:     # bloqueio (arquivo aberto por alguém): a cópia falha com PermissionError
+        def bloqueada(*a, **k):
+            raise PermissionError("arquivo em uso")
+        shutil.copyfile = bloqueada
+        c_blq, r_blq, _ = conf_viva.conferir(viva_fiel, pasta())
+    finally:
+        shutil.copyfile = copia_orig
+    c_sem_ref, r_sem_ref, _ = conf_viva.conferir(viva_fiel, pasta(), referencia=base / "nao_existe_ref.xlsx")
+    nao_lida_ok = all(c == 3 and r[0].startswith("NÃO LIDA") for c, r in
+                      ((c_aus, r_aus), (c_zero, r_zero), (c_lixo, r_lixo), (c_blq, r_blq), (c_sem_ref, r_sem_ref))) \
+        and "0 byte" in r_zero[0] and "bloqueada" in r_blq[0] and "referência ausente" in r_sem_ref[0]
+    # EDR citado (V4.2 em diante): a referência é a V4.2 gerada (a tag v4.2 e excel/ ainda não existem)
+    casos = {"ok": ({"N5": aprovado}, 0, None), "inexistente": ({"N5": "EDR-999"}, 1, "03_TARGETS!N5 cita EDR-999"),
+             "formato": ({"N5": "EDR-61"}, 1, "03_TARGETS!N5 cita EDR-61"),
+             "minusc": ({"N5": "edr-060"}, 1, "03_TARGETS!N5 cita edr-060"),
+             "nao_aprovado": ({"N6": nao_aprov}, 1, f"03_TARGETS!N6 cita {nao_aprov}"),
+             "decision": ({"F7": "ver EDR-998"}, 1, "03_TARGETS!F7 cita EDR-998"),
+             "tbd": ({"N5": "TBD", "M5": "preferência do piloto"}, 0, None)}
+    edr_casos = {}
+    for k, (cel, esperado, trecho) in casos.items():
+        def preencher(wb, cel=cel):
+            for c, x in cel.items():
+                wb["03_TARGETS"][c].value = x
+        arq = editar(v42, f"v42_{k}", preencher)
+        cod, rel, ver = conf_viva.conferir(arq, pasta(), referencia=v42)
+        edr_casos[k] = cod == esperado and ver == "V4.2" and (trecho is None or any(trecho in l for l in rel))
+    edr_conf_ok = all(edr_casos.values()) and viva_mod.edrs_citados(base / "v42_decision" / v42.name) == [("03_TARGETS!F7", "EDR-998")] \
+        and viva_mod.edrs_citados(base / "v42_tbd" / v42.name) == [] and viva_mod.edrs_citados(viva_fiel) == []
+    # a conferência nunca altera a viva
+    sha_fiel = viva_mod.sha256(viva_fiel)
+    conf_viva.conferir(viva_fiel, pasta())
+    imut_ok = viva_mod.sha256(viva_fiel) == sha_fiel
+
+    # ---- retrato_viva ----
+    out_json = base / "retrato" / "retrato-viva.json"
+    cod_r = retr_viva.retratar(viva_fiel, out_json, pasta())
+    txt = out_json.read_text(encoding="utf-8") if out_json.exists() else ""
+    ret = json.loads(txt) if txt else {}
+    dados_viva = dp.ler_por_nome(viva_fiel)
+    carregado = retr_viva.carregar(out_json) if txt else {"dados": {}}
+    forma_ok = cod_r == 0 and txt.startswith('{\n  "versao": "V4.1",\n  "sha256": "') and txt.endswith("}\n") and "\r" not in txt \
+        and ret.get("versao") == "V4.1" and ret.get("sha256") == viva_mod.sha256(viva_fiel) \
+        and re.fullmatch(r"\d{4}-\d{2}-\d{2}", ret.get("data", "")) and list(ret.get("dados", {})) == sorted(dados_viva) \
+        and txt.count("\n") == len(dados_viva) + 7 \
+        and ret["dados"][n_num] == novo_num and isinstance(ret["dados"][n_num], type(novo_num)) \
+        and ret["dados"][n_org_a] == origens.T09_V41 and ret["dados"][n_org_b] == origens.EST
+    volta = base / "retrato" / "volta.xlsx"
+    rel_inj = dp.injetar(v41, carregado["dados"], volta)
+    dados_volta = dp.ler_por_nome(volta)
+    ida_volta_ok = not rel_inj.conflitos and not rel_inj.faltando and set(dados_volta) == set(dados_viva) \
+        and all(dp.iguais(dados_volta[n], dados_viva[n]) for n in dados_viva)
+    dh, dd, dtm = dt.datetime(2026, 10, 26, 9, 30, 15), dt.date(2026, 10, 26), dt.time(9, 30)
+    tipos_ok = retr_viva.decodificar(retr_viva.codificar(dh)) == dh and type(retr_viva.decodificar(retr_viva.codificar(dh))) is dt.datetime \
+        and retr_viva.decodificar(retr_viva.codificar(dd)) == dd and type(retr_viva.decodificar(retr_viva.codificar(dd))) is dt.date \
+        and retr_viva.decodificar(retr_viva.codificar(dtm)) == dtm \
+        and type(retr_viva.codificar(2)) is int and type(retr_viva.codificar(2.0)) is float \
+        and raises(lambda: retr_viva.codificar(object()), ValueError) and raises(lambda: retr_viva.decodificar({"x": 1}), ValueError)
+    out_ruim = base / "retrato" / "ruim.json"
+    cod_ruim = retr_viva.retratar(viva_formula, out_ruim, pasta())
+    cod_aus = retr_viva.retratar(ausente, out_ruim, pasta())
+    cod_excel = retr_viva.retratar(viva_fiel, RAIZ / "excel" / "_retrato_teste.json", pasta())
+    recusa_ret_ok = cod_ruim == 1 and cod_aus == 3 and cod_excel == 2 and not out_ruim.exists() \
+        and not (RAIZ / "excel" / "_retrato_teste.json").exists()
+    retrato_ok = forma_ok and ida_volta_ok and tipos_ok and recusa_ret_ok
+
+    # ---- migrar_viva ----
+    def migrar(viva: Path, para: Path, nome: str):
+        s, r = base / f"mig_{nome}" / "saida.xlsx", base / f"mig_{nome}" / "relatorio.md"
+        cod = migr_viva.migrar(viva, para, s, r, pasta())
+        return cod, s, (r.read_text(encoding="utf-8") if r.exists() else "")
+
+    d42 = dp.ler_por_nome(v42)
+    cod_a, s_a, t_a = migrar(viva_fiel, v42, "a")
+    da = dp.ler_por_nome(s_a) if s_a.exists() else {}
+    # dado mantido; rótulo mapeado (TX/T09 -> outro carro); rótulo da equipe (Estimativa) mantido; o resto igual à V4.2
+    resto_a = bool(da) and all(dp.iguais(da[n], d42[n]) for n in d42 if n not in (n_num, n_org_b))
+    mig_a_ok = cod_a == 0 and dp.iguais(da.get(n_num), novo_num) and da.get(n_org_a) == origens.OUTRO_CARRO \
+        and da.get(n_org_b) == origens.EST and resto_a and f"`{n_num}`" in t_a and f"`{n_org_b}`" in t_a \
+        and f"`{n_org_a}`" not in t_a.split("## Escritas")[1] and "Resultado: **PASS**" in t_a and "\r" not in t_a
+    # a mesma célula mudada pela equipe e pela versão nova: conflito listado, nunca sobrescrito (Review Focus 4)
+    para_c = base / "para_conflito.xlsx"
+    dp.injetar(v42, {n_num: d42[n_num] + 100, n_org_b: origens.ARB}, para_c)
+    cod_b, s_b, t_b = migrar(viva_fiel, para_c, "b")
+    db = dp.ler_por_nome(s_b) if s_b.exists() else {}
+    conflitos_b = t_b.split("## Faltando")[0]
+    mig_b_ok = cod_b == 1 and dp.iguais(db.get(n_num), d42[n_num] + 100) and db.get(n_org_b) == origens.ARB \
+        and f"| `{n_num}` |" in conflitos_b and f"| `{n_org_b}` |" in conflitos_b and "Resultado: **FAIL**" in t_b
+    # célula alterada fora dos nomes de dado: código 2, lista a célula, não grava a saída
+    cod_c, s_c, t_c = migrar(viva_estr, v42, "c")
+
+    def comentar(wb):
+        wb["00_README"]["Z99"].comment = Comment("nota da equipe", "equipe")
+
+    def formula_no_dado(wb):
+        aba, cel = dp._destinos(wb)[n_num]
+        wb[aba][cel].value = "=1+1"
+
+    cod_d, s_d, t_d = migrar(editar(viva_fiel, "comentario", comentar), v42, "d")        # objeto não migrável
+    cod_e0, s_e0, t_e0 = migrar(zero / nome_viva, v42, "e0")                              # ilegível: 0 byte
+    cod_e1, s_e1, t_e1 = migrar(ausente, v42, "e1")                                       # ilegível: ausente
+    cod_fd, s_fd, t_fd = migrar(editar(viva_fiel, "dado_formula", formula_no_dado), v42, "fd")   # fórmula numa entrada
+    erros_ok = cod_c == 2 and not s_c.exists() and "01_SETUP!A1" in t_c and "ERRO" in t_c \
+        and cod_d == 2 and not s_d.exists() and "00_README!Z99 (comentário)" in t_d \
+        and cod_e0 == 3 and cod_e1 == 3 and not s_e0.exists() and not s_e1.exists() and "ERRO" in t_e0 and "0 byte" in t_e0 \
+        and cod_fd == 2 and not s_fd.exists() and "ERRO" in t_fd
+    # recusas de caminho: nada é criado nem aberto
+    p_rec = pasta()
+    recusas = [(viva_fiel, v42, RAIZ / "excel" / "_migrar_teste.xlsx", base / "r.md"),
+               (viva_fiel, v42, viva_fiel, base / "r2.md"),
+               (viva_fiel, v42, v42, base / "r3.md"),
+               (viva_fiel, v42, base / "s4.xlsx", RAIZ / "excel" / "_relatorio_teste.md"),
+               (viva_fiel, v42, viva_mod.PASTA_DRIVE / "FSAE_EV_Suspension_Fase1_V4_2.xlsx", base / "r5.md"),
+               (viva_fiel, v42, base / "s6.xlsx", viva_mod.PASTA_DRIVE / "relatorio.md"),
+               (viva_fiel, v42, base / "s7.txt", base / "r7.md")]
+    cods = [migr_viva.migrar(*r, p_rec) for r in recusas]
+    recusa_ok = cods == [2] * len(recusas) and not any(p.exists() for p in (
+        RAIZ / "excel" / "_migrar_teste.xlsx", RAIZ / "excel" / "_relatorio_teste.md", base / "r.md", base / "s4.xlsx"))
+    mig_ok = mig_a_ok and mig_b_ok and erros_ok and recusa_ok
+
+    # ---- CLIs: código de saída e mensagem, sem abrir planilha ----
+    py = [sys.executable, "-X", "utf8"]
+    r_cli1 = subprocess.run([*py, str(RAIZ / "tools" / "conferir_viva.py"), str(ausente)], capture_output=True, text=True,
+                            encoding="utf-8", cwd=RAIZ)
+    r_cli2 = subprocess.run([*py, str(RAIZ / "tools" / "migrar_viva.py"), str(ausente), "--para", str(v42), "--saida",
+                             str(base / "cli" / "s.xlsx"), "--relatorio", str(base / "cli" / "r.md")], capture_output=True,
+                            text=True, encoding="utf-8", cwd=RAIZ)
+    cli_ok = r_cli1.returncode == 3 and "NÃO LIDA" in r_cli1.stdout and r_cli2.returncode == 3 \
+        and "ERRO" in (base / "cli" / "r.md").read_text(encoding="utf-8")
+    check("TC-WB42-004: fluxo da viva sem motor (EDR-063), em cópias: constantes e referência da tag; localizar_viva (DDS_VIVA, pasta, "
+          "mais de um, nada); conferir_viva (viva fiel 0, fórmula trocada 1, estrutura 1, rótulo fora da lista 1; ausente, 0 byte, lixo, "
+          "bloqueada e sem referência 3; EDR citado inexistente, em formato errado ou não aprovado 1); retrato_viva (forma, ida e volta "
+          "pelo JSON, tipos, recusa com conferência diferente de 0); migrar_viva (dado e rótulo mantidos, conflito listado e não "
+          "sobrescrito, célula fora dos nomes e objeto = 2, ilegível = 3, recusas de caminho); códigos de saída das CLIs",
+          all((const_ok, ver_ok, ref_tag_ok, edr_ok, loc_ok, fiel_ok, formula_ok, estr_ok, origem_ok, nao_lida_ok, edr_conf_ok, imut_ok,
+               retrato_ok, mig_ok, cli_ok)),
+          f"const={const_ok} versão={ver_ok} tag={ref_tag_ok} edr={edr_ok} localizar={loc_ok} fiel={fiel_ok} fórmula={formula_ok} "
+          f"estrutura={estr_ok} origem={origem_ok} não_lida={nao_lida_ok} edr_conferência={edr_casos}/{edr_conf_ok} imutável={imut_ok} "
+          f"retrato={forma_ok}/{ida_volta_ok}/{tipos_ok}/{recusa_ret_ok} migrar: a={mig_a_ok} (cód {cod_a}) b={mig_b_ok} (cód {cod_b}) "
+          f"erros={erros_ok} ({cod_c}/{cod_d}/{cod_e0}/{cod_e1}/{cod_fd}) recusas={recusa_ok} ({cods}) cli={cli_ok}")
 
 
 with tempfile.TemporaryDirectory(prefix="dds_v42_") as tmp:
@@ -420,6 +688,9 @@ with tempfile.TemporaryDirectory(prefix="dds_v42_") as tmp:
           f"regen={ok_dup}/{ok_dup2} entregue={ok_ent} registro={reg_md_ok} recusas={rec_excel}/{rec_viva}/{rec_origem} csv={csv_ok} | "
           + " ; ".join(r for r in rel_ent if not r.startswith("  DIF"))[:300]
           + ("" if ok_dup else " | " + " ; ".join(rel_dup[:6])))
+
+    # ---------------- TC-WB42-004 ----------------
+    tc_wb42_004(tmp, v41, v42)
 
 
 # ---------------- TC-WB42-003 (oráculo metas.py; sem planilha) ----------------

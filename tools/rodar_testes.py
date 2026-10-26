@@ -27,7 +27,9 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comparar_planilhas  # noqa: E402
+import conferir_viva  # noqa: E402  (acrescenta python/ ao caminho)
 import openpyxl  # noqa: E402
+import viva  # noqa: E402
 
 # Contagens esperadas e fonte (SPEC §6)
 TESTES = [
@@ -40,12 +42,12 @@ TESTES = [
     ("equilíbrio linear", "tests/test_equilibrio_linear.py", 18, "plano do incremento 2 da V4.0"),
     ("V4.0 (nomes e dados)", "tests/test_v4_0.py", 4, "plano do incremento 3 da V4.0"),
     ("V4.1 (estrutura e CA-07)", "tests/test_v4_1.py", 2, "plano do incremento 4 da V4.1 (TC-WB41-001 e 002)"),
-    ("V4.2 (estrutura, CA-07 e oráculo das metas)", "tests/test_v4_2.py", 3,
-     "plano do incremento 5 da V4.2 (TC-WB42-001 a 003; o 004 entra na Task 5)"),
+    ("V4.2 (estrutura, CA-07, oráculo das metas e fluxo da viva)", "tests/test_v4_2.py", 4,
+     "plano do incremento 5 da V4.2 (TC-WB42-001 a 004)"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
-           "origens", "gerar_v4_2", "metas", "aba_metas"]
+           "origens", "gerar_v4_2", "metas", "aba_metas", "viva"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
            ("tests/mutation_planilha_equilibrio.py", 5)]
 # A mutação da planilha recalcula cópias pelo Excel (6 execuções do teste, de minutos cada): o limite de 1800 s dos outros não basta.
@@ -134,6 +136,7 @@ TAG_V30 = "v3.0"
 CAMINHO_V30 = "excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx"
 CAMINHO_V40 = "excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx"
 CAMINHO_V41 = "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx"
+CAMINHO_V42 = "excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx"
 
 
 def referencia_v30(pasta: Path) -> tuple[Path, str]:
@@ -145,6 +148,38 @@ def referencia_v30(pasta: Path) -> tuple[Path, str]:
         destino.write_bytes(blob)
         return destino, f"tag `{TAG_V30}`"
     return RAIZ / CAMINHO_V30, f"arquivo da árvore (a tag `{TAG_V30}` ainda não existe)"
+
+
+def v30_igual_a_tag(ref30: Path) -> tuple[bool, str]:
+    """CA-07 da V3.0 de excel/ (EDR-063, revê o EDR-051 item 2): o arquivo da árvore é igual ao da tag v3.0 (SHA-256). Ele deixou
+    de ser a planilha viva (a viva da equipe é a cópia no Drive); antes de a tag existir, a referência é o próprio arquivo e a
+    igualdade é trivial."""
+    arvore = RAIZ / CAMINHO_V30
+    a, b = viva.sha256(arvore), viva.sha256(ref30)
+    return a == b, f"SHA-256 de `{CAMINHO_V30}`: {a}; da referência: {b}"
+
+
+def secao_viva() -> list[str]:
+    """Seção informativa do log (fora do resumo; EDR-063): a viva do Drive contra a referência da versão dela. A suíte verifica o
+    repositório, e a viva muda sem commit (o mesmo commit daria resultados diferentes); por isso nunca entra no resumo nem
+    reprova. Sem Drive montado (ou viva ilegível), NÃO EXECUTÁVEL. Lê só uma cópia."""
+    linhas = ["## Viva da equipe (informativo, EDR-063)", "",
+              "Fora do resumo e sem efeito no código de saída: a viva é o arquivo que a equipe preenche no Google Drive e muda sem "
+              "commit. Conferida (em cópia local) contra a referência da versão dela, lida na 00_README A3; `tools/conferir_viva.py` "
+              "dá o mesmo veredito com código de saída.", ""]
+    try:
+        arq = viva.localizar_viva()
+    except ValueError as e:
+        return linhas + [f"- Status: **NÃO EXECUTÁVEL** ({e})", ""]
+    if arq is None:
+        return linhas + ["- Status: **NÃO EXECUTÁVEL** (nenhuma viva localizada: Drive desmontado e `DDS_VIVA` sem valor)", ""]
+    with tempfile.TemporaryDirectory(prefix="dds_viva_", ignore_cleanup_errors=True) as tmp:
+        try:
+            codigo, rel, ver = conferir_viva.conferir(arq, Path(tmp))
+        except Exception as e:   # a seção é informativa: nada aqui derruba a suíte
+            return linhas + [f"- Status: **NÃO EXECUTÁVEL** (erro ao conferir: {type(e).__name__}: {e})", ""]
+    status = {0: "VIVA FIEL (código 0)", 1: "VIVA DIVERGE (código 1)", 3: "NÃO EXECUTÁVEL (viva não lida, código 3)"}[codigo]
+    return linhas + [f"- Status: **{status}**", "", "```text", *rel, "```", ""]
 
 
 def main() -> None:
@@ -274,15 +309,34 @@ def main() -> None:
     resumo.append(("CA-07", "planilha vs V3.0 de referência", "PASS" if ok7b else "FAIL"))
     resumo.append(("CA-07", "planilha vs V4.0 de referência (com nomes definidos)", "PASS" if ok7c else "FAIL"))
     resumo.append(("CA-07", "planilha vs V4.1 de referência (equilíbrio em fórmulas)", "PASS" if ok7d else "FAIL"))
-    # CA-07 da planilha viva (EDR-051): tudo igual à referência menos as células de entrada (atualizar_planilha.celulas_de_entrada)
-    sys.path.insert(0, str(RAIZ / "python"))
-    import atualizar_planilha  # noqa: E402
-    ok7v, r7v = comparar_planilhas.comparar_viva(RAIZ / CAMINHO_V30, REF30, atualizar_planilha.celulas_de_entrada())
-    resumo.append(("CA-07", "planilha viva vs referência (só entradas mudam)", "PASS" if ok7v else "FAIL"))
-    md += [f"- Referência da V3.0: {ORIGEM_REF30}. A regeneração e os testes CA-09 usam a referência; a planilha da árvore "
-           "é o arquivo vivo e só passa pela verificação de estrutura.", "",
-           "```text", *r7, *r8, "--- V3.0 (regeneração vs referência) ---", *r7b, "--- V3.0 viva ---", *r7v,
-           "--- V4.0 (regeneração vs excel/) ---", *r7c, "--- V4.1 (regeneração vs excel/) ---", *r7d, "```", ""]
+    # CA-07 da V3.0 de excel/ (EDR-063, revê o EDR-051 item 2): igual ao arquivo da tag v3.0. A viva da equipe é a cópia da V4.1
+    # no Drive; ela aparece só na seção informativa mais abaixo.
+    ok7v, r7v = v30_igual_a_tag(REF30)
+    resumo.append(("CA-07", "V3.0 de excel/ = arquivo da tag v3.0 (SHA-256)", "PASS" if ok7v else "FAIL"))
+    # V4.2 = V4.1 da tag v4.1 + python/gerar_v4_2.py (metas e coerência; projeto T11), comparada com a de excel/ quando existir
+    ok7e, r7e = None, []
+    with tempfile.TemporaryDirectory(prefix="dds_build42_") as tmp42:
+        out42 = Path(tmp42) / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
+        r42 = rodar(["python/gerar_v4_2.py", "--saida", str(out42)])
+        md.append(f"- V4.2: `python/gerar_v4_2.py --saida <tmp>/V4_2.xlsx` (a V4.1 sai da tag `v4.1`), código {r42.returncode}")
+        if r42.returncode != 0 or not out42.exists():
+            ok7e, r7e = False, ["CA-07 FAIL: gerar_v4_2 não gerou a V4.2", cauda(r42.stderr)]
+        elif (RAIZ / CAMINHO_V42).exists():
+            ok7e, r7e = comparar_planilhas.comparar_xlsx(out42, RAIZ / CAMINHO_V42, comparar_planilhas.FORMULAS_ESPERADAS_V42,
+                                                         estrutura=True)
+        else:
+            r7e = [f"{CAMINHO_V42} ainda não existe (a cópia para excel/ é um commit próprio): a V4.2 foi gerada, "
+                   "mas a comparação com a de excel/ não pôde ser feita"]
+    resumo.append(("CA-07", "planilha vs V4.2 de referência (metas e coerência)",
+                   "NÃO EXECUTÁVEL" if ok7e is None else "PASS" if ok7e else "FAIL"))
+    md += [f"- Referência da V3.0: {ORIGEM_REF30}. A regeneração e os testes CA-09 usam a referência; a V3.0 de excel/ tem de ser "
+           "igual ao arquivo da tag (a viva da equipe é outro arquivo, no Drive).", "",
+           "```text", *r7, *r8, "--- V3.0 (regeneração vs referência) ---", *r7b, f"--- V3.0 de excel/ = tag v3.0 --- {r7v}",
+           "--- V4.0 (regeneração vs excel/) ---", *r7c, "--- V4.1 (regeneração vs excel/) ---", *r7d,
+           "--- V4.2 (regeneração vs excel/) ---", *r7e, "```", ""]
+
+    # --- Viva da equipe (informativo; fora do resumo) ---
+    md += secao_viva()
 
     # --- Versão gravada na planilha (fase B, passo 3) ---
     ok_ver, linhas_ver = versao_planilhas()
