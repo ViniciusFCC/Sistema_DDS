@@ -59,7 +59,7 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
              ("tests/test_workbook_suspensao.py", 15, "suspensão da V3.0 (15 com a 2ª rodada da revisão metodológica); registro-de-versoes-V3_0.md"),
              ("tests/test_workbook_v4_0.py", 2, "V4.0; plano do incremento 3"),
              ("tests/test_workbook_v4_1.py", 5, "V4.1 (TC-WB41-003 a 006, parte 1 e 2 do 006); plano do incremento 4"),
-             ("tests/test_workbook_v4_2.py", 1, "V4.2 (TC-WB42-006; o 005 entra na Task 4); plano do incremento 5")]
+             ("tests/test_workbook_v4_2.py", 2, "V4.2 (TC-WB42-005 e 006); plano do incremento 5")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
