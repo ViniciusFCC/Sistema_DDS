@@ -87,6 +87,11 @@ Foco declarado: completar a planilha (EDR-019).
 - Ordem em caso de divergência: `docs/Engineering_Decision_Register.md` → Engineering
   Standard V2.0 → arquitetura V2.0 → data contract V2.4 → registros de versões.
 - O `HANDOFF-Sistema_DDS.md` resume e indexa; não substitui os originais.
+- Orientação: `MAPA.md` (raiz, ~12 mil tokens) é o mapa estrutural do projeto (árvore, símbolos do código,
+  abas das planilhas, sumário dos PDFs e a lista dos arquivos que não se leem inteiros). Leia-o ou busque
+  nele antes de explorar pastas; não é fonte de verdade nem é importado aqui. Gerado por
+  `~/.claude/skills/gestor-tokens/scripts/mapa_projeto.py`; regenerar (com `--sobrescrever`) quando a
+  estrutura mudar.
 - Hierarquia de autoridade (EDR-004): OptimumKinematics (cinemática) e OptimumTire
   (pneu) são REFERENCE. O Python é MODEL/cross-check e nunca substitui a referência.
 
