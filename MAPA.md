@@ -1,0 +1,1141 @@
+# Mapa de Sistema_DDS
+
+424 arquivos, 388.0 MB. Mapa estrutural gerado por mapa_projeto.py (sem conteúdo; leia os trechos no original).
+
+## Não ler inteiros (> 200 kB)
+
+- references/md/gillespie-fvd/split.pdf (108.0 MB)
+- references/pdf/Milliken & Milliken - Race Car Vehicle Dynamics.pdf (83.1 MB)
+- references/md/milliken-rcvd/split.pdf (76.8 MB)
+- references/pdf/Derek Seward - Race Car Design.pdf (48.2 MB)
+- references/pdf/Definitive_Guide_DDS.pdf (14.2 MB)
+- references/pdf/Thomas D. Gillespie - Fundamentals of Vehicle Dynamics.pdf (12.4 MB)
+- references/pdf/Hans Pacejka - Tyre and Vehicle Dynamics.pdf (8.7 MB)
+- references/pdf/Kinematics_Help_File.pdf (6.8 MB)
+- references/pdf/Tire_Help_File.pdf (5.8 MB)
+- excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx (3.1 MB)
+- references/pdf/Adams_2024_1_PAC2002_help.pdf (2.7 MB)
+- references/md/milliken-rcvd/livro.md (2.0 MB)
+- references/md/pacejka-txt/pacejka.txt (1.4 MB)
+- references/md/pacejka-tvd/livro.md (1.3 MB)
+- references/md/gillespie-fvd/livro.md (773 kB)
+- Sistema_DDS_CONTEXTO_COMPLETO.md (721 kB)
+- data/placeholder-dependency-map-V3.0.csv (577 kB)
+- references/md/seward-rcd/livro.md (516 kB)
+- references/md/definitive-guide/livro.md (389 kB)
+- references/md/milliken-rcvd/parts/0901-0920.md (256 kB)
+
+## Árvore
+
+- .gitattributes (1 kB)
+- .gitignore (1 kB)
+- .python-version (1 kB)
+- CLAUDE.md (13 kB)
+    - Sistema_DDS — Tupã Suspension System
+    - Situação atual
+    - Comandos
+    - Fontes de verdade
+    - Convenções congeladas (erro aqui inverte resultados)
+    - Regras de trabalho
+    - Não fazer
+    - Ferramentas ativas neste projeto
+    - Aprendizados
+- HANDOFF-Sistema_DDS.md (37 kB)
+    - Sistema_DDS — Documento de transferência (handoff) para o projeto no Claude Code
+    - 0. Como usar
+    - 1. Visão geral
+    - 2. Arquitetura
+    - 2.1 Fluxo físico (causalidade linear, arquitetura §1.1)
+    - 2.2 Hierarquia de autoridade das ferramentas (EDR-004)
+    - 2.3 KOP × Vehicle State (arquitetura §6)
+    - 2.4 Hierarquia de dados (DEC-008)
+    - 2.5 Revisão por domínio e dependências (DEC-011/012)
+    - 2.6 Processo de divergência MODEL × REFERENCE (DEC-013)
+    - 2.7 Arquitetura de dados (DEC-015/016)
+    - 3. Convenções congeladas
+    - 4. Taxonomia, estados e identificadores
+    - 4.1 Faixas de ID (EDR-005, arq. §2)
+    - 4.2 Data Type (EDR-006)
+    - … mais 21
+- MANIFEST.sha256 (6 kB)
+- pyproject.toml (1 kB)
+- Sistema_DDS_CONTEXTO_COMPLETO.md (721 kB) ⚠ >200 kB: não ler inteiro
+    - Sistema_DDS — Contexto completo do projeto (arquivo único)
+    - Sumário
+    - PARTE A — Reconciliação (verificada em 2026-10-18)
+    - PARTE B — HANDOFF (estado V2.4)
+    - Sistema_DDS — Documento de transferência (handoff) para o projeto no Claude Code
+    - 0. Como usar
+    - 1. Visão geral
+    - 2. Arquitetura
+    - 3. Convenções congeladas
+    - 4. Taxonomia, estados e identificadores
+    - 5. Engineering Standard V2.0: fichas por bloco
+    - 6. Estado atual dos artefatos (V2.4)
+    - 7. Histórico de versões
+    - 8. Registro de decisões (EDR-001 a EDR-042)
+    - 9. Achados técnicos e riscos abertos
+    - … mais 65
+- SPEC.md (13 kB)
+    - SPEC — Migração do Sistema_DDS para o Claude Code
+    - 1. Objetivo
+    - 2. Não objetivos
+    - 3. Decisões aprovadas
+    - 4. Estrutura da fase A
+    - 4.1 Inventário de cópia (commit 0)
+    - 5. Requisitos
+    - 6. Critérios de aceitação
+    - 7. Plano de verificação
+    - 8. Divisão do trabalho (etapa 3)
+    - 9. Riscos e premissas frágeis
+    - 10. Decisões em aberto
+    - 11. Fase B (depois da `v2.4.1`, fora do mínimo)
+    - 12. Ordem no fluxo global
+- uv.lock (10 kB)
+- .claude/
+  - settings.json (1 kB)
+- .superpowers/
+  - sdd/
+    - .gitignore (1 kB)
+    - 2026-10-23-v4-2-inc5-metas-e-coerencia/
+      - contexto-comum.md (16 kB)
+          - Decisões do plano (o controlador escolheu onde uma opção domina; vão nos EDRs indicados)
+          - Autorizações a pedir antes de executar (CLAUDE.md)
+          - Global Constraints
+          - Catálogo de fórmulas novas (aprovação por família)
+          - Contagem de testes (poucos checks, asserções agrupadas)
+          - Review Focus
+      - plan-path (1 kB)
+      - progress.md (6 kB)
+          - SDD ledger — plan: docs/superpowers/plans/2026-10-23-v4-2-inc5-metas-e-coerencia.md
+          - Pre-flight scan
+          - Progresso
+      - regras-implementador.md (2 kB)
+          - Regras para todo implementador (leia antes de começar)
+          - Comandos
+          - Regras de conteúdo (CLAUDE.md)
+          - Seu trabalho
+          - Relatório
+      - regras-rerevisao.md (3 kB)
+          - The Task
+          - The Findings Under Verification
+          - The Fix
+          - You Do Not Dispatch Subagents
+          - Scope
+          - Tests
+          - Output Format
+          - Finding Verdicts
+          - New Breakage in the Fix Diff
+          - Out-of-Scope Observations
+          - Verdict
+      - regras-revisor.md (7 kB)
+          - What Was Requested
+          - What the Implementer Claims They Built
+          - Diff Under Review
+          - You Do Not Dispatch Subagents
+          - Do Not Trust the Report
+          - Tests
+          - Part 1: Spec Compliance
+          - Part 2: Code Quality
+          - Calibration
+          - Output Format
+          - Spec Compliance
+          - Strengths
+          - Issues
+          - Assessment
+      - restricoes-globais.md (2 kB)
+          - Global Constraints
+          - Catálogo de fórmulas novas (aprovação por família)
+      - review-4c756eb..cacc829.diff (46 kB)
+      - review-6a4a2a7..fd36841.diff (36 kB)
+      - review-cacc829..f5f0f36.diff (34 kB)
+      - review-f5f0f36..6a4a2a7.diff (119 kB)
+      - task-1-brief.md (3 kB)
+          - Task 1: Origens do T11 e textos do Python (sem planilha nova)
+      - task-1-report.md (2 kB)
+          - Task 1 - relatório
+          - O que foi feito
+          - Testes
+          - RED/GREEN
+          - Decisões / preocupações
+      - task-2-brief.md (2 kB)
+          - Task 2: Gerador da V4.2 com as alterações aprovadas (sem metas ainda)
+      - task-2-report.md (4 kB)
+          - Task 2 — Gerador da V4.2 (sem metas): relatório
+          - O que foi feito
+          - Varredura da V4.1 (tag) e conjunto alterado: 50 células
+          - Divergência a registrar (h7)
+          - Testes
+          - Decisões
+          - Commit
+      - task-3-brief.md (3 kB)
+          - Task 3: Oráculo e fichas na planilha (metas.py, aba_metas.py)
+      - task-3-report.md (8 kB)
+          - Task 3 — Oráculo e fichas na planilha (metas.py, aba_metas.py): relatório
+          - O que foi feito
+          - Testes e saídas
+          - RED / GREEN
+          - Decisões (onde o brief deixou margem)
+          - Preocupações
+          - Arquivos
+      - task-4-brief.md (1 kB)
+          - Task 4: Equivalência e D16 no motor; κ do pico
+      - task-4-report.md (2 kB)
+          - Task 4 report (TC-WB42-005)
+          - Preocupações / decisões
+      - task-5-brief.md (3 kB)
+          - Task 5: Viva no Drive (conferir, retrato, migrar) e CA-07
+    - regras-limite/
+      - ledger.md (1 kB)
+      - review-A.diff (44 kB)
+      - review-B.diff (57 kB)
+      - task-A-brief.md (5 kB)
+          - Task A — EDR-056 no núcleo (`python/equilibrio.py`) e nos testes
+          - 1. Faixa do pneu (convenção PAC2002, help do Adams p. 83)
+          - 2. Resolução numérica e NEUTRO (Milliken p. 320)
+          - 3. Testes (`tests/test_equilibrio.py`) — continuam 20 checks, sem IDs novos
+          - 4. Experimento da Task 6
+          - Commits
+      - task-A-report.md (9 kB)
+          - Task A — relatório (EDR-056 no núcleo da análise de par)
+          - Commits
+          - Mudanças em `python/equilibrio.py`
+          - Testes (`tests/test_equilibrio.py`): 20 checks, sem IDs novos
+          - Como o ramo B do TC-EQ-013 é forçado agora
+          - TDD
+          - Vereditos e resoluções medidos
+          - Revisão própria
+          - Pontos de atenção
+          - Arquivos
+      - task-B-brief.md (3 kB)
+          - Task B — Relatório do incremento 1 com as regras do EDR-056
+          - O que mudar em `tools/relatorio_inc1.py`
+          - Execução
+      - task-B-report.md (7 kB)
+          - Task B: relatório do incremento 1 com as regras do EDR-056
+          - Commits (ramo feat/v4-0-regras-limite, sobre 55814ba)
+          - Mudanças em `tools/relatorio_inc1.py`
+          - Execução
+          - Números principais (caso da planilha viva, demonstrativo)
+          - Autoavaliação
+          - Concerns
+          - Fix round 1
+- data/
+  - hardpoints_synthetic_4cantos_V2.0.csv (4 kB)
+  - hardpoints_synthetic_4cantos_V2.0.meta.json (1 kB)
+  - hardpoints_synthetic_V2.0.csv (2 kB)
+  - hardpoints_synthetic_V2.0.meta.json (1 kB)
+  - Hoosier_R25B_13x7_TTC_provisional.meta.json (3 kB)
+  - Hoosier_R25B_13x7_TTC_provisional.tir (20 kB)
+  - kinematics_sweep_synthetic_V2.0.csv (2 kB)
+  - layout_V2_4.json (2 kB)
+  - nomes_V4_0.csv (61 kB)
+  - nomes_V4_1.csv (37 kB)
+  - nomes_V4_2.csv (5 kB)
+  - placeholder-dependency-map-V2.1.csv (30 kB)
+  - placeholder-dependency-map-V3.0.csv (577 kB) ⚠ >200 kB: não ler inteiro
+  - tire_comparison_grid_V2_3.csv (5 kB)
+  - varredura_pneu_exploratoria.json (1 kB)
+- docs/ (detalhes omitidos pelo orçamento)
+  - arquitetura-consolidada-V2.0-suspensao-fsae.md (41 kB)
+  - arquitetura-planejada-roadmap-V0-V5.md (45 kB)
+  - arquitetura-planejada.md (13 kB)
+  - data-contract-V2_4-excel-python.md (13 kB)
+  - engineering-standard-V2.0-suspensao-fsae.md (87 kB)
+  - Engineering_Decision_Register.md (175 kB)
+  - hardpoint-schema-V2.0.md (5 kB)
+  - passagem-2026-10-26.md (4 kB)
+  - registro-de-versoes-V1.0.md (3 kB)
+  - registro-de-versoes-V2.0.md (4 kB)
+  - registro-de-versoes-V2_2.md (4 kB)
+  - registro-de-versoes-V2_3.md (2 kB)
+  - registro-de-versoes-V2_4.md (3 kB)
+  - registro-de-versoes-V3_0.md (136 kB)
+  - registro-de-versoes-V4_0-celulas.md (2 kB)
+  - registro-de-versoes-V4_0.md (5 kB)
+  - registro-de-versoes-V4_1-celulas.md (159 kB)
+  - registro-de-versoes-V4_1.md (6 kB)
+  - revisao-metodologica.md (31 kB)
+  - migracao/ (detalhes omitidos pelo orçamento)
+    - divergencia-01-suspensao-41-de-42.md (3 kB)
+    - experimento-recalculo-libreoffice-x-excel.md (3 kB)
+    - proposta-EDR-043.md (5 kB)
+    - verificacao-EDR-043-nomes-estaveis.md (4 kB)
+    - verificacao-EDR-044-planilha.md (4 kB)
+    - verificacao-V2.4-antes-portabilidade.md (4 kB)
+    - verificacao-V2.4-local.md (3 kB)
+  - superpowers/
+    - plans/ (detalhes omitidos pelo orçamento)
+      - 2026-10-20-v4-0-inc1-viabilidade-robustez.md (31 kB)
+      - 2026-10-21-v4-0-inc2-equilibrio-linear-e-hipoteses.md (31 kB)
+      - 2026-10-21-v4-0-inc3-fundacao-nomes.md (16 kB)
+      - 2026-10-21-v4-1-inc4-equilibrio-na-planilha.md (27 kB)
+      - 2026-10-23-v4-2-inc5-metas-e-coerencia.md (33 kB)
+    - specs/ (detalhes omitidos pelo orçamento)
+      - 2026-10-20-v4-0-metas-equilibrio-design.md (37 kB)
+  - v4-0/ (detalhes omitidos pelo orçamento)
+    - inc1-viabilidade-e-robustez-edr056.md (25 kB)
+    - inc1-viabilidade-e-robustez.md (22 kB)
+  - v4-1/ (detalhes omitidos pelo orçamento)
+    - inc4-equilibrio-na-planilha.md (13 kB)
+    - inc4-viabilidade-tabela-de-troca.md (9 kB)
+- excel/
+  - FSAE_EV_Suspension_Fase1_V2.1.xlsx (46 kB)
+      - aba 00_README [A1:E36], 0 fórmulas | cab.: FSAE EV — Suspensio…
+      - aba 01_SETUP [A1:E12], 0 fórmulas | cab.: 01_SETUP
+      - aba 02_REQUIREMENTS [A1:H13], 0 fórmulas | cab.: 02_REQUIREMENTS
+      - aba 03_TARGETS [A1:G12], 0 fórmulas | cab.: 03_TARGETS
+      - aba 04_DECISION_REGISTER [A1:H18], 0 fórmulas | cab.: 04_DECISION_REGISTER
+      - aba 05_VEHICLE [A1:E24], 3 fórmulas | cab.: 05_VEHICLE
+      - aba 06_SUSPENSION [A1:E44], 16 fórmulas | cab.: 06_SUSPENSION
+      - aba 07_KINEMATICS [A1:E69], 0 fórmulas | cab.: 07_KINEMATICS
+      - aba 08_VEHICLE_STATE [A1:E9], 0 fórmulas | cab.: 08_VEHICLE_STATE
+      - aba 09_LOADS [A1:E34], 23 fórmulas | cab.: 09_LOADS
+      - aba 10_TIRE [A1:E12], 0 fórmulas | cab.: 10_TIRE
+      - aba 11_DESIGN [A1:E21], 9 fórmulas | cab.: 11_DESIGN — Design …
+      - aba 12_COMPARISON [A1:E5], 0 fórmulas | cab.: 12_COMPARISON
+      - aba 13_VALIDATION [A1:E33], 18 fórmulas | cab.: 13_VALIDATION
+      - aba 14_DASHBOARD [A1:E30], 19 fórmulas | cab.: 14_DASHBOARD
+      - … mais 1
+  - FSAE_EV_Suspension_Fase1_V2_4.xlsx (63 kB)
+      - aba 00_README [A1:E37], 0 fórmulas | cab.: FSAE EV — Suspensio…
+      - aba 01_SETUP [A1:E12], 0 fórmulas | cab.: 01_SETUP
+      - aba 02_REQUIREMENTS [A1:H13], 0 fórmulas | cab.: 02_REQUIREMENTS
+      - aba 03_TARGETS [A1:G12], 0 fórmulas | cab.: 03_TARGETS
+      - aba 04_DECISION_REGISTER [A1:H19], 0 fórmulas | cab.: 04_DECISION_REGISTER
+      - aba 05_VEHICLE [A1:E24], 3 fórmulas | cab.: 05_VEHICLE
+      - aba 06_SUSPENSION [A1:E44], 16 fórmulas | cab.: 06_SUSPENSION
+      - aba 07_KINEMATICS [A1:E69], 0 fórmulas | cab.: 07_KINEMATICS
+      - aba 08_VEHICLE_STATE [A1:E9], 0 fórmulas | cab.: 08_VEHICLE_STATE
+      - aba 09_LOADS [A1:E34], 23 fórmulas | cab.: 09_LOADS
+      - aba 10_TIRE [A1:I176], 249 fórmulas | cab.: 10_TIRE
+      - aba 11_DESIGN [A1:E21], 9 fórmulas | cab.: 11_DESIGN — Design …
+      - aba 12_COMPARISON [A1:E5], 0 fórmulas | cab.: 12_COMPARISON
+      - aba 13_VALIDATION [A1:E44], 23 fórmulas | cab.: 13_VALIDATION
+      - aba 14_DASHBOARD [A1:E38], 24 fórmulas | cab.: 14_DASHBOARD
+      - … mais 1
+  - FSAE_EV_Suspension_Fase1_V3_0.xlsx (73 kB)
+      - aba 00_README [A1:E53], 0 fórmulas | cab.: FSAE EV — Suspensio…
+      - aba 01_SETUP [A1:E12], 0 fórmulas | cab.: 01_SETUP
+      - aba 02_REQUIREMENTS [A1:H13], 0 fórmulas | cab.: 02_REQUIREMENTS
+      - aba 03_TARGETS [A1:G12], 0 fórmulas | cab.: 03_TARGETS
+      - aba 04_DECISION_REGISTER [A1:H19], 0 fórmulas | cab.: 04_DECISION_REGISTER
+      - aba 05_VEHICLE [A1:H36], 11 fórmulas | cab.: 05_VEHICLE
+      - aba 06_SUSPENSION [A1:H52], 20 fórmulas | cab.: 06_SUSPENSION
+      - aba 07_KINEMATICS [A1:H85], 7 fórmulas | cab.: 07_KINEMATICS
+      - aba 08_VEHICLE_STATE [A1:H11], 1 fórmula | cab.: 08_VEHICLE_STATE
+      - aba 09_LOADS [A1:E34], 24 fórmulas | cab.: 09_LOADS
+      - aba 10_TIRE [A1:J177], 249 fórmulas | cab.: 10_TIRE
+      - aba 11_DESIGN [A1:H21], 9 fórmulas | cab.: 11_DESIGN — Design …
+      - aba 12_COMPARISON [A1:E5], 0 fórmulas | cab.: 12_COMPARISON
+      - aba 13_VALIDATION [A1:E44], 23 fórmulas | cab.: 13_VALIDATION
+      - aba 14_DASHBOARD [A1:E38], 43 fórmulas | cab.: 14_DASHBOARD
+      - … mais 1
+  - FSAE_EV_Suspension_Fase1_V4_0.xlsx (79 kB)
+      - aba 00_README [A1:E53], 0 fórmulas | cab.: FSAE EV — Suspensio…
+      - aba 01_SETUP [A1:E12], 0 fórmulas | cab.: 01_SETUP
+      - aba 02_REQUIREMENTS [A1:H13], 0 fórmulas | cab.: 02_REQUIREMENTS
+      - aba 03_TARGETS [A1:G12], 0 fórmulas | cab.: 03_TARGETS
+      - aba 04_DECISION_REGISTER [A1:H19], 0 fórmulas | cab.: 04_DECISION_REGISTER
+      - aba 05_VEHICLE [A1:H36], 11 fórmulas | cab.: 05_VEHICLE
+      - aba 06_SUSPENSION [A1:H52], 20 fórmulas | cab.: 06_SUSPENSION
+      - aba 07_KINEMATICS [A1:H85], 7 fórmulas | cab.: 07_KINEMATICS
+      - aba 08_VEHICLE_STATE [A1:H11], 1 fórmula | cab.: 08_VEHICLE_STATE
+      - aba 09_LOADS [A1:E34], 24 fórmulas | cab.: 09_LOADS
+      - aba 10_TIRE [A1:J177], 249 fórmulas | cab.: 10_TIRE
+      - aba 11_DESIGN [A1:H21], 9 fórmulas | cab.: 11_DESIGN — Design …
+      - aba 12_COMPARISON [A1:E5], 0 fórmulas | cab.: 12_COMPARISON
+      - aba 13_VALIDATION [A1:E44], 23 fórmulas | cab.: 13_VALIDATION
+      - aba 14_DASHBOARD [A1:E38], 43 fórmulas | cab.: 14_DASHBOARD
+      - … mais 1
+  - FSAE_EV_Suspension_Fase1_V4_1.xlsx (3.1 MB) ⚠ >200 kB: não ler inteiro
+      - aba 00_README [A1:E53], 0 fórmulas | cab.: FSAE EV — Suspensio…
+      - aba 01_SETUP [A1:E12], 0 fórmulas | cab.: 01_SETUP
+      - aba 02_REQUIREMENTS [A1:H13], 0 fórmulas | cab.: 02_REQUIREMENTS
+      - aba 03_TARGETS [A1:G12], 0 fórmulas | cab.: 03_TARGETS
+      - aba 04_DECISION_REGISTER [A1:H19], 0 fórmulas | cab.: 04_DECISION_REGISTER
+      - aba 05_VEHICLE [A1:H36], 11 fórmulas | cab.: 05_VEHICLE
+      - aba 06_SUSPENSION [A1:H52], 20 fórmulas | cab.: 06_SUSPENSION
+      - aba 07_KINEMATICS [A1:H85], 7 fórmulas | cab.: 07_KINEMATICS
+      - aba 08_VEHICLE_STATE [A1:H11], 1 fórmula | cab.: 08_VEHICLE_STATE
+      - aba 09_LOADS [A1:E34], 24 fórmulas | cab.: 09_LOADS
+      - aba 10_TIRE [A1:J177], 249 fórmulas | cab.: 10_TIRE
+      - aba 11_DESIGN [A1:H21], 9 fórmulas | cab.: 11_DESIGN — Design …
+      - aba 12_COMPARISON [A1:E5], 0 fórmulas | cab.: 12_COMPARISON
+      - aba 13_VALIDATION [A1:E44], 24 fórmulas | cab.: 13_VALIDATION
+      - aba 14_DASHBOARD [A1:E47], 50 fórmulas | cab.: 14_DASHBOARD
+      - … mais 12
+- importado-claude-ai/
+  - arquivos/ (detalhes omitidos pelo orçamento)
+    - FSAE_EV_Suspension_Fase1.xlsx (42 kB)
+    - FSAE_EV_Suspension_Fase1_V1.0.xlsx (43 kB)
+    - FSAE_EV_Suspension_Fase1_V2.0.xlsx (45 kB)
+    - FSAE_EV_Suspension_Fase1_V2.1.xlsx (46 kB)
+    - hardpoints_synthetic_V2.0.csv (2 kB)
+    - kinematics_sweep_synthetic_V2.0.csv (2 kB)
+    - placeholder-dependency-map-V2.1.csv (30 kB)
+  - conhecimento/ (detalhes omitidos pelo orçamento)
+    - arquitetura-consolidada-suspensao-fsae.md (37 kB)
+    - arquitetura-consolidada-V1.0-suspensao-fsae.md (39 kB)
+    - arquitetura-consolidada-V2.0-suspensao-fsae.md (40 kB)
+    - data-contract-v0.1-excel-python.md (6 kB)
+    - data-contract-V1.0-excel-python.md (8 kB)
+    - data-contract-V2.0-excel-python.md (10 kB)
+    - Definitive_Guide_DDS.pdf (1 kB)
+    - dup-0da41d6a-suspension_model.py (7 kB)
+    - dup-60bbba8a-test_suspension_model.py (8 kB)
+    - dup-d3f41c6b-engineering-standard-v0.1-suspensao-fsae.md (51 kB)
+    - dup-e0fcd81f-suspension_model.py (7 kB)
+    - engineering-standard-v0.1-suspensao-fsae.md (57 kB)
+    - engineering-standard-V1.0-suspensao-fsae.md (59 kB)
+    - engineering-standard-V2.0-suspensao-fsae.md (75 kB)
+    - Engineering_Decision_Register.md (59 kB)
+    - hardpoint-schema-V2.0.md (5 kB)
+    - hardpoints_synthetic_V2.0.meta.json (1 kB)
+    - hardpoints_V2_0.py (9 kB)
+    - kinematics_model.py (6 kB)
+    - kinematics_model_V1_0.py (7 kB)
+    - kinematics_model_V2_0.py (27 kB)
+    - registro-de-versoes-V1.0.md (3 kB)
+    - registro-de-versoes-V2.0.md (4 kB)
+    - suspension_model.py (7 kB)
+    - suspension_model_V1_0.py (7 kB)
+    - suspension_model_V2_0.py (12 kB)
+    - suspension_model_V2_1.py (15 kB)
+    - test_hardpoints_V2_0.py (5 kB)
+    - test_hardpoints_V2_1.py (10 kB)
+    - test_kinematics_model.py (5 kB)
+    - test_kinematics_model_V1_0.py (5 kB)
+    - test_kinematics_model_V2_0.py (24 kB)
+    - test_kinematics_model_V2_1.py (25 kB)
+    - test_suspension_model.py (8 kB)
+    - test_suspension_model_V1_0.py (8 kB)
+    - test_suspension_model_V2_0.py (13 kB)
+    - test_suspension_model_V2_1.py (16 kB)
+    - test_workbook_V2_1.py (4 kB)
+  - saidas-conversas/
+    - kin/ (detalhes omitidos pelo orçamento)
+      - arquitetura-consolidada-V1.0-suspensao-fsae.md (39 kB)
+      - arquitetura-consolidada-V2.0-suspensao-fsae.md (40 kB)
+      - data-contract-V1.0-excel-python.md (8 kB)
+      - data-contract-V2.0-excel-python.md (10 kB)
+      - engineering-standard-V1.0-suspensao-fsae.md (59 kB)
+      - engineering-standard-V2.0-suspensao-fsae.md (75 kB)
+      - Engineering_Decision_Register.md (59 kB)
+      - FSAE_EV_Suspension_Fase1_V1.0.xlsx (43 kB)
+      - FSAE_EV_Suspension_Fase1_V2.0.xlsx (45 kB)
+      - FSAE_EV_Suspension_Fase1_V2.1.xlsx (46 kB)
+      - hardpoint-schema-V2.0.md (5 kB)
+      - hardpoints_synthetic_V2.0.csv (2 kB)
+      - hardpoints_synthetic_V2.0.meta.json (1 kB)
+      - hardpoints_V2_0.py (9 kB)
+      - kinematics_model_V1_0.py (7 kB)
+      - kinematics_model_V2_0.py (27 kB)
+      - kinematics_sweep_synthetic_V2.0.csv (2 kB)
+      - placeholder-dependency-map-V2.1.csv (30 kB)
+      - registro-de-versoes-V1.0.md (3 kB)
+      - registro-de-versoes-V2.0.md (4 kB)
+      - suspension_model_V1_0.py (7 kB)
+      - suspension_model_V2_0.py (12 kB)
+      - suspension_model_V2_1.py (15 kB)
+      - test_hardpoints_V2_0.py (5 kB)
+      - test_hardpoints_V2_1.py (10 kB)
+      - test_kinematics_model_V1_0.py (5 kB)
+      - test_kinematics_model_V2_0.py (24 kB)
+      - test_kinematics_model_V2_1.py (25 kB)
+      - test_suspension_model_V1_0.py (8 kB)
+      - test_suspension_model_V2_0.py (13 kB)
+      - test_suspension_model_V2_1.py (16 kB)
+      - test_workbook_V2_1.py (4 kB)
+    - plan/ (detalhes omitidos pelo orçamento)
+      - data-contract-v0.1-excel-python.md (6 kB)
+      - FSAE_EV_Suspension_Fase1.xlsx (42 kB)
+      - kinematics_model.py (6 kB)
+      - revisao-arquitetura-suspensao-fsae.md (22 kB)
+      - segunda-revisao-arquitetura-suspensao-fsae.md (23 kB)
+      - suspension_model.py (7 kB)
+      - test_kinematics_model.py (5 kB)
+      - test_suspension_model.py (8 kB)
+      - test_t09_reference_case.py (6 kB)
+    - tire/ (detalhes omitidos pelo orçamento)
+      - build_workbook_V2_2.py (29 kB)
+      - build_workbook_V2_4.py (33 kB)
+      - data-contract-V2_2-excel-python.md (13 kB)
+      - data-contract-V2_4-excel-python.md (13 kB)
+      - Engineering_Decision_Register.md (75 kB)
+      - FSAE_EV_Suspension_Fase1_V2_2.xlsx (61 kB)
+      - FSAE_EV_Suspension_Fase1_V2_3.xlsx (62 kB)
+      - FSAE_EV_Suspension_Fase1_V2_4.xlsx (63 kB)
+      - Hoosier_R25B_13x7_TTC_provisional.meta.json (3 kB)
+      - Hoosier_R25B_13x7_TTC_provisional.tir (20 kB)
+      - layout_V2_2.json (2 kB)
+      - layout_V2_4.json (2 kB)
+      - mutation_tire.py (2 kB)
+      - mutation_tire_V2_4.py (3 kB)
+      - registro-de-versoes-V2_2.md (4 kB)
+      - registro-de-versoes-V2_3.md (2 kB)
+      - registro-de-versoes-V2_4.md (3 kB)
+      - test_tire_model_V2_2.py (13 kB)
+      - test_tire_model_V2_4.py (16 kB)
+      - test_tire_oracles_V2_2.py (9 kB)
+      - test_tire_oracles_V2_4.py (9 kB)
+      - test_workbook_V2_2.py (9 kB)
+      - test_workbook_V2_4.py (11 kB)
+      - tire_comparison_grid_V2_3.csv (5 kB)
+      - tire_model_V2_2.py (10 kB)
+      - tire_model_V2_4.py (12 kB)
+- python/
+  - aba_equilibrio.py (129 kB)
+      - def nome_coef(k)
+      - class Entrada
+      - def celulas_de_entrada_v41()
+      - class Verificacao
+      - def motivo_roll_steer(x)
+      - def motivo_das_entradas(x)
+      - def celula_pior19(k)
+      - def rotulo_linha20(j)
+      - def celula20(chave, j)
+      - class _Linha16
+      - def termos_pior_origem(wb, linear=False)
+      - def pior_origem_de_valores(termos, origem_de, chaves, lista=ORIGENS_LISTA)
+      - class _Subst(dict)
+      - class _Ctx: put(self, ws, cel, familia, formula)
+      - def celula_aux19(chave, p)
+      - … mais 4
+  - aba_metas.py (23 kB)
+      - def celulas_de_entrada_v42()
+      - def acrescentar_nomes(wb)
+      - def alteracoes_03(wb)
+      - def formula_g1(r)
+      - def formula_g3(lista, campo, r)
+      - def formula_g4(r)
+      - def formula_g5(r)
+      - def formula_g6_pior()
+      - def formula_g6_conta()
+      - def montar(wb)
+      - def fichas_da_planilha(xlsx_recalculado)
+  - atualizar_planilha.py (67 kB)
+      - def alteracoes(ky_row)
+      - def celulas_de_entrada()
+      - def aplicar(src, out, layout)
+      - def escrever_registro(registro, caminho)
+      - def main()
+  - build_workbook.py (34 kB)
+      - def put(cell, value, font=F_LBL, fill=None, nf=None, border=False, align=None)
+      - def note(cell, text, w=340, h=150)
+      - def merge_row(r, text, font, fill=None, height=None)
+      - def add(name, nrows=1)
+      - def sec(title)
+      - def p(name)
+      - def R(c, name)
+      - def G(c, expr)
+      - def meta(name, label, value, font=F_LBL, fill=None, nf=None, comment=None)
+      - def calc(name, label, fn, unit='-', ref='', gate=True, comment=None, nf=NF)
+      - def gxa(c, arg)
+      - def gyk(c, arg)
+      - def vcopy(src_row, dst_row)
+      - def vcheck(rr, label, excel_name, refrow, rid)
+  - caso_planilha.py (14 kB)
+      - def endereco_da_entrada(wb, chave)
+      - def enderecos_das_entradas(wb)
+      - def caso_da_planilha(xlsx_recalculado, tir)
+      - def valores_v41(wb)
+      - def caso_da_planilha_v41(xlsx_recalculado, tir, passo1=True)
+      - def pior_origem_do_caso_v41(xlsx_formulas, linear=False)
+      - def pior_origem_entradas(xlsx_formulas)
+      - def pior_origem_do_caso(xlsx_formulas)
+  - dados_planilha.py (10 kB)
+      - def eh_dado(nome)
+      - def iguais(a, b)
+      - def ler_por_endereco(xlsx_v30, tabela)
+      - def ler_por_nome(xlsx_v40)
+      - class RelatorioInjecao
+      - def injetar(xlsx_v40, dados, saida, base=None)
+      - class AbasDiferentes(ValueError)
+      - def celulas_alteradas(viva, v30)
+      - def objetos_alterados(viva, v30)
+  - equilibrio.py (45 kB)
+      - class CasoEquilibrio
+      - def downforce(caso, ay_ms2)
+      - def cargas(caso, ay_ms2)
+      - def camber(caso, ay_ms2)
+      - def deriva_toe(caso)
+      - def esterco_rodas(caso)
+      - def deriva_ackermann(caso)
+      - def deriva_total(caso)
+      - def grade_alfa(caso, n_alfa)
+      - def fy_eixo(caso, eixo, ay_ms2, alfa_ref)
+      - class Capacidade
+      - class _Limite
+      - def tracao_ativa(caso)
+      - def fx_exigido_traseira(caso, ay_ms2)
+      - def fx_max_puro(ds, fz, gamma)
+      - … mais 13
+  - equilibrio_linear.py (32 kB)
+      - def gradiente_pneus(W_f_N, W_r_N, C_f_N_rad, C_r_N_rad)
+      - def para_graus_por_g(K)
+      - def velocidade_caracteristica(L_m, K)
+      - def velocidade_critica(L_m, K)
+      - def ponto_neutro_ate_traseiro(L_m, C_f, C_r)
+      - def gradiente_rolagem(W_N, h1_m, K_phi_f, K_phi_r)
+      - def parcela_camber(Cg_f, Ca_f, dgf, Cg_r, Ca_r, dgr, dphi_day)
+      - def parcela_transferencia_aprox(W_f_N, C_f, b_f, dFz_f, W_r_N, C_r, b_r, dFz_r)
+      - class ParcelasK
+      - def parcelas_k(caso, ay_ms2)
+      - def angulos_necessarios(caso, ay_ms2, n_alfa=401)
+      - def tabela_linear(caso, ay_max_g=0.4, passo_g=0.05, pior_origem=None, n_alfa=401, *, origem_do_carro=_origens.T11)
+      - def texto_k(p, pior_origem, *, origem_do_carro=_origens.T11)
+      - def ajuste_polinomio_rigidez(ds, n=21)
+      - def b_local(ds, fz)
+      - … mais 1
+  - gerar_v4_0.py (7 kB)
+      - def alteracoes_v4_0()
+      - def gerar(caminho_v30, saida, tabela)
+      - def extrair_v30(pasta)
+      - def main()
+  - gerar_v4_1.py (24 kB)
+      - def status_tire(col)
+      - def formula_tire_limitada(antes, col)
+      - def alteracoes_v4_1(origem=None)
+      - def conferir_tabela(tabela)
+      - def montar_v41(wb, alteracoes)
+      - def resumo_novas(novas)
+      - def gerar(caminho_v40, saida, tabela=None)
+      - def escrever_registro_v41(registro, caminho)
+      - def main()
+  - gerar_v4_2.py (19 kB)
+      - def alteracoes_v4_2(wb)
+      - def rotulos_antigos_restantes(wb)
+      - def extrair_v41(pasta)
+      - def aplicar(wb, alteracoes)
+      - def escrever_registro_v42(registro, caminho)
+      - def conferir_tabela(tabela)
+      - def resumo_novas(novas)
+      - def montar_v42(wb)
+      - def gerar(v41, saida, registro=None, csv_nomes=None, nomes=None)
+      - def copia_v42(tmp, alteracoes=None, nome='V4_2_copia.xlsx')
+      - def main()
+  - hardpoints.py (9 kB)
+      - class HardpointError(ValueError)
+      - class Point
+      - class HardpointSet: corners_present(self); corner_points(self, corner); status_summary(self)
+      - def lotus_to_iso8855(xyz)
+      - def build_hardpoint_set(rows, meta)
+      - def load_hardpoints(csv_path, meta_path)
+      - def write_hardpoints(csv_path, meta_path, hs)
+  - kinematics_model.py (43 kB)
+      - class Hardpoint
+      - def line_intersection(p1, p2, p3, p4, view='frontal')
+      - def instant_center_front_view(lca_outer, lca_inner, uca_outer, uca_inner)
+      - def roll_center_height(contact_patch, instant_center)
+      - def roll_center_model_check(lca_outer, lca_inner, uca_outer, uca_inner, contact_patch)
+      - def side_view_inner_midpoint(bushing_front, bushing_rear)
+      - def instant_center_side_view(lca_outer, lca_bushing_front, lca_bushing_rear, uca_outer, uca_bushing_front, uca_bushing_…
+      - def tan_phi_from_ic(instant_center, contact_patch_x)
+      - def anti_dive_squat_model_check(lca_outer, lca_bushing_front, lca_bushing_rear, uca_outer, uca_bushing_front, uca_bushi…
+      - class KinematicsError(RuntimeError)
+      - class Solution
+      - class Corner: __init__(self, hs, name, rack_dir=(0.0, 1.0, 0.0)); solve(self, travel=0.0, steer=0.0, q0=None, phi0=0.0,…
+      - def sweep(corner, travels, steer=0.0)
+      - def steer_sweep(corner, rack_positions, travel=0.0)
+      - def steering_ratio(corner, rack_travel_per_rev_m, ds=0.0001)
+      - … mais 26
+  - metas.py (14 kB)
+      - class Relacao
+      - def alavanca(target)
+      - class Ficha
+      - def campo_valido(campo, valor)
+      - def edr_no_formato(v)
+      - def valor_tbd(valor)
+      - def compromisso_preenchido(v)
+      - def sobredeterminadas(fichas)
+      - def estado_coerencia(f, fichas)
+      - def texto_coerencia(f, fichas)
+      - def pior_coerencia(textos)
+      - def compromissos(textos)
+  - nomes_v4_0.py (10 kB)
+      - class Nome
+      - def parece_referencia(nome)
+      - def slug(rotulo)
+      - def tabela_nomes(caminho_v30)
+      - def verificar_cobertura(tabela, celulas)
+      - def escrever_tabela(nomes, caminho_csv)
+      - def ler_tabela(caminho_csv)
+      - def main()
+  - origens.py (2 kB)
+  - raizes.py (5 kB)
+      - def linha(cel)
+      - def chave(no)
+      - def nomes_definidos(wb)
+      - def referencias(formula, aba_atual, colunas=None, nomes=None)
+      - def celula_origem(aba, cel)
+      - def origem_da_raiz(wb, aba, cel)
+      - class Grafo: __init__(self, wb); raizes(self, no, pilha=()); raizes_preenchidas(self, no); celulas_origem(self, no)
+  - README.md (3 kB)
+      - python/
+      - Arquivo `.tir` (fora do Git)
+  - suspension_model.py (22 kB)
+      - class FzLiftoffWarning(UserWarning)
+      - class SmallMotionRatioWarning(UserWarning)
+      - class VehicleConfig
+      - def sprung_mass_total(cfg)
+      - def sprung_mass_axle(cfg)
+      - def sprung_cg_to_front(cfg)
+      - def sprung_mass_per_corner(cfg)
+      - def sprung_cg_height(cfg)
+      - def static_fz_corner(cfg)
+      - def static_fz_corner_cg_lateral(cfg, y_cg_m)
+      - def longitudinal_dfz(cfg, ax)
+      - def lateral_dfz(cfg, ay)
+      - def aero_fz_corner(downforce_total, aero_balance_front)
+      - def downforce_por_velocidade(rho_kg_m3, cza_m2, v_ms)
+      - def fz_plausibility(fz)
+      - … mais 11
+  - tire_model.py (14 kB)
+      - class TireDataError(ValueError)
+      - class TireRangeError(ValueError)
+      - def parse_tir(path)
+      - class TireDataset: side(self)
+      - def load_dataset(path, source='', source_axis_system=None)
+      - def in_range(ds, fz, alpha, gamma, kappa)
+      - def pure_fx0(p, fz, gamma, kappa)
+      - def pure_fy0(p, fz, alpha, gamma)
+      - def combined_forces(ds, fz, alpha, gamma, kappa, check_range=True)
+      - def wheel_forces(ds, corner, fz, alpha, gamma, kappa)
+      - def mu_effective(fx, fy, fz)
+      - def sign_report(ds, fz=None)
+      - def project_sign_report(ds, fz=None)
+      - def rigidez_deriva(ds, fz, gamma=0.0)
+      - def rigidez_camber(ds, fz)
+  - viva.py (8 kB)
+      - class VivaIlegivel(Exception)
+      - def localizar_viva()
+      - def sha256(arquivo)
+      - def copia_local(viva, pasta)
+      - def versao(xlsx)
+      - class Referencia
+      - def referencia_da(ver)
+      - def arquivo_de_referencia(ver, pasta)
+      - def edrs_citados(xlsx)
+      - def edrs_aprovados(edr_md)
+- references/ (detalhes omitidos pelo orçamento)
+  - INDEX.md (4 kB)
+  - md/
+    - adams-pac2002-help/
+      - livro.md (118 kB)
+    - definitive-guide/ (detalhes omitidos pelo orçamento)
+      - livro.md (389 kB) ⚠ >200 kB: não ler inteiro
+      - log.txt (2 kB)
+      - mapa_paginas.json (2 kB)
+      - parts/ (detalhes omitidos pelo orçamento)
+        - 0001-0020.md (71 kB)
+        - 0021-0040.md (34 kB)
+        - 0041-0060.md (48 kB)
+        - 0061-0080.md (63 kB)
+        - 0081-0100.md (61 kB)
+        - 0101-0120.md (55 kB)
+        - 0121-0140.md (38 kB)
+        - 0141-0153.md (17 kB)
+    - gillespie-fvd/ (detalhes omitidos pelo orçamento)
+      - livro.md (773 kB) ⚠ >200 kB: não ler inteiro
+      - log.txt (3 kB)
+      - mapa_paginas.json (6 kB)
+      - split.pdf (108.0 MB) ⚠ >200 kB: não ler inteiro
+      - parts/ (detalhes omitidos pelo orçamento)
+        - 0001-0020.md (44 kB)
+        - 0021-0040.md (41 kB)
+        - 0041-0060.md (32 kB)
+        - 0061-0080.md (34 kB)
+        - 0081-0100.md (29 kB)
+        - 0101-0120.md (27 kB)
+        - 0121-0140.md (30 kB)
+        - 0141-0160.md (36 kB)
+        - 0161-0180.md (35 kB)
+        - 0181-0200.md (35 kB)
+        - 0201-0220.md (28 kB)
+        - 0221-0240.md (33 kB)
+        - 0241-0260.md (34 kB)
+        - 0261-0280.md (31 kB)
+        - 0281-0300.md (34 kB)
+        - 0301-0320.md (28 kB)
+        - 0321-0340.md (31 kB)
+        - 0341-0360.md (29 kB)
+        - 0361-0380.md (31 kB)
+        - 0381-0400.md (34 kB)
+        - 0401-0420.md (36 kB)
+        - 0421-0440.md (27 kB)
+        - 0441-0460.md (26 kB)
+        - 0461-0480.md (24 kB)
+        - 0481-0486.md (8 kB)
+    - milliken-rcvd/ (detalhes omitidos pelo orçamento)
+      - livro.md (2.0 MB) ⚠ >200 kB: não ler inteiro
+      - mapa_paginas.json (11 kB)
+      - split.pdf (76.8 MB) ⚠ >200 kB: não ler inteiro
+      - parts/ (detalhes omitidos pelo orçamento)
+        - 0001-0020.md (53 kB)
+        - 0021-0040.md (56 kB)
+        - 0041-0060.md (28 kB)
+        - 0061-0080.md (28 kB)
+        - 0081-0100.md (29 kB)
+        - 0101-0120.md (28 kB)
+        - 0121-0140.md (30 kB)
+        - 0141-0160.md (32 kB)
+        - 0161-0180.md (32 kB)
+        - 0181-0200.md (30 kB)
+        - 0201-0220.md (33 kB)
+        - 0221-0240.md (34 kB)
+        - 0241-0260.md (31 kB)
+        - 0261-0280.md (34 kB)
+        - 0281-0300.md (31 kB)
+        - 0301-0320.md (33 kB)
+        - 0321-0340.md (28 kB)
+        - 0341-0360.md (35 kB)
+        - 0361-0380.md (26 kB)
+        - 0381-0400.md (25 kB)
+        - 0401-0420.md (47 kB)
+        - 0421-0440.md (57 kB)
+        - 0441-0460.md (48 kB)
+        - 0461-0480.md (49 kB)
+        - 0481-0500.md (47 kB)
+        - 0501-0520.md (28 kB)
+        - 0521-0540.md (27 kB)
+        - 0541-0560.md (25 kB)
+        - 0561-0580.md (25 kB)
+        - 0581-0600.md (30 kB)
+        - 0601-0620.md (30 kB)
+        - 0621-0640.md (41 kB)
+        - 0641-0660.md (33 kB)
+        - 0661-0680.md (38 kB)
+        - 0681-0700.md (27 kB)
+        - 0701-0720.md (36 kB)
+        - 0721-0740.md (39 kB)
+        - 0741-0760.md (37 kB)
+        - 0761-0780.md (31 kB)
+        - 0781-0800.md (35 kB)
+        - … mais 7 arquivos
+    - optimum-kinematics-help/
+      - livro.md (96 kB)
+    - optimum-tire-help/
+      - livro.md (139 kB)
+    - pacejka-tvd/ (detalhes omitidos pelo orçamento)
+      - livro.md (1.3 MB) ⚠ >200 kB: não ler inteiro
+      - mapa_paginas.json (8 kB)
+      - parts/ (detalhes omitidos pelo orçamento)
+        - 0001-0020.md (47 kB)
+        - 0021-0040.md (50 kB)
+        - 0041-0060.md (38 kB)
+        - 0061-0080.md (41 kB)
+        - 0081-0100.md (40 kB)
+        - 0101-0120.md (38 kB)
+        - 0121-0140.md (35 kB)
+        - 0141-0160.md (33 kB)
+        - 0161-0180.md (40 kB)
+        - 0181-0200.md (37 kB)
+        - 0201-0220.md (52 kB)
+        - 0221-0240.md (37 kB)
+        - 0241-0260.md (36 kB)
+        - 0261-0280.md (43 kB)
+        - 0281-0300.md (35 kB)
+        - 0301-0320.md (38 kB)
+        - 0321-0340.md (42 kB)
+        - 0341-0360.md (44 kB)
+        - 0361-0380.md (47 kB)
+        - 0381-0400.md (36 kB)
+        - 0401-0420.md (39 kB)
+        - 0421-0440.md (40 kB)
+        - 0441-0460.md (33 kB)
+        - 0461-0480.md (45 kB)
+        - 0481-0500.md (35 kB)
+        - 0501-0520.md (31 kB)
+        - 0521-0540.md (39 kB)
+        - 0541-0560.md (49 kB)
+        - 0561-0580.md (45 kB)
+        - 0581-0600.md (36 kB)
+        - 0601-0620.md (41 kB)
+        - 0621-0640.md (37 kB)
+        - 0641-0657.md (79 kB)
+    - pacejka-txt/
+      - pacejka.txt (1.4 MB) ⚠ >200 kB: não ler inteiro
+    - seward-rcd/ (detalhes omitidos pelo orçamento)
+      - livro.md (516 kB) ⚠ >200 kB: não ler inteiro
+      - mapa_paginas.json (3 kB)
+      - parts/ (detalhes omitidos pelo orçamento)
+        - 0001-0020.md (31 kB)
+        - 0021-0040.md (35 kB)
+        - 0041-0060.md (40 kB)
+        - 0061-0080.md (30 kB)
+        - 0081-0100.md (31 kB)
+        - 0101-0120.md (37 kB)
+        - 0121-0140.md (36 kB)
+        - 0141-0160.md (42 kB)
+        - 0161-0180.md (34 kB)
+        - 0181-0200.md (35 kB)
+        - 0201-0220.md (36 kB)
+        - 0221-0240.md (38 kB)
+        - 0241-0260.md (40 kB)
+        - 0261-0280.md (42 kB)
+        - 0281-0287.md (9 kB)
+  - pdf/ (detalhes omitidos pelo orçamento)
+    - Adams_2024_1_PAC2002_help.pdf (2.7 MB) ⚠ >200 kB: não ler inteiro
+    - Definitive_Guide_DDS.pdf (14.2 MB) ⚠ >200 kB: não ler inteiro
+    - Derek Seward - Race Car Design.pdf (48.2 MB) ⚠ >200 kB: não ler inteiro
+    - Hans Pacejka - Tyre and Vehicle Dynamics.pdf (8.7 MB) ⚠ >200 kB: não ler inteiro
+    - Kinematics_Help_File.pdf (6.8 MB) ⚠ >200 kB: não ler inteiro
+    - Milliken & Milliken - Race Car Vehicle Dynamics.pdf (83.1 MB) ⚠ >200 kB: não ler inteiro
+    - Thomas D. Gillespie - Fundamentals of Vehicle Dynamics.pdf (12.4 MB) ⚠ >200 kB: não ler inteiro
+    - Tire_Help_File.pdf (5.8 MB) ⚠ >200 kB: não ler inteiro
+  - ttc/
+    - Round_6_Hoosier_R25B_20p5x7_13_on_7in.zip (18 kB)
+    - round6_hoosier_r25b_20p5x7_13_7in/
+      - Round_6_Hoosier_R25B_20p5x7_13_on_7in_10psi_PAC02_UM4.tir (20 kB)
+      - Round_6_Hoosier_R25B_20p5x7_13_on_7in_12psi_PAC02_UM4.tir (20 kB)
+      - Round_6_Hoosier_R25B_20p5x7_13_on_7in_14psi_PAC02_UM4.tir (20 kB)
+      - Round_6_Hoosier_R25B_20p5x7_13_on_7in_8psi_PAC02_UM4.tir (20 kB)
+- tests/
+  - exp_viabilidade_par.py (20 kB)
+      - def veiculo_base()
+      - def gerar(caminho, caso, res)
+      - def rodar_caso(nome, caso, motor, tmp)
+      - def main()
+  - mutation_equilibrio.py (4 kB)
+      - def rodar(fonte)
+  - mutation_planilha_equilibrio.py (7 kB)
+      - def rodar(fonte)
+      - def resumo(out)
+  - mutation_tire.py (5 kB)
+      - def rodar(fonte)
+  - recalculo_planilha.py (10 kB)
+      - def escolher()
+      - def recalcular(caminho, motor, timeout=120)
+  - test_equilibrio.py (50 kB)
+      - def raises(fn, exc=ValueError, needle=None)
+      - def check(name, condition, detail='')
+      - def veiculo_base(**over)
+      - def veiculo_simetrico(lambda_f=0.5, **over)
+  - test_equilibrio_linear.py (21 kB)
+      - def check(name, condition, detail='')
+      - def veiculo_base(**over)
+      - def veiculo_simetrico(lambda_f=0.5, **over)
+  - test_hardpoints.py (10 kB)
+      - def check(name, cond, detail='')
+      - def rows_meta()
+      - def fails(rows, meta, needle=None)
+      - def two_axles(rows)
+      - def flip(rows, axes)
+      - def shift_cp(rows, dz)
+      - def mc_sigma(d, sigma, N=60000, comp='z')
+      - def cam(wc, sp)
+  - test_kinematics_model.py (39 kB)
+      - def check(name, condition, detail='')
+      - def make_hs(pts, side='L', push_body='UPRIGHT')
+      - def planar(**kw)
+      - def parallelogram()
+      - def fourbar(phi)
+      - def axis_case(ang_cam_deg, ang_toe_deg, side)
+      - def side_fixture(zLF, zLR, zUF, zUR, flip=False)
+      - def closed_form_side_ic(C)
+      - def solve_indep(C, travel)
+      - def raises(fn, exc)
+  - test_suspension_model.py (22 kB)
+      - def raises(fn, exc=ValueError, needle=None)
+      - def check(name, condition, detail='')
+      - def baseline_config(**overrides)
+  - test_tire_model.py (17 kB)
+      - def check(name, cond, detail='')
+      - def raises(fn, exc)
+      - def variant(edit)
+      - def ref_forces(P, Fz, al, ga, ka)
+      - def rand_pts(n)
+  - test_tire_oracles.py (9 kB)
+      - def check(name, cond, detail='')
+      - def racer_mf52(P, Fz, alpha, gamma, k)
+      - def mfeval_mf52(P, Fz, alpha, gamma, k, eps=0.001)
+      - def worst(fn, P=p, dsx=ds, pts_=pts)
+  - test_v4_0.py (24 kB)
+      - def raises(fn, exc=ValueError, needle=None)
+      - def check(name, condition, detail='')
+      - def extrair_v30(pasta)
+      - def eh_formula(v)
+  - test_v4_1.py (16 kB)
+      - def check(name, condition, detail='')
+      - def raises(fn, exc=Exception)
+      - def formula(v)
+      - def celulas(wb, abas)
+      - def linha(cel)
+      - def desfazer_6a(novo, col)
+  - test_v4_2.py (56 kB)
+      - def regiao_nova(k)
+      - def edr_status()
+      - def check(name, condition, detail='')
+      - def raises(fn, exc=Exception)
+      - def formula(v)
+      - def celulas(wb)
+      - def varrer_antigos(wb)
+      - def tc_wb42_004(tmp, v41, v42)
+      - def F(target, **kw)
+      - def sete(**kw)
+      - def estado(f, fichas=None)
+  - test_workbook.py (12 kB)
+      - def check(name, cond, detail='')
+      - def scenario(mods)
+      - def setcols(vals)
+      - def py(c, fz, a, g, k, dsx=None)
+      - def compare(ws, vals, tag, dsx=None)
+  - test_workbook_suspensao.py (25 kB)
+      - def check(name, cond, detail='')
+      - def python_ref(x)
+      - def scenario(mods)
+      - def ler_entradas(wbv)
+      - def comparar(wbv, x)
+      - def direcao_py(wv)
+      - def dif_dir(wv)
+  - test_workbook_v4_0.py (7 kB)
+      - def check(name, cond, detail='')
+      - def copia(origem, nome)
+      - def recalcular(caminho)
+      - def destinos(wb)
+      - def iguais(a, b)
+      - def tem_erro(v)
+  - test_workbook_v4_1.py (81 kB)
+      - def check(name, cond, detail='')
+      - def num(v)
+      - def perto(a, b, escala=None, onde='')
+      - def valor(wb, nome)
+      - def recalcular(caminho)
+      - def medir(repeticoes=3, rep_lo=None)
+      - def escrever_documento(motores, var, res, det, conf, sens, cel, k0, erros_clone, repeticoes, rep_lo=None)
+      - def comparar_linhas(ws, linhas, n_alfa, pedida, caso, falhas, rotulo)
+      - def sat_igual(sh, py)
+      - def comparar_caso(nome, copia, esperado, prefixo, falhas)
+      - def lmuy_rf3(caso_c3)
+      - def k_igual(sh, py, onde)
+      - def comparar_k(nome, copia, falhas)
+      - def caso_com_karb(copia, fator, passo1)
+      - def linha_troca_python(copia, fator)
+      - … mais 7
+  - test_workbook_v4_2.py (22 kB)
+      - def check(name, cond, detail='')
+      - def recalcular(caminho)
+      - def alvo(n)
+      - def alt(**linhas)
+      - def valida(h, c, **extra)
+      - def pior_origem_independente(copia_formulas, wb_valores)
+      - def num(v)
+      - def iguais(a, b)
+      - def nomes_da_v41(papel)
+      - def textos_esperados(copia, pior_ver, pior_k, origem=origens.T11)
+      - def ler_textos(copia)
+      - def pior_independente(copia, linear, lista=origens.ORIGENS_V42)
+  - regressao/
+    - suspension_model_V1_0.py (7 kB)
+        - class VehicleConfig
+        - def sprung_mass_total(cfg)
+        - def sprung_mass_per_corner(cfg)
+        - def sprung_cg_height(cfg)
+        - def static_fz_corner(cfg)
+        - def longitudinal_dfz(cfg, ax)
+        - def lateral_dfz(cfg, ay)
+        - def aero_fz_corner(downforce_total, aero_balance_front)
+        - def combined_fz_corner(cfg, ax, ay, downforce_total=0.0, aero_balance_front=0.5)
+        - def wheel_rate(k_spring, mr_wheel_spring)
+        - def spring_rate_from_wheel_rate(k_wheel, mr_wheel_spring)
+        - def natural_frequency(k_wheel, m_sprung_corner)
+        - def wheel_rate_from_target_frequency(f_target, m_sprung_corner)
+        - def roll_stiffness_axle(k_wheel, track, k_arb=0.0)
+        - def roll_stiffness_distribution(k_phi_f, k_phi_r)
+    - t09_referencia_historica.py (4 kB)
+- tools/
+  - comparar_planilhas.py (14 kB)
+      - def celulas(caminho)
+      - def comparar_xlsx(gerada, entregue=ENTREGUE_XLSX, esperadas=FORMULAS_ESPERADAS, estrutura=False)
+      - def comparar_v40(v40, v30, alteradas, nomes=None, esperadas=FORMULAS_ESPERADAS_V40)
+      - def comparar_viva(viva, referencia, entradas, esperadas=FORMULAS_ESPERADAS_V30, rotulos=None, edrs=None)
+      - def comparar_json(gerado)
+      - def main()
+  - conferir_viva.py (3 kB)
+      - def conferir(arquivo, pasta, referencia=None, registro_edr=REGISTRO_EDR)
+      - def main()
+  - extrato_entradas.py (2 kB)
+      - def main()
+  - mapa_raizes.py (3 kB)
+      - def mapa(caminho)
+      - def main()
+  - migrar_dados_v3_v4.py (9 kB)
+      - def relatorio(a, rel, celula, dados, base_txt)
+      - def main()
+  - migrar_viva.py (10 kB)
+      - def migrar(viva, para, saida, relatorio, pasta, referencia_antiga=None)
+      - def main()
+  - oraculos_literatura.py (12 kB)
+      - def milliken_sprung_long(d)
+      - def milliken_hs(d, Ws)
+      - def milliken_full(d, variante)
+      - def modelo_atual_sus103(d)
+      - def serie(k1, k2)
+      - def efeito_pneu_planilha()
+      - def ic_por_eixo_instantaneo(corner, dz=1e-05)
+      - def comparar_ic_lateral()
+      - def taxa_geometrica()
+      - def main()
+  - relatorio_inc1.py (41 kB)
+      - def sha256(p)
+      - def git(*args)
+      - def n(x, casas=3)
+      - def g_de(ay_ms2, casas=3)
+      - def pct(x)
+      - def pior(*rotulos)
+      - def recusa(msg, codigo=2)
+      - def tabela_74()
+      - def entradas_e_origens(copia_recalc, copia_formulas)
+      - def ler_exp_json()
+      - def fim_dominio(res)
+      - def detalhe_limitacoes(caso, res)
+      - def pequeno(x, casas=4)
+      - def linhas_veredito(res)
+      - def veiculo_teste_011(lambda_f)
+      - … mais 1
+  - relatorio_inc4.py (24 kB)
+      - def sha256(p)
+      - def git(*args)
+      - def n(x, casas=3)
+      - def sci(x)
+      - def g_txt(v, casas=4)
+      - def g_de(ay_ms2, casas=3)
+      - def pior(*rotulos)
+      - def valor(wb, nome)
+      - def caso_com_karb(copia, fator)
+      - def linha_troca(copia, fator)
+      - def neutro(linhas)
+      - def main()
+  - retrato_viva.py (6 kB)
+      - def codificar(valor)
+      - def decodificar(valor)
+      - def carregar(json_path)
+      - def retratar(arquivo, saida, pasta, referencia=None)
+      - def main()
+  - rodar_testes.py (20 kB)
+      - def rodar(args, timeout=1800)
+      - def origens_modulos()
+      - def cauda(texto, n=15)
+      - def bloco(titulo, texto)
+      - def versao_planilhas()
+      - def git(*args)
+      - def referencia_v30(pasta)
+      - def main()
+  - test_comparar_planilhas.py (7 kB)
+      - def check(name, cond, detail='')
+      - def primeira(ws, formula)
+  - verificar_backup.py (3 kB)
+      - def sha256_bytes(dados)
+      - def sha256_arquivo(caminho)
+      - def hashes_pasta()
+      - def criar(zip_path)
+      - def verificar(zip_path)
+      - def main()
+  - verificar_manifest.py (7 kB)
+      - def sha256_arquivo(caminho)
+      - def bytes_destino(destino)
+      - def pares()
+      - def copiar()
+      - def verificar()
+      - def main()
