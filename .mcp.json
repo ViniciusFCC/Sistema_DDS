@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "token-savior": {
+      "type": "stdio",
+      "command": "C:\\Users\\vferr\\.local\\bin\\token-savior.exe",
+      "args": [],
+      "env": {
+        "CLAUDE_PROJECT_ROOT": "C:\\Users\\vferr\\Documents\\Sistema_DDS",
+        "WORKSPACE_ROOTS": "C:\\Users\\vferr\\Documents\\Sistema_DDS",
+        "TOKEN_SAVIOR_PROFILE": "optimized",
+        "TOKEN_SAVIOR_MAX_FILE_SIZE": "5000000",
+        "TS_MEMORY_DISABLE": "1",
+        "TS_CAPTURE_DISABLED": "1",
+        "TOKEN_SAVIOR_DATA_DIR": "C:\\Users\\vferr\\Documents\\Sistema_DDS\\.token-savior"
+      }
+    }
+  }
+}

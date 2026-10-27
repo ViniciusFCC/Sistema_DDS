@@ -22,3 +22,6 @@ CLAUDE.local.md
 
 # --- Saída do build_workbook_V2_4.py (padrão) ---
 build/
+
+# --- Token Savior (índice local do MCP, ativado no projeto) ---
+.token-savior*
