@@ -10,7 +10,7 @@ conferência, retrato por nome e troca a cada versão), com o EDR-034 decidido (
 
 | Item | Entrou |
 |---|---|
-| Planilha de referência | `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx`, gerada da tag `v4.1` por `python/gerar_v4_2.py`, com 117627 fórmulas (as 117569 da V4.1 e 58 novas) e 1220 nomes definidos (os 1145 da V4.1 e 75 de `data/nomes_V4_2.csv`). A cópia para `excel/` é um commit próprio (Task 7b); até lá a planilha sai em `build/`. |
+| Planilha de referência | `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx`, gerada da tag `v4.1` por `python/gerar_v4_2.py`, com 117627 fórmulas (as 117569 da V4.1 e 58 novas) e 1225 nomes definidos no arquivo: 1220 da tabela de nomes (698 + 447 + 75) mais `Origens` e as 4 `Lista_*`. A cópia para `excel/` é um commit próprio (9cb19cf). |
 | Aba nova | `23_LISTAS`, no fim (depois da `22_CADEIA`): vocabulários de Papel, ciclo de vida da meta, Congelamento (F0 a F4), Coerência e Fonte, e a tabela de relações com a fonte de cada linha (sete M e três L). |
 | Fichas de meta | `03_TARGETS` colunas H a Q (Papel, Alavanca, Congelamento, Valor atual do modelo, Pior origem, Compromisso declarado, EDR do compromisso, Coerência, Ficha, Objetivo atendido) e auxiliares ocultas R:U; linhas 10 e 11 para o TARGET-006 e o TARGET-007; fichas completas em `docs/metas/`. |
 | Dashboard | `14_DASHBOARD` linhas 49 (título), 50 (pior coerência das fichas) e 51 (compromissos declarados). |
@@ -45,7 +45,10 @@ A planilha viva da equipe continua a V4.1 no Drive até a troca (Task 8). A V4.2
 
 ## Testes (`tools/rodar_testes.py`)
 
-A contagem final da suíte da V4.2 ainda não está aqui: a Task 7b roda a suíte inteira e preenche este registro e o CLAUDE.md.
+Suíte inteira de 2026-10-27 sobre o commit 9cb19cf (`build/verificacao-ultima.md`). No Excel, todos os itens PASS: pneu 43, oráculos 5,
+suspensão 54, cinemática 76, hardpoints 35, equilíbrio 28, equilíbrio linear 18, V4.0 4, V4.1 2, V4.2 4 (`tests/test_v4_2.py`), autoteste do
+comparador 15, test_workbook 19, suspensão 15, V4.0 2, V4.1 5 e V4.2 2 (`tests/test_workbook_v4_2.py`), com a V4.2 regenerada igual à de
+`excel/` (117627 fórmulas, 0 diferença). No LibreOffice (cópias), test_workbook 19/19, suspensão 15/15, V4.0 2/2, V4.1 5/5 e V4.2 2/2.
 Os scripts novos e o que cobrem:
 
 | Teste | O que junta | Script |
@@ -63,7 +66,6 @@ NOT_VALIDATED, EDR-022).
 
 ## Pendências
 
-- **Contagens finais da suíte** e a cópia da V4.2 para `excel/`: Task 7b (commit próprio).
 - **22_CADEIA, etapa 8:** o texto "Incremento 5 (ainda não existe nesta planilha)" fica desatualizado na V4.2. A célula é
   existente e fora da autorização 5; decisão do usuário sobre incluí-la numa próxima versão.
 - **Medição do recálculo** (`docs/v4-2/medicao-recalculo-v4-1.md`): no arquivo da tag (sem valores em cache, cenário A) a
@@ -83,3 +85,6 @@ NOT_VALIDATED, EDR-022).
 - Limitações conhecidas do EDR-060 (item 8) continuam; o item (xi) foi acrescentado.
 - Reescrita das 387 fórmulas antigas para nomes: incremento 7 (D13). Efeito no objetivo e malha fechada da coerência:
   incremento 7 (spec §10).
+- **Dívida técnica para a próxima versão:** `aba_metas.py` importa funções privadas (`_destino`, `_estilo`, `_estilos`,
+  `_formula_pior_origem`), e `raizes.PIOR_PRIMEIRO` e `raizes.TIER` ainda têm os rótulos da V4.1. Nada disso é usado no
+  caminho de geração da V4.2.

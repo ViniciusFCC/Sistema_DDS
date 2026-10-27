@@ -38,7 +38,7 @@ Foco declarado: completar a planilha (EDR-019).
   (`docs/registro-de-versoes-V4_2.md`; EDR-061 a EDR-063, EDR-034 decidido): fichas de meta na 03_TARGETS (H:Q), TARGET-006 e
   007, aba `23_LISTAS`, bloco de metas no 14_DASHBOARD (linhas 49 a 51), Origens do T11 e a viva no Drive. Fichas completas e
   processo em `docs/metas/`. A planilha sai de `python/gerar_v4_2.py` em `build/`; a cópia para `excel/` é um commit próprio
-  (ainda não feita). A viva do Drive continua a V4.1 até a troca depois do merge e da tag (diretriz do usuário, 2026-10-23: a
+  (feita no commit 9cb19cf). A viva do Drive continua a V4.1 até a troca depois do merge e da tag (diretriz do usuário, 2026-10-23: a
   cada versão terminada, a viva vira a versão nova com os dados mantidos).
 
 ## Comandos
@@ -54,7 +54,7 @@ Foco declarado: completar a planilha (EDR-019).
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
 - Esperado na V4.2: pneu 43, oráculos 5, suspensão 54, cinemática 76, hardpoints 35,
-  equilíbrio 28, equilíbrio linear 18 (incrementos 1 e 2), V4.0 nomes e dados 4 (`tests/test_v4_0.py`, incremento 3), V4.1 estrutura e CA-07 2 (`tests/test_v4_1.py`, TC-WB41-001 e 002), V4.2 estrutura, CA-07, oráculo das metas e fluxo da viva 4 (`tests/test_v4_2.py`, TC-WB42-001 a 004), mutação 25/25 do pneu, 6/6 do equilíbrio e 5/5 da planilha do equilíbrio (`tests/mutation_planilha_equilibrio.py`, só Excel, minutos), autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença; V4.0 regenerada da tag `v3.0` com as mesmas 387 fórmulas e os 698 nomes, 0 diferença; V4.1 regenerada da tag `v4.0` com 117569 fórmulas e os 1145 nomes, 0 diferença; V4.2 regenerada da tag `v4.1` com 117627 fórmulas e 1220 nomes (1145 da V4.1 e 75 de `data/nomes_V4_2.csv`; mais as 4 listas `Lista_*`), 0 diferença contra `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx`. O CA-07 da V3.0 de `excel/` passa a ser por SHA-256 igual ao da tag `v3.0` (EDR-063). A seção informativa da viva só lê cópia local, nunca a viva do Drive.
+  equilíbrio 28, equilíbrio linear 18 (incrementos 1 e 2), V4.0 nomes e dados 4 (`tests/test_v4_0.py`, incremento 3), V4.1 estrutura e CA-07 2 (`tests/test_v4_1.py`, TC-WB41-001 e 002), V4.2 estrutura, CA-07, oráculo das metas e fluxo da viva 4 (`tests/test_v4_2.py`, TC-WB42-001 a 004), mutação 25/25 do pneu, 6/6 do equilíbrio e 5/5 da planilha do equilíbrio (`tests/mutation_planilha_equilibrio.py`, só Excel, minutos), autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença; V4.0 regenerada da tag `v3.0` com as mesmas 387 fórmulas e os 698 nomes, 0 diferença; V4.1 regenerada da tag `v4.0` com 117569 fórmulas e os 1145 nomes, 0 diferença; V4.2 regenerada da tag `v4.1` com 117627 fórmulas e 1225 nomes definidos no arquivo: 1220 da tabela de nomes (698 + 447 + 75) mais `Origens` e as 4 `Lista_*`, 0 diferença contra `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx`. O CA-07 da V3.0 de `excel/` passa a ser por SHA-256 igual ao da tag `v3.0` (EDR-063). A seção informativa da viva só lê cópia local, nunca a viva do Drive.
   `tests/test_workbook.py` 19/19 (pneu) e `tests/test_workbook_suspensao.py` 15/15 (suspensão),
   ambos na V3.0 de referência (arquivo da tag `v3.0`; antes da tag, o da árvore), e `tests/test_workbook_v4_0.py` 2/2
   (V4.0 de `excel/`) e `tests/test_workbook_v4_1.py` 5/5 (V4.1 de `excel/`; TC-WB41-003 a 006) e `tests/test_workbook_v4_2.py` 2/2 (V4.2 de `excel/`; TC-WB42-005 e 006): recalculam cópias pelo Excel via COM ou, sem Excel, pelo
@@ -87,7 +87,7 @@ Foco declarado: completar a planilha (EDR-019).
   `caso_planilha.caso_da_planilha_v41`. O relatório que a célula de robustez cita (varredura do pneu, EDR-055, que NÃO
   é recalculada na planilha) sai de `uv run python -X utf8 tools/relatorio_inc4.py --sobrescrever` (Excel ou
   LibreOffice, em cópia). Os únicos IDs novos desse incremento são SUS-1001 a SUS-1008, EDR-059, EDR-060 e TC-WB41-001 a 006.
-- V4.2 (EDR-061 a EDR-063; as contagens finais da suíte entram quando a Task 7b rodar a suíte inteira): `python/gerar_v4_2.py`
+- V4.2 (EDR-061 a EDR-063; suíte inteira de 2026-10-27 sobre o commit 9cb19cf, `build/verificacao-ultima.md`: no Excel, todos os itens PASS, com test_workbook 19/19, suspensão 15/15, V4.0 2/2, V4.1 5/5 e V4.2 2/2; no LibreOffice, os mesmos cinco em 19/19, 15/15, 2/2, 5/5 e 2/2): `python/gerar_v4_2.py`
   gera a V4.2 da tag `v4.1` em `build/` (nunca em `excel/`). Testes: `tests/test_v4_2.py` (TC-WB42-001 a 004) e
   `tests/test_workbook_v4_2.py` (TC-WB42-005 e 006, Excel via COM). Regras das fichas em `python/metas.py` (oráculo) e
   `python/aba_metas.py`. A viva do Drive (`python/viva.py`) só é lida por cópia, nunca gravada nem recalculada:

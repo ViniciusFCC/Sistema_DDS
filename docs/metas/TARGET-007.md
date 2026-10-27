@@ -16,7 +16,7 @@ Nenhum valor-alvo foi definido pela equipe: a meta é **TBD**.
 | Faixa da literatura | sem faixa na literatura (nenhuma página conferida para esta grandeza). O veredito depende do pneu: o `.tir` do TTC é provisório (EDR-038) e a robustez à varredura do pneu fica no relatório `docs/v4-1/inc4-equilibrio-na-planilha.md` (EDR-055), não na planilha. |
 | Valor escolhido | TBD. Valor, justificativa, responsável (Owner: TBD) e EDR: nenhum definido. |
 | Sensibilidade | Ainda não calculada na planilha. A coluna L mostra a pior origem das entradas da grandeza (`res_03_pior_origem_da_grandeza_target_007`, que usa `res_14_equilibrio_no_limite_push_loose_e42` (14_DASHBOARD E42)). |
-| Verificação no carro | ensaio de raio constante (Gillespie p. 227-228, como lista a spec §4.3); procedimento e responsável a confirmar. |
+| Verificação no carro | ensaio no limite: a confirmar (procedimento e responsável também). O raio constante (Gillespie p. 227-228) mede o gradiente de subesterço, que é do regime linear e vale para o TARGET-006, não para esta meta. |
 | Estados | Ciclo de vida: TBD. Congelamento: F0. Validação: NOT_VALIDATED. Coerência inicial: NÃO AVALIÁVEL (meta sem valor ou papel). |
 
 ## Notas
