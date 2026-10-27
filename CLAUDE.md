@@ -29,17 +29,20 @@ Foco declarado: completar a planilha (EDR-019).
 - V4.1 (incremento 4, equilíbrio na planilha) concluída (PR #17 mesclado em 2026-10-22; tag `v4.1` no
   merge 05d8fb5; EDR-059 e EDR-060 APPROVED, relatório `docs/v4-1/inc4-equilibrio-na-planilha.md`):
   `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` é a referência (imutável: o arquivo na tag `v4.1`), com as abas 16 a 22 (mais 20a a 20d), 117569 fórmulas e
-  1145 nomes (698 da V4.0 e 447 de `data/nomes_V4_1.csv`). Desde 2026-10-22 a **planilha viva da equipe é a cópia
-  da V4.1** no Google Drive da equipe, `H:\.shortcut-targets-by-id\1Kytf4APy0OtH5Aq5PqlOwH5UY65YMX5U\T11 - Tupã\2. Projeto\Mecanica\Suspensao\Documentacao\Planilha DDS\`, com a documentação
+  1145 nomes (698 da V4.0 e 447 de `data/nomes_V4_1.csv`). De 2026-10-22 a 2026-10-27 a planilha viva da equipe foi a
+  cópia da V4.1 no Google Drive da equipe (hoje em `Planilha DDS\_anteriores\`), na pasta `H:\.shortcut-targets-by-id\1Kytf4APy0OtH5Aq5PqlOwH5UY65YMX5U\T11 - Tupã\2. Projeto\Mecanica\Suspensao\Documentacao\Planilha DDS\`, com a documentação
   (LEIA-ME e .docx dos documentos do repositório) em `Documentacao\`; responsável pela planilha e pelos retratos `dados:`: o usuário (Vinicius
   Caetano). A V3.0 viva de `excel/` não tinha dados da equipe (SHA igual ao da tag `v3.0`), então a troca não precisou de
   migração. O incremento 5 em diante é a **V4.2** (usuário, 2026-10-22; `docs/registro-de-versoes-V4_1.md`).
-- V4.2 (incremento 5, metas e coerência) em andamento na branch `feat/v4-2-inc5-metas`, ainda sem merge nem tag
-  (`docs/registro-de-versoes-V4_2.md`; EDR-061 a EDR-063, EDR-034 decidido): fichas de meta na 03_TARGETS (H:Q), TARGET-006 e
+- V4.2 (incremento 5, metas e coerência) concluída (PR #21 mesclado em 2026-10-27; tag `v4.2` no merge e05aaa5;
+  `docs/registro-de-versoes-V4_2.md`; EDR-061 a EDR-063, EDR-034 decidido): fichas de meta na 03_TARGETS (H:Q), TARGET-006 e
   007, aba `23_LISTAS`, bloco de metas no 14_DASHBOARD (linhas 49 a 51), Origens do T11 e a viva no Drive. Fichas completas e
   processo em `docs/metas/`. A planilha sai de `python/gerar_v4_2.py` em `build/`; a cópia para `excel/` é um commit próprio
-  (feita no commit 9cb19cf). A viva do Drive continua a V4.1 até a troca depois do merge e da tag (diretriz do usuário, 2026-10-23: a
-  cada versão terminada, a viva vira a versão nova com os dados mantidos).
+  (feita no commit 9cb19cf). Desde 2026-10-27 a **planilha viva da equipe é a cópia da V4.2** no Drive
+  (`Planilha DDS\FSAE_EV_Suspension_Fase1_V4_2.xlsx`, SHA igual ao da tag `v4.2`; `conferir_viva` código 0). A V4.1 do Drive
+  não tinha dados da equipe (SHA igual ao da tag `v4.1`; `migrar_viva` com 0 dados e 0 conflitos) e foi movida para
+  `Planilha DDS\_anteriores\`. Diretriz do usuário (2026-10-23): a cada versão terminada, a viva vira a versão nova com os
+  dados mantidos. Os LEIA-ME e .docx de `Documentacao\` no Drive ainda são os da V4.1.
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
@@ -61,7 +64,7 @@ Foco declarado: completar a planilha (EDR-019).
   LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois eles
   saem NÃO EXECUTÁVEL, que nunca conta como aprovado.
 - Planilha V3.0, **fechada em 2026-10-20** (EDR-051). `excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx`
-  foi o arquivo vivo da equipe até 2026-10-22 (hoje a viva é a cópia da V4.1 no Drive; o CA-07 "viva × referência"
+  foi o arquivo vivo da equipe até 2026-10-22 (hoje a viva é a cópia da V4.2 no Drive; o CA-07 "viva × referência"
   da suíte passa, na V4.2, a conferir que este arquivo é igual ao da tag `v3.0`, EDR-063); a referência imutável é o mesmo arquivo na tag `v3.0`. A V3.0 de referência é
   gerada da V2.4 por `python/atualizar_planilha.py` (toda célula alterada fica em `alteracoes()`, com fonte e EDR);
   o script recusa gravar por cima da planilha viva. CA-07: a regeneração bate com a referência, e a viva bate
