@@ -38,7 +38,11 @@ PADRAO_VIVA = "FSAE_EV_Suspension_Fase1_V*.xlsx"
 RE_VERSAO = re.compile(r"Versão do workbook: (V\d+\.\d+)\b")
 RE_VERSAO_NUM = re.compile(r"V(\d+)\.(\d+)")
 RE_EDR = re.compile(r"EDR-\d+")
-RE_STATUS_EDR = re.compile(r"^\| (EDR-\d{3}) \|.*\| ([A-Z_]+) \|\s*$", re.M)
+# O status pode vir seguido de uma nota entre parênteses ("SUPERSEDED (por EDR-043)"); só a palavra de status conta.
+RE_STATUS_EDR = re.compile(r"^\| (EDR-\d{3}) \|.*\| ([A-Z_]+)(?: \([^|]*\))? \|\s*$", re.M)
+# Estados em que um EDR citado numa ficha de meta vale como decisão tomada (EDR-061 item 4, EDR-063 item 3). Uma definição só:
+# `tools/comparar_planilhas.comparar_viva` e `tests/test_v4_2.py` usam este conjunto.
+EDR_ACEITOS = frozenset({"APPROVED", "IMPLEMENTED", "VERIFIED"})
 
 
 class VivaIlegivel(Exception):

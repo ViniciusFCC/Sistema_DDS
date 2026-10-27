@@ -26,8 +26,8 @@ decisão 1 e autorização 5 (a), (b), (d) e (e)):
   auxiliares ocultas R:U), as linhas TARGET-006 e 007, a aba 23_LISTAS no fim, o bloco de metas do 14_DASHBOARD (A49:B51) e as
   listas de vocabulário com nome definido; as notas da 03_TARGETS A11 e A12 descem para A14 e A15 (`aba_metas.alteracoes_03`);
 - a versão na 00_README A3 e a linha 22 do 15_CHANGELOG.
-O 04_DECISION_REGISTER e o 15_CHANGELOG ficam como estão (registro histórico). As 117569 fórmulas da V4.1 e os 1145
-nomes ficam iguais, salvo as duas fórmulas acima; as fórmulas novas são só as das metas. A saída nunca fica em excel/ nem por cima da origem: a recusa vem
+O 04_DECISION_REGISTER e o 15_CHANGELOG ficam como estão (registro histórico). As 117569 fórmulas da V4.1 e os 1146
+nomes (1145 da tabela mais `Origens`) ficam iguais, salvo as duas fórmulas acima; as fórmulas novas são só as das metas. A saída nunca fica em excel/ nem por cima da origem: a recusa vem
 antes de abrir qualquer arquivo.
 """
 from __future__ import annotations
