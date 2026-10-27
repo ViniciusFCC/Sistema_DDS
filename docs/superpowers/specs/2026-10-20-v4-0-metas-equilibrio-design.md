@@ -313,7 +313,7 @@ Amplitude: EDR-055. Tratamento da faixa do pneu: EDR-056.
 3. **Veredito:** se push/loose (e o sinal de K) for o mesmo em toda a varredura, a célula mostra o veredito com a
    nota "mesmo sinal na varredura exploratória do pneu". Se inverter, mostra "? NÃO CONCLUSIVO" (seção 7.3, item 8).
    NEUTRO dentro da resolução numérica em algum ponto conta como inversão.
-   *(EDR-060 item 8 (x) e EDR-061 decisão 8, 2026-10-23: a regra do código fica estrita, e uma mistura de um só sinal com N/A
+   *(EDR-060 item 8 (x) e decisão 8 do plano, 2026-10-23: a regra do código fica estrita, e uma mistura de um só sinal com N/A
    também é NÃO CONCLUSIVO, porque um ponto N/A não tem veredito. O motivo mostrado é que muda: "o sinal depende do pneu" só
    com PUSH e LOOSE juntos ou NEUTRO em algum ponto, e "N/A em parte da varredura (sem inversão de sinal)" nos outros casos.
    A célula mostra `? NÃO CONCLUSIVO: <motivo>`.)*
