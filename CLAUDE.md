@@ -18,8 +18,8 @@ Foco declarado: completar a planilha (EDR-019).
 - Projeto atual: **T11**, em fase de projeto e de definição de diretrizes e dados (usuário, 2026-10-22). A planilha
   ainda não tem nenhum dado do T11: os dados que existem são os do TX/E05 e do T09/E03 que já estão nela. O T09/E03
   continua só referência histórica, nunca baseline (EDR-012); o TX/E05 passa a ser o carro anterior, também só
-  referência para o T11. O rótulo "● Dado do TX" da lista Origens e o prefixo DEMONSTRATIVO (D16) ainda tratam o TX
-  como o carro do projeto: ajustar na V4.2.
+  referência para o T11. O rótulo "● Dado do TX" da lista Origens e o prefixo DEMONSTRATIVO (D16) tratavam o TX
+  como o carro do projeto; na V4.2 (branch `feat/v4-2-inc5-metas`, EDR-062) viram `● Dado do T11` e `◐ Dado de outro carro (TX, T09)`.
   Freio dentro da roda, em volta do cubo; motor no chassi, atrás (usuário, 2026-10-19, antes de o T11 ser informado: confirmar se vale para o T11;
   define a linha do anti-dive e do anti-squat, EDR-048). Mola, MR, barra e RC da
   planilha são valores demonstrativos (T09/E03), não do TX nem do T11.
@@ -33,7 +33,13 @@ Foco declarado: completar a planilha (EDR-019).
   da V4.1** no Google Drive da equipe, `H:\.shortcut-targets-by-id\1Kytf4APy0OtH5Aq5PqlOwH5UY65YMX5U\T11 - Tupã\2. Projeto\Mecanica\Suspensao\Documentacao\Planilha DDS\`, com a documentação
   (LEIA-ME e .docx dos documentos do repositório) em `Documentacao\`; responsável pela planilha e pelos retratos `dados:`: o usuário (Vinicius
   Caetano). A V3.0 viva de `excel/` não tinha dados da equipe (SHA igual ao da tag `v3.0`), então a troca não precisou de
-  migração. O incremento 5 em diante é a **V4.2** (usuário, 2026-10-22), numa conversa nova (`docs/registro-de-versoes-V4_1.md`).
+  migração. O incremento 5 em diante é a **V4.2** (usuário, 2026-10-22; `docs/registro-de-versoes-V4_1.md`).
+- V4.2 (incremento 5, metas e coerência) em andamento na branch `feat/v4-2-inc5-metas`, ainda sem merge nem tag
+  (`docs/registro-de-versoes-V4_2.md`; EDR-061 a EDR-063, EDR-034 decidido): fichas de meta na 03_TARGETS (H:Q), TARGET-006 e
+  007, aba `23_LISTAS`, bloco de metas no 14_DASHBOARD (linhas 49 a 51), Origens do T11 e a viva no Drive. Fichas completas e
+  processo em `docs/metas/`. A planilha sai de `python/gerar_v4_2.py` em `build/`; a cópia para `excel/` é um commit próprio
+  (ainda não feita). A viva do Drive continua a V4.1 até a troca depois do merge e da tag (diretriz do usuário, 2026-10-23: a
+  cada versão terminada, a viva vira a versão nova com os dados mantidos).
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
@@ -56,7 +62,7 @@ Foco declarado: completar a planilha (EDR-019).
   saem NÃO EXECUTÁVEL, que nunca conta como aprovado.
 - Planilha V3.0, **fechada em 2026-10-20** (EDR-051). `excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx`
   foi o arquivo vivo da equipe até 2026-10-22 (hoje a viva é a cópia da V4.1 no Drive; o CA-07 "viva × referência"
-  da suíte ainda olha este arquivo, a rever na V4.2); a referência imutável é o mesmo arquivo na tag `v3.0`. A V3.0 de referência é
+  da suíte passa, na V4.2, a conferir que este arquivo é igual ao da tag `v3.0`, EDR-063); a referência imutável é o mesmo arquivo na tag `v3.0`. A V3.0 de referência é
   gerada da V2.4 por `python/atualizar_planilha.py` (toda célula alterada fica em `alteracoes()`, com fonte e EDR);
   o script recusa gravar por cima da planilha viva. CA-07: a regeneração bate com a referência, e a viva bate
   com a referência em tudo menos as células de entrada (`atualizar_planilha.celulas_de_entrada()`). Mudança
@@ -81,6 +87,15 @@ Foco declarado: completar a planilha (EDR-019).
   `caso_planilha.caso_da_planilha_v41`. O relatório que a célula de robustez cita (varredura do pneu, EDR-055, que NÃO
   é recalculada na planilha) sai de `uv run python -X utf8 tools/relatorio_inc4.py --sobrescrever` (Excel ou
   LibreOffice, em cópia). Os únicos IDs novos desse incremento são SUS-1001 a SUS-1008, EDR-059, EDR-060 e TC-WB41-001 a 006.
+- V4.2 (EDR-061 a EDR-063; as contagens finais da suíte entram quando a Task 7b rodar a suíte inteira): `python/gerar_v4_2.py`
+  gera a V4.2 da tag `v4.1` em `build/` (nunca em `excel/`). Testes: `tests/test_v4_2.py` (TC-WB42-001 a 004) e
+  `tests/test_workbook_v4_2.py` (TC-WB42-005 e 006, Excel via COM). Regras das fichas em `python/metas.py` (oráculo) e
+  `python/aba_metas.py`. A viva do Drive (`python/viva.py`) só é lida por cópia, nunca gravada nem recalculada:
+  `uv run python -X utf8 tools/conferir_viva.py [ARQ]` (0 fiel, 1 diverge, 3 não lida; roda antes de todo retrato e de toda
+  troca); `tools/retrato_viva.py` (grava `data/viva/retrato-viva.json`, só se a conferência der 0; commit `dados:`);
+  `tools/migrar_viva.py VIVA --para REF_NOVA.xlsx` (leva os dados à versão nova por nome; conflito listado, nunca
+  sobrescrito); `tools/medir_recalculo.py` (tempo de recálculo da V4.1 no Excel, em cópia). A viva do Drive é seção informativa
+  do log da suíte, fora do resumo.
 - Rode os testes afetados antes de dizer que uma tarefa terminou.
 
 ## Fontes de verdade
