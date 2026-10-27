@@ -137,7 +137,10 @@ def uma_execucao(copia: Path) -> dict:
         xl = None
         gc.collect()
         rc._fechar_excel()
-    t["saiu"] = esperar_saida(pid)
+        # também no caminho de exceção: confere que o PID desta instância saiu antes de a exceção seguir adiante
+        t["saiu"] = esperar_saida(pid)
+        if not t["saiu"]:
+            print(f"AVISO: a instância PID {pid} não saiu", file=sys.stderr)
     return t
 
 
@@ -215,7 +218,8 @@ def main() -> int:
             print(f"NÃO EXECUTÁVEL: {detalhe}", file=sys.stderr)
             return 3
         rc._fechar_excel()               # a sonda de escolher() abriu uma instância; cada execução abre a sua
-        if not esperar_saida(sonda):
+        sonda_saiu = esperar_saida(sonda)
+        if not sonda_saiu:
             print(f"a instância de sondagem (PID {sonda}) não saiu", file=sys.stderr)
 
         origem_b = pasta / "origem_B.xlsx"
@@ -225,7 +229,7 @@ def main() -> int:
         depois = contar_excel()
 
     todas = execs_a + execs_b
-    ok_pids = all(e["saiu"] for e in todas)
+    ok_pids = sonda_saiu and all(e["saiu"] for e in todas)   # a falha da sondagem também dá código 1
     sobra = depois - antes
     calc = sorted({e["calculation"] for e in todas})
     thr = sorted({e["threads"] for e in todas})
@@ -253,7 +257,7 @@ def main() -> int:
         "- Gravar: `Workbook.Save`.",
         "- Fechar: `Workbook.Close` mais `Application.Quit`.",
         "- Total: soma das quatro colunas.",
-        "- A 1ª execução de cada cenário vem de uma partida a frio do Excel e inclui esse custo; a 1ª do cenário A é a mais exposta.",
+        "- A 1ª execução de cada cenário pode incluir o custo da partida a frio do Excel; esse custo não é separado.",
         "",
         "## Cenário A: arquivo da tag (sem cache, com fullCalcOnLoad)",
         "",

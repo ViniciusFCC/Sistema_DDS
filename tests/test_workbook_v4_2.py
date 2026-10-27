@@ -7,8 +7,8 @@ e a viva do Drive nunca são abertas para escrita. Sem motor: NÃO EXECUTÁVEL (
 Uso: uv run python -X utf8 tests/test_workbook_v4_2.py
 Namespace TC-WB42-xxx (IDs autorizados: 001 a 006; este script tem o 005 e o 006; o 001 a 004 estão em tests/test_v4_2.py).
 
-TC-WB42-005: (1) a V4.2 como gerada (cópia C0, entradas nominais) recalculada tem 0 erro e 117627 fórmulas, e todo `res` dos 1145
-nomes da V4.1 (data/nomes_V4_0.csv e data/nomes_V4_1.csv) tem o mesmo valor da V4.1 da tag `v4.1` recalculada (texto: igualdade
+TC-WB42-005: (1) a V4.2 como gerada (cópia C0, entradas nominais) recalculada tem 0 erro e 117627 fórmulas, e todo `res` da V4.1 (os 786
+nomes `res` dos 1145 de data/nomes_V4_0.csv e data/nomes_V4_1.csv) tem o mesmo valor da V4.1 da tag `v4.1` recalculada (texto: igualdade
 exata, com os rótulos de dado de origem mapeados pela decisão 1 do EDR-062 e 14_DASHBOARD B28 = 7 TARGETs em vez de 5; número: rel. <= 1e-12, a tolerância do TC-WB41-003), inclusive 16_EQUILIBRIO B188 e B189 (as duas mostram "DEMONSTRATIVO · " com
 as entradas nominais). (2) ORG_T11: todas as células de Origem em "● Dado do T11" (nomes org_*), sobre o C4 (hipóteses h2, h3, h7,
 h8 e h9 ligadas): pior origem do K e do veredito = T11, K e veredito sem o prefixo e iguais a `texto_k` / `texto_veredito` com
@@ -36,7 +36,7 @@ cada meta igual a uma construção independente (raízes de `raizes.Grafo` e a l
 `aba_equilibrio.termos_pior_origem`). O tempo de recálculo de cada cópia vai ao log.
 "Passou" = a planilha reproduz o oráculo; não é validação física.
 """
-import csv, math, os, sys, tempfile, time
+import csv, math, sys, tempfile, time
 _TMP = tempfile.TemporaryDirectory(prefix="dds_teste_", ignore_cleanup_errors=True); tempfile.tempdir = _TMP.name
 from pathlib import Path
 import openpyxl
@@ -93,10 +93,6 @@ def alt(**linhas) -> dict:
         for col, v in campos.items():
             out[NM[("03_TARGETS", f"{col}{r}")]] = v
     return out
-
-
-def valida(h, c, **extra):
-    return {"H": h, "C": c, **extra}
 
 
 # --- cenários (valores de TESTE) e o texto esperado (sem a pior origem) de cada ficha, escrito aqui sem usar metas.py ---
@@ -288,13 +284,17 @@ with tempfile.TemporaryDirectory(prefix="dds_wb42_005_") as tmp5:
     if info0["total_errors"] or info0["total_formulas"] != FORMULAS:
         falhas5.append(f"C0: {info0['total_errors']} erro(s) {info0['error_summary']}, {info0['total_formulas']} fórmulas")
     res41 = nomes_da_v41("res")
-    if len(res41) < 600:
-        falhas5.append(f"só {len(res41)} nomes res lidos")
+    if len(res41) != 786:
+        falhas5.append(f"{len(res41)} nomes res lidos, esperado 786")
     w41, w42 = openpyxl.load_workbook(v41, data_only=True), openpyxl.load_workbook(c0, data_only=True)
     n_dif = 0
+    mapeadas = set()   # células res em que o mapa de rótulos (decisão 1) mudou o valor da V4.1
     for n in res41:
         a, b = w42[n["aba"]][n["celula"]].value, w41[n["aba"]][n["celula"]].value
-        b = origens.MAPA_DADO_V41_V42.get(b, b)   # rótulo de dado da V4.1 -> V4.2 (decisão 1, EDR-062): único texto que muda
+        b_mapeado = origens.MAPA_DADO_V41_V42.get(b, b)   # rótulo de dado da V4.1 -> V4.2 (decisão 1, EDR-062): único texto que muda
+        if b_mapeado != b:
+            mapeadas.add((n["aba"], n["celula"]))
+        b = b_mapeado
         if (n["aba"], n["celula"]) == ("14_DASHBOARD", "B28"):
             b = 7   # TARGETs registrados: 5 na V4.1; 7 na V4.2 (TARGET-006 e 007, autorização 1)
         if not iguais(a, b):
@@ -306,6 +306,9 @@ with tempfile.TemporaryDirectory(prefix="dds_wb42_005_") as tmp5:
         if not (iguais(a, b) and isinstance(a, str) and a.startswith(PREFIXO)):
             falhas5.append(f"16_EQUILIBRIO {cel}: V4.2={a!r} V4.1={b!r} (esperado igual e com o prefixo DEMONSTRATIVO)")
     w41.close(); w42.close()
+    esperadas_mapeadas = {("14_DASHBOARD", c) for c in ("E13", "E14", "E22")}
+    if mapeadas != esperadas_mapeadas:
+        falhas5.append(f"células res com rótulo de origem mapeado: {sorted(mapeadas)}, esperado {sorted(esperadas_mapeadas)}")
     if n_dif > 10:
         falhas5.append(f"... {n_dif} diferenças no total")
     notas5.append(f"{len(res41)} nomes res comparados, {n_dif} diferença(s)")
@@ -357,7 +360,7 @@ with tempfile.TemporaryDirectory(prefix="dds_wb42_005_") as tmp5:
         falhas5.append(f"KAPPA_PICO: {info['total_errors']} erro(s) {info['error_summary']}, {info['total_formulas']} fórmulas")
     sh = ler_textos(copia)
     motivo = "pico de Fx fora da forma fechada"
-    esperado_ver = PREFIXO + "N/A: " + motivo   # a planilha acrescenta onde ("em a_y = 0 g")
+    esperado_ver = PREFIXO + "N/A: " + motivo + " em a_y = 0 g"   # frase completa: motivo e onde
     if not (sh["txt_ver"].startswith(esperado_ver) and sh["14_txt_ver"] == sh["txt_ver"]):
         falhas5.append(f"KAPPA_PICO: veredito {sh['txt_ver']!r} (14: {sh['14_txt_ver']!r}), esperado começar por {esperado_ver!r}")
     notas5.append(f"KAPPA_PICO: κ do pico {[round(k, 4) for k in kpico]}, KPUMAX do .tir {ds.p['KPUMAX']}, veredito {sh['txt_ver']!r}")

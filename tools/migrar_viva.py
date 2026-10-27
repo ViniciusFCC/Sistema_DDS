@@ -45,8 +45,8 @@ def _recusar(viva: Path, para: Path, saida: Path, relatorio: Path, extras: list[
     entradas = [viva, para, *extras]
     if (m := v.recusa_de_saida(saida, entradas)):
         return m
-    if (m := v.recusa_de_saida(relatorio, entradas + [saida])):
-        return m.replace("saída", "relatório", 1)
+    if (m := v.recusa_de_saida(relatorio, entradas + [saida], "relatório")):
+        return m
     if relatorio.suffix.lower() != ".md" or saida.suffix.lower() != ".xlsx":
         return f"recusado: o relatório deve ser .md e a saída .xlsx ({relatorio}, {saida})"
     return None

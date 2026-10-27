@@ -565,9 +565,12 @@ with tempfile.TemporaryDirectory(prefix="dds_v42_") as tmp:
     grafo = Grafo(wb42)
     entradas_v42 = aba_metas.celulas_de_entrada_v42()
 
+    spec_linha = " ".join(spec.split())   # as citações atravessam quebras de linha da spec
+
     def fonte_l_ok(fonte):
-        pag = fonte.split(" p. ")[-1] if " p. " in fonte else ""
-        return fonte in metas.FONTES_L and bool(pag) and pag in spec
+        """Fonte L: uma das conferidas (`metas.FONTES_L`) e citada na spec com a obra e a página juntas, como está escrita
+        (só o número da página, em qualquer lugar da spec, não basta)."""
+        return fonte in metas.FONTES_L and fonte in spec_linha
 
     def fonte_e_ok(fonte):
         return bool(re.fullmatch(r"EDR-\d{3}", fonte)) and status.get(fonte) in ("APPROVED", "IMPLEMENTED", "VERIFIED")
@@ -580,7 +583,11 @@ with tempfile.TemporaryDirectory(prefix="dds_v42_") as tmp:
             ok = fonte_e_ok(r.fonte)
         elif r.fonte_tipo == "M":
             dest_r, dest_e = (ae._destino(wb42, r.resultado), ae._destino(wb42, r.entrada))
-            ok = dest_e in grafo.raizes_preenchidas(dest_r) and dest_e in entradas_v42 and r.entrada.startswith("ent_")                 and dest_r in grafo.formulas and r.fonte == f"{r.resultado} ← {r.entrada}"
+            ok = (dest_e in grafo.raizes_preenchidas(dest_r)
+                  and dest_e in entradas_v42
+                  and r.entrada.startswith("ent_")
+                  and dest_r in grafo.formulas
+                  and r.fonte == f"{r.resultado} ← {r.entrada}")
         else:
             ok = False
         fontes_ok &= bool(ok)
@@ -588,7 +595,8 @@ with tempfile.TemporaryDirectory(prefix="dds_v42_") as tmp:
             fontes_det.append(r.n)
     # os verificadores pegam fonte ruim (senão "ok" não prova nada): página que não é a conferida, livro sem página,
     # EDR inexistente ou fora do formato; e a entrada que não é raiz do resultado
-    pega_l = not fonte_l_ok("Gillespie p. 999") and not fonte_l_ok("Milliken") and not fonte_l_ok("Gillespie p. 215")
+    pega_l = (not fonte_l_ok("Gillespie p. 999") and not fonte_l_ok("Milliken") and not fonte_l_ok("Gillespie p. 215")
+              and not fonte_l_ok("p. 214") and not fonte_l_ok("214"))   # só a página, sem a obra, não passa
     pega_e = not fonte_e_ok("EDR-999") and not fonte_e_ok("EDR-61") and fonte_e_ok("EDR-060")
     pega_m = ae._destino(wb42, "ent_06_k_arb_traseiro") not in grafo.raizes_preenchidas(
         ae._destino(wb42, "res_06_frequencia_natural_dianteira"))

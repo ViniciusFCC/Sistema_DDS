@@ -38,7 +38,7 @@ from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 
 import metas
-from aba_equilibrio import ABA14, _estilo, _estilos
+from aba_equilibrio import ABA14, _destino, _estilo, _estilos
 from atualizar_planilha import _formula_pior_origem
 from nomes_v4_0 import NOME_VALIDO, Nome, parece_referencia, slug
 from raizes import Grafo
@@ -254,7 +254,7 @@ PIOR_EXISTENTE = {"TARGET-001": "res_14_frequencia_natural_dianteira_e15", "TARG
                   "TARGET-007": "res_14_equilibrio_no_limite_push_loose_e42"}
 
 
-def _linha_alvo(ws, est) -> None:
+def _linha_alvo(ws) -> None:
     """Linhas 10 e 11 (TARGET-006 e 007): A:G com o estilo da linha 9, valores como as linhas existentes."""
     for t, r in (("TARGET-006", 10), ("TARGET-007", 11)):
         for c in "ABCDEFG":
@@ -282,7 +282,7 @@ def _aba03(wb, registro: list) -> None:
     ws["A14"]._style, ws["A15"]._style = estilo_nota["A14"], estilo_nota["A15"]
     ws.merge_cells("A14:G14")
     ws.merge_cells("A15:G15")
-    _linha_alvo(ws, None)
+    _linha_alvo(ws)
     # cabeçalho
     for c, rot in CAB_H.items():
         _vazia(ws, f"{c}4")
@@ -327,12 +327,7 @@ def _aba03(wb, registro: list) -> None:
         dv.add(faixa)
 
 
-def _destino(wb, nome: str) -> tuple[str, str]:
-    from aba_equilibrio import _destino
-    return _destino(wb, nome)
-
-
-def _aba23(wb, registro: list) -> None:
+def _aba23(wb) -> None:
     ws = wb.create_sheet(ABA23)
     est = _estilos(wb)
     ws["A1"] = "23_LISTAS — vocabulários e relações das metas (V4.2; EDR-061)"
@@ -406,7 +401,7 @@ def montar(wb) -> list[dict]:
         raise ValueError(f"a última aba deveria ser 22_CADEIA; é {wb.sheetnames[-1]}")
     registro: list[dict] = []
     _aba03(wb, registro)      # antes da 23: a fórmula G1 só aponta para ela
-    _aba23(wb, registro)
+    _aba23(wb)
     _aba14(wb, registro)
     return registro
 
