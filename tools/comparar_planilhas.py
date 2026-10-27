@@ -31,6 +31,11 @@ FORMULAS_ESPERADAS_V40 = FORMULAS_ESPERADAS_V30  # nenhuma fórmula muda na V4.0
 ENTREGUE_XLSX_V41 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 FORMULAS_ESPERADAS_V41 = FORMULAS_ESPERADAS_V40 + 117181 + 1   # + a C43 da 13_VALIDATION (Task 8b)
 
+ENTREGUE_XLSX_V42 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
+# V4.2 (incremento 5, EDR-061): as 117569 da V4.1 (B188 e B189 da 16_EQUILIBRIO com o texto novo do D16) mais 58 das metas
+# (aba_metas: famílias G1-G6; 56 na 03_TARGETS e 2 no 14_DASHBOARD). Constante fixa, de propósito.
+FORMULAS_ESPERADAS_V42 = 117627   # 117569 + 58
+
 
 def _formula(v) -> str | None:
     """Texto da fórmula da célula, ou None se a célula não tiver fórmula."""
@@ -170,11 +175,15 @@ def comparar_v40(v40: Path, v30: Path, alteradas: set[tuple[str, str]],
 
 
 def comparar_viva(viva: Path, referencia: Path, entradas: set[tuple[str, str]],
-                  esperadas: int = FORMULAS_ESPERADAS_V30) -> tuple[bool, list[str]]:
+                  esperadas: int = FORMULAS_ESPERADAS_V30, rotulos: tuple[str, ...] | None = None,
+                  edrs: dict[str, str] | None = None) -> tuple[bool, list[str]]:
     """CA-07, planilha viva (EDR-051, fechamento da V3.0): tudo igual à referência (a V3.0 da tag) menos as células de
     entrada, que a equipe preenche. Nas entradas, a Origem tem de ser um dos 6 rótulos (ou vazia) e o valor de uma
     entrada numérica não pode virar fórmula. Confere também validações, formatação condicional, nomes e colunas ocultas.
-    Só lê os arquivos."""
+    `rotulos` são os rótulos de Origem da versão (padrão: os da V3.0/V4.1, `ROTULOS_ORIGEM`). Com `edrs` (ID -> status, de
+    `viva.edrs_aprovados`; V4.2 em diante), todo EDR citado nas fichas de meta (`viva.edrs_citados`) tem de existir e estar
+    num dos estados de `viva.EDR_ACEITOS` (APPROVED, IMPLEMENTED ou VERIFIED; EDR-063). Só lê os arquivos."""
+    rotulos = ROTULOS_ORIGEM if rotulos is None else rotulos
     rel, ok = [], True
     abas_r, ref = celulas(referencia)
     abas_v, viv = celulas(viva)
@@ -202,7 +211,7 @@ def comparar_viva(viva: Path, referencia: Path, entradas: set[tuple[str, str]],
     origens = {c for c in entradas if c[1][0] in "EI" and c[0] != "03_TARGETS"}
     for chave in sorted(origens):
         v = viv.get(chave)
-        if isinstance(ref.get(chave), str) and ref[chave] in ROTULOS_ORIGEM and v is not None and v not in ROTULOS_ORIGEM:
+        if isinstance(ref.get(chave), str) and ref[chave] in rotulos and v is not None and v not in rotulos:
             difs.append(f"{chave[0]}!{chave[1]} origem fora da lista: {v!r}")
     er, ev = _estrutura(referencia), _estrutura(viva)
     for k in sorted(set(er) | set(ev)):
@@ -213,6 +222,13 @@ def comparar_viva(viva: Path, referencia: Path, entradas: set[tuple[str, str]],
                 for campo in er.get(k, {}):
                     if er[k][campo] != ev.get(k, {}).get(campo):
                         difs.append(f"{k}: {campo} difere da referência")
+    if edrs is not None:
+        import viva as _viva
+        for cel, edr in _viva.edrs_citados(viva):
+            status = edrs.get(edr)
+            if status not in _viva.EDR_ACEITOS:
+                difs.append(f"{cel} cita {edr}, que " + ("não existe no registro de decisões" if status is None
+                                                         else f"está {status} (não é um de {', '.join(sorted(_viva.EDR_ACEITOS))})"))
     rel.append(f"células comparadas: {len(set(ref) | set(viv))} (entradas livres: {len(entradas)}) | diferenças: {len(difs)}")
     rel.extend(f"  DIF {d}" for d in difs)
     if difs:

@@ -60,6 +60,7 @@ check("TC-EQ-023: C_alpha cresce de 0,5*FNOMIN para FNOMIN e C_alpha/Fz cai (Gil
 # ---------------- Oráculos do Gillespie cap. 6 (exemplos resolvidos, pp. 231-235) ----------------
 # Valores do livro em lb, in, ft e lb/deg; a conversão para SI é feita aqui, no teste.
 import equilibrio_linear as el
+import origens
 import kinematics_model as km
 from suspension_model import G
 
@@ -184,7 +185,7 @@ caso_sim = eq.CasoEquilibrio(cfg=veiculo_simetrico(0.5), ds=ds_sim)
 p031, e031 = _sem_excecao(lambda: el.parcelas_k(caso_sim, 0.3 * G))
 ok_031 = False
 if p031 is not None and p031.k_total is not None:
-    t031 = el.texto_k(p031, "● Dado do TX")
+    t031 = el.texto_k(p031, origens.T11)
     if p031.k_total == 0.0:
         sinal_ok = t031.endswith(" · Neutro")
     elif p031.k_total > 0.0:
@@ -316,8 +317,17 @@ t037, e037 = _sem_excecao(lambda: el.texto_k(
                  k_roll_steer=0.0, k_total=k037, dphi_day=0.0, motivo=None), "◐ Dado do T09"))
 esp037 = ("DEMONSTRATIVO · K = +0,12 °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e "
           "camber estático) + camber + roll steer; sem compliance, torque de alinhamento e tração) · Subesterço")
-check("TC-EQ-037: texto_k com pior origem '◐ Dado do T09' e K = +0,123 °/g é o texto exato da spec §6",
-      t037 == esp037, e037 or f"obtido={t037!r}")
+_p037 = el.ParcelasK(ay_ms2=0.0, k_pneus=k037, k_transferencia=0.0, k_deslocamento=0.0, k_camber=0.0,
+                     k_roll_steer=0.0, k_total=k037, dphi_day=0.0, motivo=None)
+_sem037 = esp037.removeprefix("DEMONSTRATIVO · ")
+# V4.2 (EDR-062): sem prefixo só com a origem do carro do projeto (T11); origem_do_carro=TX_V41 reproduz a V4.1
+ok_037b = (el.texto_k(_p037, origens.T11) == _sem037
+           and el.texto_k(_p037, origens.TX_V41) == esp037
+           and el.texto_k(_p037, origens.TX_V41, origem_do_carro=origens.TX_V41) == _sem037
+           and el.texto_k(_p037, origens.T11, origem_do_carro=origens.TX_V41) == esp037)
+check("TC-EQ-037: texto_k com pior origem '◐ Dado do T09' e K = +0,123 °/g é o texto exato da spec §6 "
+      "(e o prefixo D16 segue origem_do_carro)",
+      t037 == esp037 and ok_037b, e037 or f"obtido={t037!r}; ok_037b={ok_037b}")
 
 # ---------------- TC-EQ-038 : tabela linear e roll steer linha a linha ----------------
 RS_TESTE = {"F": 0.05, "R": -0.03}   # ε em rad/rad (SUS-415): só de teste

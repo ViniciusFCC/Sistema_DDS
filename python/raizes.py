@@ -76,10 +76,13 @@ def celula_origem(aba: str, cel: str) -> tuple[str, str] | None:
     return None
 
 
-def origem_da_raiz(wb, aba: str, cel: str) -> str:
+def origem_da_raiz(wb, aba: str, cel: str, lista=ORIGENS_LISTA) -> str:
+    """Rótulo de origem da raiz, ou SEM_ROTULO se vazio ou fora de `lista`. O padrão é a lista da V4.1; numa planilha da
+    V4.2 passe `lista=origens.ORIGENS_V42` (senão `● Dado do T11` contaria como sem rótulo). Os chamadores atuais
+    (caso_planilha, mapa_raizes, relatorio_inc1) leem planilhas da V4.1."""
     co = celula_origem(aba, cel)
     v = wb[co[0]][co[1]].value if co else None
-    return v if v in ORIGENS_LISTA else SEM_ROTULO
+    return v if v in lista else SEM_ROTULO
 
 
 class Grafo:
