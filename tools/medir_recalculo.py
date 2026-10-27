@@ -4,53 +4,102 @@ Uso (Git Bash, depois de export UV_SYSTEM_CERTS=1):
     uv run python -X utf8 tools/medir_recalculo.py [ARQ] [--n 3] [--saida docs/v4-2/medicao-recalculo-v4-1.md]
 
 Sem ARQ, extrai `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` da tag `v4.1` (git show). O arquivo medido é sempre uma
-CÓPIA em pasta temporária: a planilha de excel/ e a viva do Drive nunca são abertas (EDR-044, EDR-063).
+CÓPIA em pasta temporária: a planilha de excel/ e a viva do Drive nunca são abertas (EDR-044, EDR-063); ARQ dentro de
+excel/ ou da pasta do Drive é recusado (passe uma cópia local), assim como --saida nesses lugares.
 
-Por execução, numa instância nova do Excel (DispatchEx, no Job Object de tests/recalculo_planilha.py), mede em
-separado: abrir, CalculateFull, gravar e fechar (Workbook.Close + Application.Quit). Depois confere que o PID da
+Dois cenários, cada execução sobre uma cópia NOVA do arquivo de origem do cenário e numa instância nova do Excel
+(DispatchEx, no Job Object de tests/recalculo_planilha.py):
+  A) arquivo da tag: sem valores em cache e com fullCalcOnLoad (o Excel calcula tudo dentro de Workbooks.Open);
+  B) arquivo já salvo pelo Excel, como a viva: a cópia gravada pela 1ª execução de A, copiada de novo a cada execução.
+Mede em separado abrir, CalculateFull, gravar e fechar (Workbook.Close + Application.Quit) e confere que o PID da
 instância saiu. Conta os processos EXCEL.EXE antes e depois; se já houver algum antes (pode ser do usuário), avisa,
 mede assim mesmo e registra o número. Nunca encerra processo por nome.
 
-Saída: 0 = gravado; 1 = sobrou instância da ferramenta; 3 = NÃO EXECUTÁVEL (sem Excel/pywin32). Texto em UTF-8, LF.
+Saída: 0 = gravado; 1 = sobrou instância da ferramenta; 2 = recusa; 3 = NÃO EXECUTÁVEL (sem Excel/pywin32). UTF-8, LF.
 """
 from __future__ import annotations
 
 import argparse
 import datetime as dt
+import gc
 import hashlib
+import os
 import platform
+import re
 import shutil
 import statistics
 import subprocess
 import sys
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "tests"))   # recalculo_planilha mora em tests/
+sys.path.insert(0, str(RAIZ / "tests"))    # recalculo_planilha mora em tests/
+sys.path.insert(0, str(RAIZ / "python"))
 
 import recalculo_planilha as rc  # noqa: E402
+import viva  # noqa: E402
 
 ORIGEM_TAG = "v4.1:excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 SAIDA_PADRAO = RAIZ / "docs" / "v4-2" / "medicao-recalculo-v4-1.md"
+_CALC = {-4105: "automático", -4135: "manual", 2: "semiautomático"}
+
+
+def _tasklist(filtro: str) -> list[str]:
+    r = subprocess.run(["tasklist", "/FI", filtro, "/FO", "CSV", "/NH"], capture_output=True, text=True, errors="replace")
+    return [ln for ln in r.stdout.splitlines() if ln.lower().startswith('"excel.exe"')]
 
 
 def contar_excel() -> int:
     """Número de processos EXCEL.EXE no sistema (qualquer dono)."""
-    r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq EXCEL.EXE", "/FO", "CSV", "/NH"],
-                       capture_output=True, text=True, errors="replace")
-    return sum(1 for ln in r.stdout.splitlines() if ln.lower().startswith('"excel.exe"'))
+    return len(_tasklist("IMAGENAME eq EXCEL.EXE"))
 
 
 def pid_vivo(pid: int) -> bool:
-    r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-                       capture_output=True, text=True, errors="replace")
-    return any(ln.lower().startswith('"excel.exe"') for ln in r.stdout.splitlines())
+    return bool(_tasklist(f"PID eq {pid}"))
+
+
+def esperar_saida(pid: int | None, tentativas: int = 60) -> bool:
+    """O Quit é assíncrono: espera até tentativas x 0,5 s o PID sair. True se saiu."""
+    for _ in range(tentativas):
+        if not pid or not pid_vivo(pid):
+            return True
+        time.sleep(0.5)
+    return not pid_vivo(pid)
 
 
 def sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def estado_do_arquivo(p: Path) -> dict:
+    """Lido do próprio arquivo: calcPr do workbook.xml e fórmulas com/sem valor em cache (<v>)."""
+    com = sem = 0
+    with zipfile.ZipFile(p) as z:
+        m = re.search(r"<calcPr[^>]*/?>", z.read("xl/workbook.xml").decode("utf-8"))
+        for n in z.namelist():
+            if n.startswith("xl/worksheets/sheet") and n.endswith(".xml"):
+                for c in re.finditer(r"<c [^>]*?(?<!/)>(.*?)</c>", z.read(n).decode("utf-8"), re.S):
+                    if "<f" in c.group(1):
+                        if "<v>" in c.group(1):
+                            com += 1
+                        else:
+                            sem += 1
+    return {"calcPr": m.group(0) if m else "(ausente)", "com_v": com, "sem_v": sem}
+
+
+def _ler_config(xl) -> dict:
+    """Lê modo de cálculo e threads numa função à parte: os objetos COM intermediários morrem ao sair dela
+    (referência viva impediria o Quit de encerrar o processo)."""
+    r = {"calculation": _CALC.get(xl.Calculation, str(xl.Calculation))}
+    try:
+        mt = xl.MultiThreadedCalculation
+        r["threads"] = f"{mt.ThreadCount} threads ({'ligado' if mt.Enabled else 'desligado'})"
+    except Exception:
+        r["threads"] = "não lido"
+    return r
 
 
 def uma_execucao(copia: Path) -> dict:
@@ -65,6 +114,7 @@ def uma_execucao(copia: Path) -> dict:
         t["abrir"] = time.perf_counter() - t0
         if wb.ReadOnly:
             raise RuntimeError("o Excel abriu a cópia somente para leitura")
+        t.update(_ler_config(xl))
         t0 = time.perf_counter()
         xl.CalculateFull()
         t["calcular"] = time.perf_counter() - t0
@@ -74,6 +124,7 @@ def uma_execucao(copia: Path) -> dict:
         t0 = time.perf_counter()
         wb.Close(SaveChanges=False)
         wb = None
+        gc.collect()
         rc._fechar_excel()               # Application.Quit; cai no PID se o Quit falhar
         xl = None
         t["fechar"] = time.perf_counter() - t0
@@ -84,13 +135,9 @@ def uma_execucao(copia: Path) -> dict:
             except Exception:
                 pass
         xl = None
+        gc.collect()
         rc._fechar_excel()
-    # a instância precisa sair (o Quit é assíncrono: espera até 30 s)
-    for _ in range(60):
-        if not pid_vivo(pid):
-            break
-        time.sleep(0.5)
-    t["saiu"] = not pid_vivo(pid)
+    t["saiu"] = esperar_saida(pid)
     return t
 
 
@@ -98,27 +145,62 @@ def fmt(x: float) -> str:
     return f"{x:.2f}".replace(".", ",")
 
 
+def cenario(origem: Path, n: int, pasta: Path, nome: str, guardar: Path | None = None) -> list[dict]:
+    execs = []
+    for i in range(n):
+        copia = pasta / f"{nome}_{i + 1}.xlsx"
+        shutil.copyfile(origem, copia)            # cópia nova do arquivo de origem do cenário
+        e = uma_execucao(copia)
+        if i == 0 and guardar is not None:
+            shutil.copyfile(copia, guardar)       # o que o Excel gravou na 1ª execução
+        execs.append(e)
+        print(f"cenário {nome}, execução {i + 1}: abrir {fmt(e['abrir'])} s, calcular {fmt(e['calcular'])} s, "
+              f"gravar {fmt(e['gravar'])} s, fechar {fmt(e['fechar'])} s, saiu={e['saiu']}")
+    return execs
+
+
+def tabela(execs: list[dict]) -> list[str]:
+    L = ["| Execução | Abrir | CalculateFull | Gravar | Fechar | Total | Instância saiu |", "|---|---|---|---|---|---|---|"]
+    for i, e in enumerate(execs, 1):
+        tot = e["abrir"] + e["calcular"] + e["gravar"] + e["fechar"]
+        L.append(f"| {i} | {fmt(e['abrir'])} | {fmt(e['calcular'])} | {fmt(e['gravar'])} | {fmt(e['fechar'])} | "
+                 f"{fmt(tot)} | {'sim' if e['saiu'] else 'não'} |")
+    if len(execs) > 1:
+        L.append("| Mediana | " + " | ".join(fmt(statistics.median(e[k] for e in execs))
+                 for k in ("abrir", "calcular", "gravar", "fechar")) + " | "
+                 + fmt(statistics.median(e["abrir"] + e["calcular"] + e["gravar"] + e["fechar"] for e in execs)) + " | |")
+    return L
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("arq", nargs="?", help="planilha a medir (copiada antes); padrão: V4.1 da tag v4.1")
-    ap.add_argument("--n", type=int, default=3)
+    ap.add_argument("--n", type=int, default=3, help="execuções por cenário")
     ap.add_argument("--saida", default=str(SAIDA_PADRAO))
     a = ap.parse_args()
 
-    with tempfile.TemporaryDirectory(prefix="medir_recalculo_") as pasta:
-        copia = Path(pasta) / "medida.xlsx"
-        if a.arq:
-            origem = Path(a.arq)
-            if "Google" in str(origem) or str(origem).upper().startswith("H:"):
-                print("recusado: a viva do Drive nunca é aberta; passe uma cópia local", file=sys.stderr)
+    msg = viva.recusa_de_saida(Path(a.saida), [])
+    if msg:
+        print(f"recusado: {msg}", file=sys.stderr)
+        return 2
+    if a.arq:
+        for pasta_proibida, nome in ((RAIZ / "excel", "excel/"), (viva.PASTA_DRIVE, "a pasta do Drive")):
+            if viva.dentro(Path(a.arq), pasta_proibida):
+                print(f"recusado: {a.arq} está em {nome}; passe uma cópia local", file=sys.stderr)
                 return 2
-            shutil.copyfile(origem, copia)
-            rotulo = origem.name
+
+    with tempfile.TemporaryDirectory(prefix="medir_recalculo_") as d:
+        pasta = Path(d)
+        origem_a = pasta / "origem_A.xlsx"
+        if a.arq:
+            shutil.copyfile(a.arq, origem_a)
+            rotulo = Path(a.arq).name
         else:
-            dados = subprocess.run(["git", "show", ORIGEM_TAG], cwd=RAIZ, capture_output=True, check=True).stdout
-            copia.write_bytes(dados)
-            rotulo = f"{ORIGEM_TAG} (tag v4.1)"
-        sha_origem = sha(copia)
+            origem_a.write_bytes(subprocess.run(["git", "show", ORIGEM_TAG], cwd=RAIZ, capture_output=True,
+                                                check=True).stdout)
+            rotulo = f"`{ORIGEM_TAG}` (tag v4.1)"
+        sha_origem = sha(origem_a)
+        est_a = estado_do_arquivo(origem_a)
 
         antes = contar_excel()
         if antes:
@@ -128,47 +210,63 @@ def main() -> int:
         except Exception as e:
             print(f"NÃO EXECUTÁVEL: {e}", file=sys.stderr)
             return 3
+        sonda = rc._excel_pid
         if motor != "excel":
             print(f"NÃO EXECUTÁVEL: {detalhe}", file=sys.stderr)
             return 3
-        versao_excel = detalhe
         rc._fechar_excel()               # a sonda de escolher() abriu uma instância; cada execução abre a sua
-        time.sleep(1)
+        if not esperar_saida(sonda):
+            print(f"a instância de sondagem (PID {sonda}) não saiu", file=sys.stderr)
 
-        execs = []
-        for i in range(a.n):
-            e = uma_execucao(copia)
-            execs.append(e)
-            print(f"execução {i + 1}: abrir {fmt(e['abrir'])} s, calcular {fmt(e['calcular'])} s, "
-                  f"gravar {fmt(e['gravar'])} s, fechar {fmt(e['fechar'])} s, saiu={e['saiu']}")
+        origem_b = pasta / "origem_B.xlsx"
+        execs_a = cenario(origem_a, a.n, pasta, "A", guardar=origem_b)
+        est_b = estado_do_arquivo(origem_b)
+        execs_b = cenario(origem_b, a.n, pasta, "B")
         depois = contar_excel()
 
-    ok_pids = all(e["saiu"] for e in execs)
+    todas = execs_a + execs_b
+    ok_pids = all(e["saiu"] for e in todas)
     sobra = depois - antes
+    calc = sorted({e["calculation"] for e in todas})
+    thr = sorted({e["threads"] for e in todas})
+
+    def est(e: dict) -> str:
+        return (f"`{e['calcPr']}`; fórmulas com valor em cache: {e['com_v']}; fórmulas sem valor em cache: {e['sem_v']}")
+
     linhas = [
         "# Medição do recálculo da V4.1 sem Excel residual",
         "",
         "Gerado por `tools/medir_recalculo.py`. Não edite à mão: rode de novo.",
         "",
         f"- Data: {dt.date.today().isoformat()}.",
-        f"- Arquivo medido: {rotulo}, em cópia temporária (SHA-256 `{sha_origem}`). A planilha de `excel/` e a viva do Drive não foram abertas.",
-        f"- Motor: {versao_excel.split(', PID')[0]}; Windows {platform.version()}; Python {platform.python_version()}.",
-        f"- Execuções: {a.n}, cada uma numa instância nova do Excel (invisível, alertas desligados).",
+        f"- Arquivo de origem: {rotulo}, SHA-256 `{sha_origem}`. A planilha de `excel/` e a viva do Drive não foram abertas.",
+        f"- Motor: {detalhe.split(', PID')[0]}; Windows {platform.version()}; Python {platform.python_version()}.",
+        f"- Núcleos lógicos (`os.cpu_count`): {os.cpu_count()}. Cálculo multithread do Excel: {'; '.join(thr)}. "
+        f"`Application.Calculation` lido com a pasta aberta: {'; '.join(calc)}.",
+        f"- Execuções: {a.n} por cenário, cada uma numa instância nova do Excel (invisível, alertas desligados) e sobre uma "
+        "cópia nova do arquivo de origem do cenário.",
         "",
-        "## Tempos por execução (segundos)",
+        "## O que cada coluna mede",
         "",
-        "| Execução | Abrir | CalculateFull | Gravar | Fechar | Total | Instância saiu |",
-        "|---|---|---|---|---|---|---|",
-    ]
-    for i, e in enumerate(execs, 1):
-        tot = e["abrir"] + e["calcular"] + e["gravar"] + e["fechar"]
-        linhas.append(f"| {i} | {fmt(e['abrir'])} | {fmt(e['calcular'])} | {fmt(e['gravar'])} | {fmt(e['fechar'])} | "
-                      f"{fmt(tot)} | {'sim' if e['saiu'] else 'não'} |")
-    if len(execs) > 1:
-        linhas.append("| Mediana | " + " | ".join(
-            fmt(statistics.median(e[k] for e in execs)) for k in ("abrir", "calcular", "gravar", "fechar")) +
-            " | " + fmt(statistics.median(e['abrir'] + e['calcular'] + e['gravar'] + e['fechar'] for e in execs)) + " | |")
-    linhas += [
+        "- Abrir: `Workbooks.Open`. No cenário A inclui o cálculo de carga (o arquivo pede `fullCalcOnLoad` e nenhuma fórmula tem valor em cache).",
+        "- CalculateFull: recálculo completo a quente, depois da carga.",
+        "- Gravar: `Workbook.Save`.",
+        "- Fechar: `Workbook.Close` mais `Application.Quit`.",
+        "- Total: soma das quatro colunas.",
+        "- A 1ª execução de cada cenário vem de uma partida a frio do Excel e inclui esse custo; a 1ª do cenário A é a mais exposta.",
+        "",
+        "## Cenário A: arquivo da tag (sem cache, com fullCalcOnLoad)",
+        "",
+        f"Estado do arquivo de origem, lido dele: {est(est_a)}.",
+        "",
+        *tabela(execs_a),
+        "",
+        "## Cenário B: arquivo já salvo pelo Excel (como a viva)",
+        "",
+        "Origem: a cópia gravada pela 1ª execução do cenário A, copiada de novo a cada execução.",
+        f"Estado do arquivo de origem, lido dele: {est(est_b)}.",
+        "",
+        *tabela(execs_b),
         "",
         "## Processos EXCEL.EXE",
         "",
@@ -176,7 +274,7 @@ def main() -> int:
         f"- Depois da medição: {depois}.",
         f"- Diferença: {sobra:+d}. " + ("Nenhuma instância da ferramenta ficou viva."
                                         if ok_pids and sobra <= 0 else "SOBROU instância: investigar."),
-        "- A ferramenta confere o PID de cada instância depois do `Quit` e nunca encerra processo por nome.",
+        "- A ferramenta confere o PID de cada instância depois do `Quit` (inclusive a da sondagem inicial) e nunca encerra processo por nome.",
         "",
         "## Limites",
         "",
