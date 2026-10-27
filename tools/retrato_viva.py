@@ -12,7 +12,8 @@ tag reconstroem a viva (o .xlsx de 3,2 MB não entra no Git; o Drive já guarda 
   devolver o mesmo tipo. Fórmula em célula de dado é erro (a conferência já a recusa).
 `carregar` faz o caminho de volta (JSON -> dados por nome), que `dados_planilha.injetar` leva a uma cópia da versão.
 
-Código de saída: o da conferência (1 diverge, 3 não lida) sem gravar nada; 0 gravado. Lê só uma cópia da viva; grava só o
+Código de saída: o da conferência (1 diverge, 3 não lida) sem gravar nada; 2 saída recusada (dentro de excel/, do Drive ou igual ao
+arquivo de entrada) ou dado com fórmula; 0 gravado. Lê só uma cópia da viva; grava só o
 JSON (nunca em excel/ nem no Drive).
 """
 from __future__ import annotations
@@ -64,9 +65,9 @@ def retratar(arquivo: Path, saida: Path, pasta: Path, referencia: Path | None = 
     """Confere `arquivo` (cópia em `pasta`) e, com código 0, grava o retrato em `saida`. Devolve o código da conferência
     (0 gravado; 1 diverge; 3 não lida; 2 dado com fórmula ou tipo sem codificação)."""
     saida = Path(saida)
-    destino = saida.resolve()
-    if destino.parent == (RAIZ / "excel").resolve():
-        print(f"saída em excel/ recusada ({saida})")
+    recusa = v.recusa_de_saida(saida, [Path(arquivo)])
+    if recusa:
+        print(recusa)
         return 2
     codigo, rel, ver = conferir(arquivo, pasta, referencia)
     if codigo != 0:
