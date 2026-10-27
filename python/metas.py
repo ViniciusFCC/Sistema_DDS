@@ -200,14 +200,14 @@ def compromisso_preenchido(v) -> bool:
 
 def sobredeterminadas(fichas: list[Ficha]) -> set[str]:
     """IDs das metas com Papel = META (exato) cuja alavanca tem outra META (spec §5, itens 1b e 2). Meta sem relação
-    nunca é sobredeterminada."""
-    n_metas: dict[str, int] = {}
+    nunca é sobredeterminada. É a única definição da regra (`estado_coerencia` a usa) e conta metas distintas, por ID:
+    a própria ficha nunca é "outra" META."""
+    por_alavanca: dict[str, set[str]] = {}
     for f in fichas:
         a = alavanca(f.target)
         if a is not None and f.papel == "META":
-            n_metas[a] = n_metas.get(a, 0) + 1
-    return {f.target for f in fichas
-            if f.papel == "META" and (a := alavanca(f.target)) is not None and n_metas[a] > 1}
+            por_alavanca.setdefault(a, set()).add(f.target)
+    return {t for ids in por_alavanca.values() if len(ids) > 1 for t in ids}
 
 
 def estado_coerencia(f: Ficha, fichas: list[Ficha]) -> tuple[str, str]:
@@ -216,10 +216,8 @@ def estado_coerencia(f: Ficha, fichas: list[Ficha]) -> tuple[str, str]:
     for chave, nome in CAMPOS_VOCAB:
         if not campo_valido(chave, getattr(f, chave)):
             return "CONFLITO", f"{nome} fora do vocabulário"
-    a = alavanca(f.target)
-    if f.papel == "META" and a is not None and any(g is not f and g.papel == "META" and alavanca(g.target) == a
-                                                   for g in fichas):
-        return "CONFLITO", f"sobredeterminação ({a}; escolha qual manda)"
+    if f.target in sobredeterminadas(fichas):
+        return "CONFLITO", f"sobredeterminação ({alavanca(f.target)}; escolha qual manda)"
     if f.papel == "TBD" or valor_tbd(f.valor):
         return "NÃO AVALIÁVEL", MOTIVO_NAO_AVALIAVEL
     if compromisso_preenchido(f.compromisso):

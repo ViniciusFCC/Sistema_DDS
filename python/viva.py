@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +29,9 @@ import openpyxl
 import origens
 
 RAIZ = Path(__file__).resolve().parent.parent
+if str(RAIZ / "tools") not in sys.path:
+    sys.path.insert(0, str(RAIZ / "tools"))
+import comparar_planilhas as _cp  # noqa: E402  (as contagens de fórmulas vivem só lá)
 PASTA_DRIVE = Path(r"H:\.shortcut-targets-by-id\1Kytf4APy0OtH5Aq5PqlOwH5UY65YMX5U\T11 - Tupã\2. Projeto\Mecanica\Suspensao"
                    r"\Documentacao\Planilha DDS")
 PADRAO_VIVA = "FSAE_EV_Suspension_Fase1_V*.xlsx"
@@ -65,17 +69,18 @@ def dentro(caminho: Path, pasta: Path) -> bool:
     return c == p or p in c.parents
 
 
-def recusa_de_saida(alvo: Path, entradas: list[Path]) -> str | None:
+def recusa_de_saida(alvo: Path, entradas: list[Path], rotulo: str = "saída") -> str | None:
     """Guarda comum das CLIs que gravam (EDR-063): mensagem de recusa se `alvo` é um dos arquivos de `entradas` (gravar por cima
     da viva ou de uma planilha de entrada), está em qualquer nível da árvore `excel/` ou dentro de `PASTA_DRIVE` (a viva do Drive é
-    só leitura); None se pode gravar. Só compara caminhos: a recusa vem antes de abrir ou escrever qualquer arquivo."""
+    só leitura); None se pode gravar. `rotulo` é como a mensagem chama o arquivo ("saída", "relatório"). Só compara caminhos:
+    a recusa vem antes de abrir ou escrever qualquer arquivo."""
     alvo = Path(alvo)
     if alvo.resolve() in {Path(e).resolve() for e in entradas}:
-        return f"saída por cima de um arquivo de entrada: recusado ({alvo})"
+        return f"{rotulo} por cima de um arquivo de entrada: recusado ({alvo})"
     if dentro(alvo, RAIZ / "excel"):
-        return f"saída em excel/ recusada ({alvo}): a cópia para excel/ é um commit próprio"
+        return f"{rotulo} em excel/ recusada ({alvo}): a cópia para excel/ é um commit próprio"
     if dentro(alvo, PASTA_DRIVE):
-        return f"saída na pasta do Drive recusada ({alvo}): a viva do Drive é só leitura"
+        return f"{rotulo} na pasta do Drive recusada ({alvo}): a viva do Drive é só leitura"
     return None
 
 
@@ -149,12 +154,12 @@ def _entradas_v42() -> set:
     return celulas_de_entrada_v42()
 
 
-# O número de fórmulas repete tools/comparar_planilhas.FORMULAS_ESPERADAS_V41 e _V42 (o TC-WB42-004 confere os dois).
+# O número de fórmulas vem de tools/comparar_planilhas (FORMULAS_ESPERADAS_V41 e _V42): uma constante só.
 REFERENCIAS: dict[str, Referencia] = {
     "V4.1": Referencia("V4.1", "v4.1", "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx", _entradas_v41,
-                       (origens.TX_V41, origens.T09_V41, *origens.ORIGENS_V42[2:]), 117569),
+                       (origens.TX_V41, origens.T09_V41, *origens.ORIGENS_V42[2:]), _cp.FORMULAS_ESPERADAS_V41),
     "V4.2": Referencia("V4.2", "v4.2", "excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx", _entradas_v42,
-                       origens.ORIGENS_V42, 117627, confere_edr=True),
+                       origens.ORIGENS_V42, _cp.FORMULAS_ESPERADAS_V42, confere_edr=True),
 }
 # Troca de rótulos de Origem entre versões (a decisão 1 do EDR-062); a migração e a base dos conflitos usam o mesmo mapa.
 MAPAS_ROTULO: dict[tuple[str, str], dict[str, str]] = {("V4.1", "V4.2"): origens.MAPA_DADO_V41_V42}

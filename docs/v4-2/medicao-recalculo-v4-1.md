@@ -15,7 +15,7 @@ Gerado por `tools/medir_recalculo.py`. Não edite à mão: rode de novo.
 - Gravar: `Workbook.Save`.
 - Fechar: `Workbook.Close` mais `Application.Quit`.
 - Total: soma das quatro colunas.
-- A 1ª execução de cada cenário vem de uma partida a frio do Excel e inclui esse custo; a 1ª do cenário A é a mais exposta.
+- A 1ª execução de cada cenário pode incluir o custo da partida a frio do Excel; esse custo não é separado.
 
 ## Cenário A: arquivo da tag (sem cache, com fullCalcOnLoad)
 
