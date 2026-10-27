@@ -105,6 +105,7 @@ import dataclasses as _dc
 import numpy as _np
 
 import equilibrio as _eq
+import origens as _origens
 import tire_model as _tm
 from suspension_model import lateral_dfz, static_fz_corner
 
@@ -419,7 +420,7 @@ def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401) -> tuple[float, 
 
 
 def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_origem: str | None = None,
-                  n_alfa: int = 401) -> list:
+                  n_alfa: int = 401, *, origem_do_carro: str = _origens.T11) -> list:
     """Tabela do passo 1 de a_y = 0 a ay_max_g (faixa linear até 0,4 g, Milliken p. 315; spec §6).
 
     Uma linha por a_y_k = k·passo (k = 0…⌊ay_max/passo⌋), com as parcelas (`parcelas_k`), o K tangente medido no
@@ -434,7 +435,8 @@ def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_orige
     negativo na curva à esquerda: o K do Gillespie (ângulos de deriva positivos) é −Δ(α_f − α_r)/Δa_y, e é esse o
     sinal guardado (K > 0 = subesterço, como as parcelas). Sem ângulos (None de `angulos_necessarios`),
     k_inclinacao fica None com `motivo_inclinacao`.
-    pior_origem vai para `texto_k`; None (não informado) conta como diferente do TX e dá "DEMONSTRATIVO" (D16).
+    pior_origem e origem_do_carro vão para `texto_k`; None (não informado) conta como diferente do carro e dá
+    "DEMONSTRATIVO" (D16).
     """
     if not (isinstance(ay_max_g, (int, float)) and ay_max_g > 0 and math.isfinite(ay_max_g)):
         raise ValueError(f"ay_max_g deve ser > 0 e finito; recebido {ay_max_g!r}.")
@@ -465,12 +467,12 @@ def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_orige
         else:
             motivo_incl = "ângulos necessários indisponíveis nesta linha ou na anterior"
         linhas.append({"ay_ms2": ay, "ay_g": k * passo_g, "parcelas": p, "k_inclinacao": k_incl,
-                       "motivo_inclinacao": motivo_incl, "texto_k": texto_k(p, pior_origem)})
+                       "motivo_inclinacao": motivo_incl, "texto_k": texto_k(p, pior_origem, origem_do_carro=origem_do_carro)})
         ang_ant, ay_ant = ang, ay
     return linhas
 
 
-def texto_k(p: ParcelasK, pior_origem: str | None) -> str:
+def texto_k(p: ParcelasK, pior_origem: str | None, *, origem_do_carro: str = _origens.T11) -> str:
     """Texto exato de exibição do K (spec §6; Global Constraints).
 
     "K = <±x,xx> °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e camber
@@ -478,7 +480,8 @@ def texto_k(p: ParcelasK, pior_origem: str | None) -> str:
     (rótulo da parcela de deslocamento revisto no incremento 4, 2026-10-21: ela reúne ply steer, conicidade, toe e
     camber estático, não só o deslocamento do pneu) seguido de " · Subesterço" (K > 0), " · Sobresterço" (K < 0) ou
     " · Neutro" (só K == 0 exato; banda de neutro só por EDR). K None: "N/A: " + motivo. Prefixo "DEMONSTRATIVO · " se
-    a pior origem não for "● Dado do TX" (D16), também no N/A, como em equilibrio.texto_veredito.
+    a pior origem não for `origem_do_carro` (D16; T11 na V4.2, `origens.TX_V41` reproduz a V4.1), também no N/A, como em
+    equilibrio.texto_veredito.
     """
     if p.k_total is None:
         texto = "N/A: " + (p.motivo or "")
@@ -492,7 +495,7 @@ def texto_k(p: ParcelasK, pior_origem: str | None) -> str:
             rotulo = "Neutro"
         texto = (f"K = {valor} °/g (pneus + transferência + deslocamento com a carga (ply steer, conicidade, toe e "
                  f"camber estático) + camber + roll steer; sem compliance, torque de alinhamento e tração) · {rotulo}")
-    return texto if pior_origem == "● Dado do TX" else "DEMONSTRATIVO · " + texto
+    return texto if pior_origem == origem_do_carro else "DEMONSTRATIVO · " + texto
 
 
 # ---------------------------------------------------------------------------

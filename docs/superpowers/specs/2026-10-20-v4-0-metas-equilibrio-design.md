@@ -313,6 +313,10 @@ Amplitude: EDR-055. Tratamento da faixa do pneu: EDR-056.
 3. **Veredito:** se push/loose (e o sinal de K) for o mesmo em toda a varredura, a célula mostra o veredito com a
    nota "mesmo sinal na varredura exploratória do pneu". Se inverter, mostra "? NÃO CONCLUSIVO" (seção 7.3, item 8).
    NEUTRO dentro da resolução numérica em algum ponto conta como inversão.
+   *(EDR-060 item 8 (x) e decisão 8 do plano, 2026-10-23: a regra do código fica estrita, e uma mistura de um só sinal com N/A
+   também é NÃO CONCLUSIVO, porque um ponto N/A não tem veredito. O motivo mostrado é que muda: "o sinal depende do pneu" só
+   com PUSH e LOOSE juntos ou NEUTRO em algum ponto, e "N/A em parte da varredura (sem inversão de sinal)" nos outros casos.
+   A célula mostra `? NÃO CONCLUSIVO: <motivo>`.)*
 4. **Onde roda:** primeiro no Python (incremento 1, exploratório; incremento 2, em `equilibrio.py` com teste);
    na planilha, só se o incremento 1 mostrar que o recálculo aguenta; senão o Python gera o relatório e a planilha
    mostra o veredito nominal com o aviso "robustez ao pneu: ver relatório", sem copiar números (seção 7.5).
@@ -354,6 +358,9 @@ Amplitude: EDR-055. Tratamento da faixa do pneu: EDR-056.
   nas fichas.
 - A equipe continua na V3.0 viva até o incremento 7 (a reescrita das fórmulas acontece antes do preenchimento); só então há retrato, congelamento do preenchimento e
   injeção dos dados. O local oficial da viva precisa estar decidido antes do retrato.
+  *(EDR-063, 2026-10-23: a viva da equipe é, desde 2026-10-22, a cópia da V4.1 no Google Drive da equipe, e não a V3.0 de
+  `excel/`. O retrato é `data/viva/retrato-viva.json` (dados por nome), e a cada versão terminada a viva do Drive vira a versão
+  nova com os dados migrados por `tools/migrar_viva.py`. O parágrafo acima descreve o plano original da V4.0.)*
 
 ### 8.3 Documentação
 

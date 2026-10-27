@@ -17,6 +17,7 @@ import math
 import os
 
 import equilibrio as eq
+import origens
 import suspension_model as sm
 import tire_model as tm
 from suspension_model import VehicleConfig, G
@@ -470,14 +471,18 @@ check("TC-EQ-015: ay_max_g=0, passo_g=-0,05 e n_alfa=2 -> ValueError cada um", a
 # ---------------- TC-EQ-016 : robustez ao pneu (spec 7.6) ----------------
 _M = "mesmo sinal na varredura exploratória do pneu"
 _dep = (eq.NAO_CONCLUSIVO, "o sinal depende do pneu")
+_parte = (eq.NAO_CONCLUSIVO, "N/A em parte da varredura (sem inversão de sinal)")
 ok_016 = (eq.veredito_robusto([eq.PUSH, eq.PUSH]) == (eq.PUSH, _M)
           and eq.veredito_robusto([eq.LOOSE, eq.LOOSE]) == (eq.LOOSE, _M)
           and eq.veredito_robusto([eq.PUSH, eq.LOOSE]) == _dep
           and eq.veredito_robusto([eq.PUSH, eq.NEUTRO]) == _dep
-          and eq.veredito_robusto([eq.PUSH, eq.NA]) == _dep
+          and eq.veredito_robusto([eq.PUSH, eq.NA]) == _parte
+          and eq.veredito_robusto([eq.LOOSE, eq.NA, eq.LOOSE]) == _parte
+          and eq.veredito_robusto([eq.PUSH, eq.LOOSE, eq.NA]) == _dep
+          and eq.veredito_robusto([eq.LOOSE, eq.NEUTRO, eq.NA]) == _dep
           and eq.veredito_robusto([eq.NA, eq.NA]) == (eq.NA, "N/A em toda a varredura")
           and eq.veredito_robusto([]) == (eq.NA, "robustez ao pneu não avaliada"))
-check("TC-EQ-016: veredito_robusto (PUSH/PUSH, LOOSE/LOOSE, inversão, NEUTRO, N/A misto, N/A, vazio)", ok_016)
+check("TC-EQ-016: veredito_robusto (PUSH/PUSH, LOOSE/LOOSE, inversão, NEUTRO, N/A misto com e sem inversão, N/A, vazio)", ok_016)
 
 # ---------------- TC-EQ-017 : varredura do pneu ----------------
 # Grade reduzida e fatores abaixo são só de teste, não são amplitudes do EDR-055.
@@ -510,14 +515,26 @@ ds_f = eq.com_fatores(ds, {"LMUY": 0.5})
 ok_018a = all(erros_018) and ds_f.p["LMUY"] == ds.p["LMUY"] * 0.5 and ds.p == p_antes
 _r = lambda v, m=None: eq.ResultadoPar(linhas=(), passo_ms2=0.0, ay_sat_f=None, ay_sat_r=None,
                                        ay_lim=None, veredito=v, motivo=m, c_n=None)
-TX, T09 = "● Dado do TX", "◐ Dado do T09"
+TX, T09 = origens.TX_V41, origens.T09_V41
+T11 = origens.T11
+OUTRO = origens.OUTRO_CARRO
+_nc = "DEMONSTRATIVO · ? NÃO CONCLUSIVO: o sinal depende do pneu"
 ok_018b = (eq.texto_veredito(_r(eq.PUSH), T09) == "DEMONSTRATIVO · ▲ PUSH: sai de frente (final understeer)"
-           and eq.texto_veredito(_r(eq.LOOSE), TX) == "▼ LOOSE: sai de traseira (final oversteer)"
-           and eq.texto_veredito(_r(eq.NEUTRO), TX) == "● NEUTRO no limite"
-           and eq.texto_veredito(_r(eq.NA, "motivo x"), TX) == "N/A: motivo x"
-           and eq.texto_veredito(_r(eq.PUSH), TX, (eq.PUSH, "mesmo")) == "▲ PUSH: sai de frente (final understeer)"
-           and eq.texto_veredito(_r(eq.PUSH), T09, _dep)
-           == "DEMONSTRATIVO · ? NÃO CONCLUSIVO: o sinal depende do pneu")
+           and eq.texto_veredito(_r(eq.LOOSE), T11) == "▼ LOOSE: sai de traseira (final oversteer)"
+           and eq.texto_veredito(_r(eq.NEUTRO), T11) == "● NEUTRO no limite"
+           and eq.texto_veredito(_r(eq.NA, "motivo x"), T11) == "N/A: motivo x"
+           and eq.texto_veredito(_r(eq.PUSH), T11, (eq.PUSH, "mesmo")) == "▲ PUSH: sai de frente (final understeer)"
+           and eq.texto_veredito(_r(eq.PUSH), T09, _dep) == _nc
+           # V4.2: o rótulo do TX da V4.1 já não é o carro do projeto (prefixo); com origem_do_carro=TX_V41 volta o comportamento antigo
+           and eq.texto_veredito(_r(eq.LOOSE), TX) == "DEMONSTRATIVO · ▼ LOOSE: sai de traseira (final oversteer)"
+           and eq.texto_veredito(_r(eq.LOOSE), TX, origem_do_carro=TX) == "▼ LOOSE: sai de traseira (final oversteer)"
+           and eq.texto_veredito(_r(eq.LOOSE), T11, origem_do_carro=TX) == "DEMONSTRATIVO · ▼ LOOSE: sai de traseira (final oversteer)"
+           # NÃO CONCLUSIVO mostra o motivo, com e sem o prefixo D16
+           and eq.texto_veredito(_r(eq.PUSH), T11, _dep) == "? NÃO CONCLUSIVO: o sinal depende do pneu"
+           and eq.texto_veredito(_r(eq.PUSH), T11, _parte)
+           == "? NÃO CONCLUSIVO: N/A em parte da varredura (sem inversão de sinal)"
+           and eq.texto_veredito(_r(eq.PUSH), OUTRO, _parte)
+           == "DEMONSTRATIVO · ? NÃO CONCLUSIVO: N/A em parte da varredura (sem inversão de sinal)")
 check("TC-EQ-018: nome de fator inválido (inclusive LONGVL, que não é fator de escala) e valor 0 ou NaN -> "
       "ValueError; textos exatos de 7.3 e prefixo DEMONSTRATIVO",
       ok_018a and ok_018b, f"{ok_018a}/{ok_018b}")

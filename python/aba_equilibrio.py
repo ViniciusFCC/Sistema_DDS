@@ -967,15 +967,16 @@ def _formula_pior(termos) -> str:
     return f"INDEX({NOME_LISTA},MAX({','.join(partes)}))"
 
 
-def pior_origem_de_valores(termos, origem_de, chaves: dict) -> str:
-    """Pior origem pela mesma regra da fórmula: origem_de(aba, cel) -> texto da célula; chaves: chave -> valor."""
+def pior_origem_de_valores(termos, origem_de, chaves: dict, lista=ORIGENS_LISTA) -> str:
+    """Pior origem pela mesma regra da fórmula: origem_de(aba, cel) -> texto da célula; chaves: chave -> valor.
+    lista: rótulos na ordem da lista 'Origens' (V4.1 por padrão; `origens.ORIGENS_V42` na V4.2)."""
     pior = 1
     for aba, cel, conds in termos:
         if conds and not any(CONDICOES[c][1](chaves) for c in conds):
             continue
         v = origem_de(aba, cel)
-        pior = max(pior, ORIGENS_LISTA.index(v) + 1 if v in ORIGENS_LISTA else len(ORIGENS_LISTA))
-    return ORIGENS_LISTA[pior - 1]
+        pior = max(pior, lista.index(v) + 1 if v in lista else len(lista))
+    return lista[pior - 1]
 
 
 # ---------------------------------------------------------------------------------------------------------------------

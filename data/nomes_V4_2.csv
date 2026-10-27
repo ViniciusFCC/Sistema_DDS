@@ -1,0 +1,76 @@
+nome,aba,celula,papel,sus_id,rotulo
+ent_03_target_001_h5,03_TARGETS,H5,ent,SUS-205,TARGET-001
+res_03_alavanca_target_001,03_TARGETS,I5,res,SUS-205,Alavanca TARGET-001
+ent_03_target_001_j5,03_TARGETS,J5,ent,SUS-205,TARGET-001
+res_03_valor_atual_do_modelo_target_001,03_TARGETS,K5,res,SUS-205,Valor atual do modelo TARGET-001
+res_03_pior_origem_da_grandeza_target_001,03_TARGETS,L5,res,SUS-205,Pior origem da grandeza TARGET-001
+ent_03_target_001_m5,03_TARGETS,M5,ent,SUS-205,TARGET-001
+ent_03_target_001_n5,03_TARGETS,N5,ent,SUS-205,TARGET-001
+res_03_coerencia_target_001,03_TARGETS,O5,res,SUS-205,Coerência TARGET-001
+ent_03_target_001_q5,03_TARGETS,Q5,ent,SUS-205,TARGET-001
+ent_03_target_002_h6,03_TARGETS,H6,ent,SUS-205,TARGET-002
+res_03_alavanca_target_002,03_TARGETS,I6,res,SUS-205,Alavanca TARGET-002
+ent_03_target_002_j6,03_TARGETS,J6,ent,SUS-205,TARGET-002
+res_03_valor_atual_do_modelo_target_002,03_TARGETS,K6,res,SUS-205,Valor atual do modelo TARGET-002
+res_03_pior_origem_da_grandeza_target_002,03_TARGETS,L6,res,SUS-205,Pior origem da grandeza TARGET-002
+ent_03_target_002_m6,03_TARGETS,M6,ent,SUS-205,TARGET-002
+ent_03_target_002_n6,03_TARGETS,N6,ent,SUS-205,TARGET-002
+res_03_coerencia_target_002,03_TARGETS,O6,res,SUS-205,Coerência TARGET-002
+ent_03_target_002_q6,03_TARGETS,Q6,ent,SUS-205,TARGET-002
+ent_03_target_003_h7,03_TARGETS,H7,ent,SUS-208,TARGET-003
+res_03_alavanca_target_003,03_TARGETS,I7,res,SUS-208,Alavanca TARGET-003
+ent_03_target_003_j7,03_TARGETS,J7,ent,SUS-208,TARGET-003
+res_03_valor_atual_do_modelo_target_003,03_TARGETS,K7,res,SUS-208,Valor atual do modelo TARGET-003
+res_03_pior_origem_da_grandeza_target_003,03_TARGETS,L7,res,SUS-208,Pior origem da grandeza TARGET-003
+ent_03_target_003_m7,03_TARGETS,M7,ent,SUS-208,TARGET-003
+ent_03_target_003_n7,03_TARGETS,N7,ent,SUS-208,TARGET-003
+res_03_coerencia_target_003,03_TARGETS,O7,res,SUS-208,Coerência TARGET-003
+ent_03_target_003_q7,03_TARGETS,Q7,ent,SUS-208,TARGET-003
+ent_03_target_004_h8,03_TARGETS,H8,ent,SUS-301,TARGET-004
+res_03_alavanca_target_004,03_TARGETS,I8,res,SUS-301,Alavanca TARGET-004
+ent_03_target_004_j8,03_TARGETS,J8,ent,SUS-301,TARGET-004
+res_03_valor_atual_do_modelo_target_004,03_TARGETS,K8,res,SUS-301,Valor atual do modelo TARGET-004
+res_03_pior_origem_da_grandeza_target_004,03_TARGETS,L8,res,SUS-301,Pior origem da grandeza TARGET-004
+ent_03_target_004_m8,03_TARGETS,M8,ent,SUS-301,TARGET-004
+ent_03_target_004_n8,03_TARGETS,N8,ent,SUS-301,TARGET-004
+res_03_coerencia_target_004,03_TARGETS,O8,res,SUS-301,Coerência TARGET-004
+ent_03_target_004_q8,03_TARGETS,Q8,ent,SUS-301,TARGET-004
+ent_03_target_005_h9,03_TARGETS,H9,ent,SUS-302,TARGET-005
+res_03_alavanca_target_005,03_TARGETS,I9,res,SUS-302,Alavanca TARGET-005
+ent_03_target_005_j9,03_TARGETS,J9,ent,SUS-302,TARGET-005
+res_03_valor_atual_do_modelo_target_005,03_TARGETS,K9,res,SUS-302,Valor atual do modelo TARGET-005
+res_03_pior_origem_da_grandeza_target_005,03_TARGETS,L9,res,SUS-302,Pior origem da grandeza TARGET-005
+ent_03_target_005_m9,03_TARGETS,M9,ent,SUS-302,TARGET-005
+ent_03_target_005_n9,03_TARGETS,N9,ent,SUS-302,TARGET-005
+res_03_coerencia_target_005,03_TARGETS,O9,res,SUS-302,Coerência TARGET-005
+ent_03_target_005_q9,03_TARGETS,Q9,ent,SUS-302,TARGET-005
+ent_03_target_006_c10,03_TARGETS,C10,ent,SUS-1001,TARGET-006
+ent_03_target_006_d10,03_TARGETS,D10,ent,SUS-1001,TARGET-006
+ent_03_target_006_e10,03_TARGETS,E10,ent,SUS-1001,TARGET-006
+ent_03_target_006_f10,03_TARGETS,F10,ent,SUS-1001,TARGET-006
+ent_03_target_006_g10,03_TARGETS,G10,ent,SUS-1001,TARGET-006
+ent_03_target_006_h10,03_TARGETS,H10,ent,SUS-1001,TARGET-006
+res_03_alavanca_target_006,03_TARGETS,I10,res,SUS-1001,Alavanca TARGET-006
+ent_03_target_006_j10,03_TARGETS,J10,ent,SUS-1001,TARGET-006
+res_03_valor_atual_do_modelo_target_006,03_TARGETS,K10,res,SUS-1001,Valor atual do modelo TARGET-006
+res_03_pior_origem_da_grandeza_target_006,03_TARGETS,L10,res,SUS-1001,Pior origem da grandeza TARGET-006
+ent_03_target_006_m10,03_TARGETS,M10,ent,SUS-1001,TARGET-006
+ent_03_target_006_n10,03_TARGETS,N10,ent,SUS-1001,TARGET-006
+res_03_coerencia_target_006,03_TARGETS,O10,res,SUS-1001,Coerência TARGET-006
+ent_03_target_006_q10,03_TARGETS,Q10,ent,SUS-1001,TARGET-006
+ent_03_target_007_c11,03_TARGETS,C11,ent,SUS-1004,TARGET-007
+ent_03_target_007_d11,03_TARGETS,D11,ent,SUS-1004,TARGET-007
+ent_03_target_007_e11,03_TARGETS,E11,ent,SUS-1004,TARGET-007
+ent_03_target_007_f11,03_TARGETS,F11,ent,SUS-1004,TARGET-007
+ent_03_target_007_g11,03_TARGETS,G11,ent,SUS-1004,TARGET-007
+ent_03_target_007_h11,03_TARGETS,H11,ent,SUS-1004,TARGET-007
+res_03_alavanca_target_007,03_TARGETS,I11,res,SUS-1004,Alavanca TARGET-007
+ent_03_target_007_j11,03_TARGETS,J11,ent,SUS-1004,TARGET-007
+res_03_valor_atual_do_modelo_target_007,03_TARGETS,K11,res,SUS-1004,Valor atual do modelo TARGET-007
+res_03_pior_origem_da_grandeza_target_007,03_TARGETS,L11,res,SUS-1004,Pior origem da grandeza TARGET-007
+ent_03_target_007_m11,03_TARGETS,M11,ent,SUS-1004,TARGET-007
+ent_03_target_007_n11,03_TARGETS,N11,ent,SUS-1004,TARGET-007
+res_03_coerencia_target_007,03_TARGETS,O11,res,SUS-1004,Coerência TARGET-007
+ent_03_target_007_q11,03_TARGETS,Q11,ent,SUS-1004,TARGET-007
+res_14_pior_coerencia_das_fichas_b50,14_DASHBOARD,B50,res,,Pior coerência das fichas
+res_14_compromissos_declarados_b51,14_DASHBOARD,B51,res,,Compromissos declarados

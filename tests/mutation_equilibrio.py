@@ -51,7 +51,7 @@ muts = {
     "NEUTRO pelo passo de exibição (regra anterior ao EDR-056)":
         ("        if abs(delta) <= res:", "        if abs(delta) < passo_ms2:"),
     "texto_veredito sem o prefixo DEMONSTRATIVO":
-        ('return texto if pior_origem == "● Dado do TX" else "DEMONSTRATIVO · " + texto\n',
+        ('return texto if pior_origem == origem_do_carro else "DEMONSTRATIVO · " + texto\n',
          'return texto\n'),
 }
 
