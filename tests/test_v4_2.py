@@ -290,7 +290,15 @@ def tc_wb42_004(tmp: Path, v41: Path, v42: Path) -> None:
     finally:
         shutil.copyfile = copia_orig
     c_sem_ref, r_sem_ref, _ = conf_viva.conferir(viva_fiel, pasta(), referencia=base / "nao_existe_ref.xlsx")
-    nao_lida_ok = all(c == 3 and r[0].startswith("NÃO LIDA") for c, r in
+    comparar_orig = cp.comparar_viva
+    try:     # exceção inesperada na leitura (fora de VivaIlegivel): 3, nunca 1
+        def estoura(*a, **k):
+            raise RuntimeError("leitura quebrou")
+        cp.comparar_viva = estoura
+        c_inesp, r_inesp, _ = conf_viva.conferir(viva_fiel, pasta())
+    finally:
+        cp.comparar_viva = comparar_orig
+    nao_lida_ok = c_inesp == 3 and "erro inesperado" in r_inesp[0] and all(c == 3 and r[0].startswith("NÃO LIDA") for c, r in
                       ((c_aus, r_aus), (c_zero, r_zero), (c_lixo, r_lixo), (c_blq, r_blq), (c_sem_ref, r_sem_ref))) \
         and "0 byte" in r_zero[0] and "bloqueada" in r_blq[0] and "referência ausente" in r_sem_ref[0]
     # EDR citado (V4.2 em diante): a referência é a V4.2 gerada (a tag v4.2 e excel/ ainda não existem)
@@ -343,8 +351,22 @@ def tc_wb42_004(tmp: Path, v41: Path, v42: Path) -> None:
     cod_ruim = retr_viva.retratar(viva_formula, out_ruim, pasta())
     cod_aus = retr_viva.retratar(ausente, out_ruim, pasta())
     cod_excel = retr_viva.retratar(viva_fiel, RAIZ / "excel" / "_retrato_teste.json", pasta())
+    # a guarda de saída vem antes de qualquer escrita: árvore excel/ (não só o pai), Drive (caminho falso), sobre a própria viva
+    cod_sub = retr_viva.retratar(viva_fiel, RAIZ / "excel" / "sub" / "_retrato_teste.json", pasta())
+    cod_drive = retr_viva.retratar(viva_fiel, viva_mod.PASTA_DRIVE / "sub" / "_retrato_teste.json", pasta())
+    pasta_antes = viva_mod.PASTA_DRIVE
+    try:     # a mesma recusa com a pasta do Drive apontando para uma pasta temporária (prova que nada foi criado)
+        viva_mod.PASTA_DRIVE = base / "drive_falso"
+        cod_drive2 = retr_viva.retratar(viva_fiel, base / "drive_falso" / "retrato.json", pasta())
+        drive_vazio = not (base / "drive_falso").exists()
+    finally:
+        viva_mod.PASTA_DRIVE = pasta_antes
+    sha_antes = viva_mod.sha256(viva_fiel)
+    cod_viva = retr_viva.retratar(viva_fiel, viva_fiel, pasta())
     recusa_ret_ok = cod_ruim == 1 and cod_aus == 3 and cod_excel == 2 and not out_ruim.exists() \
-        and not (RAIZ / "excel" / "_retrato_teste.json").exists()
+        and not (RAIZ / "excel" / "_retrato_teste.json").exists() and cod_sub == 2 and not (RAIZ / "excel" / "sub").exists() \
+        and cod_drive == 2 and cod_drive2 == 2 and drive_vazio and cod_viva == 2 and viva_mod.sha256(viva_fiel) == sha_antes \
+        and viva_mod.recusa_de_saida(base / "x.json", [viva_fiel]) is None
     retrato_ok = forma_ok and ida_volta_ok and tipos_ok and recusa_ret_ok
 
     # ---- migrar_viva ----
@@ -382,11 +404,14 @@ def tc_wb42_004(tmp: Path, v41: Path, v42: Path) -> None:
     cod_d, s_d, t_d = migrar(editar(viva_fiel, "comentario", comentar), v42, "d")        # objeto não migrável
     cod_e0, s_e0, t_e0 = migrar(zero / nome_viva, v42, "e0")                              # ilegível: 0 byte
     cod_e1, s_e1, t_e1 = migrar(ausente, v42, "e1")                                       # ilegível: ausente
+    viva_v42 = editar(v42, "viva_v42", lambda wb: None)
+    cod_nova, s_nova, t_nova = migrar(viva_v42, v41, "nova")                              # viva mais nova que o destino
     cod_fd, s_fd, t_fd = migrar(editar(viva_fiel, "dado_formula", formula_no_dado), v42, "fd")   # fórmula numa entrada
     erros_ok = cod_c == 2 and not s_c.exists() and "01_SETUP!A1" in t_c and "ERRO" in t_c \
         and cod_d == 2 and not s_d.exists() and "00_README!Z99 (comentário)" in t_d \
         and cod_e0 == 3 and cod_e1 == 3 and not s_e0.exists() and not s_e1.exists() and "ERRO" in t_e0 and "0 byte" in t_e0 \
-        and cod_fd == 2 and not s_fd.exists() and "ERRO" in t_fd
+        and cod_fd == 2 and not s_fd.exists() and "ERRO" in t_fd \
+        and cod_nova == 2 and not s_nova.exists() and "mais nova que o destino" in t_nova
     # recusas de caminho: nada é criado nem aberto
     p_rec = pasta()
     recusas = [(viva_fiel, v42, RAIZ / "excel" / "_migrar_teste.xlsx", base / "r.md"),

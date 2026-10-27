@@ -43,6 +43,8 @@ def conferir(arquivo: Path, pasta: Path, referencia: Path | None = None,
         ok, rel = cp.comparar_viva(copia, arq_ref, ref.entradas(), esperadas=ref.formulas, rotulos=ref.rotulos, edrs=edrs)
     except v.VivaIlegivel as e:
         return 3, [f"NÃO LIDA: {e}"], ver
+    except Exception as e:   # leitura inesperada (arquivo corrompido etc.): não lida, nunca "diverge"
+        return 3, [f"NÃO LIDA: erro inesperado ao ler ({type(e).__name__}: {e})"], ver
     cab = [f"viva: {arquivo}", f"versão da viva (00_README A3): {ver}; referência: {arq_ref}", f"SHA-256 da cópia: {v.sha256(copia)}"]
     return (0 if ok else 1), cab + rel, ver
 

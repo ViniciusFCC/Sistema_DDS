@@ -40,23 +40,13 @@ PASTA_EXCEL = RAIZ / "excel"
 RELATORIO_PADRAO = RAIZ / "build" / "migracao-viva.md"
 
 
-def _dentro(caminho: Path, pasta: Path) -> bool:
-    c, p = caminho.resolve(), pasta.resolve()
-    return c.parent == p or p in c.parents
-
-
 def _recusar(viva: Path, para: Path, saida: Path, relatorio: Path, extras: list[Path]) -> str | None:
     """Mensagem da recusa (só compara caminhos; nenhum arquivo é aberto), ou None."""
     entradas = [viva, para, *extras]
-    if saida.resolve() in {p.resolve() for p in entradas}:
-        return f"saída por cima de um arquivo de entrada: recusado ({saida})"
-    if relatorio.resolve() in {p.resolve() for p in entradas + [saida]}:
-        return f"relatório por cima de uma planilha: recusado ({relatorio})"
-    for rotulo, alvo in (("saída", saida), ("relatório", relatorio)):
-        if _dentro(alvo, PASTA_EXCEL):
-            return f"{rotulo} em excel/ recusada ({alvo}): a cópia para excel/ é um commit próprio"
-        if _dentro(alvo, v.PASTA_DRIVE):
-            return f"{rotulo} na pasta do Drive recusada ({alvo}): a viva do Drive é só leitura"
+    if (m := v.recusa_de_saida(saida, entradas)):
+        return m
+    if (m := v.recusa_de_saida(relatorio, entradas + [saida])):
+        return m.replace("saída", "relatório", 1)
     if relatorio.suffix.lower() != ".md" or saida.suffix.lower() != ".xlsx":
         return f"recusado: o relatório deve ser .md e a saída .xlsx ({relatorio}, {saida})"
     return None
@@ -100,6 +90,13 @@ def migrar(viva: Path, para: Path, saida: Path, relatorio: Path, pasta: Path, re
         copia = v.copia_local(viva, pasta)
         ver = v.versao(copia)
         ver_nova = v.versao(para)
+    except v.VivaIlegivel as e:
+        return _falhar(relatorio, 3, cab, f"viva não lida: {e}")
+    num = lambda s: tuple(int(x) for x in v.RE_VERSAO_NUM.fullmatch(s).groups())
+    if num(ver) > num(ver_nova):
+        return _falhar(relatorio, 2, cab, f"a viva é da versão {ver}, mais nova que o destino ({ver_nova}): migrar para trás "
+                                          "perderia dados; use como destino a versão da viva ou uma mais nova")
+    try:
         ref_antiga = Path(referencia_antiga) if referencia_antiga else v.arquivo_de_referencia(ver, pasta)
     except v.VivaIlegivel as e:
         return _falhar(relatorio, 3, cab, f"viva não lida: {e}")

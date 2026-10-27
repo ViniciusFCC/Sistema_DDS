@@ -32,6 +32,7 @@ PASTA_DRIVE = Path(r"H:\.shortcut-targets-by-id\1Kytf4APy0OtH5Aq5PqlOwH5UY65YMX5
                    r"\Documentacao\Planilha DDS")
 PADRAO_VIVA = "FSAE_EV_Suspension_Fase1_V*.xlsx"
 RE_VERSAO = re.compile(r"Versão do workbook: (V\d+\.\d+)\b")
+RE_VERSAO_NUM = re.compile(r"V(\d+)\.(\d+)")
 RE_EDR = re.compile(r"EDR-\d+")
 RE_STATUS_EDR = re.compile(r"^\| (EDR-\d{3}) \|.*\| ([A-Z_]+) \|\s*$", re.M)
 
@@ -56,6 +57,26 @@ def localizar_viva() -> Path | None:
         raise ValueError(f"mais de uma planilha viva em {PASTA_DRIVE}: {[a.name for a in achados]} "
                          "(aponte DDS_VIVA para a certa)")
     return achados[0] if achados else None
+
+
+def dentro(caminho: Path, pasta: Path) -> bool:
+    """True se `caminho` é a própria `pasta` ou está em qualquer nível abaixo dela (só compara caminhos; não abre nada)."""
+    c, p = Path(caminho).resolve(), Path(pasta).resolve()
+    return c == p or p in c.parents
+
+
+def recusa_de_saida(alvo: Path, entradas: list[Path]) -> str | None:
+    """Guarda comum das CLIs que gravam (EDR-063): mensagem de recusa se `alvo` é um dos arquivos de `entradas` (gravar por cima
+    da viva ou de uma planilha de entrada), está em qualquer nível da árvore `excel/` ou dentro de `PASTA_DRIVE` (a viva do Drive é
+    só leitura); None se pode gravar. Só compara caminhos: a recusa vem antes de abrir ou escrever qualquer arquivo."""
+    alvo = Path(alvo)
+    if alvo.resolve() in {Path(e).resolve() for e in entradas}:
+        return f"saída por cima de um arquivo de entrada: recusado ({alvo})"
+    if dentro(alvo, RAIZ / "excel"):
+        return f"saída em excel/ recusada ({alvo}): a cópia para excel/ é um commit próprio"
+    if dentro(alvo, PASTA_DRIVE):
+        return f"saída na pasta do Drive recusada ({alvo}): a viva do Drive é só leitura"
+    return None
 
 
 def sha256(arquivo: Path) -> str:
