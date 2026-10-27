@@ -43,6 +43,8 @@ RELATORIO_PADRAO = RAIZ / "build" / "migracao-viva.md"
 def _recusar(viva: Path, para: Path, saida: Path, relatorio: Path, extras: list[Path]) -> str | None:
     """Mensagem da recusa (só compara caminhos; nenhum arquivo é aberto), ou None."""
     entradas = [viva, para, *extras]
+    if v.dentro(para, v.PASTA_DRIVE):
+        return f"destino (--para) na pasta do Drive recusado ({para}): a viva do Drive é só leitura, e a cópia de destino sai da referência"
     if (m := v.recusa_de_saida(saida, entradas)):
         return m
     if (m := v.recusa_de_saida(relatorio, entradas + [saida], "relatório")):

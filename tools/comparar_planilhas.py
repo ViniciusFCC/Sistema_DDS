@@ -182,7 +182,7 @@ def comparar_viva(viva: Path, referencia: Path, entradas: set[tuple[str, str]],
     entrada numérica não pode virar fórmula. Confere também validações, formatação condicional, nomes e colunas ocultas.
     `rotulos` são os rótulos de Origem da versão (padrão: os da V3.0/V4.1, `ROTULOS_ORIGEM`). Com `edrs` (ID -> status, de
     `viva.edrs_aprovados`; V4.2 em diante), todo EDR citado nas fichas de meta (`viva.edrs_citados`) tem de existir e estar
-    APPROVED (EDR-063). Só lê os arquivos."""
+    num dos estados de `viva.EDR_ACEITOS` (APPROVED, IMPLEMENTED ou VERIFIED; EDR-063). Só lê os arquivos."""
     rotulos = ROTULOS_ORIGEM if rotulos is None else rotulos
     rel, ok = [], True
     abas_r, ref = celulas(referencia)
@@ -226,9 +226,9 @@ def comparar_viva(viva: Path, referencia: Path, entradas: set[tuple[str, str]],
         import viva as _viva
         for cel, edr in _viva.edrs_citados(viva):
             status = edrs.get(edr)
-            if status != "APPROVED":
+            if status not in _viva.EDR_ACEITOS:
                 difs.append(f"{cel} cita {edr}, que " + ("não existe no registro de decisões" if status is None
-                                                         else f"está {status} (não APPROVED)"))
+                                                         else f"está {status} (não é um de {', '.join(sorted(_viva.EDR_ACEITOS))})"))
     rel.append(f"células comparadas: {len(set(ref) | set(viv))} (entradas livres: {len(entradas)}) | diferenças: {len(difs)}")
     rel.extend(f"  DIF {d}" for d in difs)
     if difs:

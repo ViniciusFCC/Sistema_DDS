@@ -136,7 +136,7 @@ def uma_execucao(copia: Path) -> dict:
                 pass
         xl = None
         gc.collect()
-        rc._fechar_excel()
+        rc._fechar_excel()               # idempotente (zera _excel): no caminho normal, a segunda chamada não faz nada
         # também no caminho de exceção: confere que o PID desta instância saiu antes de a exceção seguir adiante
         t["saiu"] = esperar_saida(pid)
         if not t["saiu"]:

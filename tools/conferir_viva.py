@@ -7,7 +7,7 @@ Sem ARQ, usa a viva localizada (`viva.localizar_viva`: variável DDS_VIVA, ou o 
 do Drive). A viva é copiada para uma pasta temporária (só leitura do original; nada é gravado no Drive nem em excel/) e a
 CÓPIA é lida. A versão vem da 00_README A3 (V4.1 -> tag v4.1; V4.2 -> tag v4.2 ou, antes da tag, excel/) e a conferência é a
 `comparar_viva`: tudo igual à referência menos as células de entrada, com a Origem entre os rótulos da versão, fórmulas e
-estrutura intactas. Na V4.2 em diante, todo EDR citado nas fichas de meta tem de existir e estar APPROVED no registro.
+estrutura intactas. Na V4.2 em diante, todo EDR citado nas fichas de meta tem de existir e estar APPROVED, IMPLEMENTED ou VERIFIED no registro (`viva.EDR_ACEITOS`).
 
 Código de saída: 0 viva fiel; 1 diverge (as diferenças são listadas); 3 não lida (ausente, 0 byte, bloqueada, Drive
 desmontado, versão sem referência). Nunca PASS quando não leu.

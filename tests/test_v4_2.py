@@ -123,7 +123,7 @@ RE_G4 = re.compile(r'=IF\(I(\d+)="sem relação na 23_LISTAS",0,SUMPRODUCT\(\(\$
 def edr_status():
     """EDR-ddd -> Status da tabela de índice do registro de decisões."""
     txt = (RAIZ / "docs" / "Engineering_Decision_Register.md").read_text(encoding="utf-8")
-    return dict(re.findall(r"^\| (EDR-\d{3}) \|.*\| ([A-Z_]+) \|\s*$", txt, re.M))
+    return dict(re.findall(r"^\| (EDR-\d{3}) \|.*\| ([A-Z_]+)(?: \([^|]*\))? \|\s*$", txt, re.M))
 
 
 def check(name, condition, detail=""):
@@ -224,8 +224,12 @@ def tc_wb42_004(tmp: Path, v41: Path, v42: Path) -> None:
         ref_tag_ok = ref_tag_ok and raises(lambda: viva_mod.arquivo_de_referencia("V4.2", p_ref), viva_mod.VivaIlegivel)
     edrs = viva_mod.edrs_aprovados(RAIZ / "docs" / "Engineering_Decision_Register.md")
     aprovado = next(e for e in sorted(edrs) if edrs[e] == "APPROVED")
-    nao_aprov = next((e for e in sorted(edrs) if edrs[e] != "APPROVED"), None)
-    edr_ok = edrs.get("EDR-060") == "APPROVED" and edrs == edr_status() and "EDR-999" not in edrs and nao_aprov is not None
+    verificado = next(e for e in sorted(edrs) if edrs[e] == "VERIFIED")        # estado aceito que não é APPROVED
+    nao_aprov = next((e for e in sorted(edrs) if edrs[e] not in viva_mod.EDR_ACEITOS), None)
+    registro_edr = (RAIZ / "docs" / "Engineering_Decision_Register.md").read_text(encoding="utf-8")
+    edr_ok = edrs.get("EDR-060") == "APPROVED" and edrs == edr_status() and "EDR-999" not in edrs and nao_aprov is not None \
+        and len(edrs) == int(re.search(r"Total: (\d+) registros", registro_edr).group(1)) \
+        and edrs.get("EDR-017") == "SUPERSEDED"   # o índice parseado tem todos os registros, inclusive "SUPERSEDED (por EDR-043)"
     # localizar_viva: DDS_VIVA primeiro; senão o único arquivo da pasta; mais de um = ValueError; nada = None
     antes_env, antes_pasta = os.environ.pop("DDS_VIVA", None), viva_mod.PASTA_DRIVE
     try:
@@ -302,7 +306,8 @@ def tc_wb42_004(tmp: Path, v41: Path, v42: Path) -> None:
                       ((c_aus, r_aus), (c_zero, r_zero), (c_lixo, r_lixo), (c_blq, r_blq), (c_sem_ref, r_sem_ref))) \
         and "0 byte" in r_zero[0] and "bloqueada" in r_blq[0] and "referência ausente" in r_sem_ref[0]
     # EDR citado (V4.2 em diante): a referência é a V4.2 gerada (a tag v4.2 e excel/ ainda não existem)
-    casos = {"ok": ({"N5": aprovado}, 0, None), "inexistente": ({"N5": "EDR-999"}, 1, "03_TARGETS!N5 cita EDR-999"),
+    casos = {"ok": ({"N5": aprovado}, 0, None), "verificado": ({"N5": verificado, "F6": f"ver {verificado}"}, 0, None),
+             "inexistente": ({"N5": "EDR-999"}, 1, "03_TARGETS!N5 cita EDR-999"),
              "formato": ({"N5": "EDR-61"}, 1, "03_TARGETS!N5 cita EDR-61"),
              "minusc": ({"N5": "edr-060"}, 1, "03_TARGETS!N5 cita edr-060"),
              "nao_aprovado": ({"N6": nao_aprov}, 1, f"03_TARGETS!N6 cita {nao_aprov}"),
@@ -420,10 +425,11 @@ def tc_wb42_004(tmp: Path, v41: Path, v42: Path) -> None:
                (viva_fiel, v42, base / "s4.xlsx", RAIZ / "excel" / "_relatorio_teste.md"),
                (viva_fiel, v42, viva_mod.PASTA_DRIVE / "FSAE_EV_Suspension_Fase1_V4_2.xlsx", base / "r5.md"),
                (viva_fiel, v42, base / "s6.xlsx", viva_mod.PASTA_DRIVE / "relatorio.md"),
-               (viva_fiel, v42, base / "s7.txt", base / "r7.md")]
+               (viva_fiel, v42, base / "s7.txt", base / "r7.md"),
+               (viva_fiel, viva_mod.PASTA_DRIVE / "FSAE_EV_Suspension_Fase1_V4_2.xlsx", base / "s8.xlsx", base / "r8.md")]
     cods = [migr_viva.migrar(*r, p_rec) for r in recusas]
     recusa_ok = cods == [2] * len(recusas) and not any(p.exists() for p in (
-        RAIZ / "excel" / "_migrar_teste.xlsx", RAIZ / "excel" / "_relatorio_teste.md", base / "r.md", base / "s4.xlsx"))
+        RAIZ / "excel" / "_migrar_teste.xlsx", RAIZ / "excel" / "_relatorio_teste.md", base / "r.md", base / "s4.xlsx", base / "s8.xlsx", base / "r8.md"))
     mig_ok = mig_a_ok and mig_b_ok and erros_ok and recusa_ok
 
     # ---- CLIs: código de saída e mensagem, sem abrir planilha ----
@@ -573,7 +579,7 @@ with tempfile.TemporaryDirectory(prefix="dds_v42_") as tmp:
         return fonte in metas.FONTES_L and fonte in spec_linha
 
     def fonte_e_ok(fonte):
-        return bool(re.fullmatch(r"EDR-\d{3}", fonte)) and status.get(fonte) in ("APPROVED", "IMPLEMENTED", "VERIFIED")
+        return bool(re.fullmatch(r"EDR-\d{3}", fonte)) and status.get(fonte) in viva_mod.EDR_ACEITOS
 
     fontes_ok, fontes_det = True, []
     for r in metas.RELACOES:
