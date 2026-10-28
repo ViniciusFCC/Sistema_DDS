@@ -103,5 +103,6 @@ for name, (a, b) in muts.items():
           '; '.join(falhas) if falhas else 'nenhum FAIL',
           f"[{', '.join(os.path.basename(t) for t in pegos) or '-'}; {time.time() - ti:.0f} s]", flush=True)
 print(f"{det}/{len(muts)} mutantes mortos" if det == len(muts) else f"{det}/{len(muts)} mutantes mortos (SOBREVIVENTES)")
+print(det, '/', len(muts))  # linha de resumo no formato que tools/rodar_testes.py (RE_MUTACAO) lê
 print(f"tempo total: {time.time() - t0:.0f} s")
 sys.exit(0 if det == len(muts) else 1)
