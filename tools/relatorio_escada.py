@@ -1,16 +1,18 @@
 """Relatório da escada de hipóteses do MMM em raio fixo (incremento 6, Task 7).
 
 Monta o caso da planilha V4.2 de `excel/` (lido por nomes numa CÓPIA recalculada, como em tools/relatorio_inc4.py) e
-escreve, em Markdown, o degrau 1 (MMM na configuração da planilha contra `equilibrio.analise_par`), o degrau 2 (uma
-variante Python por vez, mais `10+9b` e `todas`) e as sensibilidades. Sem veredito: a tolerância da escada é o EDR-065
+escreve, em Markdown, o degrau 1 (MMM na configuração da planilha contra `equilibrio.analise_par`), o degrau 2 (a planilha,
+a linha de controle `planilha (acoplado)`, uma variante Python por vez, mais `10+9b` e `todas`) e as sensibilidades. Sem veredito: a tolerância da escada é o EDR-065
 (pendente). Nenhum número do Python vai para a planilha, que nunca é aberta para escrita (spec base 7.5).
 
 Uso (Git Bash, depois de export UV_SYSTEM_CERTS=1):
-    uv run python -X utf8 tools/relatorio_escada.py [--raio R --origem-raio TEXTO] [--saida ARQ] [--sobrescrever]
+    uv run python -X utf8 tools/relatorio_escada.py [--raio R --origem-raio TEXTO] [--ay-max-g G] [--saida ARQ] [--sobrescrever]
 
 O raio R do skidpad é entrada "a confirmar". Este script nunca escolhe um R:
 - caso da planilha sem R e sem --raio: sai com código 3 e a mensagem "informe --raio";
 - --raio R exige --origem-raio TEXTO, vale só para o caso deste relatório e vai no topo ("R = <valor> m (origem: ...)").
+  Num caso sem R, o --raio liga no Python a hipótese 3 (cos δ_ref), que a planilha com R vazio tem desligada: o relatório avisa.
+- --ay-max-g G (padrão 2,0) é a faixa de busca da saturação, rotulada no relatório; não é dado do carro.
 
 Saída: 0 = gravado; 1 = a referência mudou durante a execução; 2 = recusa (argumentos, arquivo existente);
 3 = falta o raio; 4 = NÃO EXECUTÁVEL (sem motor de recálculo). O arquivo é gravado em UTF-8 com LF.
@@ -75,16 +77,24 @@ def git(*args: str) -> str:
 
 
 def n(x, casas: int = 3) -> str:
-    """Número com vírgula decimal; None vira '—'; texto passa como está."""
+    """Número com vírgula decimal; None vira '—'; texto passa como está. Zero negativo arredondado ("-0,000") sai sem o sinal."""
     if x is None:
         return "—"
     if isinstance(x, str):
         return x
-    return f"{x:.{casas}f}".replace(".", ",")
+    t = f"{x:.{casas}f}"
+    if float(t) == 0.0:
+        t = t.lstrip("-")
+    return t.replace(".", ",")
 
 
 def sci(x, casas: int = 2) -> str:
-    return "—" if x is None else f"{x:.{casas}e}".replace(".", ",")
+    if x is None:
+        return "—"
+    t = f"{x:.{casas}e}"
+    if float(t) == 0.0:
+        t = t.lstrip("-")
+    return t.replace(".", ",")
 
 
 def g_de(ay_ms2, casas: int = 3) -> str:
@@ -111,7 +121,12 @@ def main() -> int:
     ap.add_argument("--sobrescrever", action="store_true", help="regrava um relatório que já existe")
     ap.add_argument("--raio", type=float, default=None, help="raio R do skidpad [m], só para o caso deste relatório")
     ap.add_argument("--origem-raio", default=None, help="de onde vem o R (obrigatório com --raio)")
+    ap.add_argument("--ay-max-g", type=float, default=2.0,
+                    help="faixa de busca da saturação [g] (rotulada no relatório; padrão 2,0; não é dado do carro)")
     a = ap.parse_args()
+    if not (a.ay_max_g > 0.0 and math.isfinite(a.ay_max_g)):
+        print("RECUSADO: --ay-max-g deve ser um número finito > 0 (g)", file=sys.stderr)
+        return 2
     if a.raio is not None:
         if not (a.raio > 0.0 and math.isfinite(a.raio)):
             print("RECUSADO: --raio deve ser um número finito > 0 (m)", file=sys.stderr)
@@ -168,22 +183,29 @@ def main() -> int:
                     "relatório." if r_planilha is not None else
                     "O caso da planilha não tem R (chaves que o usam desligadas ou R vazio); o valor foi aplicado só ao "
                     "caso deste relatório. A planilha não foi alterada.")
+        aviso_raio = (None if r_planilha is not None else
+                      "**Aviso: a base \"planilha\" deste relatório não é a planilha de hoje.** A planilha com R vazio tem a "
+                      "hipótese 3 (cos δ_ref) desligada, e no Python o raio liga o cos δ_ref na dianteira (a Fy dianteira "
+                      "leva cos(L/R)). Com o `--raio` informado, a linha `planilha` já tem a hipótese 3 ligada, e o Δ da "
+                      "linha `3` mede só o cos δ do trim contra esse cos δ_ref, não contra a falta dele. Preencha o R na "
+                      "planilha (e ligue a chave da hipótese 3) para a base ser a da planilha.")
     elif caso.raio_m is not None:
         texto_raio = f"R = {n(caso.raio_m, 3)} m (origem: planilha V4.2, caso lido por nomes)"
         obs_raio = "R lido da planilha."
+        aviso_raio = None
     else:
         print("RECUSADO (código 3): o caso da planilha não tem raio R (\"a confirmar\"); informe --raio R "
               "--origem-raio TEXTO. O script não escolhe um R.", file=sys.stderr)
         return 3
 
     t0 = time.perf_counter()
-    d1 = escada.degrau_1(caso)
+    d1 = escada.degrau_1(caso, a.ay_max_g)
     t_d1 = time.perf_counter() - t0
     t0 = time.perf_counter()
-    d2 = escada.degrau_2(caso)
+    d2 = escada.degrau_2(caso, a.ay_max_g)
     t_d2 = time.perf_counter() - t0
     t0 = time.perf_counter()
-    sens = escada.sensibilidades(caso)
+    sens = escada.sensibilidades(caso, a.ay_max_g)
     t_sens = time.perf_counter() - t0
 
     md: list[str] = []
@@ -197,7 +219,14 @@ def main() -> int:
     w(f"**Pior origem do caso: {pior_caso}. Geometria sintética** (não há hardpoints do CAD). O pneu é o `.tir` provisório "
       "do TTC (R25B); mola, MR, barra e RC são valores demonstrativos (T09/E03). **Nenhum número deste relatório é "
       "resultado do carro** nem validação física (Validation = NOT_VALIDATED, EDR-022). O raio R do skidpad é entrada "
-      "\"a confirmar\", e o valor usado está na primeira linha.")
+      "\"a confirmar\", e o valor usado está na primeira linha. \"? A confirmar\" na pior origem quer dizer que pelo menos "
+      "uma entrada do caso (ou o pneu) não tem origem registrada na planilha: a célula de origem está vazia ou fora da lista.")
+    w("")
+    if aviso_raio:
+        w(aviso_raio)
+        w("")
+    w(f"Faixa de busca da saturação: 0 a {n(a.ay_max_g, 2)} g (parâmetro `--ay-max-g`, rótulo de varredura e não dado do "
+      "carro; o padrão é 2,0 g). Eixo que não satura nela sai como \"não satura\" ou N/A.")
     w("")
     w("**Sem veredito: tolerância pendente (EDR-065).** As tabelas mostram diferenças e se o sinal inverte, mas nenhuma "
       "linha é classificada como \"dentro\" ou \"fora\" da tolerância; essa classificação depende do EDR-065.")
@@ -257,9 +286,21 @@ def main() -> int:
     w("Uma linha por variante. Hipóteses numeradas como na spec (1+2 = α cinemático e Ackermann; 3 = cos δ no trim; 7 = "
       "os dois sentidos; 9a = Fx exigido por balanço; 9b = PAC2002 combinado; 10 = diferencial travado; 11 = "
       "transferência longitudinal em regime; `10+9b` = travado com o PAC2002 combinado). As linhas com a hipótese 7 "
-      "(`7` e `todas`) mostram o pior sentido. Δ = linha − planilha. K em °/g (stability index e K valem em "
-      "0,05 g). \"Inverte\" compara o veredito da linha com o da planilha.")
+      "(`7` e `todas`) mostram o pior sentido. K em °/g; K e o stability index valem em 0,05 g. O stability index (SI) "
+      "sai em 1/g, com o sinal do C_N estabilizante: positivo = estabilizante (carro estável, subesterço); o Milliken usa "
+      "o C_N do ISO, de sinal oposto.")
     w("")
+    w("**Linha de controle `planilha (acoplado)`.** As variantes Python (menos a `7`) são resolvidas por um Newton 2-D "
+      "em (β, δ) com a rotação a_y = A·cos β e a_x = −A·sen β; a `planilha` usa o trim desacoplado, com a_y = A. Para o "
+      "número de cada linha ser o efeito da hipótese, e não o do método, a linha de controle resolve as hipóteses da "
+      "planilha pelo mesmo Newton com a mesma rotação. Δ e \"Inverte\" das linhas acopladas são contra a linha de "
+      "controle; o Δ da própria linha de controle e o da `7` são contra a `planilha` (coluna \"Δ contra\"). O Δ da "
+      "linha de controle é o viés do método e da rotação.")
+    w("")
+    if any(ln.motivo for ln in d2):
+        w("Linhas cuja hipótese está desligada no caso (a chave da planilha está desligada) ainda são calculadas e "
+          "coincidem com a referência por construção; o motivo vem na lista abaixo da tabela.")
+        w("")
     linhas = []
     for ln in d2:
         lim = ln.limite
@@ -267,16 +308,17 @@ def main() -> int:
                        g_de(lim.ay_sat_f, 4), g_de(lim.ay_sat_r, 4), g_de(lim.ay_t_ms2, 4), n(lim.cn_estabilizante_q, 4),
                        k_graus_por_g(lim.k_rad_por_ms2), txt(ln.pior_sentido),
                        g_de(ln.d_ay_t, 4), n(ln.d_cn_estabilizante_q, 4),
-                       k_graus_por_g(ln.d_k) if ln.d_k is not None else "—", ln.inverte])
+                       k_graus_por_g(ln.d_k) if ln.d_k is not None else "—", f"`{ln.referencia}`", ln.inverte,
+                       "—" if lim.stability_index is None else n(lim.stability_index * G, 4)])
     md += tabela(["Linha", "Hipóteses", "Veredito", "Eixo que satura", "ay_sat F", "ay_sat R", "T", "C_N estab. (Q)",
-                  "K [°/g]", "Pior sentido", "Δ T", "Δ C_N", "Δ K [°/g]", "Inverte"], linhas)
+                  "K [°/g]", "Pior sentido", "Δ T", "Δ C_N", "Δ K [°/g]", "Δ contra", "Inverte", "SI [1/g]"], linhas)
     w("")
-    motivos = [(ln.nome, ln.limite.motivo, ln.limite.motivo_sat, ln.limite.limitacoes) for ln in d2]
-    if any(m or s or l for _, m, s, l in motivos):
+    motivos = [(ln.nome, ln.motivo, ln.limite.motivo, ln.limite.motivo_sat, ln.limite.limitacoes) for ln in d2]
+    if any(d or m or s or l for _, d, m, s, l in motivos):
         w("Motivos e avisos por linha (onde existem):")
         w("")
-        for nome, m, s, l in motivos:
-            partes = [p for p in (m, s, "; ".join(l) if l else None) if p]
+        for nome, d, m, s, l in motivos:
+            partes = [p for p in (d, m, s, "; ".join(l) if l else None) if p]
             if partes:
                 w(f"- `{nome}`: {' | '.join(partes)}")
         w("")
@@ -285,7 +327,9 @@ def main() -> int:
     w("")
     w("Diferença central de ± um passo, na unidade da coluna. Valores em torno da planilha, sem faixa afirmada. "
       "`h_cp` liga com a transferência em regime; `h_cg` é por 10 mm de altura do CG (decisão 4 do plano: o jacking não "
-      "muda a soma das Fz, e o camber já está em `ganho_camber`).")
+      "muda a soma das Fz, e o camber já está em `ganho_camber`). A sensibilidade de `h_cp` é em torno de h_cp = 0: sem "
+      "dado de altura do centro de pressão, `h_cp_m = None` equivale a h_cp = 0 (a parcela D·h_cp/L fica fora), e a "
+      "tabela mostra o efeito de subir 10 mm a partir daí, não de uma altura medida.")
     w("")
     linhas = [[f"`{s['parametro']}`", s["unidade"], g_de(s["d_ay_t"], 5), n(s["d_cn_estabilizante_q"], 5),
                k_graus_por_g(s["d_k"], 4), txt(s["veredito_menos"]), txt(s["veredito_mais"]), txt(s["motivo"])]
@@ -327,6 +371,12 @@ def main() -> int:
     w("- A tolerância da escada (EDR-065) está pendente; nada aqui é \"dentro\" nem \"fora\".")
     w("- O raio R é entrada a confirmar; os resultados dependem dele (ver a primeira linha).")
     w("- Passou nos critérios do degrau 1 = os dois códigos concordam; não é validação física.")
+    w("- O arrasto entra inteiro no eixo x do carro; a componente lateral D·sen β (a velocidade faz o ângulo β com o carro) "
+      "fica fora do balanço lateral. É de 2ª ordem em β e D é uma fração pequena de m·A.")
+    w("- A precisão de T nas linhas acopladas é da ordem da resolução do limite (0,01 m/s²), e não a da bisseção: a dobra "
+      "do Newton pode cair até essa distância antes do pico do eixo.")
+    w("- A cota do degrau 1 (2 × a resolução) é empírica: a resolução que o `analise_par` declara subestima o erro de "
+      "interpolação dele (EDR-064, item 2.9).")
     w("")
 
     saida.parent.mkdir(parents=True, exist_ok=True)
