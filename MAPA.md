@@ -1,6 +1,6 @@
 # Mapa de Sistema_DDS
 
-424 arquivos, 388.0 MB. Mapa estrutural gerado por mapa_projeto.py (sem conteúdo; leia os trechos no original).
+495 arquivos, 393.8 MB. Mapa estrutural gerado por mapa_projeto.py (sem conteúdo; leia os trechos no original).
 
 ## Não ler inteiros (> 200 kB)
 
@@ -13,24 +13,30 @@
 - references/pdf/Hans Pacejka - Tyre and Vehicle Dynamics.pdf (8.7 MB)
 - references/pdf/Kinematics_Help_File.pdf (6.8 MB)
 - references/pdf/Tire_Help_File.pdf (5.8 MB)
+- excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx (3.1 MB)
 - excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx (3.1 MB)
 - references/pdf/Adams_2024_1_PAC2002_help.pdf (2.7 MB)
 - references/md/milliken-rcvd/livro.md (2.0 MB)
 - references/md/pacejka-txt/pacejka.txt (1.4 MB)
 - references/md/pacejka-tvd/livro.md (1.3 MB)
+- .token-savior-cache.json (1.0 MB)
 - references/md/gillespie-fvd/livro.md (773 kB)
 - Sistema_DDS_CONTEXTO_COMPLETO.md (721 kB)
 - data/placeholder-dependency-map-V3.0.csv (577 kB)
 - references/md/seward-rcd/livro.md (516 kB)
+- .superpowers/sdd/2026-10-23-v4-2-inc5-metas-e-coerencia/review-440b64a..ad8a7c2.diff (425 kB)
 - references/md/definitive-guide/livro.md (389 kB)
+- .token-savior/memory.db (360 kB)
 - references/md/milliken-rcvd/parts/0901-0920.md (256 kB)
+- docs/Engineering_Decision_Register.md (214 kB)
 
 ## Árvore
 
 - .gitattributes (1 kB)
 - .gitignore (1 kB)
 - .python-version (1 kB)
-- CLAUDE.md (13 kB)
+- .token-savior-cache.json (1.0 MB) ⚠ >200 kB: não ler inteiro
+- CLAUDE.md (17 kB)
     - Sistema_DDS — Tupã Suspension System
     - Situação atual
     - Comandos
@@ -58,6 +64,10 @@
     - 4.2 Data Type (EDR-006)
     - … mais 21
 - MANIFEST.sha256 (6 kB)
+- MAPA.md (46 kB)
+    - Mapa de Sistema_DDS
+    - Não ler inteiros (> 200 kB)
+    - Árvore
 - pyproject.toml (1 kB)
 - Sistema_DDS_CONTEXTO_COMPLETO.md (721 kB) ⚠ >200 kB: não ler inteiro
     - Sistema_DDS — Contexto completo do projeto (arquivo único)
@@ -97,129 +107,84 @@
 - .superpowers/
   - sdd/
     - .gitignore (1 kB)
-    - 2026-10-23-v4-2-inc5-metas-e-coerencia/
+    - 2026-10-23-v4-2-inc5-metas-e-coerencia/ (detalhes omitidos pelo orçamento)
       - contexto-comum.md (16 kB)
-          - Decisões do plano (o controlador escolheu onde uma opção domina; vão nos EDRs indicados)
-          - Autorizações a pedir antes de executar (CLAUDE.md)
-          - Global Constraints
-          - Catálogo de fórmulas novas (aprovação por família)
-          - Contagem de testes (poucos checks, asserções agrupadas)
-          - Review Focus
       - plan-path (1 kB)
-      - progress.md (6 kB)
-          - SDD ledger — plan: docs/superpowers/plans/2026-10-23-v4-2-inc5-metas-e-coerencia.md
-          - Pre-flight scan
-          - Progresso
+      - progress.md (11 kB)
       - regras-implementador.md (2 kB)
-          - Regras para todo implementador (leia antes de começar)
-          - Comandos
-          - Regras de conteúdo (CLAUDE.md)
-          - Seu trabalho
-          - Relatório
       - regras-rerevisao.md (3 kB)
-          - The Task
-          - The Findings Under Verification
-          - The Fix
-          - You Do Not Dispatch Subagents
-          - Scope
-          - Tests
-          - Output Format
-          - Finding Verdicts
-          - New Breakage in the Fix Diff
-          - Out-of-Scope Observations
-          - Verdict
       - regras-revisor.md (7 kB)
-          - What Was Requested
-          - What the Implementer Claims They Built
-          - Diff Under Review
-          - You Do Not Dispatch Subagents
-          - Do Not Trust the Report
-          - Tests
-          - Part 1: Spec Compliance
-          - Part 2: Code Quality
-          - Calibration
-          - Output Format
-          - Spec Compliance
-          - Strengths
-          - Issues
-          - Assessment
       - restricoes-globais.md (2 kB)
-          - Global Constraints
-          - Catálogo de fórmulas novas (aprovação por família)
+      - review-05baf77..1fe9153.diff (18 kB)
+      - review-1828b61..05baf77.diff (69 kB)
+      - review-1fe9153..48f6b0b.diff (10 kB)
+      - review-440b64a..ad8a7c2.diff (425 kB) ⚠ >200 kB: não ler inteiro
+      - review-48f6b0b..4b37f3b.diff (20 kB)
       - review-4c756eb..cacc829.diff (46 kB)
       - review-6a4a2a7..fd36841.diff (36 kB)
       - review-cacc829..f5f0f36.diff (34 kB)
       - review-f5f0f36..6a4a2a7.diff (119 kB)
       - task-1-brief.md (3 kB)
-          - Task 1: Origens do T11 e textos do Python (sem planilha nova)
       - task-1-report.md (2 kB)
-          - Task 1 - relatório
-          - O que foi feito
-          - Testes
-          - RED/GREEN
-          - Decisões / preocupações
       - task-2-brief.md (2 kB)
-          - Task 2: Gerador da V4.2 com as alterações aprovadas (sem metas ainda)
       - task-2-report.md (4 kB)
-          - Task 2 — Gerador da V4.2 (sem metas): relatório
-          - O que foi feito
-          - Varredura da V4.1 (tag) e conjunto alterado: 50 células
-          - Divergência a registrar (h7)
-          - Testes
-          - Decisões
-          - Commit
       - task-3-brief.md (3 kB)
-          - Task 3: Oráculo e fichas na planilha (metas.py, aba_metas.py)
       - task-3-report.md (8 kB)
-          - Task 3 — Oráculo e fichas na planilha (metas.py, aba_metas.py): relatório
-          - O que foi feito
-          - Testes e saídas
-          - RED / GREEN
-          - Decisões (onde o brief deixou margem)
-          - Preocupações
-          - Arquivos
       - task-4-brief.md (1 kB)
-          - Task 4: Equivalência e D16 no motor; κ do pico
       - task-4-report.md (2 kB)
-          - Task 4 report (TC-WB42-005)
-          - Preocupações / decisões
       - task-5-brief.md (3 kB)
-          - Task 5: Viva no Drive (conferir, retrato, migrar) e CA-07
-    - regras-limite/
+      - task-5-report.md (7 kB)
+      - task-6-brief.md (1 kB)
+      - task-6-report.md (2 kB)
+      - task-7-brief.md (1 kB)
+      - task-7a-brief.md (3 kB)
+      - task-7a-report.md (3 kB)
+      - task-7b-brief.md (2 kB)
+      - task-7b-report.md (1 kB)
+      - task-7m-brief.md (3 kB)
+      - task-7m-report.md (2 kB)
+      - task-final-fix-brief.md (4 kB)
+      - task-final-fix-report.md (1 kB)
+    - 2026-10-27-inc6-mmm-escada/ (detalhes omitidos pelo orçamento)
+      - constraints.md (9 kB)
+      - plan-path (1 kB)
+      - progress.md (10 kB)
+      - review-176a864..269a4f2.diff (51 kB)
+      - review-269a44a..67337a9.diff (34 kB)
+      - review-269a4f2..9b721a2.diff (9 kB)
+      - review-2ae412e..286fa0e.diff (12 kB)
+      - review-67337a9..e002870.diff (23 kB)
+      - review-9b721a2..269a44a.diff (67 kB)
+      - review-cef6cd8..f919ba6.diff (10 kB)
+      - review-e002870..2ae412e.diff (19 kB)
+      - review-f919ba6..176a864.diff (24 kB)
+      - task-1-brief.md (1 kB)
+      - task-1-report.md (1 kB)
+      - task-2-brief.md (3 kB)
+      - task-2-report.md (4 kB)
+      - task-3-brief.md (3 kB)
+      - task-3-report.md (11 kB)
+      - task-4-brief.md (2 kB)
+      - task-4-report.md (9 kB)
+      - task-5-brief.md (2 kB)
+      - task-5-report.md (4 kB)
+      - task-6-brief.md (2 kB)
+      - task-6-report.md (4 kB)
+      - task-7-brief.md (2 kB)
+      - task-7-report.md (3 kB)
+      - task-8-brief.md (1 kB)
+      - task-8-report.md (3 kB)
+      - task-9-brief.md (1 kB)
+    - regras-limite/ (detalhes omitidos pelo orçamento)
       - ledger.md (1 kB)
       - review-A.diff (44 kB)
       - review-B.diff (57 kB)
       - task-A-brief.md (5 kB)
-          - Task A — EDR-056 no núcleo (`python/equilibrio.py`) e nos testes
-          - 1. Faixa do pneu (convenção PAC2002, help do Adams p. 83)
-          - 2. Resolução numérica e NEUTRO (Milliken p. 320)
-          - 3. Testes (`tests/test_equilibrio.py`) — continuam 20 checks, sem IDs novos
-          - 4. Experimento da Task 6
-          - Commits
       - task-A-report.md (9 kB)
-          - Task A — relatório (EDR-056 no núcleo da análise de par)
-          - Commits
-          - Mudanças em `python/equilibrio.py`
-          - Testes (`tests/test_equilibrio.py`): 20 checks, sem IDs novos
-          - Como o ramo B do TC-EQ-013 é forçado agora
-          - TDD
-          - Vereditos e resoluções medidos
-          - Revisão própria
-          - Pontos de atenção
-          - Arquivos
       - task-B-brief.md (3 kB)
-          - Task B — Relatório do incremento 1 com as regras do EDR-056
-          - O que mudar em `tools/relatorio_inc1.py`
-          - Execução
       - task-B-report.md (7 kB)
-          - Task B: relatório do incremento 1 com as regras do EDR-056
-          - Commits (ramo feat/v4-0-regras-limite, sobre 55814ba)
-          - Mudanças em `tools/relatorio_inc1.py`
-          - Execução
-          - Números principais (caso da planilha viva, demonstrativo)
-          - Autoavaliação
-          - Concerns
-          - Fix round 1
+- .token-savior/
+  - memory.db (360 kB) ⚠ >200 kB: não ler inteiro
 - data/
   - hardpoints_synthetic_4cantos_V2.0.csv (4 kB)
   - hardpoints_synthetic_4cantos_V2.0.meta.json (1 kB)
@@ -236,13 +201,15 @@
   - placeholder-dependency-map-V3.0.csv (577 kB) ⚠ >200 kB: não ler inteiro
   - tire_comparison_grid_V2_3.csv (5 kB)
   - varredura_pneu_exploratoria.json (1 kB)
+  - viva/
+    - .gitkeep (0 kB)
 - docs/ (detalhes omitidos pelo orçamento)
   - arquitetura-consolidada-V2.0-suspensao-fsae.md (41 kB)
   - arquitetura-planejada-roadmap-V0-V5.md (45 kB)
   - arquitetura-planejada.md (13 kB)
   - data-contract-V2_4-excel-python.md (13 kB)
   - engineering-standard-V2.0-suspensao-fsae.md (87 kB)
-  - Engineering_Decision_Register.md (175 kB)
+  - Engineering_Decision_Register.md (214 kB) ⚠ >200 kB: não ler inteiro
   - hardpoint-schema-V2.0.md (5 kB)
   - passagem-2026-10-26.md (4 kB)
   - registro-de-versoes-V1.0.md (3 kB)
@@ -255,7 +222,18 @@
   - registro-de-versoes-V4_0.md (5 kB)
   - registro-de-versoes-V4_1-celulas.md (159 kB)
   - registro-de-versoes-V4_1.md (6 kB)
+  - registro-de-versoes-V4_2-celulas.md (21 kB)
+  - registro-de-versoes-V4_2.md (8 kB)
   - revisao-metodologica.md (31 kB)
+  - metas/ (detalhes omitidos pelo orçamento)
+    - README.md (8 kB)
+    - TARGET-001.md (3 kB)
+    - TARGET-002.md (3 kB)
+    - TARGET-003.md (3 kB)
+    - TARGET-004.md (3 kB)
+    - TARGET-005.md (3 kB)
+    - TARGET-006.md (3 kB)
+    - TARGET-007.md (3 kB)
   - migracao/ (detalhes omitidos pelo orçamento)
     - divergencia-01-suspensao-41-de-42.md (3 kB)
     - experimento-recalculo-libreoffice-x-excel.md (3 kB)
@@ -271,14 +249,18 @@
       - 2026-10-21-v4-0-inc3-fundacao-nomes.md (16 kB)
       - 2026-10-21-v4-1-inc4-equilibrio-na-planilha.md (27 kB)
       - 2026-10-23-v4-2-inc5-metas-e-coerencia.md (33 kB)
+      - 2026-10-27-inc6-mmm-escada.md (27 kB)
     - specs/ (detalhes omitidos pelo orçamento)
-      - 2026-10-20-v4-0-metas-equilibrio-design.md (37 kB)
+      - 2026-10-20-v4-0-metas-equilibrio-design.md (38 kB)
+      - 2026-10-27-inc6-mmm-escada-design.md (23 kB)
   - v4-0/ (detalhes omitidos pelo orçamento)
     - inc1-viabilidade-e-robustez-edr056.md (25 kB)
     - inc1-viabilidade-e-robustez.md (22 kB)
   - v4-1/ (detalhes omitidos pelo orçamento)
     - inc4-equilibrio-na-planilha.md (13 kB)
     - inc4-viabilidade-tabela-de-troca.md (9 kB)
+  - v4-2/ (detalhes omitidos pelo orçamento)
+    - medicao-recalculo-v4-1.md (3 kB)
 - excel/
   - FSAE_EV_Suspension_Fase1_V2.1.xlsx (46 kB)
       - aba 00_README [A1:E36], 0 fórmulas | cab.: FSAE EV — Suspensio…
@@ -365,6 +347,23 @@
       - aba 13_VALIDATION [A1:E44], 24 fórmulas | cab.: 13_VALIDATION
       - aba 14_DASHBOARD [A1:E47], 50 fórmulas | cab.: 14_DASHBOARD
       - … mais 12
+  - FSAE_EV_Suspension_Fase1_V4_2.xlsx (3.1 MB) ⚠ >200 kB: não ler inteiro
+      - aba 00_README [A1:E53], 0 fórmulas | cab.: FSAE EV — Suspensio…
+      - aba 01_SETUP [A1:E12], 0 fórmulas | cab.: 01_SETUP
+      - aba 02_REQUIREMENTS [A1:H13], 0 fórmulas | cab.: 02_REQUIREMENTS
+      - aba 03_TARGETS [A1:U15], 56 fórmulas | cab.: 03_TARGETS
+      - aba 04_DECISION_REGISTER [A1:H19], 0 fórmulas | cab.: 04_DECISION_REGISTER
+      - aba 05_VEHICLE [A1:H36], 11 fórmulas | cab.: 05_VEHICLE
+      - aba 06_SUSPENSION [A1:H52], 20 fórmulas | cab.: 06_SUSPENSION
+      - aba 07_KINEMATICS [A1:H85], 7 fórmulas | cab.: 07_KINEMATICS
+      - aba 08_VEHICLE_STATE [A1:H11], 1 fórmula | cab.: 08_VEHICLE_STATE
+      - aba 09_LOADS [A1:E34], 24 fórmulas | cab.: 09_LOADS
+      - aba 10_TIRE [A1:J177], 249 fórmulas | cab.: 10_TIRE
+      - aba 11_DESIGN [A1:H21], 9 fórmulas | cab.: 11_DESIGN — Design …
+      - aba 12_COMPARISON [A1:E5], 0 fórmulas | cab.: 12_COMPARISON
+      - aba 13_VALIDATION [A1:E44], 24 fórmulas | cab.: 13_VALIDATION
+      - aba 14_DASHBOARD [A1:E51], 52 fórmulas | cab.: 14_DASHBOARD
+      - … mais 13
 - importado-claude-ai/
   - arquivos/ (detalhes omitidos pelo orçamento)
     - FSAE_EV_Suspension_Fase1.xlsx (42 kB)
@@ -484,240 +483,30 @@
       - tire_comparison_grid_V2_3.csv (5 kB)
       - tire_model_V2_2.py (10 kB)
       - tire_model_V2_4.py (12 kB)
-- python/
+- python/ (detalhes omitidos pelo orçamento)
   - aba_equilibrio.py (129 kB)
-      - def nome_coef(k)
-      - class Entrada
-      - def celulas_de_entrada_v41()
-      - class Verificacao
-      - def motivo_roll_steer(x)
-      - def motivo_das_entradas(x)
-      - def celula_pior19(k)
-      - def rotulo_linha20(j)
-      - def celula20(chave, j)
-      - class _Linha16
-      - def termos_pior_origem(wb, linear=False)
-      - def pior_origem_de_valores(termos, origem_de, chaves, lista=ORIGENS_LISTA)
-      - class _Subst(dict)
-      - class _Ctx: put(self, ws, cel, familia, formula)
-      - def celula_aux19(chave, p)
-      - … mais 4
   - aba_metas.py (23 kB)
-      - def celulas_de_entrada_v42()
-      - def acrescentar_nomes(wb)
-      - def alteracoes_03(wb)
-      - def formula_g1(r)
-      - def formula_g3(lista, campo, r)
-      - def formula_g4(r)
-      - def formula_g5(r)
-      - def formula_g6_pior()
-      - def formula_g6_conta()
-      - def montar(wb)
-      - def fichas_da_planilha(xlsx_recalculado)
   - atualizar_planilha.py (67 kB)
-      - def alteracoes(ky_row)
-      - def celulas_de_entrada()
-      - def aplicar(src, out, layout)
-      - def escrever_registro(registro, caminho)
-      - def main()
   - build_workbook.py (34 kB)
-      - def put(cell, value, font=F_LBL, fill=None, nf=None, border=False, align=None)
-      - def note(cell, text, w=340, h=150)
-      - def merge_row(r, text, font, fill=None, height=None)
-      - def add(name, nrows=1)
-      - def sec(title)
-      - def p(name)
-      - def R(c, name)
-      - def G(c, expr)
-      - def meta(name, label, value, font=F_LBL, fill=None, nf=None, comment=None)
-      - def calc(name, label, fn, unit='-', ref='', gate=True, comment=None, nf=NF)
-      - def gxa(c, arg)
-      - def gyk(c, arg)
-      - def vcopy(src_row, dst_row)
-      - def vcheck(rr, label, excel_name, refrow, rid)
   - caso_planilha.py (14 kB)
-      - def endereco_da_entrada(wb, chave)
-      - def enderecos_das_entradas(wb)
-      - def caso_da_planilha(xlsx_recalculado, tir)
-      - def valores_v41(wb)
-      - def caso_da_planilha_v41(xlsx_recalculado, tir, passo1=True)
-      - def pior_origem_do_caso_v41(xlsx_formulas, linear=False)
-      - def pior_origem_entradas(xlsx_formulas)
-      - def pior_origem_do_caso(xlsx_formulas)
   - dados_planilha.py (10 kB)
-      - def eh_dado(nome)
-      - def iguais(a, b)
-      - def ler_por_endereco(xlsx_v30, tabela)
-      - def ler_por_nome(xlsx_v40)
-      - class RelatorioInjecao
-      - def injetar(xlsx_v40, dados, saida, base=None)
-      - class AbasDiferentes(ValueError)
-      - def celulas_alteradas(viva, v30)
-      - def objetos_alterados(viva, v30)
   - equilibrio.py (45 kB)
-      - class CasoEquilibrio
-      - def downforce(caso, ay_ms2)
-      - def cargas(caso, ay_ms2)
-      - def camber(caso, ay_ms2)
-      - def deriva_toe(caso)
-      - def esterco_rodas(caso)
-      - def deriva_ackermann(caso)
-      - def deriva_total(caso)
-      - def grade_alfa(caso, n_alfa)
-      - def fy_eixo(caso, eixo, ay_ms2, alfa_ref)
-      - class Capacidade
-      - class _Limite
-      - def tracao_ativa(caso)
-      - def fx_exigido_traseira(caso, ay_ms2)
-      - def fx_max_puro(ds, fz, gamma)
-      - … mais 13
   - equilibrio_linear.py (32 kB)
-      - def gradiente_pneus(W_f_N, W_r_N, C_f_N_rad, C_r_N_rad)
-      - def para_graus_por_g(K)
-      - def velocidade_caracteristica(L_m, K)
-      - def velocidade_critica(L_m, K)
-      - def ponto_neutro_ate_traseiro(L_m, C_f, C_r)
-      - def gradiente_rolagem(W_N, h1_m, K_phi_f, K_phi_r)
-      - def parcela_camber(Cg_f, Ca_f, dgf, Cg_r, Ca_r, dgr, dphi_day)
-      - def parcela_transferencia_aprox(W_f_N, C_f, b_f, dFz_f, W_r_N, C_r, b_r, dFz_r)
-      - class ParcelasK
-      - def parcelas_k(caso, ay_ms2)
-      - def angulos_necessarios(caso, ay_ms2, n_alfa=401)
-      - def tabela_linear(caso, ay_max_g=0.4, passo_g=0.05, pior_origem=None, n_alfa=401, *, origem_do_carro=_origens.T11)
-      - def texto_k(p, pior_origem, *, origem_do_carro=_origens.T11)
-      - def ajuste_polinomio_rigidez(ds, n=21)
-      - def b_local(ds, fz)
-      - … mais 1
+  - escada.py (10 kB)
   - gerar_v4_0.py (7 kB)
-      - def alteracoes_v4_0()
-      - def gerar(caminho_v30, saida, tabela)
-      - def extrair_v30(pasta)
-      - def main()
   - gerar_v4_1.py (24 kB)
-      - def status_tire(col)
-      - def formula_tire_limitada(antes, col)
-      - def alteracoes_v4_1(origem=None)
-      - def conferir_tabela(tabela)
-      - def montar_v41(wb, alteracoes)
-      - def resumo_novas(novas)
-      - def gerar(caminho_v40, saida, tabela=None)
-      - def escrever_registro_v41(registro, caminho)
-      - def main()
   - gerar_v4_2.py (19 kB)
-      - def alteracoes_v4_2(wb)
-      - def rotulos_antigos_restantes(wb)
-      - def extrair_v41(pasta)
-      - def aplicar(wb, alteracoes)
-      - def escrever_registro_v42(registro, caminho)
-      - def conferir_tabela(tabela)
-      - def resumo_novas(novas)
-      - def montar_v42(wb)
-      - def gerar(v41, saida, registro=None, csv_nomes=None, nomes=None)
-      - def copia_v42(tmp, alteracoes=None, nome='V4_2_copia.xlsx')
-      - def main()
   - hardpoints.py (9 kB)
-      - class HardpointError(ValueError)
-      - class Point
-      - class HardpointSet: corners_present(self); corner_points(self, corner); status_summary(self)
-      - def lotus_to_iso8855(xyz)
-      - def build_hardpoint_set(rows, meta)
-      - def load_hardpoints(csv_path, meta_path)
-      - def write_hardpoints(csv_path, meta_path, hs)
   - kinematics_model.py (43 kB)
-      - class Hardpoint
-      - def line_intersection(p1, p2, p3, p4, view='frontal')
-      - def instant_center_front_view(lca_outer, lca_inner, uca_outer, uca_inner)
-      - def roll_center_height(contact_patch, instant_center)
-      - def roll_center_model_check(lca_outer, lca_inner, uca_outer, uca_inner, contact_patch)
-      - def side_view_inner_midpoint(bushing_front, bushing_rear)
-      - def instant_center_side_view(lca_outer, lca_bushing_front, lca_bushing_rear, uca_outer, uca_bushing_front, uca_bushing_…
-      - def tan_phi_from_ic(instant_center, contact_patch_x)
-      - def anti_dive_squat_model_check(lca_outer, lca_bushing_front, lca_bushing_rear, uca_outer, uca_bushing_front, uca_bushi…
-      - class KinematicsError(RuntimeError)
-      - class Solution
-      - class Corner: __init__(self, hs, name, rack_dir=(0.0, 1.0, 0.0)); solve(self, travel=0.0, steer=0.0, q0=None, phi0=0.0,…
-      - def sweep(corner, travels, steer=0.0)
-      - def steer_sweep(corner, rack_positions, travel=0.0)
-      - def steering_ratio(corner, rack_travel_per_rev_m, ds=0.0001)
-      - … mais 26
   - metas.py (14 kB)
-      - class Relacao
-      - def alavanca(target)
-      - class Ficha
-      - def campo_valido(campo, valor)
-      - def edr_no_formato(v)
-      - def valor_tbd(valor)
-      - def compromisso_preenchido(v)
-      - def sobredeterminadas(fichas)
-      - def estado_coerencia(f, fichas)
-      - def texto_coerencia(f, fichas)
-      - def pior_coerencia(textos)
-      - def compromissos(textos)
+  - mmm.py (69 kB)
   - nomes_v4_0.py (10 kB)
-      - class Nome
-      - def parece_referencia(nome)
-      - def slug(rotulo)
-      - def tabela_nomes(caminho_v30)
-      - def verificar_cobertura(tabela, celulas)
-      - def escrever_tabela(nomes, caminho_csv)
-      - def ler_tabela(caminho_csv)
-      - def main()
   - origens.py (2 kB)
   - raizes.py (5 kB)
-      - def linha(cel)
-      - def chave(no)
-      - def nomes_definidos(wb)
-      - def referencias(formula, aba_atual, colunas=None, nomes=None)
-      - def celula_origem(aba, cel)
-      - def origem_da_raiz(wb, aba, cel)
-      - class Grafo: __init__(self, wb); raizes(self, no, pilha=()); raizes_preenchidas(self, no); celulas_origem(self, no)
   - README.md (3 kB)
-      - python/
-      - Arquivo `.tir` (fora do Git)
   - suspension_model.py (22 kB)
-      - class FzLiftoffWarning(UserWarning)
-      - class SmallMotionRatioWarning(UserWarning)
-      - class VehicleConfig
-      - def sprung_mass_total(cfg)
-      - def sprung_mass_axle(cfg)
-      - def sprung_cg_to_front(cfg)
-      - def sprung_mass_per_corner(cfg)
-      - def sprung_cg_height(cfg)
-      - def static_fz_corner(cfg)
-      - def static_fz_corner_cg_lateral(cfg, y_cg_m)
-      - def longitudinal_dfz(cfg, ax)
-      - def lateral_dfz(cfg, ay)
-      - def aero_fz_corner(downforce_total, aero_balance_front)
-      - def downforce_por_velocidade(rho_kg_m3, cza_m2, v_ms)
-      - def fz_plausibility(fz)
-      - … mais 11
   - tire_model.py (14 kB)
-      - class TireDataError(ValueError)
-      - class TireRangeError(ValueError)
-      - def parse_tir(path)
-      - class TireDataset: side(self)
-      - def load_dataset(path, source='', source_axis_system=None)
-      - def in_range(ds, fz, alpha, gamma, kappa)
-      - def pure_fx0(p, fz, gamma, kappa)
-      - def pure_fy0(p, fz, alpha, gamma)
-      - def combined_forces(ds, fz, alpha, gamma, kappa, check_range=True)
-      - def wheel_forces(ds, corner, fz, alpha, gamma, kappa)
-      - def mu_effective(fx, fy, fz)
-      - def sign_report(ds, fz=None)
-      - def project_sign_report(ds, fz=None)
-      - def rigidez_deriva(ds, fz, gamma=0.0)
-      - def rigidez_camber(ds, fz)
-  - viva.py (8 kB)
-      - class VivaIlegivel(Exception)
-      - def localizar_viva()
-      - def sha256(arquivo)
-      - def copia_local(viva, pasta)
-      - def versao(xlsx)
-      - class Referencia
-      - def referencia_da(ver)
-      - def arquivo_de_referencia(ver, pasta)
-      - def edrs_citados(xlsx)
-      - def edrs_aprovados(edr_md)
+  - viva.py (10 kB)
 - references/ (detalhes omitidos pelo orçamento)
   - INDEX.md (4 kB)
   - md/
@@ -899,6 +688,11 @@
       - def main()
   - mutation_equilibrio.py (4 kB)
       - def rodar(fonte)
+  - mutation_mmm.py (6 kB)
+      - def preparar(fonte)
+      - def rodar_teste(env, t)
+      - def pegou(o)
+      - def rodar(fonte, parar_no_primeiro_fail)
   - mutation_planilha_equilibrio.py (7 kB)
       - def rodar(fonte)
       - def resumo(out)
@@ -913,6 +707,10 @@
       - def veiculo_base(**over)
       - def veiculo_simetrico(lambda_f=0.5, **over)
   - test_equilibrio_linear.py (21 kB)
+      - def check(name, condition, detail='')
+      - def veiculo_base(**over)
+      - def veiculo_simetrico(lambda_f=0.5, **over)
+  - test_escada.py (11 kB)
       - def check(name, condition, detail='')
       - def veiculo_base(**over)
       - def veiculo_simetrico(lambda_f=0.5, **over)
@@ -936,6 +734,22 @@
       - def closed_form_side_ic(C)
       - def solve_indep(C, travel)
       - def raises(fn, exc)
+  - test_mmm.py (50 kB)
+      - def raises(fn, exc=ValueError, needle=None)
+      - def check(name, condition, detail='')
+      - def veiculo_base(**over)
+      - def pneu_de_brinquedo(lei)
+      - def lei_saturada(a0_f, a0_r, mu_r_de_fz=None)
+      - def lei_tanh(ds_, c, fz, a, g, k)
+      - def si_a_mao(a0_f, a0_r, c)
+      - def veiculo_sim(lambda_f=0.5)
+      - def faixa_003(vals, margem=0.3)
+      - def cruza(p, q)
+      - def resíduos(caso_x, tr)
+      - def residuos_carro(caso_x, tr)
+      - def resid_regime(h_cp)
+      - def n_fx(tr)
+      - def f_010(ay)
   - test_suspension_model.py (22 kB)
       - def raises(fn, exc=ValueError, needle=None)
       - def check(name, condition, detail='')
@@ -963,7 +777,7 @@
       - def celulas(wb, abas)
       - def linha(cel)
       - def desfazer_6a(novo, col)
-  - test_v4_2.py (56 kB)
+  - test_v4_2.py (59 kB)
       - def regiao_nova(k)
       - def edr_status()
       - def check(name, condition, detail='')
@@ -1013,12 +827,11 @@
       - def caso_com_karb(copia, fator, passo1)
       - def linha_troca_python(copia, fator)
       - … mais 7
-  - test_workbook_v4_2.py (22 kB)
+  - test_workbook_v4_2.py (23 kB)
       - def check(name, cond, detail='')
       - def recalcular(caminho)
       - def alvo(n)
       - def alt(**linhas)
-      - def valida(h, c, **extra)
       - def pior_origem_independente(copia_formulas, wb_valores)
       - def num(v)
       - def iguais(a, b)
@@ -1060,6 +873,17 @@
   - mapa_raizes.py (3 kB)
       - def mapa(caminho)
       - def main()
+  - medir_recalculo.py (13 kB)
+      - def contar_excel()
+      - def pid_vivo(pid)
+      - def esperar_saida(pid, tentativas=60)
+      - def sha(p)
+      - def estado_do_arquivo(p)
+      - def uma_execucao(copia)
+      - def fmt(x)
+      - def cenario(origem, n, pasta, nome, guardar=None)
+      - def tabela(execs)
+      - def main()
   - migrar_dados_v3_v4.py (9 kB)
       - def relatorio(a, rel, celula, dados, base_txt)
       - def main()
@@ -1076,6 +900,16 @@
       - def ic_por_eixo_instantaneo(corner, dz=1e-05)
       - def comparar_ic_lateral()
       - def taxa_geometrica()
+      - def main()
+  - relatorio_escada.py (18 kB)
+      - def sha256(p)
+      - def git(*args)
+      - def n(x, casas=3)
+      - def sci(x, casas=2)
+      - def g_de(ay_ms2, casas=3)
+      - def k_graus_por_g(k_rad_por_ms2, casas=3)
+      - def txt(s)
+      - def tabela(cab, linhas)
       - def main()
   - relatorio_inc1.py (41 kB)
       - def sha256(p)
@@ -1113,7 +947,7 @@
       - def carregar(json_path)
       - def retratar(arquivo, saida, pasta, referencia=None)
       - def main()
-  - rodar_testes.py (20 kB)
+  - rodar_testes.py (23 kB)
       - def rodar(args, timeout=1800)
       - def origens_modulos()
       - def cauda(texto, n=15)
@@ -1121,6 +955,8 @@
       - def versao_planilhas()
       - def git(*args)
       - def referencia_v30(pasta)
+      - def v30_igual_a_tag(ref30)
+      - def secao_viva()
       - def main()
   - test_comparar_planilhas.py (7 kB)
       - def check(name, cond, detail='')
