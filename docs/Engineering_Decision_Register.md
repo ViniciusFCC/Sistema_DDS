@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 66 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 6 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION)
+Total: 66 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR)
 
 | ID | Título | Status |
 |---|---|---|
@@ -100,8 +100,8 @@ Total: 66 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-061 | Processo de metas e coerência (V4.2) | APPROVED |
 | EDR-062 | Projeto T11: Origens e prefixo D16 | APPROVED |
 | EDR-063 | Viva da equipe no Drive: conferência, retrato por nome e troca a cada versão | APPROVED |
-| EDR-064 | Método do MMM em raio fixo e da escada de hipóteses no Python | IMPLEMENTED |
-| EDR-065 | Tolerância da escada e regra do NEUTRO | PROPOSED |
+| EDR-064 | Método do MMM em raio fixo e da escada de hipóteses no Python | AWAITING_DECISION |
+| EDR-065 | Tolerância da escada e regra do NEUTRO | AWAITING_DECISION |
 | EDR-066 | Achados da escada sobre fórmulas da planilha | AWAITING_DECISION |
 
 ## 3. Decisões que dependem do usuário (agora)
@@ -113,7 +113,8 @@ Total: 66 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 - **EDR-033** (AWAITING_DECISION): Escopo de AD/AS e anti-lift (frenagem regenerativa)
 - **EDR-036** (AWAITING_DECISION): Decisão C — IDs para camber e toe estáticos (referência e calculado)
 - **EDR-040** (AWAITING_DECISION): Formato do dataset de pneu e origem (OptimumTire 2)
-- **EDR-065** (PROPOSED): Tolerância da escada de hipóteses e regra do NEUTRO (valor e regra são do usuário)
+- **EDR-064** (AWAITING_DECISION): Método do MMM em raio fixo e da escada de hipóteses no Python (implementado; as decisões do controlador aguardam o usuário no PR)
+- **EDR-065** (AWAITING_DECISION): Tolerância da escada de hipóteses e regra do NEUTRO (valor e regra são do usuário)
 - **EDR-066** (AWAITING_DECISION): Achados da escada sobre as fórmulas de Ackermann e de Fx exigido da planilha
 
 ## 4. Proposta de IDs para camber/toe estáticos (Decisão C — NÃO criados)
@@ -1474,7 +1475,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-064 — Método do MMM em raio fixo e da escada de hipóteses no Python (incremento 6)
 
 - **Date:** 2026-10-28
-- **Status:** IMPLEMENTED (2026-10-28). Passa a VERIFIED só depois da suíte inteira (`tools/rodar_testes.py`).
+- **Status:** AWAITING_DECISION (2026-10-28). Implementado; as decisões do controlador (itens 1.1 a 1.6 e 2.1 a 2.14) aguardam a revisão do usuário no PR e não são aprovação dele. Passa a VERIFIED só depois da aprovação e da suíte inteira (`tools/rodar_testes.py`).
 - **Context:** A spec base (§7.5) pede uma escada de modelos: o Python na configuração da planilha, depois uma hipótese por vez, para medir quanto cada simplificação da planilha pesa. O usuário decidiu em 2026-10-27 que o incremento 6 é só Python: não sai planilha nova e nenhuma fórmula muda. O método está no adendo `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`. As decisões abaixo foram tomadas pelo controlador durante o plano e a execução, onde uma opção dominava, e **aguardam a revisão do usuário no PR**; não são aprovação do usuário.
 - **Question:** Como medir, só em Python e sem número de carro, o efeito de cada hipótese da planilha sobre a saturação por eixo, o push/loose, o C_N e o K?
 - **Alternatives:** (a) MMM em raio fixo parametrizado por A_Y, com a escada de hipóteses e sensibilidades por unidade; (b) grade β × δ como núcleo (spec base §8.1); (c) chaves 1/0 na planilha já neste incremento.
@@ -1492,10 +1493,10 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
      3. TC-MMM-004 mantém o caso do plano em 0,05 g (relativo 1e-2; medido 7,7e-3). O segundo caso (rolagem mais rígida na frente) é afirmado só em 0,0125 g; em 0,05 g (5,8 %) fica informativo. A tolerância não mudou.
      4. As comparações MMM × `analise_par` (TC-MMM-006 e o degrau 1) usam a mesma grade de α (`n_alfa=401`) e `passo_g=0.01`, porque com `n_alfa=25` a diferença de ≈ 3e-3 m/s² é da grade e o degrau 1 quer isolar o método. A diferença de grade fica fora da escada.
      5. O veredito desacoplado usa |S_r − S_f| ≤ `resolucao` (a regra do `analise_par`); a regra da folga da decisão 3 vale só nas acopladas.
-     6. a_y = A·cos β e a_x = −A·sen β entram juntos apenas quando uma hipótese ligada usa a_x (`fx_exigido="balanco"` com tração ativa, ou `transf_long="regime"`). Nas demais, ΣFy = m·A_Y com V = √(A_Y·R). Ligá-los sempre poria em todo degrau um efeito de ≈ 0,35 % que não é da hipótese do degrau. O efeito aparece nas linhas 9a e 11 e conta como interação.
+     6. (Revisto na revisão final, 2026-10-28.) No caminho acoplado, a_y = A·cos β e a_x = −A·sen β valem SEMPRE; o desacoplado (a planilha) usa a_y = A. Antes, a rotação só entrava com `fx_exigido="balanco"` com tração ativa ou `transf_long="regime"`, o que fazia os degraus mudarem de física conforme a hipótese e misturava o efeito da hipótese com o da rotação. Parâmetro do trim: A = V²/R (o `A_Y` do trim, o que a aero e a resistência usam, V² = A·R); a aceleração lateral do carro é a_y = A·cos β, e a transferência lateral de carga e o camber seguem a_y (a downforce segue A; `equilibrio.cargas_rotacionadas`, função acrescentada). Para o efeito ser o da hipótese e não o do método, o degrau 2 ganhou a linha de controle `planilha (acoplado)`: as hipóteses da planilha resolvidas pelo mesmo Newton 2-D com a mesma rotação. O Δ das linhas acopladas é contra ela; o Δ da linha de controle é contra a `planilha` e mede o viés do método e da rotação. Medido no caso `base` do TC-ESC-002 (sintético de teste): T da planilha 14,418327 m/s² e da linha de controle 14,419715 m/s² (Δ = +1,39e-3 m/s², ≈ 1e-4 em termos relativos); sem a rotação o viés do método era de +1e-5 a +4,5e-5 m/s². O arrasto D entra inteiro no eixo x do carro; a componente lateral D·sen β, que ele teria no eixo y porque a velocidade faz o ângulo β com o carro, fica fora (2ª ordem em β, e D é uma fração pequena de m·A).
      7. O TC-MMM-007 estendido usa pneu com LMUY = 0,6 (sintético de teste): com o pneu cheio o carro-base não satura até 2 g, e com 0,5 o travado falha.
      8. A parcela ΔFz de `transf_long="regime"` não tinha check: o TC-MMM-007 confere, no teste, ΔFz_traseira = (m·a_x·h + D·h_cp)/L (com `h_cp_m` `None` e não `None`) e a conservação de ΣFz.
-     9. O TC-ESC-001 compara |ay_sat − S| ≤ `resolucao_ms2` do MMM + `resolucao` do `analise_par`. Os dois resultados são discretizados, e a mesma resolução deixava o oráculo no limite (diferenças medidas de 4 a 6e-6 m/s² contra resolução de 4 a 5e-6). O veredito e o C_N continuam exigidos iguais.
+     9. (Justificativa corrigida na revisão final, 2026-10-28.) O TC-ESC-001 compara |ay_sat − S| ≤ 2·`resolucao_ms2`. A justificativa anterior ("soma das incertezas declaradas") era falsa: a bisseção do MMM tem tolerância `resolucao·1e-4`, e não uma incerteza igual à resolução. O que se sabe: os dois lados usam a mesma grade de α, que some na diferença; sobra o erro de A_Y. O `analise_par` interpola linearmente a folga m(a) entre linhas de passo h, e a raiz interpolada erra por no máximo |m''|/(8·|m'|)·h² (erro da interpolação linear); a curvatura m'' depende da carga e do pneu e não é conhecida, então não há cota rigorosa em função da resolução. **Achado sobre o `analise_par`:** a `resolucao_ms2` dele é |S_h − S_h/2| (grade refinada) e, num erro assintótico c·h², vale 3/4 do erro de S_h; o erro real de S_h é cerca de 4/3 da resolução que ele declara, isto é, a resolução declarada subestima o erro dele. Estimativa: (4/3 + 1e-4)·res. Adota-se 2·res (1,5 vez a estimativa) como cota empírica, não provada. Medido no TC-ESC-001, a razão |d_ay_sat|/res nos cinco casos e nos dois sentidos vai de 0,01 a 1,14, sempre abaixo de 4/3. O veredito e o C_N continuam exigidos iguais (o C_N com a folga equivalente em força, 2·res·|c_n|/Δsat). **A ciência do usuário é pedida no PR.**
      10. No TC-ESC-003 o sinal da sensibilidade de `cg_lateral` é comparado no referencial do carro (a do caso espelhado é negada), porque +10 mm no caso espelhado é −10 mm no carro.
      11. A linha `todas` também roda os dois sentidos e preenche `pior_sentido`, porque inclui a hipótese 7.
      12. O `test_escada` leva cerca de 6 min (o `analise_par` com `n_alfa=401` e passo de 0,01 g domina), aceito.
@@ -1505,15 +1506,22 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
   4. **Limitações conhecidas:**
      - O K do trim é a tangente da curva de trim; o `parcelas_k` usa C_α em α_0. Os dois só coincidem com A_Y → 0. Com K grande, a comparação é afirmada perto de zero (decisão 2.3).
      - A varredura do `ponto` tem resolução de 0,05·G, então `n_raizes` é "pelo menos", e uma raiz colada ao descolamento pode escapar.
-     - a_y = A·cos β só entra com as hipóteses que usam a_x (decisão 2.6).
-     - O limite do degrau 1 é a soma das duas resoluções declaradas (decisão 2.9), não uma tolerância física.
+     - A rotação a_y = A·cos β, a_x = −A·sen β vale só no caminho acoplado (decisão 2.6); a planilha usa a_y = A. O viés dela está na linha de controle `planilha (acoplado)`.
+     - A cota do degrau 1 (2 × `resolucao_ms2`) é empírica, não provada, e a resolução que o `analise_par` declara subestima o erro dele (decisão 2.9). Não é uma tolerância física.
+     - Precisão de T nas variantes acopladas: T é a última raiz da bisseção sobre "existe trim", e a dobra do Newton pode cair até ~`resolucao_ms2` antes do pico do eixo (medido no TC-ESC-002: margem de 0,46 N na linha 3, ≈ 0,004 m/s²). A precisão declarada de T acoplado é da ordem de `resolucao_ms2` (0,01 m/s²), e não a tolerância da bisseção (`resolucao·1e-4`). O limite acoplado só declara um eixo saturado se a margem dele em T for ≤ (força do eixo por m/s²) × `resolucao_ms2`; senão o resultado é N/A com motivo. A causa da falha do trim é estruturada (`Trim.causa`: "dominio", "dobra" ou None), e não depende do texto do motivo.
+     - Com `--raio` num caso cuja planilha tem R vazio, a base `planilha` do relatório passa a ter a hipótese 3 (cos δ_ref) ligada, porque no Python o raio liga o cos δ_ref; a planilha de hoje, com R vazio, a tem desligada. O relatório avisa, e o Δ da linha `3` mede então só o cos δ do trim contra esse cos δ_ref.
+     - O stability index tem o sinal do C_N estabilizante (positivo = estabilizante, carro estável); o Milliken usa o C_N do ISO, de sinal oposto.
+     - O arrasto D entra inteiro no eixo x do carro; a componente lateral D·sen β fica fora do balanço lateral (2ª ordem em β).
+     - Com `h_cp_m = None`, a hipótese 11 equivale a h_cp = 0; a sensibilidade de h_cp é "em torno de h_cp = 0" (o relatório diz isso).
+     - Linha 10 (travado) com tração: o motivo "eixo R saiu do ramo ascendente" podia enganar; com o diferencial travado e tração ativa, o motivo passou a incluir o Fx e o κ por roda traseira no ponto da falha (o travado reparte o Fx pela cinemática e o Fx de cada roda reduz a Fy dela pela elipse; o eixo sai do ramo por isso, e não por ter chegado ao pico). Medido no TC-ESC-002 com tração (sintético de teste): Fx de +2091 N (RL) e −2029 N (RR) em 0,05 g.
+     - A faixa de busca da saturação (`ay_max_g`, padrão 2,0 g) é parâmetro de `degrau_1`, `degrau_2` e `sensibilidades` e do relatório (`--ay-max-g`), rotulada como varredura e não como dado do carro.
      - Os coeficientes combinados do `.tir` (deslizamento combinado) estão "não determinado": a linha `10+9b` usa o PAC2002 combinado como o `tire_model` o tem, sem validação física.
      - A sensibilidade de h_cp com `h_cp_m = None` usa −10 mm; o termo é linear em h_cp e a derivada não muda, mas vale "em torno de 0".
      - Com o caso da V4.2 e R = 8,5 m (sintético de teste do implementador), nenhum eixo satura até 2 g, então toda linha da escada sai N/A. Foi medido só nesse R. O relatório só tem números quando o usuário informa o raio (R) e o caso satura.
 - **Rationale:** O MMM em raio fixo, parametrizado por A_Y, é mais robusto perto do pico do que uma grade β × δ e responde à pergunta da escada (quanto vale cada hipótese). Manter o `equilibrio.py` só com adições preserva os 28 e 18 checks existentes. Nada do Python vai para a planilha.
-- **Evidence:** `tests/test_mmm.py` 11/11, `tests/test_escada.py` 3/3, `tests/mutation_mmm.py` 5/5 (rodados pelos implementadores por tarefa; a suíte inteira fica para o controlador). Plano e ledger em `.superpowers/sdd/2026-10-27-inc6-mmm-escada/` (fora do Git).
+- **Evidence:** `tests/test_mmm.py` 11/11, `tests/test_escada.py` 3/3, `tests/mutation_mmm.py` 5/5 (rodados pelos implementadores por tarefa; a suíte inteira fica para o controlador). Onda de correção da revisão final (2026-10-28): `test_mmm` 11/11, `test_escada` 3/3, `test_equilibrio` 28/28 e `test_equilibrio_linear` 18/18; os cinco textos da mutação continuam aplicando uma vez cada (a mutação completa fica para a suíte). Plano e ledger em `.superpowers/sdd/2026-10-27-inc6-mmm-escada/` (fora do Git).
 - **Assumptions:** O raio do skidpad é dado pelo usuário. A geometria é sintética e os dados são demonstrativos (T09/E03 e TX/E05), então nada é resultado do carro.
-- **Consequences:** Existe a escada medida em Python e o relatório `docs/inc6/escada-hipoteses.md`, sem veredito de tolerância. O relatório aguarda o raio do usuário. O incremento 7 pode levar as chaves 1/0 à planilha, depois do EDR-065 e da resposta ao EDR-066.
+- **Consequences:** Existe a escada medida em Python, sem veredito de tolerância. O relatório `docs/inc6/escada-hipoteses.md` ainda não existe: fica pendente do raio R do usuário (`tools/relatorio_escada.py` sai com código 3 sem ele). O incremento 7 pode levar as chaves 1/0 à planilha, depois do EDR-065 e da resposta ao EDR-066.
 - **Affected_Artifacts:** `python/mmm.py`; `python/escada.py`; `tools/relatorio_escada.py`; `tools/rodar_testes.py`; `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`; `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md` (§7.5, nota); CLAUDE.md; MAPA.md.
 - **Affected_Tests:** TC-MMM-001..011; TC-ESC-001..003; mutação do MMM (5).
 - **Dependencies:** EDR-010, EDR-053, EDR-055, EDR-056, EDR-057, EDR-060.
@@ -1525,7 +1533,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-065 — Tolerância da escada e regra do NEUTRO
 
 - **Date:** 2026-10-28
-- **Status:** PROPOSED (2026-10-28)
+- **Status:** AWAITING_DECISION (2026-10-28). Revisão final do incremento 6: a tolerância e a regra do NEUTRO são palavra do usuário e aguardam a decisão dele no PR (a regra (a) é só proposta).
 - **Context:** A spec base (§7.5 item 3) pede um critério para a planilha completa em relação ao Python completo: dentro de uma tolerância e nunca inverter push e loose. A tolerância é decisão de engenharia do usuário, e o incremento 6 entrega a tabela sem veredito.
 - **Question:** Qual a tolerância de a_y de saturação, de C_N e de K entre a planilha e o Python completo, e uma variante que leva NEUTRO para PUSH ou LOOSE conta como inversão?
 - **Alternatives:** Tolerância: **sem valor proposto**, o usuário decide a partir da tabela do relatório. Regra do NEUTRO: (a) NEUTRO ↔ PUSH/LOOSE conta como inversão, pela mesma regra estrita da robustez ao pneu (EDR-060 item 8); (b) não conta, porque NEUTRO é uma faixa em torno de zero.
