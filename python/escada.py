@@ -2,7 +2,9 @@
 Escada de hipóteses do MMM em raio fixo (incremento 6, Task 6; adendo §5 e §6).
 
 Degrau 1: o MMM na configuração da planilha contra equilibrio.analise_par (prova o reuso da física por roda, não a física
-do MMM). Degrau 2: uma variante Python por vez a partir da planilha, mais "10+9b" e "todas". Sensibilidades: uma por
+do MMM). Degrau 2: a planilha, a linha de controle "planilha (acoplado)" e uma variante Python por vez, mais "10+9b" e
+"todas". As linhas acopladas medem o Δ contra a linha de controle (a planilha resolvida pelo mesmo Newton 2-D e a mesma
+rotação a_y = A·cos β), e a linha de controle mede o viés do método contra a planilha. Sensibilidades: uma por
 unidade, em outra tabela. Nenhuma função aqui decide "dentro da tolerância": a tolerância da escada é o EDR-065
 (pendente) e por isso não existe parâmetro de tolerância. O módulo não conhece a origem dos dados; quem o chama rotula
 o número (pior origem do caso, geometria sintética).
@@ -18,13 +20,14 @@ import mmm
 _N_ALFA = 401
 _PASSO_G = 0.01
 _RES_PADRAO_MS2 = 0.01   # o padrão de mmm.limite, quando o analise_par não devolve resolução (nenhum eixo satura)
+NOME_CONTROLE = "planilha (acoplado)"   # linha de controle do degrau 2: a planilha resolvida pelo Newton 2-D
 
 
 @dataclass(frozen=True)
 class ComparacaoDegrau1:
     """MMM (planilha) contra analise_par num sentido. d_ay_sat_* = MMM − analise_par [m/s²] (None se algum lado não tem
-    saturação no eixo). cn_mmm é o cn_estabilizante_q; cn_par é o c_n. ok = mesmo veredito, |d_ay_sat| <= resolução do limite + resolução do
-    analise_par (= 2·resolucao_ms2) em cada eixo e cn dentro da folga equivalente (ver _julga); motivo diz o que reprovou (None quando ok)."""
+    saturação no eixo). cn_mmm é o cn_estabilizante_q; cn_par é o c_n. ok = mesmo veredito, |d_ay_sat| <= 2·resolucao_ms2 (cota empírica,
+    ver _julga) em cada eixo e cn dentro da folga equivalente; motivo diz o que reprovou (None quando ok)."""
     sentido: str
     veredito_mmm: str
     veredito_par: str
@@ -42,8 +45,12 @@ class LinhaEscada:
     """Uma linha do degrau 2. nome ∈ {"planilha", "1+2", "3", "7", "9a", "9b", "10", "10+9b", "11", "todas"};
     hipoteses são os números cobertos; limite é o mmm.Limite da linha (na 7 e na "todas", o do pior sentido).
     pior_sentido ("esquerda"/"direita") só existe onde a hipótese 7 está ligada (linhas "7" e "todas", que a inclui);
-    nas outras é None (curva à esquerda apenas). d_* = linha − planilha (None se algum lado não tem número). `inverte` compara o
-    veredito da linha com o da planilha e não classifica nada como "dentro da tolerância" (EDR-065 pendente)."""
+    nas outras é None (curva à esquerda apenas). d_* = linha − `referencia` (None se algum lado não tem número):
+    "planilha" para a própria linha de controle e para as linhas desacopladas, "planilha (acoplado)" para as linhas que
+    usam o Newton 2-D. `inverte` compara o veredito da linha com o da `referencia` e não classifica nada como "dentro da
+    tolerância" (EDR-065 pendente). `motivo` é None quando a hipótese da linha está ligada no caso; senão diz qual chave da
+    planilha está desligada ("hipótese desligada no caso (<campo>)"): a linha ainda é calculada e coincide com a
+    referência por construção."""
     nome: str
     hipoteses: tuple[int, ...]
     limite: mmm.Limite
@@ -52,6 +59,8 @@ class LinhaEscada:
     d_cn_estabilizante_q: float | None
     d_k: float | None
     inverte: str
+    referencia: str = "planilha"
+    motivo: str | None = None
 
 
 def _julga(veredito_mmm: str, veredito_par: str, d_f: float | None, d_r: float | None, cn_mmm: float | None,
@@ -59,12 +68,19 @@ def _julga(veredito_mmm: str, veredito_par: str, d_f: float | None, d_r: float |
     """Critério do degrau 1: mesmo veredito (N/A com N/A conta como o mesmo), |d_ay_sat| <= 2·res_ms2 em cada eixo e, onde
     os dois têm C_N, |cn_mmm − cn_par| <= 2·res·|cn_par|/Δsat. O C_N é a folga do outro eixo em T vezes o braço, e essa
     folga cresce linearmente com a distância Δsat entre as duas saturações (zero quando coincidem); um T deslocado de
-    res_ms2 em cada código muda o C_N de até 2·res·|cn|/Δsat. É a folga equivalente em força, sem número novo.
+    2·res_ms2 muda o C_N de até 2·res·|cn|/Δsat. É a folga equivalente em força, sem número novo.
 
-    Cota da saturação: res_mmm + res_par = 2·res_ms2 (o limite roda com a resolução que o analise_par mede, então as duas
-    são iguais). São dois resultados discretizados, cada um com a incerteza que declara; a bisseção do MMM é exata e o
-    analise_par interpola a folga entre linhas, com erro de até ~4/3 da sua resolução. Exigir só <= res_ms2 punha o
-    oráculo no limite por construção (decisão do controlador, TC-ESC-001)."""
+    Origem da cota 2·res_ms2 (o que se sabe e o que não). Os dois lados usam a mesma grade de α, então a discretização
+    de α é comum e some na diferença. Sobra o erro de A_Y de cada código. O MMM acha a saturação por bisseção com
+    tolerância resolucao·1e-4 (desprezível). O analise_par interpola linearmente a folga m(a) = capacidade − exigida entre
+    linhas de passo h, e a raiz interpolada erra por até |m''|/(8·|m'|)·h² (erro da interpolação linear, com
+    (a − a0)(a1 − a) <= h²/4). A curvatura m'' depende da carga e do pneu e não é conhecida a priori, então não há
+    cota rigorosa em função da resolução. A `resolucao_ms2` do analise_par é |S_h − S_h/2| (grade refinada): num erro
+    assintótico c·h² ela vale 3/4 do erro de S_h, ou seja, o erro real de S_h é cerca de 4/3 da resolução que ele
+    declara (Richardson). A resolução declarada SUBESTIMA o erro dele. Estimativa: (4/3 + 1e-4)·res. Adota-se 2·res, 1,5
+    vez essa estimativa, como cota EMPÍRICA (a razão |d_ay_sat|/res de cada caso do TC-ESC-001 sai no detalhe do teste).
+    Não é cota provada, e a ciência do usuário é pedida no PR (EDR-064, item 2.9). Exigir só <= res_ms2 punha o
+    oráculo no limite por construção."""
     cota = 2.0 * res_ms2
     motivos = []
     if veredito_mmm != veredito_par:
@@ -87,10 +103,10 @@ def _dif(a: float | None, b: float | None) -> float | None:
     return None if a is None or b is None else a - b
 
 
-def _compara(sentido: str, caso: eq.CasoEquilibrio) -> ComparacaoDegrau1:
-    par = eq.analise_par(caso, n_alfa=_N_ALFA, passo_g=_PASSO_G)
+def _compara(sentido: str, caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> ComparacaoDegrau1:
+    par = eq.analise_par(caso, ay_max_g=ay_max_g, n_alfa=_N_ALFA, passo_g=_PASSO_G)
     res = par.resolucao_ms2 if par.resolucao_ms2 is not None else _RES_PADRAO_MS2
-    lim = mmm.limite(caso, mmm.Hipoteses.planilha(), resolucao_ms2=res, n_alfa=_N_ALFA)
+    lim = mmm.limite(caso, mmm.Hipoteses.planilha(), resolucao_ms2=res, ay_max_g=ay_max_g, n_alfa=_N_ALFA)
     d_f, d_r = _dif(lim.ay_sat_f, par.ay_sat_f), _dif(lim.ay_sat_r, par.ay_sat_r)
     # Um eixo que satura num código e não no outro não é identidade, ainda que a diferença não exista.
     ausencias = [e for e, a, b in (("F", lim.ay_sat_f, par.ay_sat_f), ("R", lim.ay_sat_r, par.ay_sat_r))
@@ -104,16 +120,18 @@ def _compara(sentido: str, caso: eq.CasoEquilibrio) -> ComparacaoDegrau1:
                              par.resolucao_ms2, ok, motivo)
 
 
-def degrau_1(caso: eq.CasoEquilibrio) -> tuple[ComparacaoDegrau1, ComparacaoDegrau1]:
+def degrau_1(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[ComparacaoDegrau1, ComparacaoDegrau1]:
     """MMM na configuração da planilha contra analise_par, (esquerda, direita), a direita via equilibrio.espelhar.
 
     Mesma grade de α dos dois lados: analise_par com n_alfa = 401 e passo_g = 0,01 (e o limite com o mesmo n_alfa e
     resolucao_ms2 igual à resolução que o próprio analise_par mede). Com a grade padrão dele (n_alfa = 25, passo
     0,05 g) a diferença é de ~3e-3 m/s² e vem da grade de α (a grossa subestima o pico), e não da hipótese; comparar
-    nela mediria a grade. A cota da saturação é a soma das duas incertezas declaradas (resolução do limite, igual à do
-    analise_par, mais a do analise_par), e `ok` usa a mesma cota (ver _julga). Onde o analise_par não mede resolução (nenhum eixo satura), usa-se o padrão do limite.
+    nela mediria a grade. A cota da saturação é 2·resolucao_ms2, empírica (ver _julga: a resolução que o
+    analise_par declara subestima o erro dele), e `ok` usa a mesma cota. Onde o analise_par não mede resolução (nenhum eixo
+    satura), usa-se o padrão do limite. ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g, o do analise_par
+    e do limite).
     """
-    return _compara("esquerda", caso), _compara("direita", eq.espelhar(caso))
+    return _compara("esquerda", caso, ay_max_g), _compara("direita", eq.espelhar(caso), ay_max_g)
 
 
 def _inverte(veredito_planilha: str, veredito_linha: str) -> str:
@@ -140,14 +158,34 @@ def _pior(esq: mmm.Limite, dir_: mmm.Limite) -> tuple[mmm.Limite, str]:
     return (esq, "esquerda") if chave(esq) <= chave(dir_) else (dir_, "direita")
 
 
-def degrau_2(caso: eq.CasoEquilibrio) -> tuple[LinhaEscada, ...]:
-    """Planilha e uma variante Python por vez (1+2, 3, 7, 9a, 9b, 10, 11), mais 10+9b (travado com o PAC2002
-    combinado, adendo §6) e todas, nesta ordem: planilha, 1+2, 3, 7, 9a, 9b, 10, 10+9b, 11, todas. As linhas com a hipótese 7 (7 e todas)
-    rodam os dois sentidos (caso e espelhar(caso)) e guardam o pior; as outras, só a curva à esquerda.
-    Linhas que terminam em N/A (por exemplo o travado a R pequeno) aparecem como N/A, sem exceção."""
+def _desligadas(caso: eq.CasoEquilibrio, hips: tuple[int, ...]) -> str | None:
+    """"hipótese desligada no caso (<campo>)" se alguma hipótese da linha depende de uma chave da planilha que o caso deixa
+    desligada, senão None. Chaves: hipótese 9 (e a 10, que age sobre a tração) liga com cda_m2 ou crr (eq.tracao_ativa);
+    hipótese 7 liga com cg_lateral_m ≠ 0. As outras linhas não têm chave própria: a 1+2 (α cinemático) muda mesmo sem toe
+    nem Ackermann (velocidades não paralelas das rodas), a 3 (cos δ_ref) está sempre ligada porque o MMM exige raio_m, e a
+    11 (regime) usa a_x = −A·sen β, que existe sem tração."""
+    campos = []
+    if (9 in hips or 10 in hips) and not eq.tracao_ativa(caso):
+        campos.append("cda_m2 e crr")
+    if 7 in hips and caso.cg_lateral_m == 0.0:
+        campos.append("cg_lateral_m")
+    return f"hipótese desligada no caso ({'; '.join(campos)})" if campos else None
+
+
+def degrau_2(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[LinhaEscada, ...]:
+    """Planilha, a linha de controle "planilha (acoplado)" e uma variante Python por vez (1+2, 3, 7, 9a, 9b, 10, 11), mais
+    10+9b (travado com o PAC2002 combinado, adendo §6) e todas, nesta ordem: planilha, planilha (acoplado), 1+2, 3, 7, 9a,
+    9b, 10, 10+9b, 11, todas. As linhas com a hipótese 7 (7 e todas) rodam os dois sentidos (caso e espelhar(caso)) e
+    guardam o pior; as outras, só a curva à esquerda.
+
+    Referência do Δ: a linha de controle é a planilha resolvida pelo caminho acoplado (Newton 2-D com a_y = A·cos β e
+    a_x = −A·sen β). O Δ dela contra a planilha mede o viés do método e da rotação, sem mudar hipótese. As linhas que usam
+    o Newton (todas menos a 7) medem Δ e `inverte` contra ela, para que o número de cada linha seja o efeito da hipótese;
+    a 7 usa o caminho desacoplado e mede contra a planilha. Linhas que terminam em N/A (por exemplo o travado a R pequeno)
+    aparecem como N/A, sem exceção. ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g)."""
     pl = mmm.Hipoteses.planilha()
     v = mmm.VARIANTES
-    receitas = [("planilha", (), pl, False)]
+    receitas = [("planilha", (), pl, False), (NOME_CONTROLE, (), mmm.planilha_acoplada(), False)]
     for campo in ("alfa", "cos_delta", "sentido", "fx_exigido", "tracao", "diferencial", "transf_long"):
         receitas.append((v[campo]["nome"], v[campo]["hipoteses"], replace(pl, **{campo: v[campo]["python"]}),
                          campo == "sentido"))
@@ -155,26 +193,33 @@ def degrau_2(caso: eq.CasoEquilibrio) -> tuple[LinhaEscada, ...]:
             receitas.append(("10+9b", (10, 9), replace(pl, diferencial="travado", tracao="pac2002"), False))
     receitas.append(("todas", (1, 2, 3, 7, 9, 10, 11), mmm.Hipoteses.python_completo(), True))
     espelho = None
-    base = mmm.limite(caso, pl)
+    base = mmm.limite(caso, pl, ay_max_g=ay_max_g)
+    controle = None
     linhas = []
     for nome, hips, hip, dois in receitas:
-        lim, pior = (base if nome == "planilha" else mmm.limite(caso, hip)), None
+        lim, pior = (base if nome == "planilha" else mmm.limite(caso, hip, ay_max_g=ay_max_g)), None
+        if nome == NOME_CONTROLE:
+            controle = lim
         if dois:
             if espelho is None:
                 espelho = eq.espelhar(caso)
-            lim, pior = _pior(lim, mmm.limite(espelho, hip))
+            lim, pior = _pior(lim, mmm.limite(espelho, hip, ay_max_g=ay_max_g))
+        usa_controle = nome != NOME_CONTROLE and mmm._e_acoplada(hip)
+        ref, nome_ref = (controle, NOME_CONTROLE) if usa_controle else (base, "planilha")
         linhas.append(LinhaEscada(
-            nome=nome, hipoteses=hips if nome != "planilha" else (), limite=lim, pior_sentido=pior,
-            d_ay_t=_dif(lim.ay_t_ms2, base.ay_t_ms2),
-            d_cn_estabilizante_q=_dif(lim.cn_estabilizante_q, base.cn_estabilizante_q),
-            d_k=_dif(lim.k_rad_por_ms2, base.k_rad_por_ms2),
-            inverte=_inverte(base.veredito, lim.veredito)))
+            nome=nome, hipoteses=hips, limite=lim, pior_sentido=pior,
+            d_ay_t=_dif(lim.ay_t_ms2, ref.ay_t_ms2),
+            d_cn_estabilizante_q=_dif(lim.cn_estabilizante_q, ref.cn_estabilizante_q),
+            d_k=_dif(lim.k_rad_por_ms2, ref.k_rad_por_ms2),
+            inverte=_inverte(ref.veredito, lim.veredito), referencia=nome_ref, motivo=_desligadas(caso, hips)))
     return tuple(linhas)
 
 
-def sensibilidades(caso: eq.CasoEquilibrio) -> tuple[dict, ...]:
+def sensibilidades(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[dict, ...]:
     """Uma sensibilidade por chave de mmm.UNIDADES, na ordem dela, com Hipoteses.planilha(); h_cp, com
-    transf_long="regime" (a parcela D·h_cp/L só existe no regime). Cada dict é o de mmm.sensibilidade (sem faixa)."""
+    transf_long="regime" (a parcela D·h_cp/L só existe no regime). Cada dict é o de mmm.sensibilidade (sem faixa).
+    ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g). A de h_cp parte de h_cp = 0 (None conta como 0): é a
+    sensibilidade em torno de zero, não de um valor medido."""
     pl = mmm.Hipoteses.planilha()
-    return tuple(mmm.sensibilidade(caso, replace(pl, transf_long="regime") if p == "h_cp" else pl, p)
+    return tuple(mmm.sensibilidade(caso, replace(pl, transf_long="regime") if p == "h_cp" else pl, p, ay_max_g)
                  for p in mmm.UNIDADES)

@@ -73,17 +73,21 @@ caso_cg = eq.CasoEquilibrio(cfg=veiculo_base(roll_stiffness_front=23700.0), ds=d
                             cg_lateral_m=0.06)
 
 # ---------------- TC-ESC-001 : degrau 1 ----------------
-ok_001, dets_001 = True, []
+ok_001, dets_001, razao_max = True, [], 0.0
 for nome, caso_x in casos.items():
     esq, dir_ = escada.degrau_1(caso_x)
     for c in (esq, dir_):
         ok_001 = ok_001 and c.ok and c.veredito_mmm == c.veredito_par
+        razoes = [abs(d) / c.resolucao_ms2 for d in (c.d_ay_sat_f, c.d_ay_sat_r) if d is not None and c.resolucao_ms2]
+        razao_max = max(razoes + [razao_max])
         dets_001.append(f"{nome}/{c.sentido}: {c.veredito_mmm}, d_sat=({c.d_ay_sat_f}, {c.d_ay_sat_r}), "
+                        f"|d|/res=({', '.join(f'{r:.2f}' for r in razoes)}), "
                         f"cn=({c.cn_mmm}, {c.cn_par}), res={c.resolucao_ms2}, ok={c.ok}"
                         + (f", motivo={c.motivo!r}" if c.motivo else ""))
     ok_001 = ok_001 and (esq.sentido, dir_.sentido) == ("esquerda", "direita")
-# Cota da saturação = resolução do limite + resolução do analise_par (2·res): dois resultados discretizados, cada um
-# com a incerteza que declara (decisão do controlador; só <= res punha o oráculo no limite por construção).
+# Cota da saturação = 2·res, EMPÍRICA (ver escada._julga): a resolução que o analise_par declara é |S_h − S_h/2| e subestima
+# o erro de interpolação dele (≈ 4/3 da resolução, Richardson); a razão |d|/res observada em cada caso sai no detalhe.
+# Não é cota provada. Exigir só <= res punha o oráculo no limite por construção.
 # A comparação não pode ser frouxa: desvios fabricados (de saturação e de veredito) têm de reprovar.
 res_f = 0.01
 ok_fab = (escada._julga(eq.PUSH, eq.PUSH, 2.5 * res_f, 0.0, None, None, res_f, 1.0)[0] is False
@@ -93,13 +97,14 @@ ok_fab = (escada._julga(eq.PUSH, eq.PUSH, 2.5 * res_f, 0.0, None, None, res_f, 1
           and escada._julga(eq.PUSH, eq.PUSH, 0.0, 0.0, 0.1, 0.1, res_f, 1.0)[0] is True
           and escada._julga(eq.NA, eq.NA, None, None, None, None, res_f, None)[0] is True)
 check("TC-ESC-001: degrau 1 (base, simétrico, com toe, com Ackermann 50 %, com tração; esquerda e direita): mesmo "
-      "veredito, |ay_sat − S| <= resolução do limite + do analise_par por eixo, cn_estabilizante = c_n dentro da folga equivalente; "
-      "desvios fabricados reprovam", ok_001 and ok_fab, "; ".join(dets_001))
+      "veredito, |ay_sat − S| <= 2·resolucao_ms2 (cota empírica) por eixo, cn_estabilizante = c_n dentro da folga "
+      "equivalente; desvios fabricados reprovam", ok_001 and ok_fab,
+      f"maior |d_ay_sat|/res = {razao_max:.2f} (estimativa do erro do analise_par: 4/3 da resolução); " + "; ".join(dets_001))
 
 # ---------------- TC-ESC-002 : degrau 2 ----------------
 linhas = escada.degrau_2(casos["base"])
 nomes = tuple(l.nome for l in linhas)
-esperados = ("planilha", "1+2", "3", "7", "9a", "9b", "10", "10+9b", "11", "todas")
+esperados = ("planilha", "planilha (acoplado)", "1+2", "3", "7", "9a", "9b", "10", "10+9b", "11", "todas")
 por_nome = {l.nome: l for l in linhas}
 pl = por_nome["planilha"]
 ok_pl = (pl.d_ay_t in (0.0, None) and pl.d_cn_estabilizante_q in (0.0, None) and pl.d_k in (0.0, None)
@@ -112,6 +117,25 @@ ok_h = (por_nome["10+9b"].hipoteses == (10, 9) and por_nome["todas"].hipoteses =
         and por_nome["1+2"].hipoteses == (1, 2) and por_nome["9a"].hipoteses == (9,))
 ok_ps = (por_nome["7"].pior_sentido in ("esquerda", "direita")
          and all(l.pior_sentido is None for l in linhas if l.nome not in ("7", "todas")))
+# Linha de controle (I5): a planilha resolvida pelo Newton 2-D com a rotação a_y = A·cos β. O Δ dela é contra a planilha (viés
+# do método e da rotação); o das linhas acopladas é contra ela; o da 7 (desacoplada) e o dela própria, contra a planilha.
+ctrl = por_nome["planilha (acoplado)"]
+ACOPLADAS = ("1+2", "3", "9a", "9b", "10", "10+9b", "11", "todas")
+ok_ctrl = (ctrl.referencia == "planilha" and ctrl.hipoteses == () and ctrl.limite.ay_t_ms2 is not None
+           and ctrl.d_ay_t == ctrl.limite.ay_t_ms2 - pl.limite.ay_t_ms2 and ctrl.d_ay_t != 0.0
+           and all(por_nome[n].referencia == "planilha (acoplado)" for n in ACOPLADAS)
+           and all(por_nome[n].referencia == "planilha" for n in ("planilha", "planilha (acoplado)", "7"))
+           and all(abs(por_nome[n].d_ay_t - (por_nome[n].limite.ay_t_ms2 - ctrl.limite.ay_t_ms2)) < 1e-12
+                   for n in ("3", "9a", "11") if por_nome[n].d_ay_t is not None))
+# I1: marca de hipótese desligada. O caso base não tem tração (cda_m2, crr) nem CG lateral, então as linhas 9a, 9b, 10, 10+9b,
+# 7 e todas levam "hipótese desligada no caso (<campo>)"; as demais, None. A linha desligada ainda é calculada e, sem a
+# hipótese, coincide com a referência por construção (Δ = 0 nas de tração, que são acopladas e idênticas à de controle).
+ok_motivo = (all(por_nome[n].motivo == "hipótese desligada no caso (cda_m2 e crr)" for n in ("9a", "9b", "10", "10+9b"))
+             and por_nome["7"].motivo == "hipótese desligada no caso (cg_lateral_m)"
+             and por_nome["todas"].motivo == "hipótese desligada no caso (cda_m2 e crr; cg_lateral_m)"
+             and all(por_nome[n].motivo is None for n in ("planilha", "planilha (acoplado)", "1+2", "3", "11"))
+             and all(por_nome[n].limite.ay_t_ms2 is not None and abs(por_nome[n].d_ay_t) < 1e-9
+                     for n in ("9a", "9b", "10", "10+9b")))
 # `inverte` por regra, com vereditos fabricados (a regra isolada).
 regra = {(eq.PUSH, eq.PUSH): "não", (eq.PUSH, eq.LOOSE): "sim", (eq.LOOSE, eq.PUSH): "sim",
          (eq.NEUTRO, eq.PUSH): "NEUTRO ↔ PUSH", (eq.PUSH, eq.NEUTRO): "NEUTRO ↔ PUSH",
@@ -123,20 +147,28 @@ l7 = next(l for l in escada.degrau_2(caso_cg) if l.nome == "7")
 le, ld = mmm.limite(caso_cg, mmm.Hipoteses.planilha()), mmm.limite(eq.espelhar(caso_cg), mmm.Hipoteses.planilha())
 pior_man = "esquerda" if (le.ay_t_ms2 is not None and (ld.ay_t_ms2 is None or le.ay_t_ms2 <= ld.ay_t_ms2)) else "direita"
 ok_7 = (le.ay_t_ms2 is not None and ld.ay_t_ms2 is not None and l7.pior_sentido == pior_man
-        and l7.limite.ay_t_ms2 == min(le.ay_t_ms2, ld.ay_t_ms2))
+        and l7.limite.ay_t_ms2 == min(le.ay_t_ms2, ld.ay_t_ms2)
+        and l7.motivo is None)   # com CG lateral ≠ 0 a hipótese 7 está ligada
 # Com tração, o diferencial travado pode dar N/A em R = 8,5 m (Fx oposto nas traseiras): a escada o relata, não falha.
 linhas_tr = escada.degrau_2(casos["com tração"])
+por_nome_tr = {l.nome: l for l in linhas_tr}
 ok_tr = (tuple(l.nome for l in linhas_tr) == esperados and all(l.inverte in VALIDOS for l in linhas_tr)
-         and all((l.inverte == "N/A") == (eq.NA in (l.limite.veredito, linhas_tr[0].limite.veredito))
+         and all((l.inverte == "N/A") == (eq.NA in (l.limite.veredito, por_nome_tr[l.referencia].limite.veredito))
                  for l in linhas_tr)
-         and all(l.limite.motivo for l in linhas_tr if l.limite.veredito == eq.NA))
-check("TC-ESC-002: degrau 2 (10 linhas na ordem; planilha com Δ = 0; sem campo de veredito de tolerância; `inverte` ∈ "
+         and all(l.limite.motivo for l in linhas_tr if l.limite.veredito == eq.NA)
+         and [l.nome for l in linhas_tr if l.motivo] == ["7", "todas"]   # com tração só a 7 (sem CG lateral) está desligada
+         and por_nome_tr["todas"].motivo == "hipótese desligada no caso (cg_lateral_m)")
+check("TC-ESC-002: degrau 2 (11 linhas na ordem, com a de controle `planilha (acoplado)`; planilha com Δ = 0; Δ das "
+      "acopladas contra a de controle; sem campo de veredito de tolerância; `inverte` ∈ "
       "{não, sim, NEUTRO ↔ PUSH, NEUTRO ↔ LOOSE, N/A} e a regra isolada; pior sentido só na 7 (e na todas, que a inclui), "
-      "conferido à mão com CG lateral ≠ 0; com tração, N/A relatado com motivo e inverte = N/A)",
-      nomes == esperados and ok_pl and ok_campos and ok_inv and ok_h and ok_ps and ok_regra and ok_7 and ok_tr,
-      f"nomes={nomes}; " + "; ".join(f"{l.nome}: T={l.limite.ay_t_ms2}, {l.limite.veredito}, d_T={l.d_ay_t}, "
+      "conferido à mão com CG lateral ≠ 0; hipótese desligada no caso com motivo; com tração, N/A relatado com motivo e "
+      "inverte = N/A)",
+      nomes == esperados and ok_pl and ok_campos and ok_inv and ok_h and ok_ps and ok_regra and ok_7 and ok_tr
+      and ok_ctrl and ok_motivo,
+      f"nomes={nomes}; " + "; ".join(f"{l.nome}: T={l.limite.ay_t_ms2}, {l.limite.veredito}, d_T={l.d_ay_t} (vs {l.referencia}), "
                                       f"d_cn={l.d_cn_estabilizante_q}, d_k={l.d_k}, inverte={l.inverte}"
-                                      + (f", motivo={l.limite.motivo!r}" if l.limite.motivo else "") for l in linhas)
+                                      + (f", motivo do limite={l.limite.motivo!r}" if l.limite.motivo else "")
+                                      + (f", {l.motivo}" if l.motivo else "") for l in linhas)
       + "; COM TRAÇÃO: " + "; ".join(f"{l.nome}: T={l.limite.ay_t_ms2}, {l.limite.veredito}, d_T={l.d_ay_t}, "
                                    f"inverte={l.inverte}" + (f", motivo={l.limite.motivo!r}" if l.limite.motivo else "")
                                    for l in linhas_tr)
@@ -158,6 +190,11 @@ for chave in ("d_ay_t", "d_cn_estabilizante_q"):
     a, b = s_esq[chave], s_dir_espelho[chave]
     sinais.append(a is not None and b is not None and a * (-b) < 0)
 ok_sinal = all(sinais)
+# Sinal absoluto (curva à esquerda, ISO: +y é a esquerda, o lado de dentro). O caso_cg tem o CG 60 mm para dentro. Deslocar o
+# CG mais para dentro soma carga estática nas rodas internas e tira das externas, e a transferência lateral faz o contrário:
+# as quatro cargas ficam mais próximas entre si. Com pneu de sensibilidade à carga negativa (μ cai com Fz, concavidade de Fy
+# em Fz), cargas mais iguais aumentam a aderência total, então T sobe: d_ay_t > 0 por +10 mm (valor medido no detalhe).
+ok_sinal = ok_sinal and s_esq["d_ay_t"] is not None and s_esq["d_ay_t"] > 0.0
 s_hcp = next(s for s in sens if s["parametro"] == "h_cp")
 ok_hcp = (s_hcp["motivo"] != "h_cp só com transf_long=regime" and s_hcp["d_ay_t"] is not None
           and s_hcp["d_ay_t"] != 0.0)   # com o regime ligado, a parcela D·h_cp/L age
