@@ -146,6 +146,21 @@ def cargas(caso: CasoEquilibrio, ay_ms2: float) -> dict:
     return fz
 
 
+def cargas_rotacionadas(caso: CasoEquilibrio, ay_lateral_ms2: float, ay_aero_ms2: float) -> dict:
+    """Fz [N] por roda com a parte lateral em `ay_lateral_ms2` e a aerodinâmica em `ay_aero_ms2` (a_x = 0).
+
+    No MMM em raio fixo a velocidade é V² = A·R (a aero e a resistência dependem de A), mas a aceleração lateral no
+    eixo do carro é a_y = A·cos β (adendo §2.5): a transferência lateral de carga e o camber seguem a_y, e a
+    downforce segue A. `cargas(caso, ay)` é o caso particular com os dois iguais. Função acrescentada (incremento 6)."""
+    fz = combined_fz_corner(caso.cfg, 0.0, ay_lateral_ms2, downforce(caso, ay_aero_ms2),
+                            caso.aero_balance_front, warn=False)
+    if caso.cg_lateral_m != 0.0:
+        st = static_fz_corner(caso.cfg)
+        st_y = static_fz_corner_cg_lateral(caso.cfg, caso.cg_lateral_m)
+        fz = {c: fz[c] + (st_y[c] - st[c]) for c in CANTOS}
+    return fz
+
+
 def camber(caso: CasoEquilibrio, ay_ms2: float) -> dict:
     """γ [rad] por roda: γ = camber_estático + ganho_camber·φ, com φ a rolagem de lateral_dfz."""
     phi = lateral_dfz(caso.cfg, ay_ms2)["roll_angle_rad"]
