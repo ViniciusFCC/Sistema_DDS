@@ -1,6 +1,6 @@
 # Mapa de Sistema_DDS
 
-495 arquivos, 393.8 MB. Mapa estrutural gerado por mapa_projeto.py (sem conteúdo; leia os trechos no original).
+499 arquivos, 394.1 MB. Mapa estrutural gerado por mapa_projeto.py (sem conteúdo; leia os trechos no original).
 
 ## Não ler inteiros (> 200 kB)
 
@@ -27,8 +27,9 @@
 - .superpowers/sdd/2026-10-23-v4-2-inc5-metas-e-coerencia/review-440b64a..ad8a7c2.diff (425 kB)
 - references/md/definitive-guide/livro.md (389 kB)
 - .token-savior/memory.db (360 kB)
+- .superpowers/sdd/2026-10-27-inc6-mmm-escada/review-6fa3a64..785bacb.diff (307 kB)
 - references/md/milliken-rcvd/parts/0901-0920.md (256 kB)
-- docs/Engineering_Decision_Register.md (214 kB)
+- … mais 1 (veja os ⚠ na árvore)
 
 ## Árvore
 
@@ -64,7 +65,7 @@
     - 4.2 Data Type (EDR-006)
     - … mais 21
 - MANIFEST.sha256 (6 kB)
-- MAPA.md (46 kB)
+- MAPA.md (39 kB)
     - Mapa de Sistema_DDS
     - Não ler inteiros (> 200 kB)
     - Árvore
@@ -147,13 +148,16 @@
       - task-final-fix-report.md (1 kB)
     - 2026-10-27-inc6-mmm-escada/ (detalhes omitidos pelo orçamento)
       - constraints.md (9 kB)
+      - final-findings.md (4 kB)
+      - final-fix-report.md (7 kB)
       - plan-path (1 kB)
-      - progress.md (10 kB)
+      - progress.md (12 kB)
       - review-176a864..269a4f2.diff (51 kB)
       - review-269a44a..67337a9.diff (34 kB)
       - review-269a4f2..9b721a2.diff (9 kB)
       - review-2ae412e..286fa0e.diff (12 kB)
       - review-67337a9..e002870.diff (23 kB)
+      - review-6fa3a64..785bacb.diff (307 kB) ⚠ >200 kB: não ler inteiro
       - review-9b721a2..269a44a.diff (67 kB)
       - review-cef6cd8..f919ba6.diff (10 kB)
       - review-e002870..2ae412e.diff (19 kB)
@@ -175,6 +179,7 @@
       - task-8-brief.md (1 kB)
       - task-8-report.md (3 kB)
       - task-9-brief.md (1 kB)
+      - task-9-report.md (2 kB)
     - regras-limite/ (detalhes omitidos pelo orçamento)
       - ledger.md (1 kB)
       - review-A.diff (44 kB)
@@ -209,7 +214,7 @@
   - arquitetura-planejada.md (13 kB)
   - data-contract-V2_4-excel-python.md (13 kB)
   - engineering-standard-V2.0-suspensao-fsae.md (87 kB)
-  - Engineering_Decision_Register.md (214 kB) ⚠ >200 kB: não ler inteiro
+  - Engineering_Decision_Register.md (219 kB) ⚠ >200 kB: não ler inteiro
   - hardpoint-schema-V2.0.md (5 kB)
   - passagem-2026-10-26.md (4 kB)
   - registro-de-versoes-V1.0.md (3 kB)
@@ -490,16 +495,16 @@
   - build_workbook.py (34 kB)
   - caso_planilha.py (14 kB)
   - dados_planilha.py (10 kB)
-  - equilibrio.py (45 kB)
+  - equilibrio.py (46 kB)
   - equilibrio_linear.py (32 kB)
-  - escada.py (10 kB)
+  - escada.py (14 kB)
   - gerar_v4_0.py (7 kB)
   - gerar_v4_1.py (24 kB)
   - gerar_v4_2.py (19 kB)
   - hardpoints.py (9 kB)
   - kinematics_model.py (43 kB)
   - metas.py (14 kB)
-  - mmm.py (69 kB)
+  - mmm.py (74 kB)
   - nomes_v4_0.py (10 kB)
   - origens.py (2 kB)
   - raizes.py (5 kB)
@@ -710,7 +715,7 @@
       - def check(name, condition, detail='')
       - def veiculo_base(**over)
       - def veiculo_simetrico(lambda_f=0.5, **over)
-  - test_escada.py (11 kB)
+  - test_escada.py (15 kB)
       - def check(name, condition, detail='')
       - def veiculo_base(**over)
       - def veiculo_simetrico(lambda_f=0.5, **over)
@@ -734,7 +739,7 @@
       - def closed_form_side_ic(C)
       - def solve_indep(C, travel)
       - def raises(fn, exc)
-  - test_mmm.py (50 kB)
+  - test_mmm.py (55 kB)
       - def raises(fn, exc=ValueError, needle=None)
       - def check(name, condition, detail='')
       - def veiculo_base(**over)
@@ -901,7 +906,7 @@
       - def comparar_ic_lateral()
       - def taxa_geometrica()
       - def main()
-  - relatorio_escada.py (18 kB)
+  - relatorio_escada.py (22 kB)
       - def sha256(p)
       - def git(*args)
       - def n(x, casas=3)
