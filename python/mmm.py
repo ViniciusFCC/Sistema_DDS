@@ -698,6 +698,13 @@ def _momento(caso: eq.CasoEquilibrio, fy: dict, fx: dict) -> float:
     return sum(pos[c][0] * fy[c] - pos[c][1] * fx[c] for c in CANTOS)
 
 
+def _estabilizante(cn_iso):
+    """Única fonte do sinal do C_N estabilizante: −C_N do ISO (positivo = push, curva à esquerda).
+
+    Serve nos dois sentidos (a negação é sua própria inversa). Nenhum outro código nega um C_N para isto."""
+    return -cn_iso
+
+
 def cn(trim_: Trim, caso: eq.CasoEquilibrio) -> tuple[float, float]:
     """(cn_iso, cn_estabilizante) com C_N = N/(W·L), W = m·G (Milliken, cap. 8).
 
@@ -706,7 +713,7 @@ def cn(trim_: Trim, caso: eq.CasoEquilibrio) -> tuple[float, float]:
     """
     cfg = caso.cfg
     cn_iso = momento_n(trim_, caso) / (cfg.mass_total * G * cfg.wheelbase)
-    return cn_iso, -cn_iso
+    return cn_iso, _estabilizante(cn_iso)
 
 
 # ---------------------------------------------------------------------------
@@ -869,7 +876,7 @@ def stability_index(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_al
     d_ay = mais.ay_ms2 - menos.ay_ms2
     if d_ay == 0.0:
         raise ValueError("stability_index: A_Y não varia com β (ΔA_Y = 0).")
-    return -(mais.cn_iso - menos.cn_iso) / d_ay
+    return _estabilizante(mais.cn_iso - menos.cn_iso) / d_ay
 
 
 # ---------------------------------------------------------------------------
@@ -1200,7 +1207,7 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
                     motivo_sat = _MSG_ACOPLADO
                     folga = margem[outro]
                     cn_est_q = folga * cfg.cg_to_rear / (W * L) if outro == "R" else -folga * cfg.cg_to_front / (W * L)
-                    cn_iso_q = -cn_est_q
+                    cn_iso_q = _estabilizante(cn_est_q)
                     fator_ay = math.cos(t_t.beta_rad) if _usa_ax(caso, hip) else 1.0
                     cn_p, motivo_p = _ponto_p(
                         caso, a, ay_max, passo, tol, n_alfa,
@@ -1295,7 +1302,7 @@ def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01,
             exigida = eq.forca_exigida(caso, ay_t)[0 if outro == "F" else 1]
             folga = cap_o.fy_max_N - exigida
             cn_est_q = folga * cfg.cg_to_rear / (W * L) if outro == "R" else -folga * cfg.cg_to_front / (W * L)
-            cn_iso_q = -cn_est_q
+            cn_iso_q = _estabilizante(cn_est_q)
         cn_p, motivo_p = _ponto_p(caso, ay_t, ay_max, passo, tol, n_alfa)
         if cn_p is None:
             motivo_sat = "; ".join(x for x in (motivo_sat, motivo_p) if x)
