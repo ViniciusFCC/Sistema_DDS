@@ -601,13 +601,14 @@ def _eixos_fora_do_ramo(s_frente: float, s_traseira: float) -> str | None:
 def _motivo_fora_do_ramo(eixo: str, caso: eq.CasoEquilibrio | None = None, hip: Hipoteses | None = None,
                          aval: "_Aval | None" = None) -> str:
     """Motivo de "um eixo saiu do ramo ascendente". Com o diferencial travado e tração ativa, o texto genérico engana: o
-    travado dá Fx diferente nas duas traseiras e consome a elipse de atrito da roda interna, o que tira o eixo R do ramo
-    sem que a Fy dele tenha chegado ao pico. Nesse caso o motivo leva o Fx e o κ por roda traseira no ponto da falha."""
+    travado reparte o Fx pela cinemática (κ comum), com Fx diferente nas duas traseiras, e o Fx de cada roda reduz a Fy dela
+    (elipse de atrito ou pneu combinado); o eixo R sai do ramo por isso, e não por ter chegado ao pico de Fy. Nesse caso o
+    motivo leva o Fx e o κ por roda traseira no ponto da falha."""
     base = f"sem trim: o eixo {eixo} saiu do ramo ascendente da soma do eixo (dFy/dα ≤ 0)"
     if caso is None or hip is None or aval is None or hip.diferencial != "travado" or not eq.tracao_ativa(caso):
         return base
     fx = ", ".join(f"{c} {aval.fx[c]:.0f} N (κ = {aval.kappa[c]:.3f})" for c in _TRASEIRA)
-    return f"{base}; diferencial travado, Fx por roda traseira: {fx} (a elipse de atrito da roda interna pode estar consumida)"
+    return f"{base}; diferencial travado, Fx por roda traseira: {fx} (o Fx de cada roda reduz a Fy dela pela elipse de atrito)"
 
 
 def _newton(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, beta0: float, delta0: float) -> tuple:
