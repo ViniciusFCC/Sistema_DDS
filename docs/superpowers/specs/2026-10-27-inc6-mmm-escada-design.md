@@ -16,7 +16,7 @@ O incremento 6 é **só Python**: não sai planilha nova (V4.3) e nenhuma fórmu
 
 | # | Spec base | Este adendo | Por quê |
 |---|---|---|---|
-| A1 | §7.5: chaves 1/0 na planilha para as hipóteses que ela implementa | As chaves vão para a planilha do incremento 7. No incremento 6 existe só o contrato delas (§3.2) | Usuário, 2026-10-27: incremento 6 só no Python |
+| A1 | §7.5: chaves 1/0 na planilha para as hipóteses que ela implementa | As chaves h2, h3, h7, h8 e h9 já existem na V4.1 (`caso_planilha.caso_da_planilha_v41`). A variante "planilha" de cada hipótese é o `CasoEquilibrio` como a planilha o monta (campo `None` = desligada), e as variantes Python ficam só no Python. Chaves novas na planilha ficam para o incremento 7 | Usuário, 2026-10-27: incremento 6 só no Python; correção pela decisão 1 do plano (EDR-064) |
 | A2 | §8.1: `mmm.py` com "grade β × δ" como núcleo | O núcleo é a curva de trim em raio fixo, parametrizada por A_Y. A grade fica para o diagrama e para um teste | Mais robusto perto do pico, que é onde o resultado interessa (§4) |
 | A3 | §8.1 e §10 citam só `mmm.py` e `tests/test_escada.py` | Mais `python/escada.py` (orquestração), `tests/test_mmm.py` (física) e `tools/relatorio_escada.py` (relatório) | Física e orquestração testadas em separado; a tabela da escada precisa de um relatório legível para a decisão da tolerância |
 | A4 | §7.4: hipóteses ligadas ou desligadas | Cada hipótese tem **variantes** (planilha × Python) | A planilha já implementa as hipóteses 1, 2, 3, 6, 7, 8 e 9; "tudo desligado" não é a planilha |
@@ -140,8 +140,8 @@ O autoblocante (hipótese 10) fica declarado: não há dado de travamento.
   C_N em P, stability index, K, `resolucao_ms2` e `motivo`.
 - `PontoMMM`: um ponto do diagrama.
 
-Cada resultado leva o rótulo de origem do caso (pior origem, como hoje) e a marca "geometria sintética" quando a
-cinemática for a sintética. Um ponto que não converge vira `None` com motivo, nunca um número, no padrão de
+Os `dataclass` não carregam a origem dos dados: o `mmm.py` e o `escada.py` não a conhecem. O rótulo de origem (pior
+origem do caso, como hoje) e a marca "geometria sintética" ficam no relatório (`tools/relatorio_escada.py`). Um ponto que não converge vira `None` com motivo, nunca um número, no padrão de
 `Capacidade.motivo`.
 
 ## 4. Algoritmo
@@ -184,7 +184,7 @@ do parâmetro, por diferença central. As unidades são declaradas; nenhuma faix
 
 - **Hip. 4:** ganho de camber de cada eixo, por 0,1 °/°. Com a geometria sintética, a não linearidade não se mede.
 - **Hip. 5:** altura do RC de cada eixo, por 10 mm, e K_φ de cada eixo, por 1 kN·m/rad.
-- **Hip. 12:** ΔFz de jacking pela altura do RC de cada eixo, por 10 mm.
+- **Hip. 12:** altura do CG (`cfg.cg_height`), por 10 mm. O Python não tem modelo de jacking (o EDR-053 só existe em texto) e o jacking não muda a soma das Fz, só a altura e o camber; o camber já é coberto pela hipótese 4 (decisão 4 do plano, EDR-064).
 - **Hip. 7:** CG lateral, por 10 mm (exemplo da spec base §7.5).
 - **Hip. 11:** h_cp, por 10 mm (§2.6).
 
