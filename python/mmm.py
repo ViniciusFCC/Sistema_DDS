@@ -1,5 +1,5 @@
 """
-MMM em raio fixo (Milliken Moment Method) e escada de hipóteses: física (incremento 6, Tasks 2 a 4).
+MMM em raio fixo (Milliken Moment Method) e escada de hipóteses: física (incremento 6, Tasks 2 a 5).
 
 Fixado A_Y e o raio R do skidpad, ficam determinados V = √(A_Y·R), a downforce, as cargas, o camber e as
 forças exigidas por eixo (equilibrio.forca_exigida). Este módulo acha o trim (β, δ) que as entrega.
@@ -20,7 +20,7 @@ adendo da especificação do incremento 6 (docs/superpowers/specs/2026-10-27-inc
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from typing import Literal
 
 import equilibrio as eq
@@ -710,13 +710,20 @@ def cn(trim_: Trim, caso: eq.CasoEquilibrio) -> tuple[float, float]:
 
 
 # ---------------------------------------------------------------------------
-# Trim lateral em (β, δ) fixos (base do stability index; a Task 5 publica este solver como `ponto`)
+# Ponto e diagrama em raio fixo com trim lateral (adendo §4.2)
 # ---------------------------------------------------------------------------
 
+ROTULO_DIAGRAMA = "raio fixo com trim lateral (V = √(A_Y·R))"
+_AY_MAX_PONTO_G = 3.0      # a varredura do ponto vai de 0 a 3·G ...
+_N_PASSOS_PONTO = 60       # ... em 61 pontos (passo de 0,05·G)
+
+
 @dataclass(frozen=True)
-class _PontoLateral:
-    """Resultado de _trim_lateral. ay_ms2 e cn_iso são None quando não há raiz (motivo diz por quê).
-    n_raizes conta as trocas de sinal de ΣFy − m·A_Y na varredura (aero forte pode dar mais de uma)."""
+class PontoMMM:
+    """Um ponto do diagrama de raio fixo com trim lateral. ay_ms2 e cn_iso são None quando não há raiz (motivo diz por
+    quê). n_raizes conta as trocas de sinal de ΣFy − m·A_Y na varredura em A_Y (aero forte pode dar mais de uma)."""
+    beta_rad: float
+    delta_rad: float
     ay_ms2: float | None
     cn_iso: float | None
     n_raizes: int
@@ -751,7 +758,10 @@ def _balanco_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, d
     fy, fx = {}, {}
     for c in CANTOS:
         frente = c in eq.RODAS_DO_EIXO["F"]
-        f_pneu = wheel_forces(caso.ds, c, fz_u[c], alfa[c], gam_u[c], 0.0)[1]
+        try:
+            f_pneu = wheel_forces(caso.ds, c, fz_u[c], alfa[c], gam_u[c], 0.0)[1]
+        except TireRangeError as e:   # α fora do .tir numa grade de (β, δ): o ponto sai do domínio, não é erro
+            return None, None, f"pneu fora da faixa em {c}: {e}"
         if not frente and fatores is not None:
             f_pneu *= fatores[c]
         fy[c] = f_pneu * (cos_ref if frente else 1.0)
@@ -759,20 +769,22 @@ def _balanco_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, d
     return sum(fy.values()) - cfg.mass_total * ay_ms2, (fy, fx), None
 
 
-def _trim_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad: float,
-                  ay_ref_ms2: float | None = None, ay_max_ms2: float = 3.0 * G,
-                  passo_ms2: float = 0.02 * G) -> _PontoLateral:
-    """A_Y em que ΣFy(A_Y; β, δ) = m·A_Y, com C_N (ISO) nesse A_Y.
+def ponto(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad: float,
+          ay_ref_ms2: float | None = None) -> PontoMMM:
+    """Trim lateral em (β, δ) fixos: o A_Y em que ΣFy(A_Y) = m·A_Y, com o C_N (ISO) nesse A_Y.
 
-    Varre A_Y em passos de passo_ms2 a partir de 0 até ay_max_ms2 ou até o primeiro descolamento; cada troca de sinal
-    de ΣFy − m·A_Y é uma raiz (Brent dentro do intervalo). Com ay_ref_ms2, devolve a raiz mais próxima dele; sem,
-    a menor. Sem raiz: ay_ms2 e cn_iso None, com motivo.
+    Resolve por Brent no intervalo [0, A_desc], onde A_desc é o primeiro A_Y com alguma Fz <= 0 (ou com o ponto fora
+    do domínio, o mesmo critério do trim). Uma varredura prévia de 0 a 3·G em 61 pontos (passo de 0,05·G) acha os
+    intervalos e conta em `n_raizes` as trocas de sinal de ΣFy − m·A_Y: com aero forte (CzA alto) pode haver mais de
+    uma raiz. **A raiz devolvida é a menor** (a primeira da varredura); só o stability index, que precisa da raiz
+    vizinha do trim, passa `ay_ref_ms2` e recebe a mais próxima dele. Sem raiz: ay_ms2 e cn_iso None, com motivo.
+    Sem raio_m lança ValueError (decisão 2 do plano).
     """
     _exige_raio(caso)
-    n = math.floor(ay_max_ms2 / passo_ms2 + 1e-9)
+    passo = _AY_MAX_PONTO_G * G / _N_PASSOS_PONTO
     grade, motivo_fim = [], None
-    for k in range(n + 1):
-        ay = k * passo_ms2
+    for k in range(_N_PASSOS_PONTO + 1):
+        ay = k * passo
         r, _, motivo = _balanco_lateral(caso, hip, beta_rad, delta_rad, ay)
         if r is None:
             motivo_fim = f"{motivo} em a_y = {eq._num(ay / G, '.3f')} g"
@@ -788,8 +800,8 @@ def _trim_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delt
             intervalos.append((a1, a1))
     if not intervalos:
         ate = eq._num(grade[-1][0] / G, ".3f") if grade else "0"
-        return _PontoLateral(None, None, 0, f"sem raiz de ΣFy = m·A_Y em [0, {ate} g]"
-                             + (f"; {motivo_fim}" if motivo_fim else ""))
+        return PontoMMM(beta_rad, delta_rad, None, None, 0, f"sem raiz de ΣFy = m·A_Y em [0, {ate} g]"
+                        + (f"; {motivo_fim}" if motivo_fim else ""))
     if ay_ref_ms2 is None:
         a, b = intervalos[0]
     else:
@@ -801,8 +813,15 @@ def _trim_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delt
     ay_raiz = a if a == b else _brent(f, a, b)
     _, (fy, fx), _ = _balanco_lateral(caso, hip, beta_rad, delta_rad, ay_raiz)
     cfg = caso.cfg
-    return _PontoLateral(ay_raiz, _momento(caso, fy, fx) / (cfg.mass_total * G * cfg.wheelbase),
-                         len(intervalos), None)
+    return PontoMMM(beta_rad, delta_rad, ay_raiz, _momento(caso, fy, fx) / (cfg.mass_total * G * cfg.wheelbase),
+                    len(intervalos), None)
+
+
+def diagrama(caso: eq.CasoEquilibrio, hip: Hipoteses, betas, deltas) -> list[PontoMMM]:
+    """O `ponto` em cada par da grade β × δ (β externo, δ interno), no diagrama de **raio fixo com trim lateral**
+    (V = √(A_Y·R) em cada ponto; ROTULO_DIAGRAMA): C_N contra A_Y. Não se compara diretamente com a Fig. 8.7 do
+    Milliken, que é a velocidade constante (60 mph, p. 308). A escada usa só a curva de trim; isto é exibição."""
+    return [ponto(caso, hip, b, d) for b in betas for d in deltas]
 
 
 # ---------------------------------------------------------------------------
@@ -842,8 +861,8 @@ def stability_index(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_al
     t = trim(caso, hip, ay_ms2, n_alfa)
     if not t.convergiu:
         raise ValueError(f"stability_index: sem trim em a_y = {eq._num(ay_ms2 / G, '.3f')} g ({t.motivo})")
-    mais = _trim_lateral(caso, hip, t.beta_rad + h_beta_rad, t.delta_rad, ay_ref_ms2=ay_ms2)
-    menos = _trim_lateral(caso, hip, t.beta_rad - h_beta_rad, t.delta_rad, ay_ref_ms2=ay_ms2)
+    mais = ponto(caso, hip, t.beta_rad + h_beta_rad, t.delta_rad, ay_ref_ms2=ay_ms2)
+    menos = ponto(caso, hip, t.beta_rad - h_beta_rad, t.delta_rad, ay_ref_ms2=ay_ms2)
     for lado in (mais, menos):
         if lado.ay_ms2 is None:
             raise ValueError(f"stability_index: {lado.motivo}")
@@ -1292,3 +1311,74 @@ def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01,
                   veredito=veredito, cn_iso_q=cn_iso_q, cn_estabilizante_q=cn_est_q, cn_p=cn_p,
                   stability_index=si, k_rad_por_ms2=k, resolucao_ms2=float(resolucao_ms2),
                   motivo=motivo, limitacoes=limitacoes)
+
+
+# ---------------------------------------------------------------------------
+# Sensibilidades por unidade (adendo §4.3; decisão 4 do plano troca o jacking pela altura do CG)
+# ---------------------------------------------------------------------------
+
+UNIDADES = {"ganho_camber_F": "por 0,1 °/°", "ganho_camber_R": "por 0,1 °/°",
+            "rc_F": "por 10 mm", "rc_R": "por 10 mm",
+            "kphi_F": "por 1 kN·m/rad", "kphi_R": "por 1 kN·m/rad",
+            "h_cg": "por 10 mm", "cg_lateral": "por 10 mm", "h_cp": "por 10 mm"}
+
+# Passo de cada parâmetro na unidade SI do campo: ganho_camber em rad/rad (nas duas rodas do eixo), cfg.roll_center_front
+# e _rear [m], cfg.roll_stiffness_front e _rear [N·m/rad], cfg.cg_height [m], cg_lateral_m [m] e h_cp_m [m].
+_PASSOS = {"ganho_camber_F": 0.1, "ganho_camber_R": 0.1, "rc_F": 0.010, "rc_R": 0.010,
+           "kphi_F": 1000.0, "kphi_R": 1000.0, "h_cg": 0.010, "cg_lateral": 0.010, "h_cp": 0.010}
+
+_CAMPO_CFG = {"rc_F": "roll_center_front", "rc_R": "roll_center_rear",
+              "kphi_F": "roll_stiffness_front", "kphi_R": "roll_stiffness_rear", "h_cg": "cg_height"}
+
+assert set(UNIDADES) == set(_PASSOS)
+
+
+def _desloca(caso: eq.CasoEquilibrio, hip: Hipoteses, parametro: str, d: float) -> tuple:
+    """(caso, hip) com o parâmetro deslocado de d (unidade SI do campo), sem alterar os objetos recebidos."""
+    if parametro.startswith("ganho_camber_"):
+        ganho = dict(caso.ganho_camber)
+        for c in eq.RODAS_DO_EIXO[parametro[-1]]:
+            ganho[c] += d
+        return replace(caso, ganho_camber=ganho), hip
+    if parametro in _CAMPO_CFG:
+        campo = _CAMPO_CFG[parametro]
+        return replace(caso, cfg=replace(caso.cfg, **{campo: getattr(caso.cfg, campo) + d})), hip
+    if parametro == "cg_lateral":
+        return replace(caso, cg_lateral_m=caso.cg_lateral_m + d), hip
+    return caso, replace(hip, h_cp_m=(hip.h_cp_m if hip.h_cp_m is not None else 0.0) + d)   # h_cp
+
+
+def sensibilidade(caso: eq.CasoEquilibrio, hip: Hipoteses, parametro: str) -> dict:
+    """Variação de T, de C_N estabilizante em Q e de K por unidade do parâmetro, por diferença central de ± um passo
+    (a unidade é o passo: d = (valor(+passo) − valor(−passo))/2), mais o veredito de cada lado. Nenhuma faixa é afirmada.
+
+    parametro ∈ UNIDADES (passos em _PASSOS, na unidade SI do campo; `unidade` devolve o texto de UNIDADES). `cg_lateral`
+    parte do valor do caso. `h_cp` parte de hip.h_cp_m (None conta como 0) e exige transf_long="regime", senão o
+    resultado é vazio com motivo "h_cp só com transf_long=regime". Um valor None (T, Q ou K de um dos lados sem número)
+    deixa a derivada correspondente None, com o motivo de cada lado. O caso e as hipóteses recebidos não são alterados.
+    Chaves: parametro, unidade, d_ay_t [m/s²], d_cn_estabilizante_q, d_k [rad/(m/s²)], veredito_menos, veredito_mais, motivo.
+    """
+    if parametro not in UNIDADES:
+        raise ValueError(f"parametro deve ser um de {tuple(UNIDADES)}; recebido {parametro!r}.")
+    _exige_raio(caso)
+    res = {"parametro": parametro, "unidade": UNIDADES[parametro], "d_ay_t": None, "d_cn_estabilizante_q": None,
+           "d_k": None, "veredito_menos": None, "veredito_mais": None, "motivo": None}
+    if parametro == "h_cp" and hip.transf_long != "regime":
+        res["motivo"] = "h_cp só com transf_long=regime"
+        return res
+    passo = _PASSOS[parametro]
+    lados = {}
+    for nome, sinal in (("menos", -1.0), ("mais", 1.0)):
+        caso_x, hip_x = _desloca(caso, hip, parametro, sinal * passo)
+        lados[nome] = limite(caso_x, hip_x)
+    res["veredito_menos"], res["veredito_mais"] = lados["menos"].veredito, lados["mais"].veredito
+    for chave, campo in (("d_ay_t", "ay_t_ms2"), ("d_cn_estabilizante_q", "cn_estabilizante_q"),
+                         ("d_k", "k_rad_por_ms2")):
+        v_menos, v_mais = getattr(lados["menos"], campo), getattr(lados["mais"], campo)
+        if v_menos is not None and v_mais is not None:
+            res[chave] = (v_mais - v_menos) / 2.0
+    faltas = [f"lado {nome}: {lados[nome].motivo or lados[nome].motivo_sat}" for nome in ("menos", "mais")
+              if lados[nome].ay_t_ms2 is None or lados[nome].cn_estabilizante_q is None
+              or lados[nome].k_rad_por_ms2 is None]
+    res["motivo"] = "; ".join(faltas) or None
+    return res

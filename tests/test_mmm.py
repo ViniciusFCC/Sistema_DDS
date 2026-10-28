@@ -20,6 +20,7 @@ import contextlib
 import dataclasses
 import math
 import os
+import time
 
 import equilibrio as eq
 import equilibrio_linear as eql
@@ -330,6 +331,60 @@ check("TC-MMM-006: CG lateral ≠ 0 + espelhar: T e veredito de cada sentido = a
       f"{lim_dir.cn_iso_q:.5f}); cn_est=({lim_esq.cn_estabilizante_q:.5f}, {lim_dir.cn_estabilizante_q:.5f})")
 
 
+# ---------------- TC-MMM-003 : força bruta numa grade β × δ via ponto ----------------
+# Pneu com escala de teste (ds_teste, LMUY = 0,5, sintético de teste) e downforce de 400 N (sintético de teste), para o
+# carro saturar abaixo de 3 g. Sem capacidade_eixo: só `ponto` (trim lateral em (β, δ) fixos). Faixa da grade: o trim
+# (limite -> T; trim em A_Y = 0,01·G, 0,1·T, ..., 0,999·T) dá o (β, δ) de cada A_Y de 0 a T; a faixa de cada variável é a
+# do mínimo ao máximo desses trims, estendida em 30 % da amplitude para cada lado (margem para o cruzamento de C_N = 0
+# acima de T e para a interpolação). Cruzamentos de C_N = 0: entre vizinhos da grade (em β e em δ) com C_N de sinais
+# opostos, A_Y por interpolação linear no ponto de C_N = 0. O maior A_Y desses cruzamentos é o T da força bruta.
+caso_003 = eq.CasoEquilibrio(cfg=cfg, ds=ds_teste, raio_m=R_TESTE, downforce_N=400.0, aero_balance_front=0.45)
+lim_003 = mmm.limite(caso_003, hip_pl)
+T3 = lim_003.ay_t_ms2
+trs_003 = [mmm.trim(caso_003, hip_pl, a) for a in [0.01 * G] + [f * T3 for f in (0.1, 0.25, 0.5, 0.75, 0.9, 0.999)]]
+N3 = 41
+
+
+def faixa_003(vals, margem=0.3):
+    lo, hi = min(vals), max(vals)
+    return lo - margem * (hi - lo), hi + margem * (hi - lo)
+
+
+b_lo, b_hi = faixa_003([t_.beta_rad for t_ in trs_003])
+d_lo, d_hi = faixa_003([t_.delta_rad for t_ in trs_003])
+betas_003 = [b_lo + (b_hi - b_lo) * i / (N3 - 1) for i in range(N3)]
+deltas_003 = [d_lo + (d_hi - d_lo) * i / (N3 - 1) for i in range(N3)]
+t_ini = time.time()
+pts_003 = mmm.diagrama(caso_003, hip_pl, betas_003, deltas_003)
+seg_003 = time.time() - t_ini
+grade_003 = [[pts_003[i * N3 + j] for j in range(N3)] for i in range(N3)]
+cruz_003 = []
+
+
+def cruza(p, q):
+    if p.ay_ms2 is None or q.ay_ms2 is None or not p.cn_iso * q.cn_iso < 0.0:
+        return
+    w = -p.cn_iso / (q.cn_iso - p.cn_iso)
+    cruz_003.append(p.ay_ms2 + w * (q.ay_ms2 - p.ay_ms2))
+
+
+for i in range(N3):
+    for j in range(N3):
+        if i + 1 < N3:
+            cruza(grade_003[i][j], grade_003[i + 1][j])
+        if j + 1 < N3:
+            cruza(grade_003[i][j], grade_003[i][j + 1])
+t_bruta = max(cruz_003) if cruz_003 else None
+res_003 = lim_003.resolucao_ms2
+check("TC-MMM-003: força bruta 41 × 41 em β × δ via ponto (sem capacidade_eixo): o maior A_Y nos cruzamentos de C_N = 0 "
+      "(interpolação linear entre vizinhos) fica em [0,97·T, T + resolucao_ms2]",
+      t_bruta is not None and 0.97 * T3 <= t_bruta <= T3 + res_003,
+      f"T={T3 / G:.5f} g; força bruta={t_bruta / G:.5f} g (razão {t_bruta / T3:.5f}; {len(cruz_003)} cruzamentos); "
+      f"β=[{math.degrees(b_lo):.3f}°, {math.degrees(b_hi):.3f}°], δ=[{math.degrees(d_lo):.3f}°, "
+      f"{math.degrees(d_hi):.3f}°]; {sum(p.ay_ms2 is None for p in pts_003)} pontos sem raiz; diagrama em {seg_003:.1f} s; "
+      f"rótulo: {mmm.ROTULO_DIAGRAMA}")
+
+
 # ---------------- TC-MMM-007 : trim desacoplado ----------------
 def resíduos(caso_x, tr):
     soma_fy = sum(tr.fy.values())
@@ -478,17 +533,44 @@ ok_acopl = (mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).convergiu
             and mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).delta_rodas is not None
             and mmm.trim(caso_t, hip_pl, 1.0 * G).delta_rodas is None)
 
+# Ruling da revisão da Task 4: com transf_long="regime", a Fz traseira do Trim difere da de transf_long="nao" (as cargas
+# de eq.cargas no mesmo A_Y) por (m·a_x·h + D·h_cp)/L, com a_x = −A·sen β (A e β do próprio Trim), dividida igual entre as
+# duas rodas traseiras, tirada igual das dianteiras (ΣFz conservada). D = ½ρ·CdA·A·R dos campos do caso. Calculado AQUI,
+# sem helper do módulo; tolerância 1e-6 N. Com h_cp_m = None a parcela D·h_cp falta; o h_cp_m sintético de teste é de 0,4 m.
+def resid_regime(h_cp):
+    hip_r = mmm.Hipoteses(transf_long="regime", h_cp_m=h_cp)
+    tr_r = mmm.trim(caso_pc, hip_r, 0.8 * G)
+    if not tr_r.convergiu:
+        return math.inf, math.inf, tr_r
+    m_, h_, L_ = caso_pc.cfg.mass_total, caso_pc.cfg.cg_height, caso_pc.cfg.wheelbase
+    A_, a_x = tr_r.ay_ms2, -tr_r.ay_ms2 * math.sin(tr_r.beta_rad)
+    D_ = 0.5 * caso_pc.rho_kg_m3 * caso_pc.cda_m2 * A_ * caso_pc.raio_m
+    d_fz = (m_ * a_x * h_ + (D_ * h_cp if h_cp is not None else 0.0)) / L_
+    base_ = eq.cargas(caso_pc, A_)
+    erro = max(abs(tr_r.fz[c] - base_[c] - (d_fz / 2.0 if c in ("RL", "RR") else -d_fz / 2.0)) for c in CANTOS_T)
+    return erro, abs(sum(tr_r.fz.values()) - sum(base_.values())), tr_r
+
+
+ok_regime, det_regime = True, []
+for h_cp_t in (None, 0.4):   # 0,4 m: sintético de teste
+    e_fz, e_soma, tr_r = resid_regime(h_cp_t)
+    ok_regime = ok_regime and e_fz < 1e-6 and e_soma < 1e-6 and tr_r.convergiu and abs(tr_r.beta_rad) > 1e-3
+    det_regime.append(f"h_cp={h_cp_t}: |ΔFz − (m·a_x·h + D·h_cp)/L|={e_fz:.1e} N, |ΔΣFz|={e_soma:.1e} N, "
+                      f"β={math.degrees(tr_r.beta_rad):.3f}°" if tr_r.convergiu else f"h_cp={h_cp_t}: sem trim")
+
 check("TC-MMM-007: no trim |ΣFy−m·A_Y|<1e-6 N e |N|<1e-6 N·m; A_Y acima do limite -> convergiu=False com motivo e "
       "campos None; sem raio_m -> ValueError; limite: descolamento, toe que consome a faixa e pico na borda -> N/A com o "
       "motivo de capacidade_eixo e sem T; variante Python completa em 0,5·T: resíduos Fx, Fy, N em eixos do carro (§2.5) "
-      "< 1e-6, com Ackermann também; limite acoplado: eixo que satura com ay_sat = T e o outro None (decisão 3), T e Q à mão",
-      ok_res and ok_alto and ok_raio and ok_acopl and ok_desc and ok_toe and ok_pc and ok_lim_a and ok_lim_n and ok_acima,
+      "< 1e-6, com Ackermann também; limite acoplado: eixo que satura com ay_sat = T e o outro None (decisão 3), T e Q à mão; "
+      "transf_long=regime: ΔFz traseira = (m·a_x·h + D·h_cp)/L com e sem h_cp (1e-6 N)",
+      ok_res and ok_alto and ok_raio and ok_acopl and ok_desc and ok_toe and ok_pc and ok_lim_a and ok_lim_n and ok_acima
+      and ok_regime,
       f"resíduos(F,N)={[(f'{rf:.1e}', f'{rn:.1e}') for _, rf, rn in rs]}; motivo(5g)={tr_alto.motivo!r}; "
       f"eixo_sem_raiz={tr_alto.eixo_sem_raiz}; descolamento: {lim_desc.motivo!r}; toe: {lim_toe.motivo!r}; "
       f"borda: {lim_borda.motivo!r}; completo: {det_pc[0]}; com Ackermann: {det_pc[1]}; "
       f"limite acoplado (cos δ trim, brinquedo): T={lim_cd.ay_t_ms2:.6f} (mão {T_acopl:.6f}) Q={lim_cd.cn_estabilizante_q:.6f} "
       f"(mão {Q_acopl:.6f}) {lim_cd.veredito}; R grande T={lim_cd_g.ay_t_ms2:.6f} {lim_cd_g.veredito}; "
-      f"acima de T: {tr_acima.motivo!r}")
+      f"acima de T: {tr_acima.motivo!r}; regime (ΔFz traseira): {det_regime}")
 
 # ---------------- TC-MMM-008 : α cinemático ----------------
 # Ackermann 100 % em R = 8,5 m e β pequeno. Com o centro instantâneo na linha do eixo traseiro, sen β = b/R, o raio do
@@ -569,6 +651,46 @@ check("TC-MMM-009: diferencial travado: contribuição de Fx ao N < 0 (push) em 
       f"N_Fx(travado,PAC)={n_fx(tr_tv_pac):.3f} N·m; κ travado RL={tr_tv.kappa['RL']:.4f} RR={tr_tv.kappa['RR']:.4f}; "
       f"janela de Crr (elipse ok, PAC sem raiz)={janela}; Crr=2: {t_muito.motivo!r}")
 
+# ---------------- TC-MMM-010 : várias raízes de ΣFy(A_Y) − m·A_Y ----------------
+# CzA = 200 m² (sintético de teste, absurdo de propósito) com ρ = 1,2 kg/m³: a downforce cresce tanto com A_Y que ΣFy − m·A_Y
+# troca de sinal mais de uma vez. (β, δ) = (8°, 20°) (sintético de teste, achado por varredura). `ponto` devolve a MENOR raiz
+# (documentado na docstring) e n_raizes >= 2. A conferência é independente do módulo: ΣFy(A_Y) é refeito AQUI de eq.cargas,
+# eq.entrada_limitada, mmm.alfa_rodas e wheel_forces (sem aero na tração; o caso não tem CdA), numa varredura de 0,002·G, e a
+# menor troca de sinal é refinada por bisseção.
+caso_010 = eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, cza_m2=200.0, rho_kg_m3=1.2, aero_balance_front=0.45)
+b_010, d_010 = math.radians(8.0), math.radians(20.0)
+p_010 = mmm.ponto(caso_010, hip_pl, b_010, d_010)
+
+
+def f_010(ay):
+    fz_ = eq.cargas(caso_010, ay)
+    fz_u_, gam_u_, _ = eq.entrada_limitada(caso_010, CANTOS_T, fz_, eq.camber(caso_010, ay))
+    al_ = mmm.alfa_rodas(caso_010, hip_pl, b_010, d_010)
+    cos_ref_ = math.cos(L / R_TESTE)
+    soma = sum(tm.wheel_forces(ds, c, fz_u_[c], al_[c], gam_u_[c], 0.0)[1] * (cos_ref_ if c in ("FL", "FR") else 1.0)
+               for c in CANTOS_T)
+    return soma - cfg.mass_total * ay
+
+
+passo_010 = 0.002 * G
+ay_010 = [k * passo_010 for k in range(int(1.0 * G / passo_010))]   # até 1 g: a menor raiz cai bem antes
+v_010 = [f_010(a) for a in ay_010]
+trocas_010 = [k for k in range(len(ay_010) - 1) if v_010[k] * v_010[k + 1] < 0.0]
+lo_, hi_ = ay_010[trocas_010[0]], ay_010[trocas_010[0] + 1]
+for _ in range(60):
+    mid_ = 0.5 * (lo_ + hi_)
+    if f_010(lo_) * f_010(mid_) <= 0.0:
+        hi_ = mid_
+    else:
+        lo_ = mid_
+menor_010 = 0.5 * (lo_ + hi_)
+check("TC-MMM-010: CzA alto (200 m², sintético de teste): ponto com n_raizes ≥ 2, e o A_Y devolvido é a menor raiz "
+      "(refeita fora do módulo por varredura + bisseção, 1e-6)",
+      p_010.n_raizes >= 2 and len(trocas_010) >= 1 and p_010.ay_ms2 is not None and abs(p_010.ay_ms2 - menor_010) < 1e-6
+      and abs(f_010(p_010.ay_ms2)) < 1e-6,
+      f"n_raizes={p_010.n_raizes}; A_Y devolvido={p_010.ay_ms2 / G:.6f} g; menor raiz independente={menor_010 / G:.6f} g; "
+      f"{len(trocas_010)} trocas de sinal em [0, 1 g] (passo 0,002 g)")
+
 # ---------------- TC-MMM-011 : contrato de Hipoteses e VARIANTES ----------------
 campos = {f.name for f in dataclasses.fields(mmm.Hipoteses)}
 ok_campos = set(mmm.VARIANTES) == campos - {"h_cp_m"}
@@ -580,10 +702,36 @@ ok_py = mmm.Hipoteses.python_completo() == mmm.Hipoteses(
 ok_nomes = {v["nome"] for v in mmm.VARIANTES.values()} == {"1+2", "3", "7", "9a", "9b", "10", "11"}
 ok_var = all(v["planilha"] == getattr(hip_pl, k) and v["python"] == getattr(mmm.Hipoteses.python_completo(), k)
              for k, v in mmm.VARIANTES.items())
+# Contrato de UNIDADES e sensibilidade (Task 5): chaves, passos dos textos, h_cp só com regime, caso e hipóteses intactos.
+unid_esperadas = {"ganho_camber_F": "por 0,1 °/°", "ganho_camber_R": "por 0,1 °/°", "rc_F": "por 10 mm", "rc_R": "por 10 mm",
+                  "kphi_F": "por 1 kN·m/rad", "kphi_R": "por 1 kN·m/rad", "h_cg": "por 10 mm", "cg_lateral": "por 10 mm",
+                  "h_cp": "por 10 mm"}
+chaves_sens = {"parametro", "unidade", "d_ay_t", "d_cn_estabilizante_q", "d_k", "veredito_menos", "veredito_mais", "motivo"}
+caso_s11 = eq.CasoEquilibrio(cfg=cfg, ds=ds_teste, raio_m=R_TESTE, cg_lateral_m=0.005)   # 0,005 m: sintético de teste
+sens_cg = mmm.sensibilidade(caso_s11, hip_pl, "h_cg")
+sens_hcp_nao = mmm.sensibilidade(caso_s11, hip_pl, "h_cp")
+sens_lat = mmm.sensibilidade(caso_s11, hip_pl, "cg_lateral")
+# h_cg: o T cai com a altura do CG (mais transferência de carga): d_ay_t < 0, e a diferença central confere com dois limites.
+lim_m = mmm.limite(dataclasses.replace(caso_s11, cfg=dataclasses.replace(cfg, cg_height=cfg.cg_height - 0.010)),
+                   hip_pl)
+lim_p = mmm.limite(dataclasses.replace(caso_s11, cfg=dataclasses.replace(cfg, cg_height=cfg.cg_height + 0.010)), hip_pl)
+ok_sens = (set(mmm.UNIDADES) == set(unid_esperadas) and all(mmm.UNIDADES[k] == v for k, v in unid_esperadas.items())
+           and set(sens_cg) == chaves_sens and sens_cg["unidade"] == "por 10 mm" and sens_cg["parametro"] == "h_cg"
+           and sens_cg["d_ay_t"] is not None and sens_cg["d_ay_t"] < 0.0
+           and abs(sens_cg["d_ay_t"] - (lim_p.ay_t_ms2 - lim_m.ay_t_ms2) / 2.0) < 1e-12
+           and sens_cg["veredito_menos"] == lim_m.veredito and sens_cg["veredito_mais"] == lim_p.veredito
+           and sens_hcp_nao["motivo"] == "h_cp só com transf_long=regime" and sens_hcp_nao["d_ay_t"] is None
+           and sens_lat["d_ay_t"] is not None
+           and raises(lambda: mmm.sensibilidade(caso_s11, hip_pl, "x"), ValueError, "parametro")
+           and raises(lambda: mmm.sensibilidade(eq.CasoEquilibrio(cfg=cfg, ds=ds_teste), hip_pl, "h_cg"), ValueError, MSG_SEM_RAIO)
+           and caso_s11.cfg.cg_height == cfg.cg_height and caso_s11.cg_lateral_m == 0.005
+           and hip_pl == mmm.Hipoteses.planilha())
 check("TC-MMM-011: VARIANTES = campos de Hipoteses (sem h_cp_m); hipóteses ⊂ {1,2,3,7,9,10,11}; "
-      "Hipoteses(alfa='x') -> ValueError",
-      ok_campos and ok_hip and ok_valor and ok_py and ok_nomes and ok_var,
-      f"campos={sorted(campos)}")
+      "Hipoteses(alfa='x') -> ValueError; UNIDADES e sensibilidade (chaves, unidade, diferença central de h_cg conferida "
+      "com dois limites, h_cp sem regime com motivo, caso intacto)",
+      ok_campos and ok_hip and ok_valor and ok_py and ok_nomes and ok_var and ok_sens,
+      f"campos={sorted(campos)}; sens h_cg: d_ay_t={sens_cg['d_ay_t']}, d_cn_q={sens_cg['d_cn_estabilizante_q']}, "
+      f"d_k={sens_cg['d_k']}, vereditos=({sens_cg['veredito_menos']}, {sens_cg['veredito_mais']}), motivo={sens_cg['motivo']!r}")
 
 # ---------------- Resumo ----------------
 print("\n--- Resumo ---")
