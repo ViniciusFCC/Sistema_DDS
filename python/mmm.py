@@ -768,12 +768,14 @@ def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01,
 
     try:
         k = k_trim(caso, hip, AY_REF_G * G, n_alfa)
-    except ValueError:
+    except ValueError as e:
         k = None
+        motivo_sat = "; ".join(x for x in (motivo_sat, f"K indisponível: {e}") if x)
     try:
         si = stability_index(caso, hip, AY_REF_G * G, n_alfa)
-    except ValueError:
+    except ValueError as e:
         si = None
+        motivo_sat = "; ".join(x for x in (motivo_sat, f"stability index indisponível: {e}") if x)
     return Limite(ay_t_ms2=ay_t, ay_sat_f=ef.sat, ay_sat_r=er.sat, motivo_sat=motivo_sat, eixo_satura=eixo,
                   veredito=veredito, cn_iso_q=cn_iso_q, cn_estabilizante_q=cn_est_q, cn_p=cn_p,
                   stability_index=si, k_rad_por_ms2=k, resolucao_ms2=float(resolucao_ms2),

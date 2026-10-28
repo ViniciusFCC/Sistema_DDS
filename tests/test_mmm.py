@@ -151,6 +151,11 @@ cos_ref = math.cos(L_b / R_TESTE)
 T_a_g = MU_B * G
 T_a_85 = cos_ref * MU_B * G
 Q_a_85 = MU_B * (1 - cos_ref) * a_b * b_b / L_b ** 2
+# P (cn_p, sinal ISO): A_P com m·A_P = soma das capacidades e cn_p = (a·Fy_f,max − b·Fy_r,max)/(W·L).
+# R = 8,5 m: Fy_f,max = cos δ_ref·μ·W_f e Fy_r,max = μ·W_r, com W_f = W·b/L e W_r = W·a/L; logo
+#   cn_p = μ·(a·cos δ_ref·b − b·a)/L² = μ·(cos δ_ref − 1)·a·b/L²   (< 0: a frente, mais fraca, não sustenta a traseira)
+# e R grande (cos δ_ref = 1): cn_p = 0.
+P_a_85 = MU_B * (cos_ref - 1) * a_b * b_b / L_b ** 2
 with pneu_de_brinquedo(lei_saturada(0.1, 0.1)):
     lim_a_g = mmm.limite(caso_bg, hip_pl)
     lim_a_85 = mmm.limite(caso_b85, hip_pl)
@@ -160,7 +165,9 @@ ok_a = (lim_a_g.ay_t_ms2 is not None and abs(lim_a_g.ay_t_ms2 - T_a_g) < 1e-4
         and lim_a_85.veredito == eq.PUSH and lim_a_85.eixo_satura == "F"
         and abs(lim_a_85.ay_sat_f - T_a_85) < 1e-4 and abs(lim_a_85.ay_sat_r - T_a_g) < 1e-4
         and abs(lim_a_85.cn_estabilizante_q - Q_a_85) < 1e-6
-        and abs(lim_a_85.cn_estabilizante_q + lim_a_85.cn_iso_q) < 1e-15)
+        and abs(lim_a_85.cn_estabilizante_q + lim_a_85.cn_iso_q) < 1e-15
+        and lim_a_g.cn_p is not None and abs(lim_a_g.cn_p) < 1e-6
+        and lim_a_85.cn_p is not None and abs(lim_a_85.cn_p - P_a_85) < 1e-6)
 
 # Sensibilidade à carga só na traseira: μ_r(Fz) = μ0 − κ·Fz (κ = 3e-4 por N, brinquedo de teste), com μ0 escolhido
 # para μ_r = μ na carga estática de uma roda traseira F0 = m·g·a/(2L). Capacidade do eixo traseiro (duas rodas
@@ -177,12 +184,18 @@ mu0_r = MU_B + KAPPA * F0_r
 den_r = 4.0 * KAPPA * c_r ** 2
 T_r = (-(2.0 * F0_r / G) + math.sqrt((2.0 * F0_r / G) ** 2 + 24.0 * KAPPA * c_r ** 2 * F0_r)) / den_r
 Q_b = -(b_b / L_b) * (a_b / L_b) * (MU_B - T_r / G)
+# P neste caso (R grande, cos δ_ref = 1): Fy_f,max = μ·W_f (W_f = m·g·b/L) e Fy_r,max(A) = 3·F0 − 2·κ·c_r²·A². De
+# m·A_P = Fy_f,max + Fy_r,max sai 2·κ·c_r²·A² + m·A − (μ·W_f + 3·F0) = 0, e cn_p = (a·μ·W_f − b·Fy_r,max(A_P))/(W·L).
+W_f_b = m_b * G * b_b / L_b
+A_P = (-m_b + math.sqrt(m_b ** 2 + 8.0 * KAPPA * c_r ** 2 * (MU_B * W_f_b + 3.0 * F0_r))) / den_r
+P_b = (a_b * MU_B * W_f_b - b_b * (3.0 * F0_r - 2.0 * KAPPA * c_r ** 2 * A_P ** 2)) / (W_b * L_b)
 with pneu_de_brinquedo(lei_saturada(0.1, 0.1, lambda fz: mu0_r - KAPPA * fz)):
     lim_b = mmm.limite(caso_bg, hip_pl)
 ok_b = (lim_b.ay_t_ms2 is not None and abs(lim_b.ay_t_ms2 - T_r) < 1e-4 and T_r < T_a_g - 0.1
         and lim_b.veredito == eq.LOOSE and lim_b.eixo_satura == "R"
         and abs(lim_b.ay_sat_r - T_r) < 1e-4 and abs(lim_b.ay_sat_f - T_a_g) < 1e-4
-        and abs(lim_b.cn_estabilizante_q - Q_b) < 1e-6 and lim_b.cn_estabilizante_q < 0)
+        and abs(lim_b.cn_estabilizante_q - Q_b) < 1e-6 and lim_b.cn_estabilizante_q < 0
+        and lim_b.cn_p is not None and abs(lim_b.cn_p - P_b) < 1e-6)
 
 
 # Stability index no brinquedo linear (A_Y = 0,5 g, α < α0 em todas as rodas, Fz do eixo constante). Com C_f e C_r a
@@ -214,8 +227,8 @@ check("TC-MMM-002: pneu de brinquedo (μ=1,5, α0=0,1 rad; derivado à mão): R 
       "SI troca de sinal com a rigidez de eixo e é ≈ 0 no simétrico",
       ok_a and ok_b and ok_si and ok_restaura,
       f"T(R grande)={lim_a_g.ay_t_ms2:.6f} (mão {T_a_g:.6f}); T(8,5 m)={lim_a_85.ay_t_ms2:.6f} (mão {T_a_85:.6f}) "
-      f"Q={lim_a_85.cn_estabilizante_q:.6f} (mão {Q_a_85:.6f}); T_traseira={lim_b.ay_t_ms2:.6f} (mão {T_r:.6f}) "
-      f"Q={lim_b.cn_estabilizante_q:.6f} (mão {Q_b:.6f}); SI(frente rígida, traseira rígida, simétrico)="
+      f"Q={lim_a_85.cn_estabilizante_q:.6f} (mão {Q_a_85:.6f}) P={lim_a_85.cn_p:.6f} (mão {P_a_85:.6f}), P(R grande)={lim_a_g.cn_p:.1e}; T_traseira={lim_b.ay_t_ms2:.6f} (mão {T_r:.6f}) "
+      f"Q={lim_b.cn_estabilizante_q:.6f} (mão {Q_b:.6f}) P={lim_b.cn_p:.6f} (mão {P_b:.6f}); SI(frente rígida, traseira rígida, simétrico)="
       f"{[f'{v:.6e}' for v, _ in si_resultados.values()]} (mão {[f'{r:.6e}' for _, r in si_resultados.values()]})")
 
 k_soma_t = 20826.4 + 26450.0
