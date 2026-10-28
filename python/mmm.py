@@ -5,8 +5,10 @@ Fixado A_Y e o raio R do skidpad, ficam determinados V = √(A_Y·R), a downforc
 forças exigidas por eixo (equilibrio.forca_exigida). Este módulo acha o trim (β, δ) que as entrega.
 Há dois caminhos. Desacoplado (variantes da planilha): cada eixo depende de uma incógnita só, e o α_ref de cada
 eixo sai de uma raiz 1-D (Brent) no ramo ascendente da soma do eixo, o mesmo critério de equilibrio.capacidade_eixo.
-Acoplado (qualquer variante Python de alfa, cos_delta, fx_exigido, tracao, diferencial ou transf_long): Newton 2-D
-em (β, δ) com jacobiano por diferença finita, semeado no trim desacoplado da planilha (adendo §4.1, item 2).
+Acoplado (qualquer variante Python de alfa, cos_delta, fx_exigido, tracao, diferencial ou transf_long, ou a linha de
+controle planilha_acoplada()): Newton 2-D em (β, δ) com jacobiano por diferença finita, semeado no trim desacoplado da
+planilha (adendo §4.1, item 2). Só o caminho acoplado aplica a rotação a_y = A·cos β, a_x = −A·sen β (adendo §2.5); o
+parâmetro do trim é A = V²/R (A_Y), e a_y do carro é A·cos β. O desacoplado (planilha) usa a_y = A.
 O limite (T, saturação por eixo, veredito, Q e P), o gradiente K e o stability index valem nos dois caminhos.
 
 Convenções (CLAUDE.md): SI, eixos ISO 8855 (X frente, Y esquerda, Z cima), curva à esquerda (a direita sai de
@@ -98,9 +100,23 @@ assert set(VARIANTES) == {f.name for f in fields(Hipoteses)} - {"h_cp_m"}
 _ACOPLADOS = ("alfa", "cos_delta", "fx_exigido", "tracao", "diferencial", "transf_long")
 
 
+@dataclass(frozen=True)
+class _HipPlanilhaAcoplada(Hipoteses):
+    """Hipóteses da planilha forçadas pelo caminho acoplado (Newton 2-D com a rotação a_y = A·cos β, a_x = −A·sen β).
+    É a linha de controle "planilha (acoplado)" da escada: mede o viés do método e da rotação sem mudar nenhuma
+    hipótese. Subclasse (e não campo de Hipoteses) para não entrar no contrato de VARIANTES; `replace` a preserva."""
+    forcar_acoplado: bool = True
+
+
+def planilha_acoplada() -> Hipoteses:
+    """Hipoteses.planilha() resolvida pelo caminho acoplado (linha de controle da escada, EDR-064)."""
+    return _HipPlanilhaAcoplada()
+
+
 def _e_acoplada(hip: Hipoteses) -> bool:
-    """True se alguma hipótese acoplada está na variante Python (o trim e o limite usam o Newton 2-D)."""
-    return any(getattr(hip, c) != VARIANTES[c]["planilha"] for c in _ACOPLADOS)
+    """True se alguma hipótese acoplada está na variante Python, ou se o caminho acoplado foi forçado (planilha_acoplada):
+    o trim e o limite usam o Newton 2-D."""
+    return getattr(hip, "forcar_acoplado", False) or any(getattr(hip, c) != VARIANTES[c]["planilha"] for c in _ACOPLADOS)
 
 
 # ---------------------------------------------------------------------------
@@ -225,6 +241,10 @@ class Trim:
     "F", "R" ou "F+R" quando faltou raiz no ramo ascendente (acoplado: o eixo saiu do ramo), e None nos demais motivos
     (descolamento, toe, pico na borda, tração acima do atrito, Newton sem convergir).
 
+    causa (só com convergiu=False) classifica a falha de forma estruturada, sem depender do texto do motivo: "dominio"
+    (o ponto saiu do domínio da física), "dobra" (o Newton acoplado não acha trim) ou None (um eixo saiu do ramo
+    ascendente: é a saturação, e eixo_sem_raiz diz qual).
+
     Acoplado: delta_rodas é o esterço [rad] de cada roda dianteira (traseiras 0), o ângulo com que as forças do pneu
     foram giradas (cos_delta="trim") e que entra no termo F_yf·sen δ do balanço; fy e fx dianteiros já estão nos
     eixos do carro. kappa tem as quatro rodas (dianteiras 0). No desacoplado delta_rodas é None.
@@ -242,10 +262,15 @@ class Trim:
     motivo: str | None
     eixo_sem_raiz: str | None = None
     delta_rodas: dict | None = None
+    causa: str | None = None
 
 
-def _falha(ay_ms2: float, motivo: str, eixo_sem_raiz: str | None = None) -> Trim:
-    return Trim(ay_ms2, None, None, None, None, None, None, None, False, None, motivo, eixo_sem_raiz)
+CAUSA_DOBRA = "dobra"       # o Newton acoplado não achou trim (jacobiano singular, resíduo que não diminui, sem convergir)
+CAUSA_DOMINIO = "dominio"   # o ponto saiu do domínio da física (descolamento, faixa do pneu, toe, tração acima do atrito)
+
+
+def _falha(ay_ms2: float, motivo: str, eixo_sem_raiz: str | None = None, causa: str | None = None) -> Trim:
+    return Trim(ay_ms2, None, None, None, None, None, None, None, False, None, motivo, eixo_sem_raiz, None, causa)
 
 
 def _raiz_eixo(caso: eq.CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int) -> dict:
@@ -297,7 +322,8 @@ def trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int = 4
     ruins = [e for e in ("F", "R") if "motivo" in raiz[e]]
     if ruins:
         sem = [e for e in ruins if raiz[e]["sem_raiz"]]
-        return _falha(ay_ms2, "; ".join(raiz[e]["motivo"] for e in ruins), "+".join(sem) if sem else None)
+        return _falha(ay_ms2, "; ".join(raiz[e]["motivo"] for e in ruins), "+".join(sem) if sem else None,
+                      None if sem else CAUSA_DOMINIO)
     a_f, a_r = raiz["F"]["alfa_ref"], raiz["R"]["alfa_ref"]
     beta = a_r + cfg.cg_to_rear / R
     delta = beta + cfg.cg_to_front / R - a_f
@@ -316,7 +342,7 @@ def trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int = 4
         fx[c] = fx_roda if eixo == "R" else 0.0
     residuo = abs(sum(fy.values()) - cfg.mass_total * ay_ms2)
     if residuo >= 1e-6:
-        return _falha(ay_ms2, f"Brent não convergiu: |ΣFy − m·A_Y| = {residuo:.3e} N")
+        return _falha(ay_ms2, f"Brent não convergiu: |ΣFy − m·A_Y| = {residuo:.3e} N", None, CAUSA_DOMINIO)
     return Trim(ay_ms2, beta, delta, alfa, fz, fy, fx, None, True, residuo, None)
 
 
@@ -357,13 +383,6 @@ class _Aval:
     f_frente: float
     f_traseira: float
     limites: tuple
-
-
-def _usa_ax(caso: eq.CasoEquilibrio, hip: Hipoteses) -> bool:
-    """True se alguma hipótese ligada usa a_x = −A·sen β (balanço de Fx com tração ativa; transferência longitudinal).
-    Nesse caso a_y = A·cos β (adendo §2.5). Sem nenhuma, a_x = 0 e a_y = A, como na planilha: assim cada degrau da
-    escada muda só a hipótese dele, e o cos β não entra pela porta dos fundos em alfa, cos_delta, tracao ou diferencial."""
-    return (hip.fx_exigido == "balanco" and eq.tracao_ativa(caso)) or hip.transf_long == "regime"
 
 
 def _steer_frente(caso: eq.CasoEquilibrio, hip: Hipoteses, delta_rad: float) -> dict:
@@ -494,18 +513,21 @@ def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad:
       D + RR + Σ Fy_pneu,i·sen δ_i − m·A·sen β (§2.5), com D e RR dos campos do caso (None = termo fora).
     - Tração: aberto, Fx_r/2 em cada roda; travado, κ comum pela cinemática (_kappa_travado). tracao="pac2002" usa o Fx e
       o Fy combinados do wheel_forces em κ; "elipse" usa o Fx puro (_fx_puro) e Fy(κ = 0) vezes o fator da elipse.
-    - Eixos do carro: a_y = A·cos β e a_x = −A·sen β se alguma hipótese ligada usa a_x (_usa_ax), senão a_y = A.
+    - Eixos do carro (adendo §2.5), SEMPRE no caminho acoplado: a_y = A·cos β e a_x = −A·sen β, com A o A_Y do trim (V² = A·R).
+      A parte lateral das cargas e o camber seguem a_y = A·cos β; a aerodinâmica (downforce, arrasto) segue A. Assim a
+      rotação do β é uma propriedade do caminho acoplado, e não de uma hipótese: a linha de controle "planilha (acoplado)"
+      da escada isola o viés dela e do método.
+    - O arrasto D entra inteiro no eixo x do carro (no lugar de D·cos β); a componente lateral −D·sen β, que o arrasto
+      teria no eixo y porque a velocidade faz o ângulo β com o carro, fica fora do balanço lateral (2ª ordem em β, e D é
+      uma fração pequena de m·A). Declarado no EDR-064.
     Levanta _Falha se o ponto sair do domínio (descolamento, faixa do pneu, tração acima do atrito).
     """
     cfg = caso.cfg
     R = caso.raio_m
     m, L = cfg.mass_total, cfg.wheelbase
-    if _usa_ax(caso, hip):
-        ay_car, ax_car = ay_ms2 * math.cos(beta_rad), -ay_ms2 * math.sin(beta_rad)
-    else:
-        ay_car, ax_car = ay_ms2, 0.0
+    ay_car, ax_car = ay_ms2 * math.cos(beta_rad), -ay_ms2 * math.sin(beta_rad)
     arrasto = 0.5 * caso.rho_kg_m3 * caso.cda_m2 * ay_ms2 * R if caso.cda_m2 is not None else 0.0
-    fz = dict(eq.cargas(caso, ay_ms2))
+    fz = dict(eq.cargas_rotacionadas(caso, ay_car, ay_ms2))
     if hip.transf_long == "regime":
         extra = arrasto * hip.h_cp_m if hip.h_cp_m is not None else 0.0
         d_fz = (m * ax_car * cfg.cg_height + extra) / L
@@ -516,7 +538,7 @@ def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad:
     desc = eq.descolamento(fz, CANTOS)
     if desc is not None:
         raise _Falha(desc)
-    fz_u, gam_u, lims = eq.entrada_limitada(caso, CANTOS, fz, eq.camber(caso, ay_ms2))
+    fz_u, gam_u, lims = eq.entrada_limitada(caso, CANTOS, fz, eq.camber(caso, ay_car))
     alfa = alfa_rodas(caso, hip, beta_rad, delta_rad)
     steer = _steer_frente(caso, hip, delta_rad)
     cos_ref = math.cos(L / R)
@@ -576,12 +598,20 @@ def _eixos_fora_do_ramo(s_frente: float, s_traseira: float) -> str | None:
     return "+".join(fora) if fora else None
 
 
-def _motivo_fora_do_ramo(eixo: str) -> str:
-    return f"sem trim: o eixo {eixo} saiu do ramo ascendente da soma do eixo (dFy/dα ≤ 0)"
+def _motivo_fora_do_ramo(eixo: str, caso: eq.CasoEquilibrio | None = None, hip: Hipoteses | None = None,
+                         aval: "_Aval | None" = None) -> str:
+    """Motivo de "um eixo saiu do ramo ascendente". Com o diferencial travado e tração ativa, o texto genérico engana: o
+    travado dá Fx diferente nas duas traseiras e consome a elipse de atrito da roda interna, o que tira o eixo R do ramo
+    sem que a Fy dele tenha chegado ao pico. Nesse caso o motivo leva o Fx e o κ por roda traseira no ponto da falha."""
+    base = f"sem trim: o eixo {eixo} saiu do ramo ascendente da soma do eixo (dFy/dα ≤ 0)"
+    if caso is None or hip is None or aval is None or hip.diferencial != "travado" or not eq.tracao_ativa(caso):
+        return base
+    fx = ", ".join(f"{c} {aval.fx[c]:.0f} N (κ = {aval.kappa[c]:.3f})" for c in _TRASEIRA)
+    return f"{base}; diferencial travado, Fx por roda traseira: {fx} (a elipse de atrito da roda interna pode estar consumida)"
 
 
 def _newton(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, beta0: float, delta0: float) -> tuple:
-    """(_Aval, (β, δ), None, None) no trim, ou (None, None, motivo, eixo_sem_raiz).
+    """(_Aval, (β, δ), None, None, None) no trim, ou (None, None, motivo, eixo_sem_raiz, causa).
 
     Newton 2-D em x = (β, δ) para r = (ΣFy − m·a_y, N) = 0, com jacobiano por diferença finita (passo 1e-6 rad), passo
     limitado a 0,5° por iteração, no máximo 50 iterações e retrocesso (passo/2, até 8 vezes) enquanto o ponto de teste
@@ -611,19 +641,19 @@ def _newton(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, beta0: float
     try:
         a0, j, fora = amostra(x)
     except _Falha as e:
-        return None, None, e.motivo, None
+        return None, None, e.motivo, None, CAUSA_DOMINIO
     if fora is not None:
-        return None, None, _motivo_fora_do_ramo(fora), fora
-    bloqueio = None   # eixo(s) em que o pico bloqueou o último passo
+        return None, None, _motivo_fora_do_ramo(fora, caso, hip, a0), fora, None
+    bloqueio, aval_bloq = None, None   # eixo(s) em que o pico bloqueou o último passo, e o ponto onde bloqueou
     for _ in range(_MAX_ITER_NEWTON):
         if convergiu(a0):
-            return a0, (x[0], x[1]), None, None
+            return a0, (x[0], x[1]), None, None, None
         det = j[0][0] * j[1][1] - j[0][1] * j[1][0]
         if not math.isfinite(det) or det == 0.0:
-            return None, None, "Newton: jacobiano singular", None
+            return None, None, "Newton: jacobiano singular", None, CAUSA_DOBRA
         dx = [(-a0.r_y * j[1][1] + a0.n * j[0][1]) / det, (-j[0][0] * a0.n + j[1][0] * a0.r_y) / det]
         escala = max(1.0, max(abs(dx[0]), abs(dx[1])) / _PASSO_MAX_RAD)
-        tropeco, motivo_falha, aceito = None, None, None
+        tropeco, aval_trop, motivo_falha, aceito = None, None, None, None
         for k in range(9):
             xt = [x[0] + dx[0] / escala / 2 ** k, x[1] + dx[1] / escala / 2 ** k]
             try:
@@ -632,23 +662,25 @@ def _newton(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, beta0: float
                 motivo_falha = e.motivo
                 continue
             if fora_t is not None:
-                tropeco = fora_t
+                tropeco, aval_trop = fora_t, at
                 continue
             if convergiu(at) or merito(at) < merito(a0) * (1.0 - 1e-4):
                 aceito = (xt, at, jt)
                 break
         if aceito is None:
             if tropeco is not None:
-                return None, None, _motivo_fora_do_ramo(tropeco), tropeco
-            return None, None, motivo_falha or "Newton: o resíduo não diminui ao longo do passo", None
-        bloqueio = tropeco
+                return None, None, _motivo_fora_do_ramo(tropeco, caso, hip, aval_trop), tropeco, None
+            if motivo_falha:
+                return None, None, motivo_falha, None, CAUSA_DOMINIO
+            return None, None, "Newton: o resíduo não diminui ao longo do passo", None, CAUSA_DOBRA
+        bloqueio, aval_bloq = tropeco, aval_trop
         x, a0, j = aceito
     if convergiu(a0):
-        return a0, (x[0], x[1]), None, None
+        return a0, (x[0], x[1]), None, None, None
     if bloqueio is not None:
-        return None, None, _motivo_fora_do_ramo(bloqueio), bloqueio
+        return None, None, _motivo_fora_do_ramo(bloqueio, caso, hip, aval_bloq), bloqueio, None
     return None, None, (f"Newton não convergiu em {_MAX_ITER_NEWTON} iterações "
-                        f"(|ΣFy − m·a_y| = {abs(a0.r_y):.3e} N, |N| = {abs(a0.n):.3e} N·m)"), None
+                        f"(|ΣFy − m·a_y| = {abs(a0.r_y):.3e} N, |N| = {abs(a0.n):.3e} N·m)"), None, CAUSA_DOBRA
 
 
 _ESCALAS_SEMENTE = (1.0, 0.99, 0.97, 0.94, 0.9, 0.8)
@@ -672,13 +704,13 @@ def _semente(caso: eq.CasoEquilibrio, ay_ms2: float, n_alfa: int) -> tuple:
 def _trim_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int) -> Trim:
     semente, primeiro = _semente(caso, ay_ms2, n_alfa)
     if semente is None:
-        return _falha(ay_ms2, primeiro.motivo, primeiro.eixo_sem_raiz)
-    aval, x, motivo, eixo = _newton(caso, hip, ay_ms2, semente.beta_rad, semente.delta_rad)
+        return _falha(ay_ms2, primeiro.motivo, primeiro.eixo_sem_raiz, primeiro.causa)
+    aval, x, motivo, eixo, causa = _newton(caso, hip, ay_ms2, semente.beta_rad, semente.delta_rad)
     if aval is None:
-        return _falha(ay_ms2, motivo, eixo)
+        return _falha(ay_ms2, motivo, eixo, causa)
     com_kappa = eq.tracao_ativa(caso) and (hip.tracao == "pac2002" or hip.diferencial == "travado")
     return Trim(ay_ms2, x[0], x[1], aval.alfa, aval.fz, aval.fy, aval.fx, aval.kappa if com_kappa else None, True,
-                abs(aval.r_y), None, None, aval.delta)
+                abs(aval.r_y), None, None, aval.delta, None)
 
 
 # ---------------------------------------------------------------------------
@@ -840,6 +872,11 @@ _H_K_G = 0.01            # passo da diferença central de K [g]
 _H_BETA_RAD = 1e-4       # passo em β do stability index [rad]
 
 
+class _SemNumero(ValueError):
+    """K ou stability index sem número por falta de trim, de raiz lateral ou de variação de A_Y (caso esperado do limite;
+    os outros ValueError, de argumento ou de bug, não são engolidos por _k_e_si). Subclasse de ValueError."""
+
+
 def k_trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int = 401) -> float:
     """K = dδ/dA_Y [rad/(m/s²)] na curva de trim, por diferença central (passo 0,01·G).
 
@@ -852,7 +889,7 @@ def k_trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int =
     t_mais, t_menos = trim(caso, hip, ay_ms2 + h, n_alfa), trim(caso, hip, ay_ms2 - h, n_alfa)
     for t in (t_mais, t_menos):
         if not t.convergiu:
-            raise ValueError(f"k_trim: sem trim em a_y = {eq._num(t.ay_ms2 / G, '.3f')} g ({t.motivo})")
+            raise _SemNumero(f"k_trim: sem trim em a_y = {eq._num(t.ay_ms2 / G, '.3f')} g ({t.motivo})")
     return (t_mais.delta_rad - t_menos.delta_rad) / (2.0 * h)
 
 
@@ -862,20 +899,22 @@ def stability_index(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_al
 
     No trim (β*, δ*) daquele A_Y, β* ± h com δ* fixo; o A_Y de cada lado vem do trim lateral (ΣFy = m·A_Y, Brent,
     raiz mais próxima de ay_ms2) e SI = ΔC_N/ΔA_Y. O C_N é o cn_estabilizante (positivo = push), de modo que
-    SI > 0 é um carro estável (subesterço) e SI < 0 instável. Lança ValueError se não houver trim em ay_ms2 ou raiz
+    SI > 0 é um carro estável (subesterço) e SI < 0 instável. Sinal: positivo = estabilizante (o sinal do C_N
+    estabilizante, o da planilha); o Milliken usa o C_N do ISO, de sinal oposto, então o SI dele tem o sinal trocado.
+    Lança ValueError se não houver trim em ay_ms2 ou raiz
     lateral num dos lados.
     """
     t = trim(caso, hip, ay_ms2, n_alfa)
     if not t.convergiu:
-        raise ValueError(f"stability_index: sem trim em a_y = {eq._num(ay_ms2 / G, '.3f')} g ({t.motivo})")
+        raise _SemNumero(f"stability_index: sem trim em a_y = {eq._num(ay_ms2 / G, '.3f')} g ({t.motivo})")
     mais = ponto(caso, hip, t.beta_rad + h_beta_rad, t.delta_rad, ay_ref_ms2=ay_ms2)
     menos = ponto(caso, hip, t.beta_rad - h_beta_rad, t.delta_rad, ay_ref_ms2=ay_ms2)
     for lado in (mais, menos):
         if lado.ay_ms2 is None:
-            raise ValueError(f"stability_index: {lado.motivo}")
+            raise _SemNumero(f"stability_index: {lado.motivo}")
     d_ay = mais.ay_ms2 - menos.ay_ms2
     if d_ay == 0.0:
-        raise ValueError("stability_index: A_Y não varia com β (ΔA_Y = 0).")
+        raise _SemNumero("stability_index: A_Y não varia com β (ΔA_Y = 0).")
     return _estabilizante(mais.cn_iso - menos.cn_iso) / d_ay
 
 
@@ -1130,12 +1169,12 @@ def _k_e_si(caso: eq.CasoEquilibrio, hip: Hipoteses, n_alfa: int, motivo_sat: st
     """(K, stability index, motivo_sat) em AY_REF_G; o que não existir vira None e o motivo entra em motivo_sat."""
     try:
         k = k_trim(caso, hip, AY_REF_G * G, n_alfa)
-    except ValueError as e:
+    except _SemNumero as e:
         k = None
         motivo_sat = "; ".join(x for x in (motivo_sat, f"K indisponível: {e}") if x)
     try:
         si = stability_index(caso, hip, AY_REF_G * G, n_alfa)
-    except ValueError as e:
+    except _SemNumero as e:
         si = None
         motivo_sat = "; ".join(x for x in (motivo_sat, f"stability index indisponível: {e}") if x)
     return k, si, motivo_sat
@@ -1151,7 +1190,15 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
     outro eixo dá a folga de Q. NEUTRO quando essa folga é <= (força do eixo por m/s²) · resolucao_ms2, o equivalente em
     força ao |S_r − S_f| <= res do analise_par. N/A (sem T) quando o trim acima de T falha por um motivo de domínio
     (descolamento, faixa do pneu, tração acima do atrito). A falha do próprio Newton (resíduo que não diminui, jacobiano
-    singular) colada em T é a dobra do trim, onde o eixo que satura não tem raiz: vale como saturação, e as folgas dizem qual."""
+    singular) colada em T é a dobra do trim, onde o eixo que satura não tem raiz: vale como saturação, e as folgas dizem qual.
+    O que decide o domínio é Trim.causa ("dominio" ou "dobra"), não o texto do motivo.
+
+    Conferência de margem: o eixo declarado saturado tem de estar de fato no pico em T, isto é, margem[eixo] <= (força do
+    eixo por m/s²) · resolucao_ms2. Senão a dobra do Newton não é a saturação dele e o resultado é N/A com motivo.
+
+    Precisão de T neste caminho: T é a última raiz da bisseção sobre "existe trim" e a dobra do Newton pode cair até
+    ~resolucao_ms2 antes do pico do eixo (medido no TC-ESC-002: margem de 0,46 N na linha 3, ≈ 0,004 m/s²). Por isso a
+    precisão declarada de T acoplado é da ordem de resolucao_ms2, e não da tolerância da bisseção (resolucao_ms2·1e-4)."""
     cfg = caso.cfg
     W, L = cfg.mass_total * G, cfg.wheelbase
     ay_max = ay_max_g * G
@@ -1182,7 +1229,7 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
     else:
         a, b = _bissecta(pred, a, b, tol)
         t_alto = tr(b)
-        if t_alto.eixo_sem_raiz is None and not t_alto.motivo.startswith("Newton"):
+        if t_alto.causa == CAUSA_DOMINIO:
             motivo = f"{t_alto.motivo}; último a_y válido = {_g(a)}"
         else:
             t_t = tr(a)
@@ -1195,8 +1242,16 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
                 margem = {"F": max(0.0, caps[0] - forca["F"]), "R": max(0.0, caps[1] - forca["R"])}
                 eixo = "F" if margem["F"] <= margem["R"] else "R"
                 outro = "R" if eixo == "F" else "F"
-                neutro = margem[outro] <= (forca[outro] / a) * resolucao_ms2
-                if not neutro and t_alto.eixo_sem_raiz in ("F", "R") and t_alto.eixo_sem_raiz != eixo:
+                tol_eixo = {e: (forca[e] / a) * resolucao_ms2 for e in ("F", "R")}   # força por m/s² · resolucao_ms2
+                neutro = margem[outro] <= tol_eixo[outro]
+                if margem[eixo] > tol_eixo[eixo]:
+                    # O trim deixa de existir acima de T, mas o eixo que seria o limitante ainda tem folga: a dobra do
+                    # Newton não é a saturação dele, e declará-la assim daria um T que não é o do eixo.
+                    motivo = (f"o trim deixa de existir acima de T = {_g(a)}, mas nenhum eixo está no pico (menor folga: "
+                              f"eixo {eixo}, {margem[eixo]:.3f} N > {tol_eixo[eixo]:.3f} N = força por m/s² do eixo · "
+                              f"{resolucao_ms2:g} m/s²)")
+                    eixo = None
+                elif not neutro and t_alto.eixo_sem_raiz in ("F", "R") and t_alto.eixo_sem_raiz != eixo:
                     eixo = None
                     motivo = (f"o trim e as folgas discordam (o trim acima de T perde o eixo {t_alto.eixo_sem_raiz}; "
                               f"a menor folga em T é a do outro eixo)")
@@ -1208,7 +1263,7 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
                     folga = margem[outro]
                     cn_est_q = folga * cfg.cg_to_rear / (W * L) if outro == "R" else -folga * cfg.cg_to_front / (W * L)
                     cn_iso_q = _estabilizante(cn_est_q)
-                    fator_ay = math.cos(t_t.beta_rad) if _usa_ax(caso, hip) else 1.0
+                    fator_ay = math.cos(t_t.beta_rad)   # a_y = A·cos β no caminho acoplado (adendo §2.5)
                     cn_p, motivo_p = _ponto_p(
                         caso, a, ay_max, passo, tol, n_alfa,
                         caps_fn=lambda ay: _capacidades_acopladas(caso, hip, ay, t_t.beta_rad, t_t.delta_rad),
@@ -1355,7 +1410,7 @@ def _desloca(caso: eq.CasoEquilibrio, hip: Hipoteses, parametro: str, d: float) 
     return caso, replace(hip, h_cp_m=(hip.h_cp_m if hip.h_cp_m is not None else 0.0) + d)   # h_cp
 
 
-def sensibilidade(caso: eq.CasoEquilibrio, hip: Hipoteses, parametro: str) -> dict:
+def sensibilidade(caso: eq.CasoEquilibrio, hip: Hipoteses, parametro: str, ay_max_g: float = 2.0) -> dict:
     """Variação de T, de C_N estabilizante em Q e de K por unidade do parâmetro, por diferença central de ± um passo
     (a unidade é o passo: d = (valor(+passo) − valor(−passo))/2), mais o veredito de cada lado. Nenhuma faixa é afirmada.
 
@@ -1363,6 +1418,8 @@ def sensibilidade(caso: eq.CasoEquilibrio, hip: Hipoteses, parametro: str) -> di
     parte do valor do caso. `h_cp` parte de hip.h_cp_m (None conta como 0) e exige transf_long="regime", senão o
     resultado é vazio com motivo "h_cp só com transf_long=regime". Um valor None (T, Q ou K de um dos lados sem número)
     deixa a derivada correspondente None, com o motivo de cada lado. O caso e as hipóteses recebidos não são alterados.
+    A sensibilidade de h_cp é em torno de h_cp = 0 quando hip.h_cp_m é None (a parcela D·h_cp/L sai da derivada de uma
+    altura que o projeto ainda não mediu). ay_max_g é a faixa de busca da saturação do limite (rotulada; padrão 2,0 g).
     Chaves: parametro, unidade, d_ay_t [m/s²], d_cn_estabilizante_q, d_k [rad/(m/s²)], veredito_menos, veredito_mais, motivo.
     """
     if parametro not in UNIDADES:
@@ -1377,7 +1434,7 @@ def sensibilidade(caso: eq.CasoEquilibrio, hip: Hipoteses, parametro: str) -> di
     lados = {}
     for nome, sinal in (("menos", -1.0), ("mais", 1.0)):
         caso_x, hip_x = _desloca(caso, hip, parametro, sinal * passo)
-        lados[nome] = limite(caso_x, hip_x)
+        lados[nome] = limite(caso_x, hip_x, ay_max_g=ay_max_g)
     res["veredito_menos"], res["veredito_mais"] = lados["menos"].veredito, lados["mais"].veredito
     for chave, campo in (("d_ay_t", "ay_t_ms2"), ("d_cn_estabilizante_q", "cn_estabilizante_q"),
                          ("d_k", "k_rad_por_ms2")):

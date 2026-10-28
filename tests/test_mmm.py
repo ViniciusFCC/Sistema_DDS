@@ -490,25 +490,29 @@ ok_pc = ok_pc and abs(tr_ack.delta_rodas["FL"] - tr_ack.delta_rodas["FR"]) > 1e-
 
 # Limite acoplado (decisão 3 do plano), pneu de brinquedo e cos δ do trim, derivado à mão (R = 8,5 m). O brinquedo satura
 # cada roda em |α| = α0 (patamar) e, no regime linear, Fy_roda = μ·Fz·s com s = −α/α0 (0 <= s <= 1). Sem toe, Ackermann, aero
-# nem tração, e só com cos_delta = "trim" (a_x = 0, a_y = A): a frente tem as duas rodas com o mesmo s_f, e a traseira s_r.
+# nem tração, e só com cos_delta = "trim": a frente tem as duas rodas com o mesmo s_f, e a traseira s_r.
+# O caminho acoplado aplica SEMPRE a_y = A·cos β (adendo §2.5; antes só com tração ativa ou regime), e a transferência lateral
+# de carga segue a_y = A·cos β. Esta derivação tinha a_y = A; o fator cos β entra abaixo e é a única mudança dela.
 #   Forças nos eixos do carro: F_f = cos δ·μ·W_f·s_f; F_r = μ·W_r·s_r; a parcela longitudinal da dianteira, −Fy_roda·sen δ,
-#   tem braço y_i e entra no momento: N_x = Σ y_i·Fy_roda,i·sen δ = −sen δ·μ·s_f·t_f·c_f·A, onde c_f é a transferência lateral de
-#   carga de UMA roda dianteira por m/s² (Fz_FL − Fz_FR = −2·c_f·A; a roda interna é a FL).
-#   Equilíbrio: (1) F_f + F_r = m·A e (2) N = a·F_f − b·F_r + N_x = 0. Cinemática: α_F = β + a/R − δ, α_R = β − b/R, logo
-#   δ = L/R + α0·(s_f − s_r). No limite a frente satura: s_f = 1.
-#   De (2) com a·W_f = b·W_r: s_r = cos δ − sen δ·t_f·c_f·A/(b·W_r); de (1): A = μ·g·(cos δ·b/L + (a/L)·s_r), o que dá
-#       A = μ·g·cos δ / (1 + μ·t_f·c_f·sen δ/(b·m)).
-#   Ponto fixo em δ por iteração (δ → A → s_r → δ). A frente satura primeiro (PUSH) e a traseira ainda tem a folga
+#   tem braço y_i e entra no momento: N_x = Σ y_i·Fy_roda,i·sen δ = −sen δ·μ·s_f·t_f·c_f·a_y, onde c_f é a transferência lateral de
+#   carga de UMA roda dianteira por m/s² (Fz_FL − Fz_FR = −2·c_f·a_y; a roda interna é a FL) e a_y = A·cos β.
+#   Equilíbrio: (1) F_f + F_r = m·a_y e (2) N = a·F_f − b·F_r + N_x = 0. Cinemática: α_F = β + a/R − δ, α_R = β − b/R, logo
+#   δ = L/R + α0·(s_f − s_r) e β = b/R − α0·s_r. No limite a frente satura: s_f = 1.
+#   De (2) com a·W_f = b·W_r: s_r = cos δ − sen δ·t_f·c_f·a_y/(b·W_r); de (1): a_y = μ·g·(cos δ·b/L + (a/L)·s_r), o que dá
+#       a_y = μ·g·cos δ / (1 + μ·t_f·c_f·sen δ/(b·m))   e   A = a_y/cos β.
+#   Ponto fixo em (δ, β) por iteração (δ → a_y → s_r → δ, β). A frente satura primeiro (PUSH) e a traseira ainda tem a folga
 #   μ·W_r·(1 − s_r); Q (cn_estabilizante) = folga·b/(W·L). A diferença para o resultado sem N_x é de ~0,5 %.
 a0_t = 0.1
 c_f = (eq.cargas(caso_b85, 1.0)["FR"] - eq.cargas(caso_b85, 1.0)["FL"]) / 2.0
 d_star = L_b / R_TESTE
 for _ in range(500):
-    A_it = MU_B * G * math.cos(d_star) / (1.0 + MU_B * cfg_b.track_front * c_f * math.sin(d_star) / (b_b * m_b))
+    ay_it = MU_B * G * math.cos(d_star) / (1.0 + MU_B * cfg_b.track_front * c_f * math.sin(d_star) / (b_b * m_b))
     W_f_t, W_r_t = W_b * b_b / L_b, W_b * a_b / L_b
-    s_r_it = (m_b * A_it / MU_B - math.cos(d_star) * W_f_t) / W_r_t
+    s_r_it = (m_b * ay_it / MU_B - math.cos(d_star) * W_f_t) / W_r_t
     d_star = L_b / R_TESTE + a0_t * (1.0 - s_r_it)
-T_acopl = A_it
+    beta_star = b_b / R_TESTE - a0_t * s_r_it
+T_acopl = ay_it / math.cos(beta_star)
+T_acopl_sem_rot = ay_it   # o valor da derivação antiga (a_y = A), só para o detalhe
 Q_acopl = MU_B * W_r_t * (1.0 - s_r_it) * b_b / (W_b * L_b)
 hip_cd = mmm.Hipoteses(cos_delta="trim")
 with pneu_de_brinquedo(lei_saturada(a0_t, a0_t)):
@@ -520,9 +524,12 @@ ok_lim_a = (lim_cd.ay_t_ms2 is not None and abs(lim_cd.ay_t_ms2 - T_acopl) < 1e-
             and lim_cd.ay_sat_f is not None and abs(lim_cd.ay_sat_f - lim_cd.ay_t_ms2) < 1e-12
             and lim_cd.ay_sat_r is None and lim_cd.motivo_sat == MSG_ACOPLADO
             and abs(lim_cd.cn_estabilizante_q - Q_acopl) < 1e-5)
-# R grande: cos δ = 1, os dois eixos saturam juntos em T = μ·g e a folga do outro eixo em T é ≤ (força exigida por m/s²)·res
-# -> NEUTRO; o eixo que satura tem ay_sat = T e o outro None com o mesmo motivo.
-ok_lim_n = (lim_cd_g.ay_t_ms2 is not None and abs(lim_cd_g.ay_t_ms2 - T_a_g) < 1e-4 and lim_cd_g.veredito == eq.NEUTRO
+# R grande: cos δ = 1, os dois eixos saturam juntos com a_y = μ·g e a folga do outro eixo em T é ≤ (força exigida por
+# m/s²)·res -> NEUTRO; o eixo que satura tem ay_sat = T e o outro None com o mesmo motivo. Com a rotação sempre ligada no
+# caminho acoplado (a_y = A·cos β), o A de T é μ·g/cos β, e no brinquedo as duas traseiras saturam em α_R = −α0 (s_r = 1): com
+# R grande β = b/R − α0 ≈ −0,1 rad, logo T = μ·g/cos(b/R − α0). Antes do EDR-064 esta linha esperava T = μ·g (a_y = A).
+T_n_rot = T_a_g / math.cos(b_b / R_GRANDE - a0_t)
+ok_lim_n = (lim_cd_g.ay_t_ms2 is not None and abs(lim_cd_g.ay_t_ms2 - T_n_rot) < 1e-4 and lim_cd_g.veredito == eq.NEUTRO
             and lim_cd_g.motivo_sat == MSG_ACOPLADO
             and sorted(x is None for x in (lim_cd_g.ay_sat_f, lim_cd_g.ay_sat_r)) == [False, True])
 # A variante Python completa no limite não pode lançar nem devolver T sem motivo; o trim em A_Y acima de T não converge.
@@ -532,6 +539,40 @@ ok_acima = (not tr_acima.convergiu and bool(tr_acima.motivo) and tr_acima.fy is 
 ok_acopl = (mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).convergiu
             and mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).delta_rodas is not None
             and mmm.trim(caso_t, hip_pl, 1.0 * G).delta_rodas is None)
+
+# Rotação β sempre no caminho acoplado (adendo §2.5, EDR-064): mesmo com as hipóteses da planilha, o trim acoplado (a linha
+# de controle mmm.planilha_acoplada()) fecha ΣFy = m·A·cos β (a_y = A·cos β), e o desacoplado fecha ΣFy = m·A. A diferença
+# entre os dois é o viés da rotação (fator cos β); o N fecha em 1e-6 N·m. A linha de controle fica fora de VARIANTES e de
+# fields(Hipoteses) (subclasse privada) e leva o trim ao Newton 2-D (delta_rodas não é None).
+tr_ctrl = mmm.trim(caso_t, mmm.planilha_acoplada(), 1.0 * G)
+tr_desac = mmm.trim(caso_t, hip_pl, 1.0 * G)
+res_y_ctrl = abs(sum(tr_ctrl.fy.values()) - cfg.mass_total * tr_ctrl.ay_ms2 * math.cos(tr_ctrl.beta_rad))
+res_y_desac = abs(sum(tr_desac.fy.values()) - cfg.mass_total * tr_desac.ay_ms2)
+res_y_sem_cos = abs(sum(tr_ctrl.fy.values()) - cfg.mass_total * tr_ctrl.ay_ms2)   # sem o cos β: tem de passar de 1e-3 N
+ok_rot = (tr_ctrl.convergiu and tr_desac.convergiu and tr_ctrl.delta_rodas is not None and abs(tr_ctrl.beta_rad) > 1e-3
+          and res_y_ctrl < 1e-6 and res_y_desac < 1e-6 and res_y_sem_cos > 1e-3
+          and abs(mmm.cn(tr_ctrl, caso_t)[0] * cfg.mass_total * G * cfg.wheelbase) < 1e-6)
+
+# Estrutura da falha (Trim.causa): o limite acoplado decide por ela, e não pelo texto do motivo. Descolamento é "dominio";
+# eixo sem raiz (caso_larga a 3 g) é a saturação, causa None com eixo_sem_raiz.
+ok_causa = (tr_alto.causa == "dominio" and tr_alto.eixo_sem_raiz is None
+            and tr_raiz.causa is None and tr_raiz.eixo_sem_raiz is not None
+            and mmm.trim(caso_larga, mmm.planilha_acoplada(), 3.0 * G).causa is None
+            and mmm.trim(caso_t, hip_pl, 1.0 * G).causa is None
+            and mmm.CAUSA_DOBRA == "dobra" and mmm.CAUSA_DOMINIO == "dominio")
+
+# Conferência de margem do limite acoplado (I2): com a capacidade dos eixos trocada por um valor enorme (sintético de
+# teste), a dobra do Newton em T não é a saturação de nenhum eixo (margem >> força por m/s² · resolucao_ms2), e o limite
+# tem de dar N/A com motivo, sem eixo limitante nem T. Sem a conferência o código declararia PUSH/LOOSE com esse T.
+_orig_caps = mmm._capacidades_acopladas
+mmm._capacidades_acopladas = lambda *a, **k: ((1e7, 1e7), None)
+try:
+    with pneu_de_brinquedo(lei_saturada(0.1, 0.1)):
+        lim_margem = mmm.limite(caso_b85, mmm.Hipoteses(cos_delta="trim"))
+finally:
+    mmm._capacidades_acopladas = _orig_caps
+ok_margem = (mmm._capacidades_acopladas is _orig_caps and lim_margem.veredito == eq.NA and lim_margem.ay_t_ms2 is None
+             and lim_margem.eixo_satura is None and "nenhum eixo está no pico" in (lim_margem.motivo or ""))
 
 # Ruling da revisão da Task 4: com transf_long="regime", a Fz traseira do Trim difere da de transf_long="nao" (as cargas
 # de eq.cargas no mesmo A_Y) por (m·a_x·h + D·h_cp)/L, com a_x = −A·sen β (A e β do próprio Trim), dividida igual entre as
@@ -546,7 +587,10 @@ def resid_regime(h_cp):
     A_, a_x = tr_r.ay_ms2, -tr_r.ay_ms2 * math.sin(tr_r.beta_rad)
     D_ = 0.5 * caso_pc.rho_kg_m3 * caso_pc.cda_m2 * A_ * caso_pc.raio_m
     d_fz = (m_ * a_x * h_ + (D_ * h_cp if h_cp is not None else 0.0)) / L_
-    base_ = eq.cargas(caso_pc, A_)
+    # Cargas-base na aceleração lateral do carro, a_y = A·cos β (adendo §2.5, sempre no caminho acoplado). O caso_pc tem
+    # downforce fixa (sem CzA), então eq.cargas(caso, a_y) é exato; antes do EDR-064 esta linha usava eq.cargas(caso_pc, A_)
+    # (a_y = A), a relação antiga, e a transferência lateral diferia em ~A·(1 − cos β) (alguns décimos de N).
+    base_ = eq.cargas(caso_pc, A_ * math.cos(tr_r.beta_rad))
     erro = max(abs(tr_r.fz[c] - base_[c] - (d_fz / 2.0 if c in ("RL", "RR") else -d_fz / 2.0)) for c in CANTOS_T)
     return erro, abs(sum(tr_r.fz.values()) - sum(base_.values())), tr_r
 
@@ -562,15 +606,21 @@ check("TC-MMM-007: no trim |ΣFy−m·A_Y|<1e-6 N e |N|<1e-6 N·m; A_Y acima do 
       "campos None; sem raio_m -> ValueError; limite: descolamento, toe que consome a faixa e pico na borda -> N/A com o "
       "motivo de capacidade_eixo e sem T; variante Python completa em 0,5·T: resíduos Fx, Fy, N em eixos do carro (§2.5) "
       "< 1e-6, com Ackermann também; limite acoplado: eixo que satura com ay_sat = T e o outro None (decisão 3), T e Q à mão; "
-      "transf_long=regime: ΔFz traseira = (m·a_x·h + D·h_cp)/L com e sem h_cp (1e-6 N)",
+      "transf_long=regime: ΔFz traseira = (m·a_x·h + D·h_cp)/L com e sem h_cp (1e-6 N); rotação β sempre no acoplado "
+      "(planilha_acoplada fecha ΣFy = m·A·cos β, o desacoplado ΣFy = m·A); Trim.causa estruturada; conferência de margem "
+      "do limite acoplado (capacidade enorme -> N/A, sem eixo limitante)",
       ok_res and ok_alto and ok_raio and ok_acopl and ok_desc and ok_toe and ok_pc and ok_lim_a and ok_lim_n and ok_acima
-      and ok_regime,
+      and ok_regime and ok_rot and ok_causa and ok_margem,
       f"resíduos(F,N)={[(f'{rf:.1e}', f'{rn:.1e}') for _, rf, rn in rs]}; motivo(5g)={tr_alto.motivo!r}; "
       f"eixo_sem_raiz={tr_alto.eixo_sem_raiz}; descolamento: {lim_desc.motivo!r}; toe: {lim_toe.motivo!r}; "
       f"borda: {lim_borda.motivo!r}; completo: {det_pc[0]}; com Ackermann: {det_pc[1]}; "
       f"limite acoplado (cos δ trim, brinquedo): T={lim_cd.ay_t_ms2:.6f} (mão {T_acopl:.6f}) Q={lim_cd.cn_estabilizante_q:.6f} "
-      f"(mão {Q_acopl:.6f}) {lim_cd.veredito}; R grande T={lim_cd_g.ay_t_ms2:.6f} {lim_cd_g.veredito}; "
-      f"acima de T: {tr_acima.motivo!r}; regime (ΔFz traseira): {det_regime}")
+      f"(mão {Q_acopl:.6f}) {lim_cd.veredito}; R grande T={lim_cd_g.ay_t_ms2:.6f} (mão μ·g/cos β = {T_n_rot:.6f}; sem rotação "
+      f"{T_a_g:.6f}) {lim_cd_g.veredito}; "
+      f"acima de T: {tr_acima.motivo!r}; regime (ΔFz traseira): {det_regime}; rotação (planilha_acoplada): "
+      f"β={math.degrees(tr_ctrl.beta_rad):.3f}°, |ΣFy − m·A·cos β|={res_y_ctrl:.1e} N, sem o cos β={res_y_sem_cos:.2f} N, "
+      f"desacoplado |ΣFy − m·A|={res_y_desac:.1e} N; T(cos δ trim, 8,5 m) com a rotação={T_acopl:.6f}, sem ela "
+      f"(derivação antiga)={T_acopl_sem_rot:.6f}; margem: {lim_margem.motivo!r}")
 
 # ---------------- TC-MMM-008 : α cinemático ----------------
 # Ackermann 100 % em R = 8,5 m e β pequeno. Com o centro instantâneo na linha do eixo traseiro, sen β = b/R, o raio do
@@ -702,6 +752,14 @@ ok_py = mmm.Hipoteses.python_completo() == mmm.Hipoteses(
 ok_nomes = {v["nome"] for v in mmm.VARIANTES.values()} == {"1+2", "3", "7", "9a", "9b", "10", "11"}
 ok_var = all(v["planilha"] == getattr(hip_pl, k) and v["python"] == getattr(mmm.Hipoteses.python_completo(), k)
              for k, v in mmm.VARIANTES.items())
+# A linha de controle da escada tem as hipóteses da planilha em todos os campos, mas força o caminho acoplado; fica fora do
+# contrato de campos e de VARIANTES, e `_SemNumero` (o erro esperado de K e do SI) é um ValueError.
+hip_ctrl = mmm.planilha_acoplada()
+ok_ctrl = (all(getattr(hip_ctrl, k) == getattr(hip_pl, k) for k in mmm.VARIANTES) and hip_ctrl != hip_pl
+           and mmm._e_acoplada(hip_ctrl) and not mmm._e_acoplada(hip_pl)
+           and {f.name for f in dataclasses.fields(mmm.Hipoteses)} == campos
+           and issubclass(mmm._SemNumero, ValueError)
+           and raises(lambda: mmm.k_trim(caso_t, hip_pl, 0.001 * G), ValueError, "exige ay_ms2"))
 # Contrato de UNIDADES e sensibilidade (Task 5): chaves, passos dos textos, h_cp só com regime, caso e hipóteses intactos.
 unid_esperadas = {"ganho_camber_F": "por 0,1 °/°", "ganho_camber_R": "por 0,1 °/°", "rc_F": "por 10 mm", "rc_R": "por 10 mm",
                   "kphi_F": "por 1 kN·m/rad", "kphi_R": "por 1 kN·m/rad", "h_cg": "por 10 mm", "cg_lateral": "por 10 mm",
@@ -729,7 +787,7 @@ ok_sens = (set(mmm.UNIDADES) == set(unid_esperadas) and all(mmm.UNIDADES[k] == v
 check("TC-MMM-011: VARIANTES = campos de Hipoteses (sem h_cp_m); hipóteses ⊂ {1,2,3,7,9,10,11}; "
       "Hipoteses(alfa='x') -> ValueError; UNIDADES e sensibilidade (chaves, unidade, diferença central de h_cg conferida "
       "com dois limites, h_cp sem regime com motivo, caso intacto)",
-      ok_campos and ok_hip and ok_valor and ok_py and ok_nomes and ok_var and ok_sens,
+      ok_campos and ok_hip and ok_valor and ok_py and ok_nomes and ok_var and ok_sens and ok_ctrl,
       f"campos={sorted(campos)}; sens h_cg: d_ay_t={sens_cg['d_ay_t']}, d_cn_q={sens_cg['d_cn_estabilizante_q']}, "
       f"d_k={sens_cg['d_k']}, vereditos=({sens_cg['veredito_menos']}, {sens_cg['veredito_mais']}), motivo={sens_cg['motivo']!r}")
 
