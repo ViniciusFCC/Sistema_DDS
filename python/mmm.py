@@ -1,13 +1,13 @@
 """
-MMM em raio fixo (Milliken Moment Method) e escada de hipóteses: física (incremento 6, Tasks 2 e 3).
+MMM em raio fixo (Milliken Moment Method) e escada de hipóteses: física (incremento 6, Tasks 2 a 4).
 
 Fixado A_Y e o raio R do skidpad, ficam determinados V = √(A_Y·R), a downforce, as cargas, o camber e as
 forças exigidas por eixo (equilibrio.forca_exigida). Este módulo acha o trim (β, δ) que as entrega.
-Nesta etapa só existe o caminho desacoplado (variantes da planilha): cada eixo depende de uma incógnita só,
-e o α_ref de cada eixo sai de uma raiz 1-D (Brent) no ramo ascendente da soma do eixo, o mesmo critério de
-equilibrio.capacidade_eixo. As variantes acopladas (alfa cinemático, cos δ do trim, balanço de Fx, PAC2002
-combinado, diferencial travado, transferência longitudinal) lançam NotImplementedError("Task 4").
-A Task 3 acrescenta o limite (T, saturação por eixo, veredito, Q e P), o gradiente K e o stability index.
+Há dois caminhos. Desacoplado (variantes da planilha): cada eixo depende de uma incógnita só, e o α_ref de cada
+eixo sai de uma raiz 1-D (Brent) no ramo ascendente da soma do eixo, o mesmo critério de equilibrio.capacidade_eixo.
+Acoplado (qualquer variante Python de alfa, cos_delta, fx_exigido, tracao, diferencial ou transf_long): Newton 2-D
+em (β, δ) com jacobiano por diferença finita, semeado no trim desacoplado da planilha (adendo §4.1, item 2).
+O limite (T, saturação por eixo, veredito, Q e P), o gradiente K e o stability index valem nos dois caminhos.
 
 Convenções (CLAUDE.md): SI, eixos ISO 8855 (X frente, Y esquerda, Z cima), curva à esquerda (a direita sai de
 equilibrio.espelhar), α < 0 dá Fy > 0 à esquerda. O módulo não conhece a origem dos dados e não sabe se a
@@ -25,7 +25,7 @@ from typing import Literal
 
 import equilibrio as eq
 from equilibrio import CANTOS, G
-from tire_model import wheel_forces
+from tire_model import AXIS_TRANSFORMS, TireRangeError, pure_fx0, wheel_forces
 
 MSG_SEM_RAIO = "MMM em raio fixo exige raio_m (raio do skidpad), que está faltando."
 
@@ -94,8 +94,13 @@ VARIANTES: dict[str, dict] = {
 
 assert set(VARIANTES) == {f.name for f in fields(Hipoteses)} - {"h_cp_m"}
 
-# Campos cuja variante Python o trim ainda não resolve (acoplada: Task 4). O "sentido" não é do trim.
+# Campos cuja variante Python leva o trim ao caminho acoplado (Newton 2-D). O "sentido" não é do trim.
 _ACOPLADOS = ("alfa", "cos_delta", "fx_exigido", "tracao", "diferencial", "transf_long")
+
+
+def _e_acoplada(hip: Hipoteses) -> bool:
+    """True se alguma hipótese acoplada está na variante Python (o trim e o limite usam o Newton 2-D)."""
+    return any(getattr(hip, c) != VARIANTES[c]["planilha"] for c in _ACOPLADOS)
 
 
 # ---------------------------------------------------------------------------
@@ -216,8 +221,13 @@ class Trim:
     alfa [rad], fz [N], fy [N] e fx [N] são dicionários por roda (CANTOS). fy e fx estão nos eixos do carro
     (ISO), os que entram no momento N: na variante cos_delta="ref" a Fy dianteira leva cos δ_ref
     (equilibrio.fy_eixo) e a parcela F·sen δ da dianteira não entra (é a hipótese 3). kappa é None nas
-    variantes sem κ por roda. residuo_N = |ΣFy − m·A_Y|. eixo_sem_raiz é "F", "R" ou "F+R" quando faltou raiz no
-    ramo ascendente, e None nos demais motivos (descolamento, toe, pico na borda, tração acima do atrito).
+    variantes sem κ por roda. residuo_N = |ΣFy − m·A_Y| (acoplado: |ΣFy − m·a_y| com a_y da §2.5). eixo_sem_raiz é
+    "F", "R" ou "F+R" quando faltou raiz no ramo ascendente (acoplado: o eixo saiu do ramo), e None nos demais motivos
+    (descolamento, toe, pico na borda, tração acima do atrito, Newton sem convergir).
+
+    Acoplado: delta_rodas é o esterço [rad] de cada roda dianteira (traseiras 0), o ângulo com que as forças do pneu
+    foram giradas (cos_delta="trim") e que entra no termo F_yf·sen δ do balanço; fy e fx dianteiros já estão nos
+    eixos do carro. kappa tem as quatro rodas (dianteiras 0). No desacoplado delta_rodas é None.
     """
     ay_ms2: float
     beta_rad: float | None
@@ -231,12 +241,7 @@ class Trim:
     residuo_N: float | None
     motivo: str | None
     eixo_sem_raiz: str | None = None
-
-
-def _checa_desacoplada(hip: Hipoteses) -> None:
-    """NotImplementedError("Task 4") se alguma hipótese acoplada estiver na variante Python."""
-    if any(getattr(hip, c) != VARIANTES[c]["planilha"] for c in _ACOPLADOS):
-        raise NotImplementedError("Task 4")
+    delta_rodas: dict | None = None
 
 
 def _falha(ay_ms2: float, motivo: str, eixo_sem_raiz: str | None = None) -> Trim:
@@ -280,12 +285,13 @@ def trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int = 4
     Em cada eixo, α_ref é a raiz de Fy_eixo(α_ref) = força exigida no ramo ascendente da soma do eixo (o critério
     de capacidade_eixo, não roda a roda). Depois β = α_R,ref + b/R e δ = β + a/R − α_F,ref (Milliken p. 307).
     Sem raiz num eixo, ou com o domínio do pneu violado, devolve convergiu=False com motivo. Sem raio_m lança
-    ValueError (decisão 2 do plano). Variante acoplada: NotImplementedError("Task 4").
+    ValueError (decisão 2 do plano). Variante acoplada: Newton 2-D (_trim_acoplado).
     """
     R = _exige_raio(caso)
-    _checa_desacoplada(hip)
     if not ay_ms2 > 0.0:
         raise ValueError(f"ay_ms2 deve ser > 0; recebido {ay_ms2!r}.")
+    if _e_acoplada(hip):
+        return _trim_acoplado(caso, hip, ay_ms2, n_alfa)
     cfg = caso.cfg
     raiz = {e: _raiz_eixo(caso, e, ay_ms2, n_alfa) for e in ("F", "R")}
     ruins = [e for e in ("F", "R") if "motivo" in raiz[e]]
@@ -312,6 +318,367 @@ def trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int = 4
     if residuo >= 1e-6:
         return _falha(ay_ms2, f"Brent não convergiu: |ΣFy − m·A_Y| = {residuo:.3e} N")
     return Trim(ay_ms2, beta, delta, alfa, fz, fy, fx, None, True, residuo, None)
+
+
+# ---------------------------------------------------------------------------
+# Trim acoplado: Newton 2-D em (β, δ) (adendo §2.1, §2.5, §2.6 e §4.1, item 2)
+# ---------------------------------------------------------------------------
+
+_FRENTE = eq.RODAS_DO_EIXO["F"]
+_TRASEIRA = eq.RODAS_DO_EIXO["R"]
+_MSG_TRACAO = "tração excede o atrito longitudinal em {}"   # o mesmo texto de equilibrio.elipse_traseira
+_H_FD_RAD = 1e-6                    # passo da diferença finita do jacobiano [rad]
+_PASSO_MAX_RAD = math.radians(0.5)  # passo máximo de β ou δ por iteração do Newton
+_MAX_ITER_NEWTON = 50
+_TOL_NEWTON = 1e-7                  # |ΣFy − m·a_y| [N] e |N| [N·m] na convergência (os testes exigem 1e-6)
+_N_VARREDURA = 32                   # pontos da varredura que antecede o Brent do κ (primeira raiz do ramo ascendente)
+
+
+class _Falha(Exception):
+    """O ponto (β, δ, A_Y) sai do domínio da física por roda; `motivo` é o texto que o chamador devolve."""
+
+    def __init__(self, motivo: str):
+        super().__init__(motivo)
+        self.motivo = motivo
+
+
+@dataclass(frozen=True)
+class _Aval:
+    """Física por roda num ponto (β, δ, A_Y) do caminho acoplado. r_y = ΣFy − m·a_y [N] e n = N [N·m] são os resíduos
+    do Newton; fy e fx estão nos eixos do carro; f_frente e f_traseira são as somas de fy por eixo."""
+    r_y: float
+    n: float
+    alfa: dict
+    fz: dict
+    fy: dict
+    fx: dict
+    kappa: dict
+    delta: dict
+    f_frente: float
+    f_traseira: float
+    limites: tuple
+
+
+def _usa_ax(caso: eq.CasoEquilibrio, hip: Hipoteses) -> bool:
+    """True se alguma hipótese ligada usa a_x = −A·sen β (balanço de Fx com tração ativa; transferência longitudinal).
+    Nesse caso a_y = A·cos β (adendo §2.5). Sem nenhuma, a_x = 0 e a_y = A, como na planilha: assim cada degrau da
+    escada muda só a hipótese dele, e o cos β não entra pela porta dos fundos em alfa, cos_delta, tracao ou diferencial."""
+    return (hip.fx_exigido == "balanco" and eq.tracao_ativa(caso)) or hip.transf_long == "regime"
+
+
+def _steer_frente(caso: eq.CasoEquilibrio, hip: Hipoteses, delta_rad: float) -> dict:
+    """Esterço δ_i [rad] das rodas dianteiras com o toe e o Ackermann da variante `alfa` (o mesmo ângulo que sai de α):
+    planilha: δ_i = δ − Δα_i (deriva_total); cinemático: Ackermann pela geometria aplicado ao δ do trim, mais o toe."""
+    if hip.alfa == "planilha":
+        dal = eq.deriva_total(caso)
+        return {c: delta_rad - dal[c] for c in _FRENTE}
+    toe = eq.deriva_toe(caso)
+    d_frente = _esterco_ack_delta(caso, delta_rad)
+    return {c: d_frente[c] - toe[c] for c in _FRENTE}
+
+
+def _wf(caso: eq.CasoEquilibrio, c: str, fz: float, alfa: float, gam: float, kappa: float) -> tuple:
+    try:
+        return wheel_forces(caso.ds, c, fz, alfa, gam, kappa)
+    except TireRangeError as e:
+        raise _Falha(f"pneu fora da faixa em {c}: {e}") from None
+
+
+_PHI = (math.sqrt(5.0) - 1.0) / 2.0
+
+
+def _golden_min(g, a: float, b: float, n_iter: int) -> tuple[float, float]:
+    """(x, g(x)) do mínimo de g (unimodal) em [a, b] por seção áurea."""
+    c, d = b - _PHI * (b - a), a + _PHI * (b - a)
+    gc, gd = g(c), g(d)
+    for _ in range(n_iter):
+        if gc < gd:
+            b, d, gd = d, c, gc
+            c = b - _PHI * (b - a)
+            gc = g(c)
+        else:
+            a, c, gc = c, d, gd
+            d = a + _PHI * (b - a)
+            gd = g(d)
+    return (c, gc) if gc < gd else (d, gd)
+
+
+def _raiz_primeira(f, x0: float, x_up: float, x_dn: float, n: int = _N_VARREDURA) -> float | None:
+    """Primeira raiz de f a partir de x0 (o ramo ascendente), ou None. Anda para x_up se f(x0) < 0 e para x_dn se > 0.
+
+    Varre n passos até a primeira troca de sinal e refina com Brent. Sem troca na grade, uma seção áurea procura o
+    extremo perto do ponto mais próximo de cruzar (o pico da curva pode cair entre dois pontos da grade): se ele cruza,
+    Brent; senão a curva não alcança o alvo (None)."""
+    f0 = f(x0)
+    if f0 == 0.0:
+        return x0
+    s = 1.0 if f0 > 0.0 else -1.0
+    x1 = x_dn if s > 0.0 else x_up
+    xs = [x0 + (x1 - x0) * i / n for i in range(n + 1)]
+    valores = [f0]
+    for i in range(1, n + 1):
+        v = f(xs[i])
+        if s * v <= 0.0:
+            return xs[i] if v == 0.0 else _brent(f, xs[i - 1], xs[i], tol=1e-15)
+        valores.append(v)
+    i = min(range(n + 1), key=lambda k: s * valores[k])
+    a, b = xs[max(i - 1, 0)], xs[min(i + 1, n)]
+    xm, gm = _golden_min(lambda x: s * f(x), a, b, 40)
+    if gm <= 0.0:
+        return _brent(f, a, xm, tol=1e-15) if f(a) * f(xm) < 0.0 else xm
+    return None
+
+
+def _kappa_para_fx(caso: eq.CasoEquilibrio, c: str, fz: float, alfa: float, gam: float, fx_alvo: float) -> float:
+    """κ da roda traseira c com wheel_forces(...)[0] = fx_alvo (Brent no ramo ascendente de 0 até KPUMAX; alvo < 0, até
+    KPUMIN). Sem raiz o Fx combinado não alcança o alvo: _Falha("tração excede o atrito longitudinal em <canto>")."""
+    p = caso.ds.p
+    k = _raiz_primeira(lambda kk: _wf(caso, c, fz, alfa, gam, kk)[0] - fx_alvo, 0.0, p["KPUMAX"], p["KPUMIN"])
+    if k is None:
+        raise _Falha(_MSG_TRACAO.format(c))
+    return k
+
+
+def _fx_puro(caso: eq.CasoEquilibrio, c: str, fz: float, gam: float, kappa: float) -> float:
+    """Fx [N] de escorregamento longitudinal puro (PAC2002, α-independente) da roda c: o Fx da elipse de atrito, cujo pico
+    é eq.fx_max_puro. Fora de [KPUMIN, KPUMAX] o pneu não é avaliado (como wheel_forces)."""
+    p = caso.ds.p
+    if not p["KPUMIN"] <= kappa <= p["KPUMAX"]:
+        raise _Falha(f"pneu fora da faixa em {c}: kappa={kappa:.3f} fora de [{p['KPUMIN']}, {p['KPUMAX']}]")
+    return pure_fx0(p, fz, AXIS_TRANSFORMS[caso.ds.axis_system][2] * gam, kappa)[0]
+
+
+def _kappa_travado(caso: eq.CasoEquilibrio, fx_roda, beta_rad: float, fx_r: float) -> dict:
+    """κ das rodas traseiras com o diferencial travado: ω comum e o mesmo raio de rolamento (suposição declarada),
+    κ_i = (ω·R_e − V_x,i)/V_x,i com V_x,i = V·(cos β − y_i/R) (V cancela: w = ω·R_e/V), e w resolvido por Brent para
+    ΣFx = Fx_r, com fx_roda(c, κ) o Fx da roda (combinado no PAC2002, puro na elipse). Sem raiz:
+    _Falha("tração excede o atrito longitudinal em <canto>"), com o canto da roda interna (a de menor V_x, a primeira a
+    esgotar o κ)."""
+    R = caso.raio_m
+    pos = posicoes(caso)
+    den = {c: math.cos(beta_rad) - pos[c][1] / R for c in _TRASEIRA}
+    if min(den.values()) <= 0.1:
+        raise _Falha("diferencial travado: velocidade longitudinal de uma roda traseira quase nula (raio pequeno demais)")
+    p = caso.ds.p
+    w_up = min(den[c] * (1.0 + p["KPUMAX"]) for c in _TRASEIRA)
+    w_dn = max(den[c] * (1.0 + p["KPUMIN"]) for c in _TRASEIRA)
+    w0 = 0.5 * (den["RL"] + den["RR"])
+
+    def f(w: float) -> float:
+        return sum(fx_roda(c, w / den[c] - 1.0) for c in _TRASEIRA) - fx_r
+
+    w = _raiz_primeira(f, w0, w_up, w_dn)
+    if w is None:
+        raise _Falha(_MSG_TRACAO.format(min(den, key=den.get)))
+    return {c: w / den[c] - 1.0 for c in _TRASEIRA}
+
+
+def _fator_elipse(caso: eq.CasoEquilibrio, c: str, fx: float, fz_u: dict, gam_u: dict) -> float:
+    """Fator √(1 − (Fx/Fx_max)²) da elipse de atrito da roda c (a mesma de equilibrio.elipse_traseira)."""
+    fx_max = eq.fx_max_puro(caso.ds, fz_u[c], gam_u[c])
+    if abs(fx) > fx_max:
+        raise _Falha(_MSG_TRACAO.format(c))
+    return math.sqrt(1.0 - (fx / fx_max) ** 2)
+
+
+def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad: float, ay_ms2: float) -> _Aval:
+    """Forças por roda, resíduos e somas por eixo em (β, δ, A_Y), curva à esquerda, no caminho acoplado.
+
+    - Cargas: eq.cargas (aero e transferência lateral em A_Y) mais, em transf_long="regime", ΔFz_traseira =
+      (m·a_x·h + D·h_cp)/L com a_x = −A·sen β (§2.6), meio a meio nas rodas traseiras e tirada meio a meio das
+      dianteiras (a soma das Fz fica m·g); a parcela D·h_cp só com h_cp_m (decisão 5 do plano).
+    - α: alfa_rodas (planilha ou cinemático). Dianteira em κ = 0 e Fx do pneu dianteiro nulo (a resistência ao
+      rolamento já está em Crr): fy_carro = Fy·cos δ_i (cos_delta="trim") ou Fy·cos δ_ref (cos_delta="ref", sem a
+      parcela de Fx da dianteira, como na planilha).
+    - Fx exigido na traseira: sem tração ativa no caso, 0; "edr057" é eq.fx_exigido_traseira; "balanco" é
+      D + RR + Σ Fy_pneu,i·sen δ_i − m·A·sen β (§2.5), com D e RR dos campos do caso (None = termo fora).
+    - Tração: aberto, Fx_r/2 em cada roda; travado, κ comum pela cinemática (_kappa_travado). tracao="pac2002" usa o Fx e
+      o Fy combinados do wheel_forces em κ; "elipse" usa o Fx puro (_fx_puro) e Fy(κ = 0) vezes o fator da elipse.
+    - Eixos do carro: a_y = A·cos β e a_x = −A·sen β se alguma hipótese ligada usa a_x (_usa_ax), senão a_y = A.
+    Levanta _Falha se o ponto sair do domínio (descolamento, faixa do pneu, tração acima do atrito).
+    """
+    cfg = caso.cfg
+    R = caso.raio_m
+    m, L = cfg.mass_total, cfg.wheelbase
+    if _usa_ax(caso, hip):
+        ay_car, ax_car = ay_ms2 * math.cos(beta_rad), -ay_ms2 * math.sin(beta_rad)
+    else:
+        ay_car, ax_car = ay_ms2, 0.0
+    arrasto = 0.5 * caso.rho_kg_m3 * caso.cda_m2 * ay_ms2 * R if caso.cda_m2 is not None else 0.0
+    fz = dict(eq.cargas(caso, ay_ms2))
+    if hip.transf_long == "regime":
+        extra = arrasto * hip.h_cp_m if hip.h_cp_m is not None else 0.0
+        d_fz = (m * ax_car * cfg.cg_height + extra) / L
+        for c in _TRASEIRA:
+            fz[c] += d_fz / 2.0
+        for c in _FRENTE:
+            fz[c] -= d_fz / 2.0
+    desc = eq.descolamento(fz, CANTOS)
+    if desc is not None:
+        raise _Falha(desc)
+    fz_u, gam_u, lims = eq.entrada_limitada(caso, CANTOS, fz, eq.camber(caso, ay_ms2))
+    alfa = alfa_rodas(caso, hip, beta_rad, delta_rad)
+    steer = _steer_frente(caso, hip, delta_rad)
+    cos_ref = math.cos(L / R)
+
+    fy_pneu = {c: _wf(caso, c, fz_u[c], alfa[c], gam_u[c], 0.0)[1] for c in _FRENTE}
+    fy, fx = {}, {}
+    for c in _FRENTE:
+        if hip.cos_delta == "trim":
+            fy[c] = fy_pneu[c] * math.cos(steer[c])    # + Fx_pneu·sen δ_i, com Fx_pneu dianteiro = 0
+            fx[c] = -fy_pneu[c] * math.sin(steer[c])   # + Fx_pneu·cos δ_i
+        else:
+            fy[c] = fy_pneu[c] * cos_ref
+            fx[c] = 0.0
+
+    ativa = eq.tracao_ativa(caso)
+    if not ativa:
+        fx_r = 0.0
+    elif hip.fx_exigido == "edr057":
+        fx_r = eq.fx_exigido_traseira(caso, ay_ms2)
+    else:
+        rr = caso.crr * m * G if caso.crr is not None else 0.0
+        fx_r = arrasto + rr + sum(fy_pneu[c] * math.sin(steer[c]) for c in _FRENTE) - m * ay_ms2 * math.sin(beta_rad)
+
+    def fx_roda(c: str, k: float) -> float:
+        if hip.tracao == "pac2002":
+            return _wf(caso, c, fz_u[c], alfa[c], gam_u[c], k)[0]
+        return _fx_puro(caso, c, fz_u[c], gam_u[c], k)
+
+    kappa = {c: 0.0 for c in CANTOS}
+    if ativa:
+        if hip.diferencial == "travado":
+            kappa.update(_kappa_travado(caso, fx_roda, beta_rad, fx_r))
+        elif hip.tracao == "pac2002":
+            for c in _TRASEIRA:
+                kappa[c] = _kappa_para_fx(caso, c, fz_u[c], alfa[c], gam_u[c], fx_r / 2.0)
+    for c in _TRASEIRA:
+        if not ativa:
+            fx[c], fy[c] = 0.0, _wf(caso, c, fz_u[c], alfa[c], gam_u[c], 0.0)[1]
+        elif hip.tracao == "pac2002":
+            fx_w, fy_w = _wf(caso, c, fz_u[c], alfa[c], gam_u[c], kappa[c])[:2]
+            fx[c], fy[c] = (fx_r / 2.0 if hip.diferencial == "aberto" else fx_w), fy_w
+        else:
+            fx_w = fx_r / 2.0 if hip.diferencial == "aberto" else fx_roda(c, kappa[c])
+            fy[c] = _wf(caso, c, fz_u[c], alfa[c], gam_u[c], 0.0)[1] * _fator_elipse(caso, c, fx_w, fz_u, gam_u)
+            fx[c] = fx_w
+
+    r_y = sum(fy.values()) - m * ay_car
+    n = _momento(caso, fy, fx)
+    return _Aval(r_y, n, alfa, fz, fy, fx, kappa, {**steer, "RL": 0.0, "RR": 0.0},
+                 sum(fy[c] for c in _FRENTE), sum(fy[c] for c in _TRASEIRA), tuple(lim.texto for lim in lims))
+
+
+def _eixos_fora_do_ramo(s_frente: float, s_traseira: float) -> str | None:
+    """"F", "R" ou "F+R" para o(s) eixo(s) cuja inclinação deixou de ser ascendente (∂Fy_f/∂δ <= 0; ∂Fy_r/∂β >= 0), ou
+    None. Em curva à esquerda a Fy do eixo cresce com δ na frente e cai com β atrás (α_R = β − b/R)."""
+    fora = [e for e, ruim in (("F", not s_frente > 0.0), ("R", not s_traseira < 0.0)) if ruim]
+    return "+".join(fora) if fora else None
+
+
+def _motivo_fora_do_ramo(eixo: str) -> str:
+    return f"sem trim: o eixo {eixo} saiu do ramo ascendente da soma do eixo (dFy/dα ≤ 0)"
+
+
+def _newton(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, beta0: float, delta0: float) -> tuple:
+    """(_Aval, (β, δ), None, None) no trim, ou (None, None, motivo, eixo_sem_raiz).
+
+    Newton 2-D em x = (β, δ) para r = (ΣFy − m·a_y, N) = 0, com jacobiano por diferença finita (passo 1e-6 rad), passo
+    limitado a 0,5° por iteração, no máximo 50 iterações e retrocesso (passo/2, até 8 vezes) enquanto o ponto de teste
+    sair do domínio (faixa do pneu, tração acima do atrito), sair do ramo ascendente de um eixo, ou não reduzir o resíduo.
+    A inclinação de cada eixo sai das mesmas avaliações do jacobiano (∂Fy_f/∂δ > 0 e ∂Fy_r/∂β < 0 no ramo ascendente).
+    Sem passo possível porque o pico de um eixo bloqueia, ou sem convergir com o pico bloqueando o último passo: não há
+    trim e o eixo vai em eixo_sem_raiz. Sem convergir em 50 iterações com os dois eixos livres, o motivo é o resíduo e
+    eixo_sem_raiz é None. O ponto inicial fora do domínio é falha direta."""
+    h = _H_FD_RAD
+    L = caso.cfg.wheelbase
+
+    def amostra(x: list) -> tuple:
+        a0 = _avalia(caso, hip, x[0], x[1], ay_ms2)
+        ab = _avalia(caso, hip, x[0] + h, x[1], ay_ms2)
+        ad = _avalia(caso, hip, x[0], x[1] + h, ay_ms2)
+        fora = _eixos_fora_do_ramo((ad.f_frente - a0.f_frente) / h, (ab.f_traseira - a0.f_traseira) / h)
+        jac = [[(ab.r_y - a0.r_y) / h, (ad.r_y - a0.r_y) / h], [(ab.n - a0.n) / h, (ad.n - a0.n) / h]]
+        return a0, jac, fora
+
+    def convergiu(a: _Aval) -> bool:
+        return abs(a.r_y) < _TOL_NEWTON and abs(a.n) < _TOL_NEWTON
+
+    def merito(a: _Aval) -> float:
+        return math.hypot(a.r_y, a.n / L)
+
+    x = [beta0, delta0]
+    try:
+        a0, j, fora = amostra(x)
+    except _Falha as e:
+        return None, None, e.motivo, None
+    if fora is not None:
+        return None, None, _motivo_fora_do_ramo(fora), fora
+    bloqueio = None   # eixo(s) em que o pico bloqueou o último passo
+    for _ in range(_MAX_ITER_NEWTON):
+        if convergiu(a0):
+            return a0, (x[0], x[1]), None, None
+        det = j[0][0] * j[1][1] - j[0][1] * j[1][0]
+        if not math.isfinite(det) or det == 0.0:
+            return None, None, "Newton: jacobiano singular", None
+        dx = [(-a0.r_y * j[1][1] + a0.n * j[0][1]) / det, (-j[0][0] * a0.n + j[1][0] * a0.r_y) / det]
+        escala = max(1.0, max(abs(dx[0]), abs(dx[1])) / _PASSO_MAX_RAD)
+        tropeco, motivo_falha, aceito = None, None, None
+        for k in range(9):
+            xt = [x[0] + dx[0] / escala / 2 ** k, x[1] + dx[1] / escala / 2 ** k]
+            try:
+                at, jt, fora_t = amostra(xt)
+            except _Falha as e:
+                motivo_falha = e.motivo
+                continue
+            if fora_t is not None:
+                tropeco = fora_t
+                continue
+            if convergiu(at) or merito(at) < merito(a0) * (1.0 - 1e-4):
+                aceito = (xt, at, jt)
+                break
+        if aceito is None:
+            if tropeco is not None:
+                return None, None, _motivo_fora_do_ramo(tropeco), tropeco
+            return None, None, motivo_falha or "Newton: o resíduo não diminui ao longo do passo", None
+        bloqueio = tropeco
+        x, a0, j = aceito
+    if convergiu(a0):
+        return a0, (x[0], x[1]), None, None
+    if bloqueio is not None:
+        return None, None, _motivo_fora_do_ramo(bloqueio), bloqueio
+    return None, None, (f"Newton não convergiu em {_MAX_ITER_NEWTON} iterações "
+                        f"(|ΣFy − m·a_y| = {abs(a0.r_y):.3e} N, |N| = {abs(a0.n):.3e} N·m)"), None
+
+
+_ESCALAS_SEMENTE = (1.0, 0.99, 0.97, 0.94, 0.9, 0.8)
+
+
+def _semente(caso: eq.CasoEquilibrio, ay_ms2: float, n_alfa: int) -> tuple:
+    """(trim desacoplado da planilha que serve de chute inicial, o trim em A_Y). O chute é o de A_Y; se a planilha não
+    tem trim ali (a variante acoplada pode alcançar um pouco mais), cai para escalas menores de A_Y, que dão um (β, δ)
+    próximo. O Newton é o único solver: a semente só diz de onde partir."""
+    planilha = Hipoteses.planilha()
+    primeiro = None
+    for f in _ESCALAS_SEMENTE:
+        t = trim(caso, planilha, ay_ms2 * f, n_alfa)
+        if primeiro is None:
+            primeiro = t
+        if t.convergiu:
+            return t, primeiro
+    return None, primeiro
+
+
+def _trim_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int) -> Trim:
+    semente, primeiro = _semente(caso, ay_ms2, n_alfa)
+    if semente is None:
+        return _falha(ay_ms2, primeiro.motivo, primeiro.eixo_sem_raiz)
+    aval, x, motivo, eixo = _newton(caso, hip, ay_ms2, semente.beta_rad, semente.delta_rad)
+    if aval is None:
+        return _falha(ay_ms2, motivo, eixo)
+    com_kappa = eq.tracao_ativa(caso) and (hip.tracao == "pac2002" or hip.diferencial == "travado")
+    return Trim(ay_ms2, x[0], x[1], aval.alfa, aval.fz, aval.fy, aval.fx, aval.kappa if com_kappa else None, True,
+                abs(aval.r_y), None, None, aval.delta)
 
 
 # ---------------------------------------------------------------------------
@@ -360,7 +727,14 @@ def _balanco_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, d
                      ay_ms2: float) -> tuple:
     """(ΣFy − m·A_Y [N], (fy, fx), None) com (β, δ) fixos e as cargas de A_Y, ou (None, None, motivo) se o ponto
     sai do domínio (descolamento ou tração acima do atrito). Mesma física do trim (Fz e γ limitados à faixa,
-    elipse da traseira, cos δ_ref na frente); o α de cada roda vem de alfa_rodas, e não de uma raiz por eixo."""
+    elipse da traseira, cos δ_ref na frente); o α de cada roda vem de alfa_rodas, e não de uma raiz por eixo.
+    Variante acoplada: _avalia (o resíduo é ΣFy − m·a_y, com a_y da §2.5)."""
+    if _e_acoplada(hip):
+        try:
+            a = _avalia(caso, hip, beta_rad, delta_rad, ay_ms2)
+        except _Falha as e:
+            return None, None, e.motivo
+        return a.r_y, (a.fy, a.fx), None
     cfg = caso.cfg
     R = caso.raio_m
     fz = eq.cargas(caso, ay_ms2)
@@ -395,7 +769,6 @@ def _trim_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delt
     a menor. Sem raiz: ay_ms2 e cn_iso None, com motivo.
     """
     _exige_raio(caso)
-    _checa_desacoplada(hip)
     n = math.floor(ay_max_ms2 / passo_ms2 + 1e-9)
     grade, motivo_fim = [], None
     for k in range(n + 1):
@@ -606,8 +979,8 @@ def _veredito(ef: _Eixo, er: _Eixo, res: float) -> tuple[str, str | None]:
     Sobre a decisão 3 do plano ("folga do outro eixo em T <= força exigida por m/s² · res"): no caminho desacoplado
     as duas saturações existem, e |S_r − S_f| <= res é o equivalente exato do analise_par. A regra da folga coincide
     com ela até primeira ordem (folga ≈ (dF_exigida/dA_Y − dC/dA_Y)·|S_r − S_f|), mas dá NEUTRO a menos quando a
-    capacidade do outro eixo cai com A_Y (carga transferida). Nas variantes acopladas (Task 4), onde o eixo que não
-    satura não tem S, é a regra da folga que decide.
+    capacidade do outro eixo cai com A_Y (carga transferida). Nas variantes acopladas (_limite_acoplado), onde o eixo
+    que não satura não tem S, é a regra da folga que decide.
     """
     s_f, s_r = ef.sat, er.sat
     v_f = ef.valido_ate if ef.valido_ate is not None else -math.inf
@@ -628,15 +1001,18 @@ def _veredito(ef: _Eixo, er: _Eixo, res: float) -> tuple[str, str | None]:
 
 
 def _ponto_p(caso: eq.CasoEquilibrio, ay_ini: float, ay_max: float, passo: float, tol: float,
-             n_alfa: int) -> tuple[float | None, str | None]:
+             n_alfa: int, caps_fn=None, fator_ay: float = 1.0) -> tuple[float | None, str | None]:
     """(cn_p, motivo): C_N (ISO) em P, o A_Y_P com m·A_P = Fy_f,max(A_P) + Fy_r,max(A_P) (ponto fixo por bisseção),
     com as capacidades de capacidade_eixo (Milliken p. 306: soma vetorial dos pontos de saturação, fora do trim).
     Procura a partir de ay_ini (em T a soma das capacidades já é >= m·A_Y) e para na primeira troca de sinal.
-    Capacidade inválida (motivo) nunca entra: devolve (None, motivo)."""
+    Capacidade inválida (motivo) nunca entra: devolve (None, motivo). caps_fn (variantes acopladas) devolve
+    ((Fy_f,max, Fy_r,max), None) ou (None, motivo) no lugar de capacidade_eixo; fator_ay (cos β nelas) multiplica m·A_Y."""
     cfg = caso.cfg
     W = cfg.mass_total * G
 
     def caps(ay: float) -> tuple:
+        if caps_fn is not None:
+            return caps_fn(ay)
         cf, cr = eq.capacidade_eixo(caso, "F", ay, n_alfa), eq.capacidade_eixo(caso, "R", ay, n_alfa)
         for e, c in (("F", cf), ("R", cr)):
             if c.fy_max_N is None or c.motivo is not None:
@@ -645,7 +1021,7 @@ def _ponto_p(caso: eq.CasoEquilibrio, ay_ini: float, ay_max: float, passo: float
 
     def g(ay: float) -> tuple:
         v, motivo = caps(ay)
-        return (None, motivo) if v is None else (v[0] + v[1] - cfg.mass_total * ay, None)
+        return (None, motivo) if v is None else (v[0] + v[1] - fator_ay * cfg.mass_total * ay, None)
 
     def cn_em(ay: float) -> float:
         fy_f, fy_r = caps(ay)[0]
@@ -677,11 +1053,155 @@ def _ponto_p(caso: eq.CasoEquilibrio, ay_ini: float, ay_max: float, passo: float
     return None, f"P: a soma das capacidades não cruza m·A_Y até {_g(ay_max)}"
 
 
+# ---------------------------------------------------------------------------
+# Limite acoplado: T pelo trim, capacidade de cada eixo no T e saturação por eixo (decisão 3 do plano)
+# ---------------------------------------------------------------------------
+
+_MSG_ACOPLADO = "acoplado: além de T não há trim"
+_PASSO_PICO_RAD = math.radians(0.25)   # passo da marcha até o pico da Fy do eixo
+_MAX_PASSOS_PICO = 240
+
+
+def _pico(f, x0: float, sentido: float) -> tuple[float | None, str | None]:
+    """(máximo de f, None) ao longo de x0 + sentido·s (s >= 0), ou (None, motivo). Marcha em passos de 0,25° até f deixar de
+    crescer e refina o pico por seção áurea. Sair da faixa do pneu antes do pico é "pico na borda"; um f sem pico, idem."""
+    xs, fs = [x0], [f(x0)]
+    x = x0
+    for k in range(1, _MAX_PASSOS_PICO + 1):
+        x = x0 + sentido * k * _PASSO_PICO_RAD
+        try:
+            v = f(x)
+        except _Falha as e:
+            return None, f"pico na borda da faixa do pneu ({e.motivo})"
+        if v <= fs[-1]:
+            break
+        xs.append(x)
+        fs.append(v)
+    else:
+        return None, "pico na borda da faixa do pneu (a Fy do eixo não deixa de crescer)"
+    a = xs[-2] if len(xs) >= 2 else x0 - sentido * _PASSO_PICO_RAD
+    _, gm = _golden_min(lambda y: -f(y), min(a, x), max(a, x), 20)
+    return max(max(fs), -gm), None
+
+
+def _capacidades_acopladas(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, beta_rad: float,
+                           delta_rad: float) -> tuple:
+    """((Fy_f,max, Fy_r,max), None) ou (None, motivo): a Fy de cada eixo, nos eixos do carro, no máximo do ramo ascendente
+    (δ para a frente, β para a traseira, o outro ângulo e A_Y fixos), na física da variante. É a capacidade do eixo que a
+    folga em T e o ponto P usam nas variantes acopladas, no lugar de equilibrio.capacidade_eixo (que é a da planilha)."""
+    try:
+        pf, mf = _pico(lambda d: _avalia(caso, hip, beta_rad, d, ay_ms2).f_frente, delta_rad, +1.0)
+        pr, mr = _pico(lambda b: _avalia(caso, hip, b, delta_rad, ay_ms2).f_traseira, beta_rad, -1.0)
+    except _Falha as e:
+        return None, e.motivo
+    for eixo, v, mo in (("F", pf, mf), ("R", pr, mr)):
+        if v is None:
+            return None, f"eixo {eixo}: {mo}"
+    return (pf, pr), None
+
+
+def _k_e_si(caso: eq.CasoEquilibrio, hip: Hipoteses, n_alfa: int, motivo_sat: str | None) -> tuple:
+    """(K, stability index, motivo_sat) em AY_REF_G; o que não existir vira None e o motivo entra em motivo_sat."""
+    try:
+        k = k_trim(caso, hip, AY_REF_G * G, n_alfa)
+    except ValueError as e:
+        k = None
+        motivo_sat = "; ".join(x for x in (motivo_sat, f"K indisponível: {e}") if x)
+    try:
+        si = stability_index(caso, hip, AY_REF_G * G, n_alfa)
+    except ValueError as e:
+        si = None
+        motivo_sat = "; ".join(x for x in (motivo_sat, f"stability index indisponível: {e}") if x)
+    return k, si, motivo_sat
+
+
+def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float, ay_max_g: float,
+                     n_alfa: int) -> Limite:
+    """Limite de uma variante acoplada (decisão 3 do plano).
+
+    T: bisseção em A_Y sobre a existência de trim (o Newton), com o intervalo inicial da saturação do analise_par. Além de
+    T não existe trim, então só o eixo que satura tem ay_sat = T; o outro sai None com motivo_sat = "acoplado: além de T
+    não há trim". O eixo que satura é o de menor folga em T (capacidade acoplada menos a força que ele faz no trim), e o
+    outro eixo dá a folga de Q. NEUTRO quando essa folga é <= (força do eixo por m/s²) · resolucao_ms2, o equivalente em
+    força ao |S_r − S_f| <= res do analise_par. N/A (sem T) quando o trim acima de T falha por um motivo de domínio
+    (descolamento, faixa do pneu, tração acima do atrito). A falha do próprio Newton (resíduo que não diminui, jacobiano
+    singular) colada em T é a dobra do trim, onde o eixo que satura não tem raiz: vale como saturação, e as folgas dizem qual."""
+    cfg = caso.cfg
+    W, L = cfg.mass_total * G, cfg.wheelbase
+    ay_max = ay_max_g * G
+    ay_lo = min(AY_REF_G * G, 0.1 * ay_max)
+    passo = _PASSO_VARREDURA_G * G
+    tol = resolucao_ms2 * _FRACAO_TOL
+
+    par = eq.analise_par(caso, ay_max_g=ay_max_g)
+    conhecidas = [s for s in (par.ay_sat_f, par.ay_sat_r) if s is not None]
+    cache: dict = {}
+
+    def tr(ay: float) -> Trim:
+        if ay not in cache:
+            cache[ay] = trim(caso, hip, ay, n_alfa)
+        return cache[ay]
+
+    def pred(ay: float) -> bool:
+        return tr(ay).convergiu
+
+    veredito, motivo = eq.NA, None
+    ay_t = eixo = ay_sat_f = ay_sat_r = motivo_sat = cn_iso_q = cn_est_q = cn_p = None
+    limitacoes: tuple = ()
+    est, a, b = _transicao(pred, min(conhecidas) if conhecidas else None, ay_lo, ay_max, passo)
+    if est == "falha_inicial":
+        motivo = f"{tr(ay_lo).motivo} em a_y = {_g(ay_lo)} (início da varredura)"
+    elif est == "nao_satura":
+        motivo = f"o trim existe até {_g(ay_max)}: nenhum eixo satura na faixa"
+    else:
+        a, b = _bissecta(pred, a, b, tol)
+        t_alto = tr(b)
+        if t_alto.eixo_sem_raiz is None and not t_alto.motivo.startswith("Newton"):
+            motivo = f"{t_alto.motivo}; último a_y válido = {_g(a)}"
+        else:
+            t_t = tr(a)
+            caps, motivo_cap = _capacidades_acopladas(caso, hip, a, t_t.beta_rad, t_t.delta_rad)
+            if caps is None:
+                motivo = f"capacidade dos eixos em T: {motivo_cap}"
+            else:
+                aval = _avalia(caso, hip, t_t.beta_rad, t_t.delta_rad, a)
+                forca = {"F": aval.f_frente, "R": aval.f_traseira}
+                margem = {"F": max(0.0, caps[0] - forca["F"]), "R": max(0.0, caps[1] - forca["R"])}
+                eixo = "F" if margem["F"] <= margem["R"] else "R"
+                outro = "R" if eixo == "F" else "F"
+                neutro = margem[outro] <= (forca[outro] / a) * resolucao_ms2
+                if not neutro and t_alto.eixo_sem_raiz in ("F", "R") and t_alto.eixo_sem_raiz != eixo:
+                    eixo = None
+                    motivo = (f"o trim e as folgas discordam (o trim acima de T perde o eixo {t_alto.eixo_sem_raiz}; "
+                              f"a menor folga em T é a do outro eixo)")
+                else:
+                    ay_t = a
+                    veredito = eq.NEUTRO if neutro else (eq.PUSH if eixo == "F" else eq.LOOSE)
+                    ay_sat_f, ay_sat_r = (a, None) if eixo == "F" else (None, a)
+                    motivo_sat = _MSG_ACOPLADO
+                    folga = margem[outro]
+                    cn_est_q = folga * cfg.cg_to_rear / (W * L) if outro == "R" else -folga * cfg.cg_to_front / (W * L)
+                    cn_iso_q = -cn_est_q
+                    fator_ay = math.cos(t_t.beta_rad) if _usa_ax(caso, hip) else 1.0
+                    cn_p, motivo_p = _ponto_p(
+                        caso, a, ay_max, passo, tol, n_alfa,
+                        caps_fn=lambda ay: _capacidades_acopladas(caso, hip, ay, t_t.beta_rad, t_t.delta_rad),
+                        fator_ay=fator_ay)
+                    if cn_p is None:
+                        motivo_sat = "; ".join(x for x in (motivo_sat, motivo_p) if x)
+                    limitacoes = aval.limites
+    k, si, motivo_sat = _k_e_si(caso, hip, n_alfa, motivo_sat)
+    return Limite(ay_t_ms2=ay_t, ay_sat_f=ay_sat_f, ay_sat_r=ay_sat_r, motivo_sat=motivo_sat, eixo_satura=eixo,
+                  veredito=veredito, cn_iso_q=cn_iso_q, cn_estabilizante_q=cn_est_q, cn_p=cn_p,
+                  stability_index=si, k_rad_por_ms2=k, resolucao_ms2=float(resolucao_ms2),
+                  motivo=motivo, limitacoes=limitacoes)
+
+
 def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01, ay_max_g: float = 2.0,
            n_alfa: int = 401) -> Limite:
     """T, saturação por eixo, veredito, Q, P, K e stability index em raio fixo (curva à esquerda; a direita, com
-    equilibrio.espelhar). Só variantes desacopladas (as acopladas lançam NotImplementedError("Task 4")). Sem raio_m
-    lança ValueError (decisão 2 do plano). O campo `sentido` de Hipoteses não age aqui: os dois sentidos são dois
+    equilibrio.espelhar). Variantes acopladas seguem _limite_acoplado (T pelo Newton, saturação por eixo da decisão 3
+    do plano); o método abaixo é o das desacopladas. Sem raio_m lança ValueError (decisão 2 do plano). O campo `sentido` de Hipoteses não age aqui: os dois sentidos são dois
     chamados (a escada, Task 6, chama o limite() do caso e o do espelhado).
 
     Método:
@@ -705,11 +1225,12 @@ def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01,
     1,3 a 1,7 vezes a resolucao_ms2 (a interpolação em A_Y). Quem compara com o analise_par deve usar a mesma grade.
     """
     _exige_raio(caso)
-    _checa_desacoplada(hip)
     if not (isinstance(resolucao_ms2, (int, float)) and math.isfinite(resolucao_ms2) and resolucao_ms2 > 0.0):
         raise ValueError(f"resolucao_ms2 deve ser > 0 e finito; recebido {resolucao_ms2!r}.")
     if not (isinstance(ay_max_g, (int, float)) and math.isfinite(ay_max_g) and ay_max_g > 0.0):
         raise ValueError(f"ay_max_g deve ser > 0 e finito; recebido {ay_max_g!r}.")
+    if _e_acoplada(hip):
+        return _limite_acoplado(caso, hip, resolucao_ms2, ay_max_g, n_alfa)
     cfg = caso.cfg
     W, L = cfg.mass_total * G, cfg.wheelbase
     ay_max = ay_max_g * G
@@ -766,16 +1287,7 @@ def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01,
                     avisos.append(texto)
         limitacoes = tuple(avisos)
 
-    try:
-        k = k_trim(caso, hip, AY_REF_G * G, n_alfa)
-    except ValueError as e:
-        k = None
-        motivo_sat = "; ".join(x for x in (motivo_sat, f"K indisponível: {e}") if x)
-    try:
-        si = stability_index(caso, hip, AY_REF_G * G, n_alfa)
-    except ValueError as e:
-        si = None
-        motivo_sat = "; ".join(x for x in (motivo_sat, f"stability index indisponível: {e}") if x)
+    k, si, motivo_sat = _k_e_si(caso, hip, n_alfa, motivo_sat)
     return Limite(ay_t_ms2=ay_t, ay_sat_f=ef.sat, ay_sat_r=er.sat, motivo_sat=motivo_sat, eixo_satura=eixo,
                   veredito=veredito, cn_iso_q=cn_iso_q, cn_estabilizante_q=cn_est_q, cn_p=cn_p,
                   stability_index=si, k_rad_por_ms2=k, resolucao_ms2=float(resolucao_ms2),

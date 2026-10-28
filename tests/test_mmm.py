@@ -6,7 +6,11 @@ TC-MMM-004: K da curva de trim contra o oráculo linear (parcelas_k).
 TC-MMM-005: carro simétrico (δ = L/R, Q = 0, NEUTRO, stability index nulo e com sinal pela rigidez de rolagem).
 TC-MMM-006: CG lateral e espelhar contra analise_par_dois_sentidos.
 TC-MMM-007: trim desacoplado (resíduos, A_Y acima do limite, caso sem raio) e o limite sem número de T
-            (descolamento, toe que consome a faixa de α, pico na borda da grade).
+            (descolamento, toe que consome a faixa de α, pico na borda da grade); Task 4: trim da variante Python
+            completa com os resíduos de força e momento em eixos do carro (adendo §2.5) e o limite acoplado
+            (saturação por eixo da decisão 3 do plano, derivado à mão com o pneu de brinquedo).
+TC-MMM-008: α cinemático (Ackermann 100 %, sinal de y em R finito) contra a variante planilha.
+TC-MMM-009: diferencial travado (contribuição de Fx ao N) e tração acima do atrito (PAC2002).
 TC-MMM-011: contrato de Hipoteses e VARIANTES.
 Roda como script: uv run python -X utf8 tests/test_mmm.py
 O veículo, o raio e os números abaixo são entradas de teste, não do carro.
@@ -356,7 +360,6 @@ ok_raiz = (not tr_raiz.convergiu and tr_raiz.eixo_sem_raiz in ("F", "R", "F+R") 
 ok_alto = ok_alto and ok_raiz
 caso_sem = eq.CasoEquilibrio(cfg=cfg, ds=ds)
 ok_raio = raises(lambda: mmm.trim(caso_sem, hip_pl, 1.0 * G), ValueError, MSG_SEM_RAIO)
-ok_acopl = raises(lambda: mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G), NotImplementedError, "Task 4")
 
 # Review Focus 2: descolamento antes da saturação. Bitola estreita e CG alto (sintético de teste): a roda interna
 # descola antes de qualquer eixo saturar. O limite não dá número de T: veredito N/A com o motivo de
@@ -378,13 +381,193 @@ with pneu_de_brinquedo(lei_tanh):
 ok_toe = (lim_toe.veredito == eq.NA and lim_toe.ay_t_ms2 is None and "toe consome a faixa de α" in (lim_toe.motivo or "")
           and lim_borda.veredito == eq.NA and lim_borda.ay_t_ms2 is None and lim_borda.cn_p is None
           and "pico na borda da grade de α" in (lim_borda.motivo or ""))
+
+# ---- Task 4: variantes acopladas ----
+# Eixos do carro (adendo §2.5): a_x = −A·sen β e a_y = A·cos β, com A = V²/R o A_Y do trim. Resíduos calculados AQUI, das
+# forças por roda do Trim e do δ_i de cada roda dianteira, sem helper do módulo:
+#   longitudinal: ΣFx_carro − D − RR + m·A·sen β = 0, com a dianteira em −Fy_roda·sen δ_i (Fx_roda dianteiro = 0 em κ = 0,
+#                 Fy_roda = fy_carro/cos δ_i) e a traseira em Fx; D = ½ρ·CdA·A·R e RR = Crr·m·g saem dos campos do caso;
+#   lateral:      ΣFy_carro − m·A·cos β = 0 (a_y = A·cos β, §2.5);
+#   guinada:      N = Σ(x_i·Fy_i − y_i·Fx_i) = 0 (x = +a em FL e FR, −b atrás; y = +t/2 em FL e RL, −t/2 em FR e RR).
+CANTOS_T = ("FL", "FR", "RL", "RR")
+
+
+def residuos_carro(caso_x, tr):
+    c_, m_, A_, b_ = caso_x.cfg, caso_x.cfg.mass_total, tr.ay_ms2, tr.beta_rad
+    d_ar = 0.5 * caso_x.rho_kg_m3 * caso_x.cda_m2 * A_ * caso_x.raio_m
+    rr_ = caso_x.crr * m_ * G
+    xs_ = {"FL": c_.cg_to_front, "FR": c_.cg_to_front, "RL": -c_.cg_to_rear, "RR": -c_.cg_to_rear}
+    ys_ = {"FL": c_.track_front / 2, "FR": -c_.track_front / 2, "RL": c_.track_rear / 2, "RR": -c_.track_rear / 2}
+    fx_car = {c: -(tr.fy[c] / math.cos(tr.delta_rodas[c])) * math.sin(tr.delta_rodas[c]) for c in ("FL", "FR")}
+    fx_car.update({c: tr.fx[c] for c in ("RL", "RR")})
+    dif_fx = max(abs(fx_car[c] - tr.fx[c]) for c in ("FL", "FR"))   # o Trim.fx dianteiro é o da reconstituição
+    res_x = sum(fx_car.values()) - d_ar - rr_ + m_ * A_ * math.sin(b_)
+    res_y = sum(tr.fy.values()) - m_ * A_ * math.cos(b_)
+    n_ = sum(xs_[c] * tr.fy[c] - ys_[c] * fx_car[c] for c in CANTOS_T)
+    return abs(res_x), abs(res_y), abs(n_), dif_fx
+
+
+hip_pc = mmm.Hipoteses.python_completo()
+# Escala de teste do pneu (LMUY = 0,6, sintético de teste): com o pneu cheio o carro-base não satura até 2 g, e com 0,5 o
+# diferencial travado (Δκ ≈ t/R, adendo §6) tira a traseira do ramo ascendente já em 0,8 g.
+ds_pc = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.6})
+caso_pc = eq.CasoEquilibrio(cfg=cfg, ds=ds_pc, raio_m=R_TESTE, downforce_N=400.0, aero_balance_front=0.45,
+                            rho_kg_m3=1.2, cda_m2=1.0, crr=0.02)   # sintético de teste
+caso_pc_ack = eq.CasoEquilibrio(   # idem com toe e Ackermann 50 % (δ_i diferentes nas duas dianteiras), sintético de teste
+    cfg=cfg, ds=ds_pc, raio_m=R_TESTE, downforce_N=400.0, aero_balance_front=0.45,
+    toe_rad={"FL": 0.003, "FR": 0.003, "RL": 0.002, "RR": 0.002}, ackermann_pct=50.0,
+    rho_kg_m3=1.2, cda_m2=1.0, crr=0.02)
+lim_pc = mmm.limite(caso_pc, hip_pc)
+res_pc, det_pc = [], []
+for caso_x, f_t in ((caso_pc, 0.5), (caso_pc_ack, 0.5)):
+    t_x = lim_pc.ay_t_ms2 if caso_x is caso_pc else mmm.limite(caso_x, hip_pc).ay_t_ms2
+    tr_x = mmm.trim(caso_x, hip_pc, f_t * t_x)
+    r_x = residuos_carro(caso_x, tr_x) if tr_x.convergiu else (math.inf,) * 4
+    res_pc.append((tr_x.convergiu, *r_x))
+    det_pc.append(f"T={t_x / G:.4f} g, δ_FL={math.degrees(tr_x.delta_rodas['FL']):.3f}° "
+                  f"δ_FR={math.degrees(tr_x.delta_rodas['FR']):.3f}°, β={math.degrees(tr_x.beta_rad):.3f}°, "
+                  f"resíduos(Fx,Fy,N,Δfx)={[f'{v:.1e}' for v in r_x]}")
+ok_pc = all(c and rx < 1e-6 and ry < 1e-6 and rn < 1e-6 and dfx < 1e-9 for c, rx, ry, rn, dfx in res_pc)
+# Review Focus: o par de rodas dianteiras com Ackermann tem δ_i diferentes (se fossem iguais, o teste do δ_i por roda
+# não distinguiria a roda), e o δ do trim é maior que L/R (a hipótese 3 muda o resultado: sen δ_trim ≠ sen δ_ref).
+tr_ack = mmm.trim(caso_pc_ack, hip_pc, 0.5 * mmm.limite(caso_pc_ack, hip_pc).ay_t_ms2)
+ok_pc = ok_pc and abs(tr_ack.delta_rodas["FL"] - tr_ack.delta_rodas["FR"]) > 1e-3 and tr_ack.delta_rodas["FL"] > tr_ack.delta_rodas["FR"]
+
+# Limite acoplado (decisão 3 do plano), pneu de brinquedo e cos δ do trim, derivado à mão (R = 8,5 m). O brinquedo satura
+# cada roda em |α| = α0 (patamar) e, no regime linear, Fy_roda = μ·Fz·s com s = −α/α0 (0 <= s <= 1). Sem toe, Ackermann, aero
+# nem tração, e só com cos_delta = "trim" (a_x = 0, a_y = A): a frente tem as duas rodas com o mesmo s_f, e a traseira s_r.
+#   Forças nos eixos do carro: F_f = cos δ·μ·W_f·s_f; F_r = μ·W_r·s_r; a parcela longitudinal da dianteira, −Fy_roda·sen δ,
+#   tem braço y_i e entra no momento: N_x = Σ y_i·Fy_roda,i·sen δ = −sen δ·μ·s_f·t_f·c_f·A, onde c_f é a transferência lateral de
+#   carga de UMA roda dianteira por m/s² (Fz_FL − Fz_FR = −2·c_f·A; a roda interna é a FL).
+#   Equilíbrio: (1) F_f + F_r = m·A e (2) N = a·F_f − b·F_r + N_x = 0. Cinemática: α_F = β + a/R − δ, α_R = β − b/R, logo
+#   δ = L/R + α0·(s_f − s_r). No limite a frente satura: s_f = 1.
+#   De (2) com a·W_f = b·W_r: s_r = cos δ − sen δ·t_f·c_f·A/(b·W_r); de (1): A = μ·g·(cos δ·b/L + (a/L)·s_r), o que dá
+#       A = μ·g·cos δ / (1 + μ·t_f·c_f·sen δ/(b·m)).
+#   Ponto fixo em δ por iteração (δ → A → s_r → δ). A frente satura primeiro (PUSH) e a traseira ainda tem a folga
+#   μ·W_r·(1 − s_r); Q (cn_estabilizante) = folga·b/(W·L). A diferença para o resultado sem N_x é de ~0,5 %.
+a0_t = 0.1
+c_f = (eq.cargas(caso_b85, 1.0)["FR"] - eq.cargas(caso_b85, 1.0)["FL"]) / 2.0
+d_star = L_b / R_TESTE
+for _ in range(500):
+    A_it = MU_B * G * math.cos(d_star) / (1.0 + MU_B * cfg_b.track_front * c_f * math.sin(d_star) / (b_b * m_b))
+    W_f_t, W_r_t = W_b * b_b / L_b, W_b * a_b / L_b
+    s_r_it = (m_b * A_it / MU_B - math.cos(d_star) * W_f_t) / W_r_t
+    d_star = L_b / R_TESTE + a0_t * (1.0 - s_r_it)
+T_acopl = A_it
+Q_acopl = MU_B * W_r_t * (1.0 - s_r_it) * b_b / (W_b * L_b)
+hip_cd = mmm.Hipoteses(cos_delta="trim")
+with pneu_de_brinquedo(lei_saturada(a0_t, a0_t)):
+    lim_cd = mmm.limite(caso_b85, hip_cd)
+    lim_cd_g = mmm.limite(caso_bg, hip_cd)
+MSG_ACOPLADO = "acoplado: além de T não há trim"
+ok_lim_a = (lim_cd.ay_t_ms2 is not None and abs(lim_cd.ay_t_ms2 - T_acopl) < 1e-4
+            and lim_cd.veredito == eq.PUSH and lim_cd.eixo_satura == "F"
+            and lim_cd.ay_sat_f is not None and abs(lim_cd.ay_sat_f - lim_cd.ay_t_ms2) < 1e-12
+            and lim_cd.ay_sat_r is None and lim_cd.motivo_sat == MSG_ACOPLADO
+            and abs(lim_cd.cn_estabilizante_q - Q_acopl) < 1e-5)
+# R grande: cos δ = 1, os dois eixos saturam juntos em T = μ·g e a folga do outro eixo em T é ≤ (força exigida por m/s²)·res
+# -> NEUTRO; o eixo que satura tem ay_sat = T e o outro None com o mesmo motivo.
+ok_lim_n = (lim_cd_g.ay_t_ms2 is not None and abs(lim_cd_g.ay_t_ms2 - T_a_g) < 1e-4 and lim_cd_g.veredito == eq.NEUTRO
+            and lim_cd_g.motivo_sat == MSG_ACOPLADO
+            and sorted(x is None for x in (lim_cd_g.ay_sat_f, lim_cd_g.ay_sat_r)) == [False, True])
+# A variante Python completa no limite não pode lançar nem devolver T sem motivo; o trim em A_Y acima de T não converge.
+tr_acima = mmm.trim(caso_pc, hip_pc, 1.05 * lim_pc.ay_t_ms2)
+ok_acima = (not tr_acima.convergiu and bool(tr_acima.motivo) and tr_acima.fy is None and tr_acima.delta_rodas is None
+            and lim_pc.ay_t_ms2 is not None and lim_pc.veredito in (eq.PUSH, eq.LOOSE, eq.NEUTRO))
+ok_acopl = (mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).convergiu
+            and mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).delta_rodas is not None
+            and mmm.trim(caso_t, hip_pl, 1.0 * G).delta_rodas is None)
+
 check("TC-MMM-007: no trim |ΣFy−m·A_Y|<1e-6 N e |N|<1e-6 N·m; A_Y acima do limite -> convergiu=False com motivo e "
-      "campos None; sem raio_m -> ValueError; acoplada -> NotImplementedError (Task 4); limite: descolamento, toe "
-      "que consome a faixa e pico na borda -> N/A com o motivo de capacidade_eixo e sem T",
-      ok_res and ok_alto and ok_raio and ok_acopl and ok_desc and ok_toe,
+      "campos None; sem raio_m -> ValueError; limite: descolamento, toe que consome a faixa e pico na borda -> N/A com o "
+      "motivo de capacidade_eixo e sem T; variante Python completa em 0,5·T: resíduos Fx, Fy, N em eixos do carro (§2.5) "
+      "< 1e-6, com Ackermann também; limite acoplado: eixo que satura com ay_sat = T e o outro None (decisão 3), T e Q à mão",
+      ok_res and ok_alto and ok_raio and ok_acopl and ok_desc and ok_toe and ok_pc and ok_lim_a and ok_lim_n and ok_acima,
       f"resíduos(F,N)={[(f'{rf:.1e}', f'{rn:.1e}') for _, rf, rn in rs]}; motivo(5g)={tr_alto.motivo!r}; "
       f"eixo_sem_raiz={tr_alto.eixo_sem_raiz}; descolamento: {lim_desc.motivo!r}; toe: {lim_toe.motivo!r}; "
-      f"borda: {lim_borda.motivo!r}")
+      f"borda: {lim_borda.motivo!r}; completo: {det_pc[0]}; com Ackermann: {det_pc[1]}; "
+      f"limite acoplado (cos δ trim, brinquedo): T={lim_cd.ay_t_ms2:.6f} (mão {T_acopl:.6f}) Q={lim_cd.cn_estabilizante_q:.6f} "
+      f"(mão {Q_acopl:.6f}) {lim_cd.veredito}; R grande T={lim_cd_g.ay_t_ms2:.6f} {lim_cd_g.veredito}; "
+      f"acima de T: {tr_acima.motivo!r}")
+
+# ---------------- TC-MMM-008 : α cinemático ----------------
+# Ackermann 100 % em R = 8,5 m e β pequeno. Com o centro instantâneo na linha do eixo traseiro, sen β = b/R, o raio do
+# ponto médio do eixo traseiro é ρ = R·cos β e as duas rodas dianteiras têm δ_i = atan(L/(ρ − t/2)) (FL, interna, y = +t/2)
+# e δ_o = atan(L/(ρ + t/2)) (FR, externa): a geometria de Ackermann exata (cot δ_o − cot δ_i = t/L). Com δ = (δ_i + δ_o)/2
+# a velocidade de cada roda é perpendicular ao raio até o centro e α_FL = α_FR = 0. Se o sinal de y estivesse trocado
+# (FL em −t/2), α_FL e α_FR sairiam ≈ ±½·L·t/R² ≈ ±0,013 rad, e o teste falharia.
+t_f = cfg.track_front
+caso_ack = eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, ackermann_pct=100.0)
+beta_ack = math.asin(B_CG / R_TESTE)
+rho_ack = R_TESTE * math.cos(beta_ack)
+d_i_ack = math.atan(L / (rho_ack - t_f / 2.0))
+d_o_ack = math.atan(L / (rho_ack + t_f / 2.0))
+delta_ack = 0.5 * (d_i_ack + d_o_ack)
+al_cin = mmm.alfa_rodas(caso_ack, hip_c, beta_ack, delta_ack)
+al_pla = mmm.alfa_rodas(caso_ack, mmm.Hipoteses.planilha(), beta_ack, L / R_TESTE)
+dif_cin = al_cin["FL"] - al_cin["FR"]
+dif_pla = al_pla["FL"] - al_pla["FR"]
+ref_pla = L * t_f / R_TESTE ** 2
+ok_008 = (abs(dif_cin) < 1e-4 and max(abs(al_cin[c]) for c in ("FL", "FR", "RL", "RR")) < 1e-4
+          and abs(abs(dif_pla) - ref_pla) <= 5e-2 * ref_pla
+          and dif_pla < 0 and al_pla["FL"] < al_pla["FR"])   # planilha: a roda interna (FL) esterça mais, α_FL < α_FR
+check("TC-MMM-008: α cinemático, Ackermann 100 %, β pequeno: |α_FL − α_FR| < 1e-4 rad (e as quatro α ≈ 0, o que fixa o "
+      "sinal de y: FL em +t/2); a variante planilha dá |α_FL − α_FR| ≈ L·t/R² (relativo 5e-2) com α_FL < α_FR (interna)",
+      ok_008,
+      f"cinemático: α_FL={al_cin['FL']:.2e} α_FR={al_cin['FR']:.2e} α_RL={al_cin['RL']:.2e} α_RR={al_cin['RR']:.2e} rad; "
+      f"planilha: α_FL − α_FR={dif_pla:.5f} rad (L·t/R²={ref_pla:.5f}, relativo "
+      f"{abs(abs(dif_pla) - ref_pla) / ref_pla:.2e}); δ_i={math.degrees(d_i_ack):.3f}° δ_o={math.degrees(d_o_ack):.3f}°")
+
+# ---------------- TC-MMM-009 : diferencial travado e tração acima do atrito ----------------
+# Contribuição de Fx ao N (traseira): −Σ y_i·Fx_i = −(t/2)·(Fx_RL − Fx_RR). Aberto: Fx igual nas duas rodas, contribuição
+# nula (1e-9). Travado (ω comum, mesmo raio de rolamento): em curva à esquerda a roda interna (RL, y = +t/2) tem V_x menor,
+# κ maior e Fx maior que a externa, então Fx_RL > Fx_RR e a contribuição é < 0 (push, N < 0 no ISO).
+caso_tr = eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, downforce_N=400.0, aero_balance_front=0.45,
+                            rho_kg_m3=1.2, cda_m2=1.0, crr=0.02)   # sintético de teste
+t_r2 = cfg.track_rear / 2.0
+
+
+def n_fx(tr):
+    return -(t_r2 * tr.fx["RL"] - t_r2 * tr.fx["RR"])
+
+
+tr_ab = mmm.trim(caso_tr, hip_pl, 0.8 * G)
+tr_ab_pac = mmm.trim(caso_tr, mmm.Hipoteses(tracao="pac2002"), 0.8 * G)
+tr_tv = mmm.trim(caso_tr, mmm.Hipoteses(diferencial="travado"), 0.8 * G)
+tr_tv_pac = mmm.trim(caso_tr, mmm.Hipoteses(diferencial="travado", tracao="pac2002"), 0.8 * G)
+fx_total = eq.fx_exigido_traseira(caso_tr, 0.8 * G)
+ok_009a = (all(t.convergiu for t in (tr_ab, tr_ab_pac, tr_tv, tr_tv_pac))
+           and abs(n_fx(tr_ab)) < 1e-9 and abs(n_fx(tr_ab_pac)) < 1e-9
+           and n_fx(tr_tv) < -1e-3 and n_fx(tr_tv_pac) < -1e-3
+           and abs(tr_tv.fx["RL"] + tr_tv.fx["RR"] - fx_total) < 1e-6
+           and tr_tv.kappa["RL"] > tr_tv.kappa["RR"] and tr_tv_pac.kappa["RL"] > tr_tv_pac.kappa["RR"])
+# Tração acima do atrito: com PAC2002 o Fx combinado (α ≠ 0) é menor que o pico puro que a elipse usa. Procura-se, em
+# Crr crescente (sintético de teste), um caso em que a elipse (semente) ainda sustenta o Fx e o PAC2002 não (Brent sem
+# raiz), e outro bem acima do atrito. No primeiro o motivo é exatamente "tração excede o atrito longitudinal em <canto>"
+# (sai do Brent da variante); no segundo a semente desacoplada já falha, e o motivo dela leva o prefixo "eixo R: ".
+MSG_TRACAO = "tração excede o atrito longitudinal em "
+janela = None
+for crr_x in [0.2 + 0.005 * k for k in range(0, 200)]:
+    caso_x = eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, downforce_N=400.0, aero_balance_front=0.45,
+                               rho_kg_m3=1.2, cda_m2=1.0, crr=crr_x)
+    if mmm.trim(caso_x, hip_pl, 0.8 * G).convergiu:
+        t_p = mmm.trim(caso_x, mmm.Hipoteses(tracao="pac2002"), 0.8 * G)
+        if not t_p.convergiu:
+            janela = (crr_x, t_p.motivo)
+            break
+caso_muito = eq.CasoEquilibrio(cfg=cfg, ds=ds, raio_m=R_TESTE, downforce_N=400.0, aero_balance_front=0.45,
+                               rho_kg_m3=1.2, cda_m2=1.0, crr=2.0)
+t_muito = mmm.trim(caso_muito, mmm.Hipoteses(tracao="pac2002"), 0.8 * G)
+ok_009b = (janela is not None and janela[1] in (MSG_TRACAO + "RL", MSG_TRACAO + "RR")
+           and not t_muito.convergiu and t_muito.motivo.endswith((MSG_TRACAO + "RL", MSG_TRACAO + "RR"))
+           and t_muito.fy is None and t_muito.kappa is None)
+check("TC-MMM-009: diferencial travado: contribuição de Fx ao N < 0 (push) em curva à esquerda, com a soma de Fx = Fx "
+      "exigido; aberto: nula (1e-9); Fx exigido acima do atrito (PAC2002, Brent sem raiz) -> motivo "
+      "'tração excede o atrito longitudinal em <canto>'",
+      ok_009a and ok_009b,
+      f"N_Fx(aberto)={n_fx(tr_ab):.1e}, N_Fx(aberto,PAC)={n_fx(tr_ab_pac):.1e}, N_Fx(travado)={n_fx(tr_tv):.3f} N·m, "
+      f"N_Fx(travado,PAC)={n_fx(tr_tv_pac):.3f} N·m; κ travado RL={tr_tv.kappa['RL']:.4f} RR={tr_tv.kappa['RR']:.4f}; "
+      f"janela de Crr (elipse ok, PAC sem raiz)={janela}; Crr=2: {t_muito.motivo!r}")
 
 # ---------------- TC-MMM-011 : contrato de Hipoteses e VARIANTES ----------------
 campos = {f.name for f in dataclasses.fields(mmm.Hipoteses)}
