@@ -46,7 +46,7 @@ Foco declarado: completar a planilha (EDR-019).
 - Incremento 6 (branch `feat/inc6-mmm-escada`, só Python, sem planilha nova; EDR-064 a EDR-066, adendo
   `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`): `python/mmm.py` (MMM em raio fixo), `python/escada.py`
   (escada de hipóteses) e `tools/relatorio_escada.py`. Código e testes prontos; o relatório `docs/inc6/escada-hipoteses.md`
-  espera o raio do skidpad (R) do usuário, porque a planilha tem R vazio e nenhum eixo satura até 2 g com o caso da V4.2.
+  espera o raio do skidpad (R) do usuário, porque a planilha tem R vazio e, com o caso da V4.2 e R = 8,5 m (sintético de teste do implementador), nenhum eixo satura até 2 g (medido só nesse R).
   EDR-064 IMPLEMENTED (VERIFIED depois da suíte inteira); EDR-065 (tolerância e regra do NEUTRO) e EDR-066 (achados sobre
   Ackermann e Fx exigido) dependem do usuário.
 
