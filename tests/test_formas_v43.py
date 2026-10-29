@@ -301,22 +301,50 @@ def tc_fxi_001() -> tuple[bool, str]:
     # α·(L/R)² e α²·(L/R), além de α³: é O(ε³) com α e L/R da mesma ordem ε (a derivação de 1ª ordem da spec §4.2).
     # Por isso a razão em [6, 10] é medida escalando JUNTOS os α por 1/2 e o L/R por 1/2 (R → 2R). A razão com R
     # fixo (só os α por 1/2) é medida e impressa, sem cota: ela não cai como α³ (ver o relatório da Task 4).
+    # A cinemática do oráculo é a de corpo rígido (eq.cinematica_rigida), conferida aqui pelo produto vetorial
+    # v = ẑ × (P − C) (ω = 1; curva à esquerda): |C − CG| = R; a velocidade da roda traseira é ⟂ (roda − C) e faz
+    # −|α_R| com o eixo X; β e δ − α_F saem das velocidades do CG e do eixo dianteiro; com α = 0, δ = atan(L/R_c) e
+    # β = atan(b/R_c).
     a_f, a_r = a_c
+
+    def _vel(p, c):
+        return -(p[1] - c[1]), p[0] - c[0]
+
+    cin = eq.cinematica_rigida(caso_tr, a_f, a_r)
+    C = cin["C"]
+    v_r = _vel((0.0, 0.0), C)
+    v_cg = _vel((B, 0.0), C)
+    v_f = _vel((L, 0.0), C)
+    geo = (abs(math.hypot(C[0] - B, C[1]) - R_TESTE) <= 1e-12
+           and abs(v_r[0] * (0.0 - C[0]) + v_r[1] * (0.0 - C[1])) <= 1e-12
+           and abs(math.atan2(v_r[1], v_r[0]) - (-a_r)) <= 1e-12
+           and abs(math.atan2(v_cg[1], v_cg[0]) - cin["beta"]) <= 1e-12
+           and abs(math.atan2(v_f[1], v_f[0]) + a_f - cin["delta"]) <= 1e-12)
+    cin0 = eq.cinematica_rigida(caso_tr, 0.0, 0.0)
+    R_c = math.sqrt(R_TESTE ** 2 - B ** 2)
+    geo0 = (abs(cin0["delta"] - math.atan(L / R_c)) <= 1e-12 and abs(cin0["beta"] - math.atan(B / R_c)) <= 1e-12)
     zero = eq.fx_balanco_exato(caso_tr, ay, 0.0, 0.0)
     d1 = eq.fx_balanco_exato(caso_tr, ay, a_f, a_r) - (req_f * a_f + req_r * a_r)
     d_alfa = eq.fx_balanco_exato(caso_tr, ay, a_f / 2, a_r / 2) - (req_f * a_f / 2 + req_r * a_r / 2)
     caso_2r = dataclasses.replace(caso_tr, raio_m=2.0 * R_TESTE)
     d_conj = eq.fx_balanco_exato(caso_2r, ay, a_f / 2, a_r / 2) - (req_f * a_f / 2 + req_r * a_r / 2)
     razao_alfa, razao_conj = d1 / d_alfa, d1 / d_conj
-    partes["b"] = abs(zero) <= 1e-9 * cfg.mass_total * ay and d1 != 0.0 and 6.0 <= razao_conj <= 10.0
-    det.append(f"(b) oráculo em α=0: {zero:.1e} N; diferença={d1:.4e} N; razão (α e L/R por 1/2)={razao_conj:.3f}; "
-               f"razão só α por 1/2 (R fixo)={razao_alfa:.3f}")
+    partes["b"] = (geo and geo0 and abs(zero) <= 1e-9 * cfg.mass_total * ay and d1 != 0.0
+                   and 6.0 <= razao_conj <= 10.0)
+    det.append(f"(b) geometria rígida ok={geo}, α=0 ok={geo0}; oráculo em α=0: {zero:.1e} N; diferença={d1:.4e} N; "
+               f"razão (α e L/R por 1/2)={razao_conj:.3f}; razão só α por 1/2 (R fixo)={razao_alfa:.3f}")
 
     # (c) a forma v42 é a de hoje (congelada); n_alfa não muda a v42
     fx42 = (eq.fx_exigido_traseira(caso_tr, ay), eq.fx_exigido_traseira(caso_tr, ay, formas=v42),
             eq.fx_exigido_traseira(caso_tr, ay, formas=v42, n_alfa=n))
     cr = eq.capacidade_eixo(caso_tr, "R", ay, 25)
-    partes["c"] = (all(v == FX_V42_1G for v in fx42) and abs(cr.fy_max_N / CAPR_V42_1G[0] - 1.0) <= 1e-12
+    try:   # a v43 recusa a_y < 0 (o termo zeraria sem aviso); a v42 aceita, como hoje
+        eq.fx_exigido_traseira(caso_tr, -ay, formas=v43)
+        recusa_neg = False
+    except ValueError as exc:
+        recusa_neg = str(exc).startswith("Fx exigido na forma v43 exige a_y >= 0")
+    partes["c"] = (recusa_neg and isinstance(eq.fx_exigido_traseira(caso_tr, -ay), float)
+                   and all(v == FX_V42_1G for v in fx42) and abs(cr.fy_max_N / CAPR_V42_1G[0] - 1.0) <= 1e-12
                    and cr.alfa_pico_rad == CAPR_V42_1G[1] and fx_c != FX_V42_1G)
     det.append(f"(c) v42={fx42[0]!r} N (congelado {FX_V42_1G!r}), cap R={cr.fy_max_N!r}")
     return all(partes.values()), "; ".join(det) + f" | partes={partes}"
@@ -377,13 +405,18 @@ def tc_fxi_002() -> tuple[bool, str]:
     msg = eq.MSG_FX_SEM_FRENTE
     cap43 = eq.capacidade_eixo(caso_d, "R", ay_d, 25, formas=v43)
     cap42 = eq.capacidade_eixo(caso_d, "R", ay_d, 25, formas=v42)
-    partes["c"] = (fz_d["FL"] <= 0.0 < min(fz_d["RL"], fz_d["RR"])
+    # analise_par roda sem exceção, e toda linha com a dianteira descolada (e a traseira não) traz o motivo da D3
+    par_d = eq.analise_par(caso_d, formas=v43)
+    descoladas = [ln for ln in par_d.linhas if ln.fz["FL"] <= 0.0 < min(ln.fz["RL"], ln.fz["RR"])]
+    par_ok = bool(descoladas) and all(ln.cap_r.motivo == eq.MSG_FX_SEM_FRENTE for ln in descoladas)
+    partes["c"] = (par_ok and fz_d["FL"] <= 0.0 < min(fz_d["RL"], fz_d["RR"])
                    and msg == "Fx exigido (h9v) indisponível: a curva dianteira é inválida nesta linha"
                    and cap43 == eq.Capacidade(None, None, msg) and cap42.fy_max_N is not None
                    and eq.elipse_traseira(caso_d, ay_d, rodas_r, fz_u, gam_u, formas=v43, n_alfa=25) == (None, msg)
                    and eq.fx_exigido_traseira(caso_d, ay_d, formas=v43) == msg
                    and eq.alfas_de_arrasto(caso_d, ay_d, formas=v43, n_alfa=None) == msg)
-    det.append(f"(c) Fz_FL={fz_d['FL']:.1f} N; cap R v43={cap43}; v42 válida={cap42.fy_max_N is not None}")
+    det.append(f"(c) Fz_FL={fz_d['FL']:.1f} N; cap R v43={cap43}; v42 válida={cap42.fy_max_N is not None}; "
+               f"analise_par v43 {par_d.veredito}, {len(descoladas)} linhas descoladas com o motivo da D3={par_ok}")
 
     # (d) achado da revisão da Task 3: o ValueError de geometria de angulos_velocidade (R <= b) chega ao motivo da
     # capacidade com a mensagem original, e não como "toe consome a faixa de α"; a v42 do mesmo caso é válida.

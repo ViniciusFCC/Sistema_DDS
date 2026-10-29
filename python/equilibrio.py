@@ -561,29 +561,56 @@ def alfas_de_arrasto(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas,
     return saida[0], saida[1]
 
 
-def fx_balanco_exato(caso: CasoEquilibrio, ay_ms2: float, alfa_f: float, alfa_r: float) -> float:
-    """Oráculo do Fx da curva [N]: balanço longitudinal exato em X do carro, modelo de bicicleta desacoplado.
+def cinematica_rigida(caso: CasoEquilibrio, alfa_f: float, alfa_r: float) -> dict:
+    """Cinemática exata de corpo rígido do modelo de bicicleta em regime, curva à esquerda (uso: fx_balanco_exato).
 
-    Não usa a fórmula do arrasto induzido. Centro da curva na linha do eixo traseiro (spec §3.1), R_c = √(R² − b²);
-    alfa_f e alfa_r são |α_F| e |α_R| [rad]. Com eles, o esterço da dianteira é δ = atan(L/R_c) + α_F − α_R e o ângulo
-    da velocidade do CG é β = atan(b/R_c) − α_R. Em X: Fx_r − F_pneu,f·sen δ = −m·A·sen β (a aceleração centrípeta A
-    aponta para o centro, perpendicular à velocidade). Em Y: F_yf + F_yr = m·A·cos β = m·a_y, com F_yf = F_pneu,f·cos δ
-    (a componente lateral do carro, a de forca_exigida). Então F_pneu,f = F_yf/cos δ, A = a_y/cos β e
-    Fx_r = F_pneu,f·sen δ − m·A·sen β = F_yf·tan δ − m·a_y·tan β (sem as resistências). Em α = 0 os termos em b/R se
-    cancelam: F_yf·L/R_c = m·a_y·b/R_c. Exige raio_m > b.
+    Referencial do carro (ISO 8855): origem no meio do eixo traseiro, X para a frente, Y para a esquerda; CG em (b, 0),
+    eixo dianteiro em (L, 0). alfa_f e alfa_r são |α_F| e |α_R| [rad]. Com rotação anti-horária (ω > 0), a velocidade
+    de um ponto P é ω·ẑ × (P − C) = ω·(−(P − C)_y, (P − C)_x).
+    - A roda traseira (sem esterço) precisa da velocidade para fora da curva, a −|α_R| do eixo X, para dar Fy para a
+      esquerda: a direção é (cos α_R, −sen α_R). Então P − C = −s·(sen α_R, cos α_R) com s > 0, isto é,
+      C = (s·sen α_R, s·cos α_R): o centro fica na reta pela roda traseira perpendicular à velocidade dela (à frente
+      do eixo quando α_R > 0).
+    - |C − CG| = R: (s·sen α_R − b)² + (s·cos α_R)² = R², ou s² − 2·b·s·sen α_R + b² − R² = 0, cuja raiz positiva é
+      s = b·sen α_R + √(R² − b²·cos² α_R).
+    - CG: velocidade ∝ (C_y, b − C_x), β = atan2(b − C_x, C_y). Eixo dianteiro: θ_f = atan2(L − C_x, C_y); a roda
+      dianteira também precisa da velocidade a |α_F| para fora do plano dela, então δ = θ_f + α_F.
+    Com α = 0: C = (0, R_c), δ = atan(L/R_c) e β = atan(b/R_c) (a geometria da spec §3.1). Devolve {"C": (C_x, C_y),
+    "s", "beta", "theta_f", "delta"}. Exige raio_m > b.
     """
     if caso.raio_m is None:
-        raise ValueError("fx_balanco_exato exige raio_m (raio do skidpad), que está faltando.")
+        raise ValueError("cinematica_rigida exige raio_m (raio do skidpad), que está faltando.")
     cfg = caso.cfg
-    L, b = cfg.wheelbase, cfg.cg_to_rear
-    if caso.raio_m <= b:
-        raise ValueError(f"R ≤ b: o centro da curva não fica na linha do eixo traseiro (R = {caso.raio_m!r} m, "
-                         f"b = {b!r} m).")
-    r_c = math.sqrt(caso.raio_m ** 2 - b ** 2)
-    delta = math.atan(L / r_c) + alfa_f - alfa_r
-    beta = math.atan(b / r_c) - alfa_r
+    L, b, R = cfg.wheelbase, cfg.cg_to_rear, caso.raio_m
+    if R <= b:
+        raise ValueError(f"R ≤ b: o centro da curva não fica na linha do eixo traseiro (R = {R!r} m, b = {b!r} m).")
+    s = b * math.sin(alfa_r) + math.sqrt(R * R - (b * math.cos(alfa_r)) ** 2)
+    cx, cy = s * math.sin(alfa_r), s * math.cos(alfa_r)
+    theta_f = math.atan2(L - cx, cy)
+    return {"C": (cx, cy), "s": s, "beta": math.atan2(b - cx, cy), "theta_f": theta_f, "delta": theta_f + alfa_f}
+
+
+def fx_balanco_exato(caso: CasoEquilibrio, ay_ms2: float, alfa_f: float, alfa_r: float) -> float:
+    """Oráculo do Fx da curva [N]: balanço longitudinal em X do carro, modelo de bicicleta desacoplado em regime.
+
+    O balanço e a cinemática são exatos para corpo rígido (cinematica_rigida: centro da curva na reta pela roda
+    traseira perpendicular à velocidade dela, a |C − CG| = R). Não usa a fórmula do arrasto induzido. alfa_f e alfa_r
+    são |α_F| e |α_R| [rad]. Em X: Fx_r − F_pneu,f·sen δ = −m·A·sen β (a aceleração do CG é ω × v, de módulo A,
+    perpendicular à velocidade). Em Y: F_yf + F_yr = m·A·cos β = m·a_y, com F_yf = F_pneu,f·cos δ (a componente
+    lateral do carro, a de forca_exigida; as forças ficam na linha central, então o momento em torno do CG só tem
+    F_yf·a − F_yr·b). Então F_pneu,f = F_yf/cos δ, A = a_y/cos β e
+    Fx_r = F_pneu,f·sen δ − m·A·sen β = F_yf·tan δ − m·a_y·tan β (sem as resistências). Em α = 0 os termos em b/R se
+    cancelam: F_yf·L/R_c = m·a_y·b/R_c.
+    Resto contra o arrasto induzido F_yf·|α_F| + F_yr·|α_R| (TC-FXI-001 (b); veiculo_base dos testes, R = 8 m, 1 g,
+    α contínuos do caso, todos sintéticos): 0,7078 N; razão ao escalar juntos os α por 1/2 e o L/R por 1/2 (R → 2R)
+    = 8,051 (O(ε³) com α e L/R da mesma ordem); só os α por 1/2, com R fixo = 1,902 (o resto tem termos α·(L/R)² e
+    α²·(L/R)). Em R = 9,125 m: 0,5325 N, 8,039 e 1,888. A cinemática aproximada usada antes (δ = atan(L/R_c) + α_F − α_R,
+    β = atan(b/R_c) − α_R, que desloca todas as velocidades pelo mesmo α_R) errava O(α·(L/R)²) e dava 0,2607 N
+    (R = 8 m) e 0,1897 N (R = 9,125 m).
+    """
+    cin = cinematica_rigida(caso, alfa_f, alfa_r)
     f_yf = forca_exigida(caso, ay_ms2)[0]
-    return f_yf * math.tan(delta) - cfg.mass_total * ay_ms2 * math.tan(beta)
+    return f_yf * math.tan(cin["delta"]) - caso.cfg.mass_total * ay_ms2 * math.tan(cin["beta"])
 
 
 def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas = FORMAS_V42,
@@ -600,7 +627,8 @@ def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas =
     alfas_de_arrasto (n_alfa inteiro: réplica de grade, a da célula; None: réplica contínua). No balanço
     F_yf·tan δ − m·a_y·tan β (fx_balanco_exato), com δ ≈ L/R + α_F − α_R e β ≈ b/R − α_R, os termos em b/R se
     cancelam (o termo da v42 é a parte que se cancela) e sobra o arrasto induzido; a diferença é de 3ª ordem com α e
-    L/R da mesma ordem. Entra com a mesma condição do termo da v42 (tração ativa e raio_m). Curva dianteira inválida:
+    L/R da mesma ordem. Entra com a mesma condição do termo da v42 (tração ativa e raio_m). Exige a_y >= 0 (curva à
+    esquerda; a direita é espelhar(caso)): com a_y < 0 dá ValueError, porque F_yf < 0 zeraria o termo. Curva dianteira inválida:
     devolve o motivo MSG_FX_SEM_FRENTE (str), em vez de um número (decisão D3). Omissão rotulada (spec §4.2):
     Σ F_yi·(δ_i − δ̄) por roda.
     """
@@ -613,6 +641,9 @@ def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas =
     if tracao_ativa(caso) and caso.raio_m is not None:
         req_f, req_r = forca_exigida(caso, ay_ms2)
         if formas.fx == "v43":
+            if ay_ms2 < 0.0:   # com req_f < 0 o arrasto induzido zeraria sem aviso
+                raise ValueError(f"Fx exigido na forma v43 exige a_y >= 0 (curva à esquerda; a direita é "
+                                 f"espelhar(caso)); recebido a_y = {ay_ms2!r} m/s².")
             alfas = alfas_de_arrasto(caso, ay_ms2, formas=formas, n_alfa=n_alfa)
             if isinstance(alfas, str):
                 return alfas

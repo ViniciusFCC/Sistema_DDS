@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, fields, replace
-from typing import Literal
+from typing import Literal, cast
 
 import equilibrio as eq
 from equilibrio import CANTOS, G
@@ -352,7 +352,7 @@ def trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int = 4
     alfa = alfa_rodas(caso, Hipoteses.planilha(), beta, delta, {"F": a_f, "R": a_r})
     fz = eq.cargas(caso, ay_ms2)
     cos_ref = math.cos(cfg.wheelbase / R)
-    fx_roda = eq.fx_exigido_traseira(caso, ay_ms2) / 2.0 if eq.tracao_ativa(caso) else 0.0
+    fx_roda = cast(float, eq.fx_exigido_traseira(caso, ay_ms2)) / 2.0 if eq.tracao_ativa(caso) else 0.0
     fy, fx = {}, {}
     for c in CANTOS:
         eixo = "F" if c in eq.RODAS_DO_EIXO["F"] else "R"
@@ -585,7 +585,7 @@ def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad:
     if not ativa:
         fx_r = 0.0
     elif hip.fx_exigido == "edr057":
-        fx_r = eq.fx_exigido_traseira(caso, ay_ms2)
+        fx_r = cast(float, eq.fx_exigido_traseira(caso, ay_ms2))   # forma v42: sempre float
     else:
         rr = caso.crr * m * G if caso.crr is not None else 0.0
         fx_r = arrasto + rr + sum(fy_pneu[c] * math.sin(steer[c]) for c in _FRENTE) + m * ax_car
@@ -824,7 +824,7 @@ def _balanco_lateral(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, d
         return None, None, motivo_tracao
     alfa = alfa_rodas(caso, hip, beta_rad, delta_rad)
     cos_ref = math.cos(cfg.wheelbase / R)
-    fx_roda = eq.fx_exigido_traseira(caso, ay_ms2) / 2.0 if eq.tracao_ativa(caso) else 0.0
+    fx_roda = cast(float, eq.fx_exigido_traseira(caso, ay_ms2)) / 2.0 if eq.tracao_ativa(caso) else 0.0
     fy, fx = {}, {}
     for c in CANTOS:
         frente = c in eq.RODAS_DO_EIXO["F"]
