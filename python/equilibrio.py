@@ -335,6 +335,18 @@ def _cos_dianteira(caso: CasoEquilibrio, rodas: tuple) -> float:
     return math.cos(caso.cfg.wheelbase / caso.raio_m)
 
 
+# Começo da mensagem do ValueError de grade_alfa quando o toe consome a faixa de α. capacidade_eixo usa o prefixo para
+# separar esse caso (motivo "toe consome a faixa de α") dos outros ValueError da grade, como os de geometria de
+# angulos_velocidade na forma v43, que chegam ao motivo com a mensagem original.
+_MSG_TOE_GRADE = "toe consome toda a faixa de α do pneu"
+
+
+def _motivo_grade(exc: ValueError) -> str:
+    """Motivo de capacidade para um ValueError de grade_alfa: o texto de sempre para o toe; a mensagem original para
+    os outros (geometria da forma v43: R ≤ b, R_c ≤ t_f/2; Ackermann fora do alcance)."""
+    return "toe consome a faixa de α" if str(exc).startswith(_MSG_TOE_GRADE) else str(exc)
+
+
 def grade_alfa(caso: CasoEquilibrio, n_alfa: int, *, formas: Formas = FORMAS_V42) -> list:
     """n_alfa valores de α_ref [rad], igualmente espaçados de 0 a −A (curva à esquerda: α ≤ 0).
 
@@ -345,7 +357,7 @@ def grade_alfa(caso: CasoEquilibrio, n_alfa: int, *, formas: Formas = FORMAS_V42
     p = caso.ds.p
     amplitude = min(abs(p["ALPMIN"]), p["ALPMAX"]) - max(abs(v) for v in deriva_total(caso, formas=formas).values())
     if amplitude <= 0.0:
-        raise ValueError("toe consome toda a faixa de α do pneu; a grade de α ficaria vazia.")
+        raise ValueError(f"{_MSG_TOE_GRADE}; a grade de α ficaria vazia.")
     return [-amplitude * i / (n_alfa - 1) for i in range(n_alfa)]
 
 
@@ -459,20 +471,139 @@ def tracao_ativa(caso: CasoEquilibrio) -> bool:
     return caso.cda_m2 is not None or caso.crr is not None
 
 
-def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas = FORMAS_V42) -> float:
+MSG_FX_SEM_FRENTE = "Fx exigido (h9v) indisponível: a curva dianteira é inválida nesta linha"
+
+
+def _curva_sem_elipse(caso: CasoEquilibrio, eixo: str, ay_ms2: float, *, formas: Formas):
+    """Σ Fy do eixo em função de α_ref [N], sem o fator da elipse (entrada do pneu limitada à faixa, EDR-056), ou o
+    motivo (str) de a curva não existir: descolamento (SUS-104) ou ValueError da grade (toe, geometria v43).
+
+    A grade é testada aqui (com n = 2: a amplitude não depende de n) para o motivo sair antes de qualquer avaliação.
+    """
+    rodas = _rodas(eixo)
+    fz = cargas(caso, ay_ms2)
+    desc = descolamento(fz, rodas)
+    if desc is not None:
+        return desc
+    try:
+        grade_alfa(caso, 2, formas=formas)
+    except ValueError as exc:
+        return _motivo_grade(exc)
+    fz_u, gam_u, _ = entrada_limitada(caso, rodas, fz, camber(caso, ay_ms2))
+    return lambda a: fy_eixo_limitado(caso, rodas, fz_u, gam_u, a, None, formas=formas)
+
+
+def _alfa_na_grade(curva, alfas: list, req: float) -> float:
+    """|α| [rad] em que a curva alcança req na grade (réplica da célula; catálogo C-G3 e C-G4 do plano).
+
+    req >= pico da grade: |α| do pico (o primeiro máximo; sem isso a busca falha e um LOOSE vira N/A). Senão, j = o
+    primeiro ponto da grade com Fy >= req: j = 0 dá 0; com j > 0, interpolação linear em |α| entre j − 1 e j.
+    """
+    fys = [curva(a) for a in alfas]
+    i_pico = max(range(len(fys)), key=fys.__getitem__)
+    if req >= fys[i_pico]:
+        return abs(alfas[i_pico])
+    j = next(k for k, f in enumerate(fys) if f >= req)
+    if j == 0:
+        return 0.0
+    a0, a1 = abs(alfas[j - 1]), abs(alfas[j])
+    return a0 + (a1 - a0) * (req - fys[j - 1]) / (fys[j] - fys[j - 1])
+
+
+def _alfa_continuo(curva, alfas_pico: list, req: float) -> float:
+    """|α| [rad] em que a curva alcança req, por bisseção de 200 iterações entre 0 e o α do pico (réplica contínua, D2).
+
+    O pico é o primeiro máximo da curva em alfas_pico (grade_alfa de 401 pontos). req >= pico: |α| do pico; a curva já
+    alcança req em α = 0: 0. A bisseção é própria (equilibrio não importa mmm, então não usa mmm._brent).
+    """
+    fys = [curva(a) for a in alfas_pico]
+    i_pico = max(range(len(fys)), key=fys.__getitem__)
+    a_pico = abs(alfas_pico[i_pico])
+    if req >= fys[i_pico]:
+        return a_pico
+    if curva(0.0) >= req:
+        return 0.0
+    lo, hi = 0.0, a_pico
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if curva(-mid) >= req:
+            hi = mid
+        else:
+            lo = mid
+    return 0.5 * (lo + hi)
+
+
+def alfas_de_arrasto(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas,
+                     n_alfa: int | None) -> tuple[float, float] | str:
+    """(|α_F|, |α_R|) [rad] do arrasto induzido em a_y (forma v43 do Fx exigido; EDR-066, spec §4.2), ou o motivo.
+
+    Cada α é o primeiro em que a força do eixo alcança a exigida (forca_exigida; a_y >= 0, curva à esquerda): se a
+    força em α_ref = 0 já alcança, 0; se não alcança até o pico, o α do pico. α_F vem da curva dianteira (com
+    cos δ_ref, como em fy_eixo_limitado); α_R vem da curva traseira SEM o fator da elipse, que depende do próprio Fx
+    (sem referência circular; aproximação rotulada, spec §4.2).
+    - n_alfa inteiro: réplica de grade (busca em grade_alfa(caso, n_alfa) e interpolação linear, igual à célula).
+    - n_alfa None: réplica contínua (bisseção de 200 iterações entre 0 e o α do pico na grade de 401 pontos), usada
+      como física (decisão D2). O pico vem da mesma curva da busca: na traseira, sem a elipse (capacidade_eixo do eixo
+      traseiro poria a elipse, e a v43 dela chamaria esta função de novo).
+    Curva dianteira inválida (descolamento, toe, geometria): MSG_FX_SEM_FRENTE (decisão D3). Curva traseira inválida
+    (descolamento): o motivo dela (capacidade_eixo já para antes, nesse caso).
+    """
+    req = forca_exigida(caso, ay_ms2)
+    saida = []
+    for eixo, r in zip(("F", "R"), req):
+        curva = _curva_sem_elipse(caso, eixo, ay_ms2, formas=formas)
+        if isinstance(curva, str):
+            return MSG_FX_SEM_FRENTE if eixo == "F" else curva
+        if n_alfa is None:
+            saida.append(_alfa_continuo(curva, grade_alfa(caso, 401, formas=formas), r))
+        else:
+            saida.append(_alfa_na_grade(curva, grade_alfa(caso, n_alfa, formas=formas), r))
+    return saida[0], saida[1]
+
+
+def fx_balanco_exato(caso: CasoEquilibrio, ay_ms2: float, alfa_f: float, alfa_r: float) -> float:
+    """Oráculo do Fx da curva [N]: balanço longitudinal exato em X do carro, modelo de bicicleta desacoplado.
+
+    Não usa a fórmula do arrasto induzido. Centro da curva na linha do eixo traseiro (spec §3.1), R_c = √(R² − b²);
+    alfa_f e alfa_r são |α_F| e |α_R| [rad]. Com eles, o esterço da dianteira é δ = atan(L/R_c) + α_F − α_R e o ângulo
+    da velocidade do CG é β = atan(b/R_c) − α_R. Em X: Fx_r − F_pneu,f·sen δ = −m·A·sen β (a aceleração centrípeta A
+    aponta para o centro, perpendicular à velocidade). Em Y: F_yf + F_yr = m·A·cos β = m·a_y, com F_yf = F_pneu,f·cos δ
+    (a componente lateral do carro, a de forca_exigida). Então F_pneu,f = F_yf/cos δ, A = a_y/cos β e
+    Fx_r = F_pneu,f·sen δ − m·A·sen β = F_yf·tan δ − m·a_y·tan β (sem as resistências). Em α = 0 os termos em b/R se
+    cancelam: F_yf·L/R_c = m·a_y·b/R_c. Exige raio_m > b.
+    """
+    if caso.raio_m is None:
+        raise ValueError("fx_balanco_exato exige raio_m (raio do skidpad), que está faltando.")
+    cfg = caso.cfg
+    L, b = cfg.wheelbase, cfg.cg_to_rear
+    if caso.raio_m <= b:
+        raise ValueError(f"R ≤ b: o centro da curva não fica na linha do eixo traseiro (R = {caso.raio_m!r} m, "
+                         f"b = {b!r} m).")
+    r_c = math.sqrt(caso.raio_m ** 2 - b ** 2)
+    delta = math.atan(L / r_c) + alfa_f - alfa_r
+    beta = math.atan(b / r_c) - alfa_r
+    f_yf = forca_exigida(caso, ay_ms2)[0]
+    return f_yf * math.tan(delta) - cfg.mass_total * ay_ms2 * math.tan(beta)
+
+
+def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas = FORMAS_V42,
+                        n_alfa: int | None = None) -> float | str:
     """Fx [N] que o eixo traseiro precisa dar em a_y para manter a velocidade (spec 7.4, hipótese 9).
 
-    Fx = 0,5·ρ·CdA·V² + Crr·m·G + |F_yf|·tan δ_ref, com V² = |a_y|·R e F_yf a força lateral exigida na dianteira
-    (forca_exigida): arrasto aerodinâmico, resistência ao rolamento (sobre m·G, sem a downforce) e a componente
-    para trás da força das rodas dianteiras esterçadas de δ_ref = L/R. F_yf é a componente da força do pneu na
-    direção lateral do carro (F_yf = F_pneu·cos δ_ref, o mesmo cos δ_ref de _cos_dianteira); a componente para trás
-    é F_pneu·sen δ_ref = F_yf·tan δ_ref (EDR-057). Cada termo só entra com o dado dele (cda_m2; crr; raio_m para o
-    termo de δ_ref). 0 com a hipótese desligada.
-    formas.fx = "v42" é a forma acima. A forma "v43" (EDR-066, spec §4.2) ainda não está implementada: com a
-    hipótese ligada ela levanta NotImplementedError, em vez de devolver a v42 com o rótulo da v43.
+    Forma v42 (formas.fx = "v42"; n_alfa não entra): Fx = 0,5·ρ·CdA·V² + Crr·m·G + |F_yf|·tan δ_ref, com V² = |a_y|·R
+    e F_yf a força lateral exigida na dianteira (forca_exigida): arrasto aerodinâmico, resistência ao rolamento (sobre
+    m·G, sem a downforce) e a componente para trás da força das rodas dianteiras esterçadas de δ_ref = L/R. F_yf é a
+    componente da força do pneu na direção lateral do carro (F_yf = F_pneu·cos δ_ref, o mesmo cos δ_ref de
+    _cos_dianteira); a componente para trás é F_pneu·sen δ_ref = F_yf·tan δ_ref (EDR-057). Cada termo só entra com o
+    dado dele (cda_m2; crr; raio_m para o termo da curva). 0 com a hipótese desligada.
+    Forma v43 (EDR-066, spec §4.2): o termo da curva vira o arrasto induzido F_yf·|α_F| + F_yr·|α_R|, com os α de
+    alfas_de_arrasto (n_alfa inteiro: réplica de grade, a da célula; None: réplica contínua). No balanço
+    F_yf·tan δ − m·a_y·tan β (fx_balanco_exato), com δ ≈ L/R + α_F − α_R e β ≈ b/R − α_R, os termos em b/R se
+    cancelam (o termo da v42 é a parte que se cancela) e sobra o arrasto induzido; a diferença é de 3ª ordem com α e
+    L/R da mesma ordem. Entra com a mesma condição do termo da v42 (tração ativa e raio_m). Curva dianteira inválida:
+    devolve o motivo MSG_FX_SEM_FRENTE (str), em vez de um número (decisão D3). Omissão rotulada (spec §4.2):
+    Σ F_yi·(δ_i − δ̄) por roda.
     """
-    if formas.fx == "v43" and tracao_ativa(caso):
-        raise NotImplementedError("Fx exigido na forma v43 (EDR-066, spec §4.2) ainda não implementado.")
     cfg = caso.cfg
     fx = 0.0
     if caso.cda_m2 is not None:
@@ -480,7 +611,14 @@ def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas =
     if caso.crr is not None:
         fx += caso.crr * cfg.mass_total * G
     if tracao_ativa(caso) and caso.raio_m is not None:
-        fx += abs(forca_exigida(caso, ay_ms2)[0]) * math.tan(cfg.wheelbase / caso.raio_m)
+        req_f, req_r = forca_exigida(caso, ay_ms2)
+        if formas.fx == "v43":
+            alfas = alfas_de_arrasto(caso, ay_ms2, formas=formas, n_alfa=n_alfa)
+            if isinstance(alfas, str):
+                return alfas
+            fx += req_f * alfas[0] + req_r * alfas[1]
+        else:
+            fx += abs(req_f) * math.tan(cfg.wheelbase / caso.raio_m)
     return fx
 
 
@@ -537,16 +675,21 @@ def _kappa_pico_fx(p: dict, fz: float, g_pneu: float) -> float | None:
 
 
 def elipse_traseira(caso: CasoEquilibrio, ay_ms2: float, rodas: tuple, fz_u: dict,
-                     gam_u: dict, *, formas: Formas = FORMAS_V42) -> tuple[dict | None, str | None]:
+                     gam_u: dict, *, formas: Formas = FORMAS_V42,
+                     n_alfa: int | None = None) -> tuple[dict | None, str | None]:
     """(fatores por roda, motivo) da elipse de atrito no eixo traseiro; (None, None) sem tração.
 
     Diferencial aberto (hipótese 10): Fx igual nas duas rodas, Fx_roda = Fx_exigido/2. Fator da roda c:
     √(1 − (Fx_roda/Fx_max,c)²), com Fx_max,c = fx_max_puro na Fz e no γ que o pneu recebe (já limitados à faixa,
     EDR-056). Fx_roda > Fx_max em alguma roda: (None, "tração excede o atrito longitudinal em <canto>").
+    formas e n_alfa vão a fx_exigido_traseira; na forma v43 sem curva dianteira: (None, MSG_FX_SEM_FRENTE).
     """
     if not tracao_ativa(caso):
         return None, None
-    fx_roda = fx_exigido_traseira(caso, ay_ms2, formas=formas) / 2.0
+    fx = fx_exigido_traseira(caso, ay_ms2, formas=formas, n_alfa=n_alfa)
+    if isinstance(fx, str):
+        return None, fx
+    fx_roda = fx / 2.0
     fatores = {}
     for c in rodas:
         fx_max = fx_max_puro(caso.ds, fz_u[c], gam_u[c])
@@ -572,7 +715,11 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int,
     - Fz <= 0 em alguma roda: None com motivo de descolamento (SUS-104); a linha fica inválida.
     - Fz > 0 fora de [FZMIN, FZMAX] ou γ fora de [CAMMIN, CAMMAX]: avaliado no limite (convenção do
       PAC2002, help do Adams p. 83); a capacidade é válida e leva o aviso em `limites`.
-    - α: a grade fica dentro da faixa por construção; toe que consome a faixa dá None.
+    - α: a grade fica dentro da faixa por construção; toe que consome a faixa dá None ("toe consome a faixa de α").
+      Outro ValueError da grade (geometria da forma v43 em angulos_velocidade; Ackermann fora do alcance) dá None
+      com a mensagem original no motivo.
+    - Forma v43 do Fx (EDR-066): a curva dianteira inválida na linha deixa a traseira sem Fx exigido; a capacidade
+      traseira sai None com MSG_FX_SEM_FRENTE (decisão D3).
     - Tração na traseira (spec 7.4, hipóteses 9 e 10; só com cda_m2 ou crr): a Fy de cada roda traseira é
       multiplicada por √(1 − (Fx/Fx_max)²) antes da soma do eixo e do máximo sobre α (a mesma ordem da curva do
       eixo: escala por roda, e não do máximo depois). Fx > Fx_max em alguma roda: None com o motivo
@@ -595,13 +742,14 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int,
     fz_u, gam_u, lims = entrada_limitada(caso, rodas, fz, camber(caso, ay_ms2))
     try:
         alfas = grade_alfa(caso, n_alfa, formas=formas)  # |α_roda| fica dentro de [ALPMIN, ALPMAX] por construção
-    except ValueError:
+    except ValueError as exc:
         if n_alfa < 2:
             raise
-        return Capacidade(None, None, "toe consome a faixa de α")
+        return Capacidade(None, None, _motivo_grade(exc))
     fatores = None
     if eixo == "R":
-        fatores, motivo_tracao = elipse_traseira(caso, ay_ms2, rodas, fz_u, gam_u, formas=formas)
+        # n_alfa vai junto: na forma v43 o Fx exigido usa a réplica de grade, com a grade desta capacidade (a célula)
+        fatores, motivo_tracao = elipse_traseira(caso, ay_ms2, rodas, fz_u, gam_u, formas=formas, n_alfa=n_alfa)
         if motivo_tracao is not None:
             return Capacidade(None, None, motivo_tracao)
     fys = [fy_eixo_limitado(caso, rodas, fz_u, gam_u, a, fatores, formas=formas) for a in alfas]
