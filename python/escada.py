@@ -25,6 +25,7 @@ _RES_PADRAO_MS2 = 0.01   # o padrão de mmm.limite, quando o analise_par não de
 # Linhas de controle do degrau 2: a planilha resolvida pelo Newton 2-D, sem e com a rotação β (EDR-064, decisão 2.6 revista).
 NOME_CONTROLE_SEM_ROTACAO = "planilha (acoplado, sem rotação)"   # a_y = A, a_x = 0: Δ contra "planilha" = viés do método
 NOME_CONTROLE = "planilha (acoplado)"                            # a_y = A·cos β: Δ contra a anterior = efeito de a_y = A
+NOME_PLANILHA_V43 = "planilha V4.3"   # as fórmulas da planilha V4.3 (Ackermann no eixo traseiro, Fx por arrasto; EDR-066)
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,7 @@ class ComparacaoDegrau1:
 
 @dataclass(frozen=True)
 class LinhaEscada:
-    """Uma linha do degrau 2. nome ∈ {"planilha", "planilha (acoplado, sem rotação)", "planilha (acoplado)", "1+2", "3",
+    """Uma linha do degrau 2. nome ∈ {"planilha", "planilha V4.3" (só com incluir_v43), "planilha (acoplado, sem rotação)", "planilha (acoplado)", "1+2", "3",
     "7", "9a", "9b", "10", "10+9b", "11", "todas"}; hipoteses são os números cobertos (vazio nas linhas de controle: a
     rotação β não é hipótese numerada); limite é o mmm.Limite da linha (na 7 e na "todas", o do pior sentido).
     pior_sentido ("esquerda"/"direita") só existe onde a hipótese 7 está ligada (linhas "7" e "todas", que a inclui);
@@ -180,7 +181,7 @@ def _desligadas(caso: eq.CasoEquilibrio, hips: tuple[int, ...]) -> str | None:
     return f"hipótese desligada no caso ({'; '.join(campos)})" if campos else None
 
 
-def degrau_2(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[LinhaEscada, ...]:
+def degrau_2(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0, incluir_v43: bool = False) -> tuple[LinhaEscada, ...]:
     """Planilha, as duas linhas de controle e uma variante Python por vez (1+2, 3, 7, 9a, 9b, 10, 11), mais 10+9b (travado
     com o PAC2002 combinado, adendo §6) e todas, nesta ordem: planilha, planilha (acoplado, sem rotação), planilha
     (acoplado), 1+2, 3, 7, 9a, 9b, 10, 10+9b, 11, todas. As linhas com a hipótese 7 (7 e todas) rodam os dois sentidos
@@ -193,12 +194,19 @@ def degrau_2(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[LinhaEscad
       da simplificação a_y = A da planilha (a rotação não tem número de hipótese).
     - As linhas que usam o Newton (todas menos a 7) medem Δ e `inverte` contra a "planilha (acoplado)", para que o número
       de cada linha seja o efeito da hipótese; a 7 usa o caminho desacoplado e mede contra a planilha. Linhas que terminam em N/A (por exemplo o travado a R pequeno)
-    aparecem como N/A, sem exceção. ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g)."""
+    aparecem como N/A, sem exceção. ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g).
+
+    incluir_v43 (padrão False, que mantém as 12 linhas de hoje; D10 do plano do incremento 7): com True entra a linha
+    "planilha V4.3" logo depois da "planilha" (a V4.2), com as fórmulas da planilha V4.3 (mmm.Hipoteses.planilha_v43:
+    Ackermann com o centro da curva no eixo traseiro e Fx exigido por arrasto induzido; desacoplada) e referência
+    "planilha": o Δ dela é o efeito das duas formas novas sobre a planilha."""
     pl = mmm.Hipoteses.planilha()
     v = mmm.VARIANTES
-    receitas = [("planilha", (), pl, False),
-                (NOME_CONTROLE_SEM_ROTACAO, (), mmm.planilha_acoplada(rotacao=False), False),
-                (NOME_CONTROLE, (), mmm.planilha_acoplada(rotacao=True), False)]
+    receitas = [("planilha", (), pl, False)]
+    if incluir_v43:
+        receitas.append((NOME_PLANILHA_V43, (), mmm.Hipoteses.planilha_v43(), False))
+    receitas += [(NOME_CONTROLE_SEM_ROTACAO, (), mmm.planilha_acoplada(rotacao=False), False),
+                 (NOME_CONTROLE, (), mmm.planilha_acoplada(rotacao=True), False)]
     for campo in ("alfa", "cos_delta", "sentido", "fx_exigido", "tracao", "diferencial", "transf_long"):
         receitas.append((v[campo]["nome"], v[campo]["hipoteses"], replace(pl, **{campo: v[campo]["python"]}),
                          campo == "sentido"))

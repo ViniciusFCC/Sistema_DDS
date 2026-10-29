@@ -2,7 +2,7 @@
 Testes das formas v43 do equilíbrio (incremento 7; EDR-066, EDR-067, decisão D1 do plano).
 TC-ACK-001: Ackermann com o centro da curva na linha do eixo traseiro (spec §3.1 e §4.1; Task 3).
 TC-FXI-001 e 002: Fx exigido por arrasto induzido (spec §4.2; decisões D2 e D3; Task 4).
-TC-ACK-002 entra na Task 5.
+TC-ACK-002: variante planilha_v43 do mmm e linha "planilha V4.3" da escada (Task 5).
 Roda como script: uv run python -X utf8 tests/test_formas_v43.py
 
 O veículo (L, b, bitolas) e os raios abaixo são entradas SINTÉTICAS de teste (o veiculo_base do
@@ -13,6 +13,8 @@ import math
 import os
 
 import equilibrio as eq
+import escada
+import mmm
 import tire_model as tm
 from suspension_model import G, VehicleConfig
 
@@ -437,6 +439,78 @@ for _nome, _fn in (("TC-FXI-001 Fx v43: grade × contínua dentro da cota, orác
     except Exception as exc:   # RED: a interface nova ainda não existe
         _ok, _det = False, f"exceção {type(exc).__name__}: {exc}"
     check(_nome, _ok, _det)
+
+# --- TC-ACK-002 (Task 5): variante planilha_v43 do mmm e linha "planilha V4.3" da escada ----------------------------
+def tc_ack_002() -> tuple[bool, str]:
+    partes, det = {}, []
+    v42, v43 = eq.FORMAS_V42, eq.FORMAS_V43
+    pl, pl43 = mmm.Hipoteses.planilha(), mmm.Hipoteses.planilha_v43()
+
+    # (a) o contrato de Hipoteses e VARIANTES (o assert de mmm.py continua valendo: o módulo já foi importado)
+    partes["a"] = (set(mmm.VARIANTES) == {f.name for f in dataclasses.fields(mmm.Hipoteses)} - set(mmm.FORA_DE_VARIANTES)
+                   and mmm.VARIANTES["alfa"]["planilha_v43"] == "eixo_traseiro"
+                   and mmm.VARIANTES["fx_exigido"]["planilha_v43"] == "arrasto"
+                   and all(v["planilha_v43"] == v["planilha"] for k, v in mmm.VARIANTES.items()
+                           if k not in ("alfa", "fx_exigido"))
+                   and pl43 == mmm.Hipoteses(alfa="eixo_traseiro", fx_exigido="arrasto"))
+
+    # (b) a planilha V4.2 não muda e usa as formas v42; a V4.3 usa as v43; as mistas usam cada uma a sua
+    partes["b"] = (pl == mmm.Hipoteses() and pl.alfa == "planilha" and pl.fx_exigido == "edr057"
+                   and mmm.formas_de(pl) == v42 and mmm.formas_de(pl43) == v43
+                   and mmm.formas_de(mmm.Hipoteses(alfa="eixo_traseiro")) == eq.Formas("v43", "v42")
+                   and mmm.formas_de(mmm.Hipoteses(fx_exigido="arrasto")) == eq.Formas("v42", "v43")
+                   and mmm.formas_de(mmm.Hipoteses.python_completo()) == v42)
+
+    # (c) a planilha V4.3 é desacoplada; uma variante Python de outra hipótese ainda leva ao acoplado
+    partes["c"] = (mmm._e_acoplada(pl43) is False and mmm._e_acoplada(pl) is False
+                   and mmm._e_acoplada(dataclasses.replace(pl43, cos_delta="trim")) is True
+                   and mmm._e_acoplada(dataclasses.replace(pl43, alfa="cinematico")) is True
+                   and mmm._e_acoplada(dataclasses.replace(pl43, fx_exigido="balanco")) is True)
+
+    # (d) o limite da V4.3 sai da física v43 do equilibrio: mesmo veredito e saturações a 2·resolução do analise_par v43
+    # (a mesma grade nos dois lados, como no degrau 1 da escada). Caso sintético de teste: pneu de escala LMUY 0,5, R = 8 m,
+    # Ackermann 100 %, toe sintético e tração (aero e Crr de teste).
+    ds_t = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.5})
+    caso = eq.CasoEquilibrio(cfg=cfg, ds=ds_t, raio_m=R_TESTE, ackermann_pct=100.0, toe_rad=TOE_TESTE,
+                             rho_kg_m3=RHO_T, cda_m2=CDA_T, crr=CRR_T)
+    par = eq.analise_par(caso, ay_max_g=2.0, n_alfa=401, passo_g=0.01, formas=v43)
+    res = par.resolucao_ms2 if par.resolucao_ms2 is not None else 0.01
+    lim43 = mmm.limite(caso, pl43, resolucao_ms2=res, ay_max_g=2.0, n_alfa=401)
+    lim42 = mmm.limite(caso, pl, resolucao_ms2=res, ay_max_g=2.0, n_alfa=401)
+    d_f = None if lim43.ay_sat_f is None or par.ay_sat_f is None else lim43.ay_sat_f - par.ay_sat_f
+    d_r = None if lim43.ay_sat_r is None or par.ay_sat_r is None else lim43.ay_sat_r - par.ay_sat_r
+    ausencias = [e for e, a, b in (("F", lim43.ay_sat_f, par.ay_sat_f), ("R", lim43.ay_sat_r, par.ay_sat_r))
+                 if (a is None) != (b is None)]
+    delta = abs(par.ay_sat_f - par.ay_sat_r) if par.ay_sat_f is not None and par.ay_sat_r is not None else None
+    ok_j, mot_j = escada._julga(lim43.veredito, par.veredito, d_f, d_r, lim43.cn_estabilizante_q, par.c_n, res, delta)
+    # a V4.3 não é a V4.2 rotulada de outro nome: o Ackermann v43 e o Fx v43 mudam a capacidade da traseira
+    par42 = eq.analise_par(caso, ay_max_g=2.0, n_alfa=401, passo_g=0.01)
+    difere = (par.ay_sat_r != par42.ay_sat_r or par.ay_sat_f != par42.ay_sat_f)
+    partes["d"] = (ok_j and not ausencias and par.veredito != eq.NA and lim43.veredito == par.veredito and difere
+                   and lim42.veredito != eq.NA)
+    det.append(f"(d) V4.3: {lim43.veredito} (analise_par v43 {par.veredito}), d_sat=({d_f}, {d_r}), res={res}, "
+               f"ok={ok_j}{'' if mot_j is None else ', ' + mot_j}; V4.2: {lim42.veredito}; sat v43 "
+               f"({par.ay_sat_f}, {par.ay_sat_r}) × v42 ({par42.ay_sat_f}, {par42.ay_sat_r})")
+
+    # (e) a escada: sem incluir_v43 as 12 linhas de hoje; com ele, a linha "planilha V4.3" em 2º, referência "planilha"
+    ln = escada.degrau_2(caso, ay_max_g=1.0, incluir_v43=True)
+    sem = escada.degrau_2(caso, ay_max_g=1.0)
+    nomes = tuple(x.nome for x in ln)
+    partes["e"] = (escada.NOME_PLANILHA_V43 == "planilha V4.3" and len(sem) == 12 and len(ln) == 13
+                   and nomes[:3] == ("planilha", "planilha V4.3", "planilha (acoplado, sem rotação)")
+                   and nomes[2:] == tuple(x.nome for x in sem)[1:]
+                   and ln[1].referencia == "planilha" and ln[1].hipoteses == ()
+                   and all(x.referencia == y.referencia for x, y in zip(ln[2:], sem[1:])))
+    det.append(f"(e) nomes={nomes[:4]}…, referência da V4.3={ln[1].referencia!r}")
+    return all(partes.values()), "; ".join(det) + f" | partes={partes}"
+
+
+try:
+    ok_002, det_002 = tc_ack_002()
+except Exception as exc:   # RED: a interface nova ainda não existe
+    ok_002, det_002 = False, f"exceção {type(exc).__name__}: {exc}"
+check("TC-ACK-002 planilha_v43 no mmm: contrato, V4.2 intacta, desacoplada, limite = analise_par v43 e linha da escada",
+      ok_002, det_002)
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")
