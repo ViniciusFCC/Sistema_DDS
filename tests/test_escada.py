@@ -2,7 +2,8 @@
 Testes do módulo escada (incremento 6, Task 6): degrau 1 (MMM na configuração da planilha contra analise_par),
 degrau 2 (uma hipótese por vez) e sensibilidades por unidade.
 TC-ESC-001: degrau 1 nos casos do test_equilibrio.py, nos dois sentidos.
-TC-ESC-002: degrau 2 (linhas, Δ = 0 na planilha, sem veredito de tolerância, valores de `inverte`, pior sentido da 7).
+TC-ESC-002: degrau 2 (linhas, Δ = 0 na planilha, linhas de controle sem e com rotação, folga do outro eixo em T, sem
+veredito de tolerância, valores de `inverte`, pior sentido da 7).
 TC-ESC-003: sensibilidades (unidade, sinal de cg_lateral com o sentido, sem faixa).
 Roda como script: uv run python -X utf8 tests/test_escada.py
 Veículo, pneu de escala de teste (LMUY 0,5), R = 8,5 m, downforce, toe, Ackermann, tração e CG lateral são entradas
@@ -104,7 +105,8 @@ check("TC-ESC-001: degrau 1 (base, simétrico, com toe, com Ackermann 50 %, com 
 # ---------------- TC-ESC-002 : degrau 2 ----------------
 linhas = escada.degrau_2(casos["base"])
 nomes = tuple(l.nome for l in linhas)
-esperados = ("planilha", "planilha (acoplado)", "1+2", "3", "7", "9a", "9b", "10", "10+9b", "11", "todas")
+esperados = ("planilha", "planilha (acoplado, sem rotação)", "planilha (acoplado)", "1+2", "3", "7", "9a", "9b", "10",
+             "10+9b", "11", "todas")
 por_nome = {l.nome: l for l in linhas}
 pl = por_nome["planilha"]
 ok_pl = (pl.d_ay_t in (0.0, None) and pl.d_cn_estabilizante_q in (0.0, None) and pl.d_k in (0.0, None)
@@ -117,16 +119,58 @@ ok_h = (por_nome["10+9b"].hipoteses == (10, 9) and por_nome["todas"].hipoteses =
         and por_nome["1+2"].hipoteses == (1, 2) and por_nome["9a"].hipoteses == (9,))
 ok_ps = (por_nome["7"].pior_sentido in ("esquerda", "direita")
          and all(l.pior_sentido is None for l in linhas if l.nome not in ("7", "todas")))
-# Linha de controle (I5): a planilha resolvida pelo Newton 2-D com a rotação a_y = A·cos β. O Δ dela é contra a planilha (viés
-# do método e da rotação); o das linhas acopladas é contra ela; o da 7 (desacoplada) e o dela própria, contra a planilha.
+# Linhas de controle (EDR-064, decisão 2.6 revista): as hipóteses da planilha pelo Newton 2-D, sem rotação (a_y = A, a_x = 0)
+# e com ela (a_y = A·cos β, a_x = −A·sen β). Cadeia de referências: sem rotação -> planilha (viés só do método); com rotação ->
+# sem rotação (efeito da simplificação a_y = A da planilha); acopladas -> com rotação; 7 (desacoplada) -> planilha.
+sem = por_nome["planilha (acoplado, sem rotação)"]
 ctrl = por_nome["planilha (acoplado)"]
 ACOPLADAS = ("1+2", "3", "9a", "9b", "10", "10+9b", "11", "todas")
-ok_ctrl = (ctrl.referencia == "planilha" and ctrl.hipoteses == () and ctrl.limite.ay_t_ms2 is not None
-           and ctrl.d_ay_t == ctrl.limite.ay_t_ms2 - pl.limite.ay_t_ms2 and ctrl.d_ay_t != 0.0
+ok_ctrl = (sem.referencia == "planilha" and ctrl.referencia == "planilha (acoplado, sem rotação)"
+           and sem.hipoteses == () and ctrl.hipoteses == ()
+           and sem.limite.ay_t_ms2 is not None and ctrl.limite.ay_t_ms2 is not None
+           and sem.d_ay_t == sem.limite.ay_t_ms2 - pl.limite.ay_t_ms2
+           and ctrl.d_ay_t == ctrl.limite.ay_t_ms2 - sem.limite.ay_t_ms2 and ctrl.d_ay_t != 0.0
            and all(por_nome[n].referencia == "planilha (acoplado)" for n in ACOPLADAS)
-           and all(por_nome[n].referencia == "planilha" for n in ("planilha", "planilha (acoplado)", "7"))
+           and all(por_nome[n].referencia == "planilha" for n in ("planilha", "planilha (acoplado, sem rotação)", "7"))
            and all(abs(por_nome[n].d_ay_t - (por_nome[n].limite.ay_t_ms2 - ctrl.limite.ay_t_ms2)) < 1e-12
                    for n in ("3", "9a", "11") if por_nome[n].d_ay_t is not None))
+# A soma dos dois Δ de controle é o Δ da linha com rotação contra a planilha (a cadeia não perde nem duplica nada): 1e-12 m/s²,
+# o arredondamento de duas subtrações em ~14 m/s².
+soma_ctrl = sem.d_ay_t + ctrl.d_ay_t
+ok_soma = abs(soma_ctrl - (ctrl.limite.ay_t_ms2 - pl.limite.ay_t_ms2)) <= 1e-12
+# A linha sem rotação difere da planilha só pelo método. Com as hipóteses da planilha e a_y = A, as equações do Newton são as
+# mesmas do trim desacoplado (a semente já é o trim): abaixo de T os trims coincidem, e o K em 0,05 g também (a diferença de δ
+# seria a do resíduo do solver, 1e-7 N / C_α ~ 1e-11 rad, e |ΔK| ~ 1e-11/(0,01·g) ~ 1e-10; exige-se 1e-9). Em T sobra a
+# diferença dos dois critérios de saturação: o desacoplado usa o pico da grade de α (capacidade_eixo, n_alfa = 401), o Newton
+# o pico contínuo do ramo (>= o da grade), mais a dobra do Newton perto do pico. Medido (2026-10-28, casos base, com toe, com
+# Ackermann 50 % e com tração do TC-ESC-001): ΔT de +1,0e-5 a +4,5e-5 m/s²; o efeito da rotação é de 1,0e-3 a 1,3e-3 m/s².
+# Cota EMPÍRICA de 1e-4 m/s² (2,2 vezes o maior medido, 1/13 do efeito da rotação no caso base): separa o método da
+# rotação, o que a resolução declarada do T acoplado (0,01 m/s², EDR-064 limitações) não faria. Não é cota provada.
+COTA_METODO = 1e-4
+ok_metodo = (sem.limite.veredito == pl.limite.veredito and sem.limite.eixo_satura == pl.limite.eixo_satura
+             and abs(sem.d_ay_t) <= COTA_METODO and sem.d_k is not None and abs(sem.d_k) <= 1e-9
+             and abs(ctrl.d_ay_t) > COTA_METODO)
+# Folga do outro eixo em T (decisão 1.3 revista): nas linhas acopladas com T, o eixo que não satura tem ay_sat None e a folga
+# dele em N e em fração da capacidade; o Q é essa folga vezes o braço até o CG sobre W·L (a mesma margem). Nas desacopladas
+# (planilha, 7) e sem T, None.
+W_L = cfg.mass_total * eq.G * cfg.wheelbase
+
+
+def folga_coerente(lim):
+    if lim.ay_t_ms2 is None:
+        return lim.folga_outro_N is None and lim.folga_outro_fracao is None
+    outro = "R" if lim.eixo_satura == "F" else "F"
+    braco = cfg.cg_to_rear if outro == "R" else -cfg.cg_to_front
+    return (lim.folga_outro_N is not None and lim.folga_outro_N >= 0.0 and 0.0 <= lim.folga_outro_fracao <= 1.0
+            and (lim.ay_sat_r if outro == "R" else lim.ay_sat_f) is None
+            and abs(lim.cn_estabilizante_q - lim.folga_outro_N * braco / W_L) <= 1e-12)
+
+
+ok_folga = (all(folga_coerente(por_nome[n].limite) for n in ("planilha (acoplado, sem rotação)", "planilha (acoplado)")
+                + ACOPLADAS)
+            and all(por_nome[n].limite.folga_outro_N is None and por_nome[n].limite.folga_outro_fracao is None
+                    for n in ("planilha", "7"))
+            and ctrl.limite.folga_outro_N is not None)
 # I1: marca de hipótese desligada. O caso base não tem tração (cda_m2, crr) nem CG lateral, então as linhas 9a, 9b, 10, 10+9b,
 # 7 e todas levam "hipótese desligada no caso (<campo>)"; as demais, None. A linha desligada ainda é calculada e a
 # hipótese desligada não muda nada nela: as de uma hipótese só coincidem com a referência por construção (Δ = 0 nas de
@@ -134,7 +178,8 @@ ok_ctrl = (ctrl.referencia == "planilha" and ctrl.hipoteses == () and ctrl.limit
 ok_motivo = (all(por_nome[n].motivo == "hipótese desligada no caso (cda_m2 e crr)" for n in ("9a", "9b", "10", "10+9b"))
              and por_nome["7"].motivo == "hipótese desligada no caso (cg_lateral_m)"
              and por_nome["todas"].motivo == "hipótese desligada no caso (cda_m2 e crr; cg_lateral_m)"
-             and all(por_nome[n].motivo is None for n in ("planilha", "planilha (acoplado)", "1+2", "3", "11"))
+             and all(por_nome[n].motivo is None
+                     for n in ("planilha", "planilha (acoplado, sem rotação)", "planilha (acoplado)", "1+2", "3", "11"))
              and all(por_nome[n].limite.ay_t_ms2 is not None and abs(por_nome[n].d_ay_t) < 1e-9
                      for n in ("9a", "9b", "10", "10+9b")))
 # `inverte` por regra, com vereditos fabricados (a regra isolada).
@@ -159,15 +204,23 @@ ok_tr = (tuple(l.nome for l in linhas_tr) == esperados and all(l.inverte in VALI
          and all(l.limite.motivo for l in linhas_tr if l.limite.veredito == eq.NA)
          and [l.nome for l in linhas_tr if l.motivo] == ["7", "todas"]   # com tração só a 7 (sem CG lateral) está desligada
          and por_nome_tr["todas"].motivo == "hipótese desligada no caso (cg_lateral_m)")
-check("TC-ESC-002: degrau 2 (11 linhas na ordem, com a de controle `planilha (acoplado)`; planilha com Δ = 0; Δ das "
-      "acopladas contra a de controle; sem campo de veredito de tolerância; `inverte` ∈ "
+check("TC-ESC-002: degrau 2 (12 linhas na ordem, com as de controle `planilha (acoplado, sem rotação)` e `planilha "
+      "(acoplado)`; planilha com Δ = 0; cadeia de referências sem rotação -> planilha, com rotação -> sem rotação, acopladas "
+      "-> com rotação, e a soma dos dois Δ de controle = T(com rotação) − T(planilha) a 1e-12; sem rotação = planilha a "
+      "menos do método (mesmo veredito e eixo, |ΔT| <= 1e-4 m/s² empírico, |ΔK| <= 1e-9) e o efeito da rotação acima dessa "
+      "cota; folga do outro eixo em T coerente com o Q nas acopladas e None nas desacopladas; sem campo de veredito de "
+      "tolerância; `inverte` ∈ "
       "{não, sim, NEUTRO ↔ PUSH, NEUTRO ↔ LOOSE, N/A} e a regra isolada; pior sentido só na 7 (e na todas, que a inclui), "
       "conferido à mão com CG lateral ≠ 0; hipótese desligada no caso com motivo; com tração, N/A relatado com motivo e "
       "inverte = N/A)",
       nomes == esperados and ok_pl and ok_campos and ok_inv and ok_h and ok_ps and ok_regra and ok_7 and ok_tr
-      and ok_ctrl and ok_motivo,
-      f"nomes={nomes}; " + "; ".join(f"{l.nome}: T={l.limite.ay_t_ms2}, {l.limite.veredito}, d_T={l.d_ay_t} (vs {l.referencia}), "
-                                      f"d_cn={l.d_cn_estabilizante_q}, d_k={l.d_k}, inverte={l.inverte}"
+      and ok_ctrl and ok_motivo and ok_soma and ok_metodo and ok_folga,
+      f"controle: ΔT sem rotação (método) = {sem.d_ay_t:.3e} m/s², ΔT com rotação (a_y = A) = {ctrl.d_ay_t:.3e} m/s², "
+      f"soma = {soma_ctrl:.6e}, T(acoplado) − T(planilha) = {ctrl.limite.ay_t_ms2 - pl.limite.ay_t_ms2:.6e}, "
+      f"ΔK sem rotação = {sem.d_k}; folga em T (com rotação): {ctrl.limite.folga_outro_N} N, "
+      f"fração {ctrl.limite.folga_outro_fracao}; nomes={nomes}; " + "; ".join(f"{l.nome}: T={l.limite.ay_t_ms2}, {l.limite.veredito}, d_T={l.d_ay_t} (vs {l.referencia}), "
+                                      f"d_cn={l.d_cn_estabilizante_q}, d_k={l.d_k}, inverte={l.inverte}, "
+                                      f"folga={l.limite.folga_outro_N} N ({l.limite.folga_outro_fracao})"
                                       + (f", motivo do limite={l.limite.motivo!r}" if l.limite.motivo else "")
                                       + (f", {l.motivo}" if l.motivo else "") for l in linhas)
       + "; COM TRAÇÃO: " + "; ".join(f"{l.nome}: T={l.limite.ay_t_ms2}, {l.limite.veredito}, d_T={l.d_ay_t}, "

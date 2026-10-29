@@ -69,8 +69,10 @@ muts = {
          'alfa_ref = {"F": beta_rad + cfg.cg_to_rear / R - delta_rad,'),
     "_estabilizante: cn_estabilizante = +cn_iso (fonte única do sinal)":
         ("    return -cn_iso\n", "    return cn_iso\n"),
+    # O termo é m·a_x, com a_x = −A·sen β na rotação padrão (EDR-064, decisão 2.6 revista: rotacao_beta=False dá a_x = 0);
+    # o mutante continua sendo tirar o −m·A·sen β do balanço.
     "balanço: sem o termo −m·A·sen β em fx_exigido='balanco'":
-        ("for c in _FRENTE) - m * ay_ms2 * math.sin(beta_rad)\n", "for c in _FRENTE)\n"),
+        ("for c in _FRENTE) + m * ax_car\n", "for c in _FRENTE)\n"),
     "cos_delta='trim': cos δ_ref = L/R no lugar do δ do trim":
         ("            fy[c] = fy_pneu[c] * math.cos(steer[c])    # + Fx_pneu·sen δ_i",
          "            fy[c] = fy_pneu[c] * math.cos(L / R)    # + Fx_pneu·sen δ_i"),

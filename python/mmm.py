@@ -8,7 +8,9 @@ eixo sai de uma raiz 1-D (Brent) no ramo ascendente da soma do eixo, o mesmo cri
 Acoplado (qualquer variante Python de alfa, cos_delta, fx_exigido, tracao, diferencial ou transf_long, ou a linha de
 controle planilha_acoplada()): Newton 2-D em (β, δ) com jacobiano por diferença finita, semeado no trim desacoplado da
 planilha (adendo §4.1, item 2). Só o caminho acoplado aplica a rotação a_y = A·cos β, a_x = −A·sen β (adendo §2.5); o
-parâmetro do trim é A = V²/R (A_Y), e a_y do carro é A·cos β. O desacoplado (planilha) usa a_y = A.
+parâmetro do trim é A = V²/R (A_Y), e a_y do carro é A·cos β. O desacoplado (planilha) usa a_y = A. A opção
+Hipoteses.rotacao_beta=False desliga a rotação no caminho acoplado (a_y = A, a_x = 0, como a planilha): é a linha de
+controle planilha_acoplada(rotacao=False), que mede só o viés do método (EDR-064, decisão 2.6 revista).
 O limite (T, saturação por eixo, veredito, Q e P), o gradiente K e o stability index valem nos dois caminhos.
 
 Convenções (CLAUDE.md): SI, eixos ISO 8855 (X frente, Y esquerda, Z cima), curva à esquerda (a direita sai de
@@ -53,6 +55,15 @@ class Hipoteses:
 
     h_cp_m (altura do centro de pressão, hipótese 11) é None por padrão: sem dado, a parcela D·h_cp/L fica fora
     e só uma sensibilidade a liga (decisão 5 do plano). Cada valor é validado contra o Literal do campo.
+
+    rotacao_beta (padrão True) só age no caminho acoplado (Newton 2-D): True usa os eixos do carro do adendo §2.5,
+    a_y = A·cos β e a_x = −A·sen β; False usa a_y = A e a_x = 0, a simplificação da planilha. Com False, TODO termo que
+    depende da aceleração do carro segue a_x = 0: a transferência lateral e o camber (a_y = A), a parcela m·a_x·h de
+    transf_long="regime" (zero) e o termo m·a_x do balanço de fx_exigido="balanco" (zero, no lugar de −m·A·sen β). Assim a
+    opção é uma só simplificação cinemática, aplicada de forma consistente. O desacoplado usa a_y = A sempre e ignora o
+    campo. Não é uma hipótese numerada da escada (fica fora de VARIANTES, como h_cp_m): a linha de controle
+    "planilha (acoplado, sem rotação)" a desliga com as hipóteses da planilha, que não usam "balanco" nem "regime"
+    (EDR-064, decisão 2.6 revista).
     """
     alfa: Literal["planilha", "cinematico"] = "planilha"
     cos_delta: Literal["ref", "trim"] = "ref"
@@ -62,6 +73,7 @@ class Hipoteses:
     diferencial: Literal["aberto", "travado"] = "aberto"
     transf_long: Literal["nao", "regime"] = "nao"
     h_cp_m: float | None = None
+    rotacao_beta: bool = True
 
     def __post_init__(self):
         for campo, validos in _VALORES.items():
@@ -71,6 +83,8 @@ class Hipoteses:
         h = self.h_cp_m
         if h is not None and not (isinstance(h, (int, float)) and math.isfinite(h)):
             raise ValueError(f"Hipoteses.h_cp_m exige número finito ou None; recebido {h!r}.")
+        if not isinstance(self.rotacao_beta, bool):
+            raise ValueError(f"Hipoteses.rotacao_beta exige bool; recebido {self.rotacao_beta!r}.")
 
     @classmethod
     def planilha(cls) -> "Hipoteses":
@@ -94,7 +108,10 @@ VARIANTES: dict[str, dict] = {
     "transf_long": {"hipoteses": (11,), "planilha": "nao", "python": "regime", "nome": "11"},
 }
 
-assert set(VARIANTES) == {f.name for f in fields(Hipoteses)} - {"h_cp_m"}
+# Campos de Hipoteses que não são hipótese numerada da escada (não têm linha própria em VARIANTES).
+FORA_DE_VARIANTES = ("h_cp_m", "rotacao_beta")
+
+assert set(VARIANTES) == {f.name for f in fields(Hipoteses)} - set(FORA_DE_VARIANTES)
 
 # Campos cuja variante Python leva o trim ao caminho acoplado (Newton 2-D). O "sentido" não é do trim.
 _ACOPLADOS = ("alfa", "cos_delta", "fx_exigido", "tracao", "diferencial", "transf_long")
@@ -102,15 +119,20 @@ _ACOPLADOS = ("alfa", "cos_delta", "fx_exigido", "tracao", "diferencial", "trans
 
 @dataclass(frozen=True)
 class _HipPlanilhaAcoplada(Hipoteses):
-    """Hipóteses da planilha forçadas pelo caminho acoplado (Newton 2-D com a rotação a_y = A·cos β, a_x = −A·sen β).
-    É a linha de controle "planilha (acoplado)" da escada: mede o viés do método e da rotação sem mudar nenhuma
-    hipótese. Subclasse (e não campo de Hipoteses) para não entrar no contrato de VARIANTES; `replace` a preserva."""
+    """Hipóteses da planilha forçadas pelo caminho acoplado (Newton 2-D). Com rotacao_beta=True (a_y = A·cos β,
+    a_x = −A·sen β) é a linha de controle "planilha (acoplado)" da escada; com rotacao_beta=False (a_y = A, a_x = 0) é a
+    "planilha (acoplado, sem rotação)". Nenhuma hipótese muda. Subclasse (e não campo de Hipoteses) para não entrar no
+    contrato de VARIANTES; `replace` a preserva."""
     forcar_acoplado: bool = True
 
 
-def planilha_acoplada() -> Hipoteses:
-    """Hipoteses.planilha() resolvida pelo caminho acoplado (linha de controle da escada, EDR-064)."""
-    return _HipPlanilhaAcoplada()
+def planilha_acoplada(rotacao: bool = True) -> Hipoteses:
+    """Hipoteses.planilha() resolvida pelo caminho acoplado (linhas de controle da escada, EDR-064, decisão 2.6 revista).
+
+    rotacao=False: a_y = A e a_x = 0, as mesmas da planilha; a diferença para a `planilha` (desacoplada) é só o método.
+    rotacao=True (padrão): a_y = A·cos β e a_x = −A·sen β; a diferença para a de rotacao=False é o efeito da simplificação
+    a_y = A da planilha."""
+    return _HipPlanilhaAcoplada(rotacao_beta=rotacao)
 
 
 def _e_acoplada(hip: Hipoteses) -> bool:
@@ -511,13 +533,15 @@ def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad:
       rolamento já está em Crr): fy_carro = Fy·cos δ_i (cos_delta="trim") ou Fy·cos δ_ref (cos_delta="ref", sem a
       parcela de Fx da dianteira, como na planilha).
     - Fx exigido na traseira: sem tração ativa no caso, 0; "edr057" é eq.fx_exigido_traseira; "balanco" é
-      D + RR + Σ Fy_pneu,i·sen δ_i − m·A·sen β (§2.5), com D e RR dos campos do caso (None = termo fora).
+      D + RR + Σ Fy_pneu,i·sen δ_i + m·a_x (§2.5; com a rotação, m·a_x = −m·A·sen β; sem ela, 0), com D e RR dos campos do
+      caso (None = termo fora).
     - Tração: aberto, Fx_r/2 em cada roda; travado, κ comum pela cinemática (_kappa_travado). tracao="pac2002" usa o Fx e
       o Fy combinados do wheel_forces em κ; "elipse" usa o Fx puro (_fx_puro) e Fy(κ = 0) vezes o fator da elipse.
-    - Eixos do carro (adendo §2.5), SEMPRE no caminho acoplado: a_y = A·cos β e a_x = −A·sen β, com A o A_Y do trim (V² = A·R).
-      A parte lateral das cargas e o camber seguem a_y = A·cos β; a aerodinâmica (downforce, arrasto) segue A. Assim a
-      rotação do β é uma propriedade do caminho acoplado, e não de uma hipótese: a linha de controle "planilha (acoplado)"
-      da escada isola o viés dela e do método.
+    - Eixos do carro (adendo §2.5), no caminho acoplado com hip.rotacao_beta (padrão): a_y = A·cos β e a_x = −A·sen β, com
+      A o A_Y do trim (V² = A·R). A parte lateral das cargas e o camber seguem a_y; a aerodinâmica (downforce, arrasto)
+      segue A. Com rotacao_beta=False, a_y = A e a_x = 0 (a simplificação da planilha) em todos os termos: cargas, camber,
+      regime e balanço. A rotação não é uma hipótese numerada: as duas linhas de controle da escada ("planilha (acoplado,
+      sem rotação)" e "planilha (acoplado)") separam o viés do método do efeito da rotação.
     - O arrasto D entra inteiro no eixo x do carro (no lugar de D·cos β); a componente lateral −D·sen β, que o arrasto
       teria no eixo y porque a velocidade faz o ângulo β com o carro, fica fora do balanço lateral (2ª ordem em β, e D é
       uma fração pequena de m·A). Declarado no EDR-064.
@@ -526,7 +550,10 @@ def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad:
     cfg = caso.cfg
     R = caso.raio_m
     m, L = cfg.mass_total, cfg.wheelbase
-    ay_car, ax_car = ay_ms2 * math.cos(beta_rad), -ay_ms2 * math.sin(beta_rad)
+    if hip.rotacao_beta:
+        ay_car, ax_car = ay_ms2 * math.cos(beta_rad), -ay_ms2 * math.sin(beta_rad)
+    else:   # a simplificação da planilha: a aceleração do carro é A, toda no eixo y dele
+        ay_car, ax_car = ay_ms2, 0.0
     arrasto = 0.5 * caso.rho_kg_m3 * caso.cda_m2 * ay_ms2 * R if caso.cda_m2 is not None else 0.0
     fz = dict(eq.cargas_rotacionadas(caso, ay_car, ay_ms2))
     if hip.transf_long == "regime":
@@ -561,7 +588,7 @@ def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad:
         fx_r = eq.fx_exigido_traseira(caso, ay_ms2)
     else:
         rr = caso.crr * m * G if caso.crr is not None else 0.0
-        fx_r = arrasto + rr + sum(fy_pneu[c] * math.sin(steer[c]) for c in _FRENTE) - m * ay_ms2 * math.sin(beta_rad)
+        fx_r = arrasto + rr + sum(fy_pneu[c] * math.sin(steer[c]) for c in _FRENTE) + m * ax_car
 
     def fx_roda(c: str, k: float) -> float:
         if hip.tracao == "pac2002":
@@ -942,6 +969,12 @@ class Limite:
     e k_rad_por_ms2 [rad/(m/s²)] valem em AY_REF_G (0,05·G). resolucao_ms2 é a folga numérica do veredito (a
     bisseção roda bem abaixo dela). Veredito N/A: T, eixo_satura, Q e P ficam None e motivo diz por quê.
     limitacoes são os avisos de entrada do pneu limitada à faixa do .tir (EDR-056) em T.
+
+    folga_outro_N e folga_outro_fracao (decisão 1.3 revista, EDR-064): só nas variantes acopladas com T. A folga em T do
+    eixo que não satura (o de ay_sat None), nos eixos do carro: capacidade acoplada do eixo em T (_capacidades_acopladas,
+    o pico do ramo ascendente) menos a força que ele faz no trim de T, que é a força exigida dele; é a mesma margem que a
+    regra do NEUTRO e o Q usam. Em N e em fração da capacidade do eixo. None nas desacopladas (lá os dois ay_sat existem e
+    a folga do outro eixo vira o Q e o veredito pela regra do analise_par) e quando não há T (N/A).
     """
     ay_t_ms2: float | None
     ay_sat_f: float | None
@@ -957,6 +990,8 @@ class Limite:
     resolucao_ms2: float
     motivo: str | None
     limitacoes: tuple[str, ...] = ()
+    folga_outro_N: float | None = None
+    folga_outro_fracao: float | None = None
 
 
 @dataclass(frozen=True)
@@ -1190,8 +1225,8 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
 
     T: bisseção em A_Y sobre a existência de trim (o Newton), com o intervalo inicial da saturação do analise_par. Além de
     T não existe trim, então só o eixo que satura tem ay_sat = T; o outro sai None com motivo_sat = "acoplado: além de T
-    não há trim". O eixo que satura é o de menor folga em T (capacidade acoplada menos a força que ele faz no trim), e o
-    outro eixo dá a folga de Q. NEUTRO quando essa folga é <= (força do eixo por m/s²) · resolucao_ms2, o equivalente em
+    não há trim", e a folga dele em T vai em folga_outro_N e folga_outro_fracao (decisão 1.3 revista). O eixo que satura
+    é o de menor folga em T (capacidade acoplada menos a força que ele faz no trim), e o outro eixo dá a folga de Q. NEUTRO quando essa folga é <= (força do eixo por m/s²) · resolucao_ms2, o equivalente em
     força ao |S_r − S_f| <= res do analise_par. N/A (sem T) quando o trim acima de T falha por um motivo de domínio
     (descolamento, faixa do pneu, tração acima do atrito). A falha do próprio Newton (resíduo que não diminui, jacobiano
     singular) colada em T é a dobra do trim, onde o eixo que satura não tem raiz: vale como saturação, e as folgas dizem qual.
@@ -1223,7 +1258,7 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
         return tr(ay).convergiu
 
     veredito, motivo = eq.NA, None
-    ay_t = eixo = ay_sat_f = ay_sat_r = motivo_sat = cn_iso_q = cn_est_q = cn_p = None
+    ay_t = eixo = ay_sat_f = ay_sat_r = motivo_sat = cn_iso_q = cn_est_q = cn_p = folga_n = folga_frac = None
     limitacoes: tuple = ()
     est, a, b = _transicao(pred, min(conhecidas) if conhecidas else None, ay_lo, ay_max, passo)
     if est == "falha_inicial":
@@ -1265,9 +1300,11 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
                     ay_sat_f, ay_sat_r = (a, None) if eixo == "F" else (None, a)
                     motivo_sat = _MSG_ACOPLADO
                     folga = margem[outro]
+                    folga_n, folga_frac = folga, folga / caps[0 if outro == "F" else 1]
                     cn_est_q = folga * cfg.cg_to_rear / (W * L) if outro == "R" else -folga * cfg.cg_to_front / (W * L)
                     cn_iso_q = _estabilizante(cn_est_q)
-                    fator_ay = math.cos(t_t.beta_rad)   # a_y = A·cos β no caminho acoplado (adendo §2.5)
+                    # a_y = A·cos β no caminho acoplado com a rotação (adendo §2.5); sem ela, a_y = A
+                    fator_ay = math.cos(t_t.beta_rad) if hip.rotacao_beta else 1.0
                     cn_p, motivo_p = _ponto_p(
                         caso, a, ay_max, passo, tol, n_alfa,
                         caps_fn=lambda ay: _capacidades_acopladas(caso, hip, ay, t_t.beta_rad, t_t.delta_rad),
@@ -1279,7 +1316,7 @@ def _limite_acoplado(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: flo
     return Limite(ay_t_ms2=ay_t, ay_sat_f=ay_sat_f, ay_sat_r=ay_sat_r, motivo_sat=motivo_sat, eixo_satura=eixo,
                   veredito=veredito, cn_iso_q=cn_iso_q, cn_estabilizante_q=cn_est_q, cn_p=cn_p,
                   stability_index=si, k_rad_por_ms2=k, resolucao_ms2=float(resolucao_ms2),
-                  motivo=motivo, limitacoes=limitacoes)
+                  motivo=motivo, limitacoes=limitacoes, folga_outro_N=folga_n, folga_outro_fracao=folga_frac)
 
 
 def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01, ay_max_g: float = 2.0,
