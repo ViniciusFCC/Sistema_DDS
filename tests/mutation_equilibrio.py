@@ -7,7 +7,12 @@ pelo uv (.pth do site-packages); os testes rodam do repositório (precisam de da
 leitura). A sonda confirma que o equilibrio importado é a cópia. O arquivo do repositório não muda.
 Roda como script: uv run python -X utf8 tests/mutation_equilibrio.py
 """
-import os, re, shutil, subprocess, sys, tempfile
+import os, re, shutil, sys, tempfile
+
+from executor_testes import executar
+
+TIMEOUT_SONDA = 120      # s; EDR-068: o executor encerra a árvore do processo no tempo-limite
+TIMEOUT_TESTE = 1800     # s por teste
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 TESTES = [os.path.join('tests', 'test_equilibrio.py'), os.path.join('tests', 'test_equilibrio_linear.py')]
@@ -23,16 +28,15 @@ def rodar(fonte):
             fh.write(fonte)
         env = dict(os.environ, PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1',
                    PYTHONPATH=d + os.pathsep + os.environ.get('PYTHONPATH', ''))
-        sonda = subprocess.run([sys.executable, '-X', 'utf8', '-c',
-                                'import equilibrio, equilibrio_linear; print(equilibrio.__file__); '
-                                'print(equilibrio_linear._eq.__file__)'],
-                               cwd=ROOT, env=env, capture_output=True, text=True)
+        sonda = executar([sys.executable, '-X', 'utf8', '-c',
+                          'import equilibrio, equilibrio_linear; print(equilibrio.__file__); '
+                          'print(equilibrio_linear._eq.__file__)'],
+                         cwd=ROOT, env=env, timeout_s=TIMEOUT_SONDA)
         origens = sonda.stdout.split()
         alvo = os.path.normcase(os.path.abspath(os.path.join(d, 'equilibrio.py')))
         if sonda.returncode != 0 or len(origens) != 2 or any(os.path.normcase(os.path.abspath(o)) != alvo for o in origens):
             print('ERRO: o equilibrio importado não é a cópia temporária ->', origens or sonda.stderr[-500:]); sys.exit(2)
-        return [subprocess.run([sys.executable, '-X', 'utf8', t], cwd=ROOT, env=env, capture_output=True,
-                               text=True, encoding='utf-8', errors='replace') for t in TESTES]
+        return [executar([sys.executable, '-X', 'utf8', t], cwd=ROOT, env=env, timeout_s=TIMEOUT_TESTE) for t in TESTES]
     finally:
         shutil.rmtree(d, ignore_errors=True)
 

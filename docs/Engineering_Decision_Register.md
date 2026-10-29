@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 66 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR)
+Total: 67 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1)
 
 | ID | Título | Status |
 |---|---|---|
@@ -103,6 +103,7 @@ Total: 66 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-064 | Método do MMM em raio fixo e da escada de hipóteses no Python | AWAITING_DECISION |
 | EDR-065 | Tolerância da escada e regra do NEUTRO | AWAITING_DECISION |
 | EDR-066 | Achados da escada sobre fórmulas da planilha | AWAITING_DECISION |
+| EDR-068 | Executor dos testes: tempo-limite que encerra a árvore de processos | IMPLEMENTED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1587,6 +1588,26 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-052, EDR-057, EDR-064.
 - **Source_Conversation_or_Document:** Adendo `2026-10-27-inc6-mmm-escada-design.md` §7 (revisão do conselho).
 
+### EDR-068 — Executor dos testes: tempo-limite que encerra a árvore de processos
+
+- **Date:** 2026-10-29
+- **Status:** IMPLEMENTED
+- **Context:** Uma rodada da suíte travou 5 h, apesar de cada item ter tempo-limite. `subprocess.run(capture_output=True, timeout=T)` mata só o filho no tempo-limite e depois espera o pipe de saída fechar; um neto (o Excel via COM, por exemplo) que herdou o pipe o mantém aberto, e a chamada não volta.
+- **Question:** Como garantir que um item travado da suíte (ou uma rodada da mutação da planilha) volte no tempo-limite, sem deixar processos órfãos?
+- **Alternatives:** (a) manter `subprocess.run` e aumentar ou reduzir os tempos-limite (não resolve: o tempo-limite não é o que falha); (b) `subprocess.run` com saída em arquivo e `taskkill` por conta de cada chamador (repete a lógica em cinco scripts); (c) um módulo único, `python/executor_testes.py`, que usa arquivos temporários no lugar de pipes e encerra a árvore pelo PID.
+- **Decision:** (c). `executar(cmd, *, cwd, env, timeout_s) -> Execucao` roda o processo com stdout e stderr em `tempfile.TemporaryFile` (nunca pipe) e, no tempo-limite, encerra a árvore com `taskkill /PID <pid> /T /F` (em POSIX, `os.killpg`), espera até 10 s e devolve o código 124 (`CODIGO_TEMPO`) com `estourou=True`. A hora de início e de fim de cada execução vai no `stderr` devolvido. `Orcamento` e `orcamento_do_ambiente` (variável `DDS_ORCAMENTO_S`) limitam o total de um script com várias execuções. Adotado em `tools/rodar_testes.py` (`rodar`, que passa `DDS_ORCAMENTO_S = timeout − 200` ao item, para a soma interna ficar abaixo do limite externo) e nos quatro scripts de mutação. Na mutação da planilha: orçamento total de 7000 s, cada rodada com `min(TIMEOUT, restante)`, 2ª tentativa só se couber um `TIMEOUT` inteiro, tempo esgotado = mutante "NÃO DETECTADO (tempo)" (FAIL) e, na pré-checagem, código de saída 2.
+- **Rationale:** O diagnóstico reproduziu a causa: um filho Python que lança um neto herdando a saída e dorme 60 s, chamado com `subprocess.run(capture_output=True, timeout=3)`, voltou em 60,5 s (esperado, se o timeout valesse: ≈ 3 s). Com arquivos no lugar de pipes, nenhum neto prende a leitura; o encerramento por PID (nunca por nome de programa) não atinge o Excel de outras pessoas. O Excel do teste da planilha já está num Job Object (`tests/recalculo_planilha.py`) e morre junto.
+- **Evidence:** Medição de 2026-10-29 (Windows 11, Python 3.13): `subprocess.run(..., capture_output=True, timeout=3)` com neto dormindo 60 s voltou em 60,5 s. Com o executor, o mesmo filho com `timeout_s=3` volta em 3,5 s e o neto não existe mais (`tasklist /FI "PID eq <neto>"`). TC-RUN-001.
+- **Assumptions:** O processo-filho é Python ou um programa cujos descendentes pertençam à árvore do PID (o `taskkill /T` segue a ligação pai-filho; um neto que perdeu o pai não é alcançado).
+- **Consequences:** A saída agora é lida de arquivo depois que o processo termina, não em fluxo. Os testes de mutação não mudam de lógica. Um item que estoura o tempo aparece no log com código 124 e a linha `[executor] ... TIMEOUT depois de N s`.
+- **Affected_Artifacts:** `python/executor_testes.py`; `tools/rodar_testes.py` (`rodar`, `TESTES`, `MODULOS`); `tests/mutation_planilha_equilibrio.py`; `tests/mutation_mmm.py`; `tests/mutation_equilibrio.py`; `tests/mutation_tire.py`.
+- **Affected_Tests:** TC-RUN-001 (`tests/test_executor.py`).
+- **Dependencies:** nenhuma.
+- **Approval_Conditions:** —
+- **Reopening_Criteria:** Um item da suíte voltar a travar além do tempo-limite; o encerramento por PID deixar processos órfãos; o `taskkill` passar a falhar no ambiente.
+- **Related_Decisions:** EDR-044 (recálculo de cópias pelo Excel via COM).
+- **Source_Conversation_or_Document:** Plano do incremento 7, Task 1 (incremento 7), diagnóstico de 2026-10-29.
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1657,6 +1678,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-064 | — | python/mmm.py; python/escada.py; tools/relatorio_escada.py; tools/rodar_testes.py; adendo e spec base (§7.5); docs/inc6/; CLAUDE.md. | TC-MMM-001..011, TC-ESC-001..003, mutação do MMM (5) |
 | EDR-065 | — | python/escada.py; tools/relatorio_escada.py; docs/inc6/escada-hipoteses.md. | TC-ESC-002 |
 | EDR-066 | SUS-414, SUS-415 | nenhum alterado (candidatas: python/equilibrio.py; python/aba_equilibrio.py). | TC-ESC-002 |
+| EDR-068 | — | python/executor_testes.py; tools/rodar_testes.py; tests/mutation_planilha_equilibrio.py; tests/mutation_mmm.py; tests/mutation_equilibrio.py; tests/mutation_tire.py. | TC-RUN-001 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 

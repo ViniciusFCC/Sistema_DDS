@@ -8,7 +8,12 @@ A cópia mutada fica numa pasta temporária posta no PYTHONPATH, que vem antes d
 confirma que o mmm importado (por si e pelo escada) é a cópia. O arquivo do repositório não muda.
 Roda como script: uv run python -X utf8 tests/mutation_mmm.py
 """
-import os, re, shutil, subprocess, sys, tempfile, time
+import os, re, shutil, sys, tempfile, time
+
+from executor_testes import executar
+
+TIMEOUT_SONDA = 120      # s; EDR-068: o executor encerra a árvore do processo no tempo-limite
+TIMEOUT_TESTE = 1800     # s por teste (o mais longo, test_escada, leva ~6 min)
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 TESTES = [os.path.join('tests', 'test_mmm.py'), os.path.join('tests', 'test_escada.py')]
@@ -23,9 +28,9 @@ def preparar(fonte):
         fh.write(fonte)
     env = dict(os.environ, PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1',
                PYTHONPATH=d + os.pathsep + os.environ.get('PYTHONPATH', ''))
-    sonda = subprocess.run([sys.executable, '-X', 'utf8', '-c',
-                            'import mmm, escada; print(mmm.__file__); print(escada.mmm.__file__)'],
-                           cwd=ROOT, env=env, capture_output=True, text=True)
+    sonda = executar([sys.executable, '-X', 'utf8', '-c',
+                      'import mmm, escada; print(mmm.__file__); print(escada.mmm.__file__)'],
+                     cwd=ROOT, env=env, timeout_s=TIMEOUT_SONDA)
     origens = sonda.stdout.split()
     alvo = os.path.normcase(os.path.abspath(os.path.join(d, 'mmm.py')))
     if sonda.returncode != 0 or len(origens) != 2 or any(os.path.normcase(os.path.abspath(o)) != alvo for o in origens):
@@ -35,8 +40,7 @@ def preparar(fonte):
 
 
 def rodar_teste(env, t):
-    return subprocess.run([sys.executable, '-X', 'utf8', t], cwd=ROOT, env=env, capture_output=True,
-                          text=True, encoding='utf-8', errors='replace')
+    return executar([sys.executable, '-X', 'utf8', t], cwd=ROOT, env=env, timeout_s=TIMEOUT_TESTE)
 
 
 def pegou(o):
