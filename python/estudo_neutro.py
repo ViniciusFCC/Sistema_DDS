@@ -235,6 +235,57 @@ def estudar(caso: eq.CasoEquilibrio, *, formas: eq.Formas = eq.FORMAS_V42, passo
             "veredito_atual": vereditos["atual"]}
 
 
+def _com_lambda(caso: eq.CasoEquilibrio, fator: float) -> eq.CasoEquilibrio:
+    """Caso com λ_f = K_φf/(K_φf + K_φr) multiplicado por fator, com a soma K_φf + K_φr mantida."""
+    cfg = caso.cfg
+    k_soma = cfg.roll_stiffness_front + cfg.roll_stiffness_rear
+    lam_n = cfg.roll_stiffness_front / k_soma * fator
+    cfg_n = dataclasses.replace(cfg, roll_stiffness_front=lam_n * k_soma, roll_stiffness_rear=(1.0 - lam_n) * k_soma)
+    return dataclasses.replace(caso, cfg=cfg_n)
+
+
+def casos_perto_do_neutro(caso: eq.CasoEquilibrio) -> dict:
+    """Varredura SINTÉTICA de λ_f de +4 % a +7 % (relativo), em passos de 0,5 % (7 casos), com _com_lambda.
+
+    No caso-base do estudo, Δ troca de sinal entre o caso-base (LOOSE) e λ_f +10 % (PUSH); a revisão da Task 6
+    estimou, por interpolação, Δ_h/8 = 0 perto de +4,8 % e Δ_h = 0 perto de +5,6 % (estimativa a confirmar pela
+    própria varredura). O nome de cada caso leva o rótulo "sintético".
+    """
+    out = {}
+    for k in range(7):
+        pct = 4.0 + 0.5 * k
+        out[f"λ_f +{pct:.1f} % ({ROTULO})".replace(".", ",")] = _com_lambda(caso, 1.0 + pct / 100.0)
+    return out
+
+
+def classe(veredito: str | None, delta_ref: float | None) -> str | None:
+    """Classe do veredito da grade h contra o sinal de Δ na referência (h/8): "NEUTRO", "certo" ou "ERRADO".
+
+    Sinal real: PUSH se Δ_ref > 0, LOOSE se Δ_ref < 0. None sem veredito ou sem Δ_ref (ou com Δ_ref = 0 exato).
+    A h/8 não convergiu por completo (ver o estudo): o "sinal real" é o da melhor grade calculada, não o exato.
+    """
+    if veredito is None:
+        return None
+    if veredito == eq.NEUTRO:
+        return "NEUTRO"
+    if delta_ref is None or delta_ref == 0.0 or veredito not in (eq.PUSH, eq.LOOSE):
+        return None
+    real = eq.PUSH if delta_ref > 0.0 else eq.LOOSE
+    return "certo" if veredito == real else "ERRADO"
+
+
+def _cruzamento(xs: list, ys: list) -> float | None:
+    """Primeiro x em que y troca de sinal, por interpolação linear entre pontos vizinhos; None sem troca."""
+    for (x0, y0), (x1, y1) in zip(zip(xs, ys), zip(xs[1:], ys[1:])):
+        if y0 is None or y1 is None:
+            continue
+        if y0 == 0.0:
+            return x0
+        if (y0 < 0.0) != (y1 < 0.0):
+            return x0 + (x1 - x0) * (-y0) / (y1 - y0)
+    return None
+
+
 def casos_perturbados(caso: eq.CasoEquilibrio) -> dict:
     """Seis casos perturbados do caso dado, todos SINTÉTICOS (o nome leva o rótulo):
     - λ_f ± 10 % (relativo): λ_f = K_φf/(K_φf + K_φr) vezes 1,1 ou 0,9, com a soma K_φf + K_φr mantida
@@ -244,15 +295,10 @@ def casos_perturbados(caso: eq.CasoEquilibrio) -> dict:
     """
     if caso.raio_m is None:
         raise ValueError("casos_perturbados exige raio_m (a perturbação de R ± 10 % não tem base sem R).")
-    cfg = caso.cfg
-    k_soma = cfg.roll_stiffness_front + cfg.roll_stiffness_rear
-    lam = cfg.roll_stiffness_front / k_soma
     d_toe = math.radians(0.1)
     out = {}
     for sinal, txt in ((+1, "+"), (-1, "−")):
-        lam_n = lam * (1.0 + 0.1 * sinal)
-        cfg_n = dataclasses.replace(cfg, roll_stiffness_front=lam_n * k_soma, roll_stiffness_rear=(1.0 - lam_n) * k_soma)
-        out[f"λ_f {txt}10 % ({ROTULO})"] = dataclasses.replace(caso, cfg=cfg_n)
+        out[f"λ_f {txt}10 % ({ROTULO})"] = _com_lambda(caso, 1.0 + 0.1 * sinal)
     for sinal, txt in ((+1, "+"), (-1, "−")):
         toe = {c: v + sinal * d_toe for c, v in caso.toe_rad.items()}
         out[f"toe {txt}0,1° ({ROTULO})"] = dataclasses.replace(caso, toe_rad=toe)
@@ -289,6 +335,55 @@ def _e(x):
     return "—" if x is None else f"{x:.2e}".replace(".", ",")
 
 
+def _razao(a, b):
+    return None if a is None or b is None or b == 0.0 else a / b
+
+
+def _sinal(a, b):
+    """Sinal de a − b como texto ("−", "+" ou "0"); "—" sem os dois."""
+    if a is None or b is None:
+        return "—"
+    return "−" if a < b else ("+" if a > b else "0")
+
+
+def tabela_perto(perto: dict) -> str:
+    """Tabela 7: varredura de λ_f perto do neutro (sem refino), com a classe de cada veredito contra o sinal da h/8."""
+    L = ["### Tabela 7. Varredura de λ_f perto do neutro, sem refino [g] (sintético)\n",
+         "Classe: NEUTRO; \"certo\" ou \"ERRADO\" contra o sinal de Δ_h/8 (a h/8 não convergiu por completo). "
+         "A alternativa 3 (refino) não foi calculada nesta varredura.\n",
+         "| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) "
+         "| Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R |",
+         "|---|---|---|---|---|---|---|---|---|"]
+    erradas = {k: 0 for k in ("atual", "alt1", "alt1_43", "alt2")}
+    neutros = dict(erradas)
+    for nome, r in perto.items():
+        d_ref = r["delta"][3]
+        real = "—" if d_ref is None else ("PUSH" if d_ref > 0 else "LOOSE")
+
+        def cel(k):
+            v = r["vereditos"][k]
+            if v is None:
+                return "não se aplica"
+            c = classe(v, d_ref)
+            erradas[k] += c == "ERRADO"
+            neutros[k] += c == "NEUTRO"
+            return f"{_e(r['faixas'][k])} / {v} / {c}"
+        L.append(f"| {nome} | {_f(r['delta'][0])} | {_f(d_ref)} | {real} | {cel('atual')} | {cel('alt1')} "
+                 f"| {cel('alt1_43')} | {cel('alt2')} | {_f(r['F'].p, '.2f')} / {_f(r['R'].p, '.2f')} |")
+    xs = [4.0 + 0.5 * k for k in range(len(perto))]
+    rs = list(perto.values())
+    x_h = _cruzamento(xs, [r["delta"][0] for r in rs])
+    x_8 = _cruzamento(xs, [r["delta"][3] for r in rs])
+    L.append("")
+    L.append(f"- Cruzamento de zero por interpolação linear entre casos vizinhos: Δ_h = 0 em λ_f "
+             f"{'—' if x_h is None else '+' + _f(x_h, '.2f') + ' %'}; Δ_h/8 = 0 em λ_f "
+             f"{'—' if x_8 is None else '+' + _f(x_8, '.2f') + ' %'}.")
+    nomes = {"atual": "regra atual", "alt1": "alt. 1 (p medido)", "alt1_43": "alt. 1 com 4/3", "alt2": "alt. 2"}
+    L.append("- Sinal errado / NEUTRO em " + str(len(perto)) + " casos: "
+             + "; ".join(f"{nomes[k]} {erradas[k]} / {neutros[k]}" for k in nomes) + ".")
+    return "\n".join(L) + "\n"
+
+
 def conferencia_pico(caso: eq.CasoEquilibrio, eixo: str, ay_g: float, n_alfa: int = 25, n_densa: int = 24001, *,
                      formas: eq.Formas = eq.FORMAS_V42) -> dict:
     """Pico da Fy do eixo [N] em a_y [g]: grade de n_alfa pontos, parábola de 3 pontos e grade densa de n_densa pontos.
@@ -313,26 +408,32 @@ def tabelas(resultados: dict, refinados: dict) -> str:
     L = []
     L.append("### Tabela 1. Saturação por grade, sem refino [g] (sintético)\n")
     L.append("| Caso | Eixo | S_h | S_h/2 | S_h/4 | S_h/8 | d1 = \\|S_h − S_h/2\\| | d2 = \\|S_h/2 − S_h/4\\| "
-             "| d3 = \\|S_h/4 − S_h/8\\| | razão d1/d2 | p | dif. nula |")
-    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
+             "| d3 = \\|S_h/4 − S_h/8\\| | razão d1/d2 | p | dif. nula | erro real \\|S_h − S_h/8\\| | erro real / d1 "
+             "| sinal de S_h − S_h/8 |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for nome, r in resultados.items():
         for c in (r["F"], r["R"]):
             s = c.s
             d = [None if s[k] is None or s[k + 1] is None else abs(s[k] - s[k + 1]) for k in range(3)]
+            err = None if s[0] is None or s[3] is None else abs(s[0] - s[3])
             L.append(f"| {nome} | {c.eixo} | {_f(s[0])} | {_f(s[1])} | {_f(s[2])} | {_f(s[3])} | {_e(d[0])} "
                      f"| {_e(d[1])} | {_e(d[2])} | {_f(c.razao, '.3g')} | {_f(c.p, '.2f')} "
-                     f"| {'sim' if c.dif_nula else 'não'} |")
+                     f"| {'sim' if c.dif_nula else 'não'} | {_e(err)} | {_f(_razao(err, d[0]), '.2f')} "
+                     f"| {_sinal(s[0], s[3])} |")
     L.append("")
     L.append("### Tabela 2. Erro de Δ contra e_F + e_R, sem refino [g] (sintético)\n")
     L.append("| Caso | Ramo | Δ_h | Δ_h/8 | erro real F | erro real R | e_F = d1_F | e_R = d1_R | erro de Δ "
-             "| e_F + e_R | violação de (c) | resolução atual | erro de Δ / resolução |")
-    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+             "| \\|erro real R − erro real F\\| | e_F + e_R | violação de (c) | resolução atual | erro de Δ / resolução "
+             "| erro real F / e_F | erro real R / e_R |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for nome, r in resultados.items():
         res = r["faixas"]["atual"]
         q = None if r["erro_delta"] is None or not res else r["erro_delta"] / res
+        dif = None if r["erro_F"] is None or r["erro_R"] is None else abs(r["erro_R"] - r["erro_F"])
         L.append(f"| {nome} | {r['ramo']} | {_f(r['delta'][0])} | {_f(r['delta'][3])} | {_e(r['erro_F'])} "
-                 f"| {_e(r['erro_R'])} | {_e(r['est_F'])} | {_e(r['est_R'])} | {_e(r['erro_delta'])} "
-                 f"| {_e(r['soma_erros'])} | {'SIM' if r['violacao'] else 'não'} | {_e(res)} | {_f(q, '.2f')} |")
+                 f"| {_e(r['erro_R'])} | {_e(r['est_F'])} | {_e(r['est_R'])} | {_e(r['erro_delta'])} | {_e(dif)} "
+                 f"| {_e(r['soma_erros'])} | {'SIM' if r['violacao'] else 'não'} | {_e(res)} | {_f(q, '.2f')} "
+                 f"| {_f(_razao(r['erro_F'], r['est_F']), '.2f')} | {_f(_razao(r['erro_R'], r['est_R']), '.2f')} |")
     L.append("")
     L.append("### Tabela 3. Faixa e veredito de cada regra na grade h (sintético)\n")
     L.append("| Caso | Δ_h | Atual: faixa / veredito | Alt. 1 (p medido): faixa / veredito "
@@ -373,8 +474,11 @@ def tabelas(resultados: dict, refinados: dict) -> str:
                       if c.s[0] is not None and c.s[1] is not None and abs(c.s[0] - c.s[1]) < TOL_DIF_G)
         nulas = sum(1 for r in rs.values() for c in (r["F"], r["R"]) if c.dif_nula)
         viol = [n for n, r in rs.items() if r["violacao"]]
+        n_menor = sum(1 for r in rs.values() for c in (r["F"], r["R"])
+                      if c.s[0] is not None and c.s[3] is not None and c.s[0] < c.s[3])
         L.append(f"- {titulo}: d1 < 1e-9 g em {d1_nulo} de {n_eixos} eixos; dif. nula (d1 ou d2 < 1e-9 g) em "
-                 f"{nulas} de {n_eixos}; violações de (c): {len(viol)} ({', '.join(viol) if viol else 'nenhuma'}).")
+                 f"{nulas} de {n_eixos}; S_h < S_h/8 em {n_menor} de {n_eixos}; violações de (c): {len(viol)} "
+                 f"({', '.join(viol) if viol else 'nenhuma'}).")
     return "\n".join(L) + "\n"
 
 
@@ -399,6 +503,8 @@ def main(argv=None) -> int:
                  f"| {_f(ad, '.5f')} / {_f(ag, '.5f')} / {_f(ap, '.5f')} |")
     L.append(f"\nPasso da grade h em α: {_f(cf['passo_alfa'], '.5f')} rad.\n")
     texto += "\n" + "\n".join(L)
+    perto = {n: estudar(c) for n, c in casos_perto_do_neutro(base).items()}
+    texto += "\n" + tabela_perto(perto)
     saida = Path(a.saida)
     saida.parent.mkdir(parents=True, exist_ok=True)
     saida.write_text(texto, encoding="utf-8", newline="\n")

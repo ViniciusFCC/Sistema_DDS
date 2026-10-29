@@ -7,7 +7,9 @@ downforce 400 N com 45 % na frente):
   (c) erro_delta (contra a h/8) <= soma_erros, ou o caso sai marcado como violação;
   a regra não muda: o analise_par dá o veredito medido antes do estudo, e a grade h do estudo reproduz as saturações dele;
   a ordem observada nunca divide por zero (diferença < 1e-9 g dá p = None e dif_nula = True);
-  os casos perturbados (λ_f ± 10 %, toe ± 0,1°, R ± 10 %) saem rotulados "sintético".
+  os casos perturbados (λ_f ± 10 %, toe ± 0,1°, R ± 10 %) e a varredura perto do neutro (λ_f +4 % a +7 %) saem
+  rotulados "sintético"; erro_delta e soma_erros são recalculados das saturações; o veredito_atual bate com o
+  analise_par também no ramo PUSH (λ_f +10 %).
 TC-NEU-002 entra na Task 9, com a regra que o usuário escolher.
 Roda como script: uv run python -X utf8 tests/test_neutro.py
 
@@ -79,10 +81,14 @@ def tc_neu_001() -> tuple[bool, str]:
     if r1["ramo"] != "dois":
         falhas.append(f"(c) ramo {r1['ramo']!r}; o caso-base deveria saturar nos dois eixos")
     else:
-        dentro = r1["erro_delta"] <= r1["soma_erros"]
-        if dentro == r1["violacao"]:
-            falhas.append(f"(c) erro_delta = {r1['erro_delta']:.3e} g, soma_erros = {r1['soma_erros']:.3e} g, "
-                          f"violacao = {r1['violacao']}")
+        # erro_delta e soma_erros recalculados aqui das saturações, sem confiar no estudar
+        sf, sr = r1["F"].s, r1["R"].s
+        ed = abs((sr[0] - sf[0]) - (sr[3] - sf[3]))
+        se = max(abs(sf[0] - sf[1]) + abs(sr[0] - sr[1]), 1e-9)
+        if abs(ed - r1["erro_delta"]) > 1e-15 or abs(se - r1["soma_erros"]) > 1e-15:
+            falhas.append(f"(c) erro_delta {r1['erro_delta']!r} ≠ {ed!r} ou soma_erros {r1['soma_erros']!r} ≠ {se!r}")
+        if (ed > se) != r1["violacao"]:
+            falhas.append(f"(c) erro_delta = {ed:.3e} g, soma_erros = {se:.3e} g, violacao = {r1['violacao']}")
 
     # A regra não muda: veredito de antes e saturações da grade h iguais às do analise_par
     res = eq.analise_par(CASO)
@@ -121,7 +127,26 @@ def tc_neu_001() -> tuple[bool, str]:
     if not (len(toes) == 2 and abs(toes[0] + math.radians(0.1)) < 1e-15 and abs(toes[1] - math.radians(0.1)) < 1e-15):
         falhas.append(f"toe perturbado: {toes}")
 
-    det = (f"ramo {r1['ramo']}; p_F = {r1['F'].p}, p_R = {r1['R'].p}; erro_delta = {r1['erro_delta']:.3e} g, "
+    # A cópia da regra (veredito_atual) também no ramo PUSH: λ_f +10 %
+    caso_push = next(c for n, c in pert.items() if n.startswith("λ_f +"))
+    res_push = eq.analise_par(caso_push)
+    v_push = en.estudar(caso_push)["veredito_atual"]
+    if not (res_push.veredito == eq.PUSH and v_push == res_push.veredito):
+        falhas.append(f"λ_f +10 %: veredito_atual {v_push}, analise_par {res_push.veredito} (esperado PUSH)")
+
+    # Varredura perto do neutro: λ_f +4 % a +7 % em passos de 0,5 %, rotulada
+    perto = en.casos_perto_do_neutro(CASO)
+    lams_p = [c.cfg.roll_stiffness_front / (c.cfg.roll_stiffness_front + c.cfg.roll_stiffness_rear)
+              for c in perto.values()]
+    esperados = [lam * (1.0 + (4.0 + 0.5 * k) / 100.0) for k in range(7)]
+    if not (len(perto) == 7 and all("sintético" in n for n in perto)
+            and all(abs(a - b) < 1e-12 for a, b in zip(lams_p, esperados))):
+        falhas.append(f"casos perto do neutro: {list(perto)}")
+    if en.classe(eq.NEUTRO, 0.001) != "NEUTRO" or en.classe(eq.PUSH, 0.001) != "certo" \
+            or en.classe(eq.LOOSE, 0.001) != "ERRADO" or en.classe(eq.LOOSE, -0.001) != "certo":
+        falhas.append("classe do veredito contra o sinal da h/8")
+
+    det =(f"ramo {r1['ramo']}; p_F = {r1['F'].p}, p_R = {r1['R'].p}; erro_delta = {r1['erro_delta']:.3e} g, "
            f"soma_erros = {r1['soma_erros']:.3e} g; veredito {res.veredito}")
     return not falhas, ("; ".join(falhas) + " | " + det) if falhas else det
 
