@@ -44,14 +44,16 @@ TESTES = [
     ("V4.1 (estrutura e CA-07)", "tests/test_v4_1.py", 2, "plano do incremento 4 da V4.1 (TC-WB41-001 e 002)"),
     ("V4.2 (estrutura, CA-07, oráculo das metas e fluxo da viva)", "tests/test_v4_2.py", 4,
      "plano do incremento 5 da V4.2 (TC-WB42-001 a 004)"),
+    ("MMM em raio fixo", "tests/test_mmm.py", 11, "plano do incremento 6 (TC-MMM-001 a 011)"),
+    ("escada de hipóteses", "tests/test_escada.py", 3, "plano do incremento 6 (TC-ESC-001 a 003)"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
-           "origens", "gerar_v4_2", "metas", "aba_metas", "viva"]
+           "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
-           ("tests/mutation_planilha_equilibrio.py", 5)]
+           ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5)]
 # A mutação da planilha recalcula cópias pelo Excel (6 execuções do teste, de minutos cada): o limite de 1800 s dos outros não basta.
-TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200}
+TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200, "tests/mutation_mmm.py": 3600}
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")

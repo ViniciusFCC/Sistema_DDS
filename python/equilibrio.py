@@ -146,6 +146,21 @@ def cargas(caso: CasoEquilibrio, ay_ms2: float) -> dict:
     return fz
 
 
+def cargas_rotacionadas(caso: CasoEquilibrio, ay_lateral_ms2: float, ay_aero_ms2: float) -> dict:
+    """Fz [N] por roda com a parte lateral em `ay_lateral_ms2` e a aerodinâmica em `ay_aero_ms2` (a_x = 0).
+
+    No MMM em raio fixo a velocidade é V² = A·R (a aero e a resistência dependem de A), mas a aceleração lateral no
+    eixo do carro é a_y = A·cos β (adendo §2.5): a transferência lateral de carga e o camber seguem a_y, e a
+    downforce segue A. `cargas(caso, ay)` é o caso particular com os dois iguais. Função acrescentada (incremento 6)."""
+    fz = combined_fz_corner(caso.cfg, 0.0, ay_lateral_ms2, downforce(caso, ay_aero_ms2),
+                            caso.aero_balance_front, warn=False)
+    if caso.cg_lateral_m != 0.0:
+        st = static_fz_corner(caso.cfg)
+        st_y = static_fz_corner_cg_lateral(caso.cfg, caso.cg_lateral_m)
+        fz = {c: fz[c] + (st_y[c] - st[c]) for c in CANTOS}
+    return fz
+
+
 def camber(caso: CasoEquilibrio, ay_ms2: float) -> dict:
     """γ [rad] por roda: γ = camber_estático + ganho_camber·φ, com φ a rolagem de lateral_dfz."""
     phi = lateral_dfz(caso.cfg, ay_ms2)["roll_angle_rad"]
@@ -308,7 +323,7 @@ class _Limite:
     texto: str
 
 
-def _descolamento(fz: dict, rodas: tuple) -> str | None:
+def descolamento(fz: dict, rodas: tuple) -> str | None:
     """Motivo de N/A quando alguma roda do eixo tem Fz <= 0, ou None.
 
     Fz <= 0 não é limite do pneu: é o fim do domínio do modelo linear de transferência de carga
@@ -321,12 +336,12 @@ def _descolamento(fz: dict, rodas: tuple) -> str | None:
     return None
 
 
-def _entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -> tuple[dict, dict, list]:
+def entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -> tuple[dict, dict, list]:
     """Fz e γ que o pneu recebe, limitados à faixa do .tir, e a lista de _Limite (EDR-056, item 1).
 
     Convenção do PAC2002 (help do Adams 2024.1, p. 83, "Validity Range of the Tire Model Input"): uma
     entrada além da faixa de validade é avaliada no valor mínimo ou máximo da faixa, com aviso. Exige
-    Fz > 0 em todas as rodas (quem chama verifica _descolamento antes). A faixa de γ vale no referencial
+    Fz > 0 em todas as rodas (quem chama verifica descolamento antes). A faixa de γ vale no referencial
     do pneu, s_g·γ (ds.axis_system pode inverter o sinal); o γ usado volta à convenção do projeto.
     """
     p = caso.ds.p
@@ -352,7 +367,7 @@ def _entrada_limitada(caso: CasoEquilibrio, rodas: tuple, fz: dict, gam: dict) -
     return fz_u, gam_u, lims
 
 
-def _fy_eixo_limitado(caso: CasoEquilibrio, rodas: tuple, fz_u: dict, gam_u: dict, alfa_ref: float,
+def fy_eixo_limitado(caso: CasoEquilibrio, rodas: tuple, fz_u: dict, gam_u: dict, alfa_ref: float,
                       fatores: dict | None = None) -> float:
     """Σ Fy [N, ISO] do eixo com Fz e γ já limitados à faixa (uso interno de capacidade_eixo).
 
@@ -449,7 +464,7 @@ def _kappa_pico_fx(p: dict, fz: float, g_pneu: float) -> float | None:
     return 0.5 * (lo + hi) / bx - shx
 
 
-def _elipse_traseira(caso: CasoEquilibrio, ay_ms2: float, rodas: tuple, fz_u: dict,
+def elipse_traseira(caso: CasoEquilibrio, ay_ms2: float, rodas: tuple, fz_u: dict,
                      gam_u: dict) -> tuple[dict | None, str | None]:
     """(fatores por roda, motivo) da elipse de atrito no eixo traseiro; (None, None) sem tração.
 
@@ -467,6 +482,15 @@ def _elipse_traseira(caso: CasoEquilibrio, ay_ms2: float, rodas: tuple, fz_u: di
             return None, f"tração excede o atrito longitudinal em {c}"
         fatores[c] = math.sqrt(1.0 - (fx_roda / fx_max) ** 2)
     return fatores, None
+
+
+# Nomes públicos (incremento 6, MMM): a física por roda que o mmm.py reutiliza. Os apelidos com _ mantêm
+# os chamadores antigos (equilibrio_linear, testes) sem mudança.
+_entrada_limitada = entrada_limitada
+_fy_eixo_limitado = fy_eixo_limitado
+_elipse_traseira = elipse_traseira
+_descolamento = descolamento
+RODAS_DO_EIXO = _RODAS_DO_EIXO
 
 
 def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int) -> Capacidade:
@@ -492,10 +516,10 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int)
     """
     rodas = _rodas(eixo)
     fz = cargas(caso, ay_ms2)
-    desc = _descolamento(fz, rodas)
+    desc = descolamento(fz, rodas)
     if desc is not None:
         return Capacidade(None, None, desc)
-    fz_u, gam_u, lims = _entrada_limitada(caso, rodas, fz, camber(caso, ay_ms2))
+    fz_u, gam_u, lims = entrada_limitada(caso, rodas, fz, camber(caso, ay_ms2))
     try:
         alfas = grade_alfa(caso, n_alfa)  # |α_roda| fica dentro de [ALPMIN, ALPMAX] por construção
     except ValueError:
@@ -504,10 +528,10 @@ def capacidade_eixo(caso: CasoEquilibrio, eixo: str, ay_ms2: float, n_alfa: int)
         return Capacidade(None, None, "toe consome a faixa de α")
     fatores = None
     if eixo == "R":
-        fatores, motivo_tracao = _elipse_traseira(caso, ay_ms2, rodas, fz_u, gam_u)
+        fatores, motivo_tracao = elipse_traseira(caso, ay_ms2, rodas, fz_u, gam_u)
         if motivo_tracao is not None:
             return Capacidade(None, None, motivo_tracao)
-    fys = [_fy_eixo_limitado(caso, rodas, fz_u, gam_u, a, fatores) for a in alfas]
+    fys = [fy_eixo_limitado(caso, rodas, fz_u, gam_u, a, fatores) for a in alfas]
     i = max(range(len(fys)), key=fys.__getitem__)
     motivo = "pico na borda da grade de α" if i == len(fys) - 1 else None
     return Capacidade(fys[i], alfas[i], motivo, tuple(lim.texto for lim in lims))
@@ -658,7 +682,7 @@ def _limitacoes_detalhe(caso: CasoEquilibrio, linhas: tuple, ay_lim: float | Non
         for eixo, cap in (("F", ln.cap_f), ("R", ln.cap_r)):
             if cap.motivo is not None or cap.fy_max_N is None or not cap.limites:
                 continue
-            _, _, lims = _entrada_limitada(caso, _rodas(eixo), ln.fz, camber(caso, ln.ay_ms2))
+            _, _, lims = entrada_limitada(caso, _rodas(eixo), ln.fz, camber(caso, ln.ay_ms2))
             for lim in lims:
                 d = por_chave.get((lim.canto, lim.nome))
                 if d is None:
