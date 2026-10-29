@@ -1475,7 +1475,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-064 — Método do MMM em raio fixo e da escada de hipóteses no Python (incremento 6)
 
 - **Date:** 2026-10-28
-- **Status:** AWAITING_DECISION (2026-10-28). Implementado; as decisões do controlador (itens 1.1 a 1.6 e 2.1 a 2.14) aguardam a revisão do usuário no PR e não são aprovação dele. Passa a VERIFIED só depois da aprovação e da suíte inteira (`tools/rodar_testes.py`).
+- **Status:** APPROVED (usuário, 2026-10-28; revisão no item 5, com três decisões revistas: 1.3, 2.3 e 2.6). Passa a VERIFIED só depois da suíte inteira (`tools/rodar_testes.py`), que roda no fim do incremento 7.
 - **Context:** A spec base (§7.5) pede uma escada de modelos: o Python na configuração da planilha, depois uma hipótese por vez, para medir quanto cada simplificação da planilha pesa. O usuário decidiu em 2026-10-27 que o incremento 6 é só Python: não sai planilha nova e nenhuma fórmula muda. O método está no adendo `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`. As decisões abaixo foram tomadas pelo controlador durante o plano e a execução, onde uma opção dominava, e **aguardam a revisão do usuário no PR**; não são aprovação do usuário.
 - **Question:** Como medir, só em Python e sem número de carro, o efeito de cada hipótese da planilha sobre a saturação por eixo, o push/loose, o C_N e o K?
 - **Alternatives:** (a) MMM em raio fixo parametrizado por A_Y, com a escada de hipóteses e sensibilidades por unidade; (b) grade β × δ como núcleo (spec base §8.1); (c) chaves 1/0 na planilha já neste incremento.
@@ -1502,7 +1502,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
      12. O `test_escada` leva cerca de 6 min (o `analise_par` com `n_alfa=401` e passo de 0,01 g domina), aceito.
      13. O mutante 3 da mutação do MMM sobreviveu porque o sinal do C_N estabilizante estava duplicado em `mmm.py`. O arquivo passou a ter uma fonte só (commit 78ecf55). O mutante não foi enfraquecido nem os testes mudaram.
      14. O rótulo de origem e a marca "geometria sintética" ficam no relatório (`tools/relatorio_escada.py`), não nos `dataclass`. O `mmm.py` e o `escada.py` não conhecem a origem dos dados. Corrige o §3.3 do adendo.
-  3. **Record_Status:** EDR-064 IMPLEMENTED; EDR-065 PROPOSED (a tolerância é palavra do usuário); EDR-066 AWAITING_DECISION (mudar fórmula da planilha é decisão do usuário).
+  3. **Record_Status:** EDR-064 APPROVED (item 5); EDR-065 APPROVED em parte (regra do NEUTRO; a tolerância segue AWAITING_DECISION); EDR-066 APPROVED em princípio (troca no incremento 7, célula a célula com aprovação).
   4. **Limitações conhecidas:**
      - O K do trim é a tangente da curva de trim; o `parcelas_k` usa C_α em α_0. Os dois só coincidem com A_Y → 0. Com K grande, a comparação é afirmada perto de zero (decisão 2.3).
      - A varredura do `ponto` tem resolução de 0,05·G, então `n_raizes` é "pelo menos", e uma raiz colada ao descolamento pode escapar.
@@ -1513,11 +1513,17 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
      - O stability index tem o sinal do C_N estabilizante (positivo = estabilizante, carro estável); o Milliken usa o C_N do ISO, de sinal oposto.
      - O arrasto D entra inteiro no eixo x do carro; a componente lateral D·sen β fica fora do balanço lateral (2ª ordem em β).
      - Com `h_cp_m = None`, a hipótese 11 equivale a h_cp = 0; a sensibilidade de h_cp é "em torno de h_cp = 0" (o relatório diz isso).
-     - Linha 10 (travado) com tração: o motivo "eixo R saiu do ramo ascendente" podia enganar; com o diferencial travado e tração ativa, o motivo passou a incluir o Fx e o κ por roda traseira no ponto da falha (o travado reparte o Fx pela cinemática e o Fx de cada roda reduz a Fy dela pela elipse; o eixo sai do ramo por isso, e não por ter chegado ao pico). Medido no TC-ESC-002 com tração (sintético de teste): Fx de +2091 N (RL) e −2029 N (RR) em 0,05 g.
+     - Linha 10 (travado) com tração: o motivo "eixo R saiu do ramo ascendente" podia enganar; com o diferencial travado e tração ativa, o motivo passou a incluir o Fx e o κ por roda traseira no ponto da falha (o travado reparte o Fx pela cinemática e o Fx de cada roda reduz a Fy dela, pela elipse de atrito na linha `10` e pelo pneu combinado PAC2002 na `10+9b`; esse Fx pode tirar o eixo do ramo antes do pico, mas a causa não foi isolada: não se mediu o mesmo ponto sem o Fx). Medido no TC-ESC-002 com tração (sintético de teste): Fx de +2091 N (RL) e −2029 N (RR) em 0,05 g.
      - A faixa de busca da saturação (`ay_max_g`, padrão 2,0 g) é parâmetro de `degrau_1`, `degrau_2` e `sensibilidades` e do relatório (`--ay-max-g`), rotulada como varredura e não como dado do carro.
      - Os coeficientes combinados do `.tir` (deslizamento combinado) estão "não determinado": a linha `10+9b` usa o PAC2002 combinado como o `tire_model` o tem, sem validação física.
      - A sensibilidade de h_cp com `h_cp_m = None` usa −10 mm; o termo é linear em h_cp e a derivada não muda, mas vale "em torno de 0".
      - Com o caso da V4.2 e R = 8,5 m (sintético de teste do implementador), nenhum eixo satura até 2 g, então toda linha da escada sai N/A. Foi medido só nesse R. O relatório só tem números quando o usuário informa o raio (R) e o caso satura.
+  5. **Revisão do usuário (2026-10-28, conversa de fechamento do incremento 6):**
+     1. Aprovadas em bloco: 1.1, 1.2, 1.4 a 1.6, 2.1, 2.2, 2.4, 2.5, 2.7, 2.8 e 2.10 a 2.14.
+     2. 2.9 (cota empírica 2·res no TC-ESC-001): aceita com ciência. O achado de que a `resolucao_ms2` do `analise_par` subestima o erro em cerca de 4/3 segue para o EDR-065 (faixa do NEUTRO).
+     3. 2.3 revista: o TC-MMM-004 passa a um oráculo de convergência no 2º caso: a diferença relativa entre o K do trim (tangente) e o do `parcelas_k` (secante) é medida em 0,05, 0,025 e 0,0125 g, tem de cair com A_Y, e a extrapolação para A_Y → 0 tem de ficar dentro de 1e-2. Medido antes da troca: 5,83e-2 em 0,05 g e 4,58e-3 em 0,0125 g (queda de 12,7 vezes para A_Y quatro vezes menor, perto de O(A²)). Nenhuma tolerância é afrouxada.
+     4. 2.6 revista: a rotação β passa a degrau próprio da escada. Medido: sem a rotação, o viés do método é de 1e-5 a 4,5e-5 m/s²; com ela, a linha de controle se afasta 1,39e-3 m/s² da `planilha`. Quase todo o "viés da linha de controle" era a simplificação a_y = A da planilha, e não o método. A escada passa a ser: `planilha` → linha acoplada sem rotação (viés só do método) → linha acoplada com rotação (efeito da simplificação a_y = A) → cada hipótese contra a linha com rotação. A rotação continua sem número de hipótese próprio.
+     5. 1.3 revista: nas variantes acopladas, o `ay_sat` do eixo que não satura continua `None` (acima de T não existe trim, e um número ali seria a hipótese desacoplada da planilha, que já está na linha `planilha`), e o `Limite` ganha a folga desse eixo em T, em N e em fração da capacidade dele. A regra do NEUTRO das acopladas é decidida junto da do EDR-065.
 - **Rationale:** O MMM em raio fixo, parametrizado por A_Y, é mais robusto perto do pico do que uma grade β × δ e responde à pergunta da escada (quanto vale cada hipótese). Manter o `equilibrio.py` só com adições preserva os 28 e 18 checks existentes. Nada do Python vai para a planilha.
 - **Evidence:** `tests/test_mmm.py` 11/11, `tests/test_escada.py` 3/3, `tests/mutation_mmm.py` 5/5 (rodados pelos implementadores por tarefa; a suíte inteira fica para o controlador). Onda de correção da revisão final (2026-10-28): `test_mmm` 11/11, `test_escada` 3/3, `test_equilibrio` 28/28 e `test_equilibrio_linear` 18/18; os cinco textos da mutação continuam aplicando uma vez cada (a mutação completa fica para a suíte). Plano e ledger em `.superpowers/sdd/2026-10-27-inc6-mmm-escada/` (fora do Git).
 - **Assumptions:** O raio do skidpad é dado pelo usuário. A geometria é sintética e os dados são demonstrativos (T09/E03 e TX/E05), então nada é resultado do carro.
@@ -1533,11 +1539,14 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-065 — Tolerância da escada e regra do NEUTRO
 
 - **Date:** 2026-10-28
-- **Status:** AWAITING_DECISION (2026-10-28). Revisão final do incremento 6: a tolerância e a regra do NEUTRO são palavra do usuário e aguardam a decisão dele no PR (a regra (a) é só proposta).
+- **Status:** APPROVED em parte (usuário, 2026-10-28): regra do NEUTRO (a) e correção da faixa no incremento 7. A tolerância segue AWAITING_DECISION até o relatório com o raio R informado pelo usuário.
 - **Context:** A spec base (§7.5 item 3) pede um critério para a planilha completa em relação ao Python completo: dentro de uma tolerância e nunca inverter push e loose. A tolerância é decisão de engenharia do usuário, e o incremento 6 entrega a tabela sem veredito.
 - **Question:** Qual a tolerância de a_y de saturação, de C_N e de K entre a planilha e o Python completo, e uma variante que leva NEUTRO para PUSH ou LOOSE conta como inversão?
 - **Alternatives:** Tolerância: **sem valor proposto**, o usuário decide a partir da tabela do relatório. Regra do NEUTRO: (a) NEUTRO ↔ PUSH/LOOSE conta como inversão, pela mesma regra estrita da robustez ao pneu (EDR-060 item 8); (b) não conta, porque NEUTRO é uma faixa em torno de zero.
-- **Decision:** Pendente. Proposta para a regra do NEUTRO: (a). Recomendação não é aprovação.
+- **Decision:** (usuário, 2026-10-28)
+  1. **Regra do NEUTRO: (a).** NEUTRO ↔ PUSH/LOOSE conta como inversão.
+  2. **Faixa do NEUTRO:** a `resolucao_ms2` do `analise_par` subestima o erro em cerca de 4/3 (EDR-064, 2.9). A faixa passa a usar o erro estimado, e não a resolução declarada, no incremento 7: na planilha (EDR-056 item 2) é mudança de fórmula e entra no plano com aprovação por célula; nas variantes acopladas, a regra da folga (EDR-064, 1.3) é revista junto.
+  3. **Tolerância de a_y de saturação, C_N e K:** pendente até o relatório `docs/inc6/escada-hipoteses.md` rodar com o raio R informado pelo usuário e o caso saturar. Com R = 8,5 m (sintético) a tabela é quase toda N/A e não sustenta um valor.
 - **Rationale:** A mesma regra estrita já vale para a robustez ao pneu; usar outra na escada daria dois critérios para a mesma pergunta.
 - **Evidence:** Adendo §5.3; EDR-060 item 8. A tabela da escada marca esses casos como "NEUTRO ↔ PUSH" ou "NEUTRO ↔ LOOSE", sem classificá-los.
 - **Assumptions:** A tabela do relatório (com raio informado) é a base da decisão.
@@ -1553,11 +1562,11 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-066 — Achados da escada sobre fórmulas da planilha
 
 - **Date:** 2026-10-28
-- **Status:** AWAITING_DECISION (2026-10-28)
+- **Status:** APPROVED em princípio (usuário, 2026-10-28): alternativa (b), no incremento 7. Cada célula (fórmula anterior e nova, dependências, justificativa e teste) ainda passa pela aprovação explícita do usuário no plano do incremento 7.
 - **Context:** A revisão do conselho do adendo (§7) achou duas simplificações físicas nas fórmulas da planilha, conferidas no código. O incremento 6 não mexe nelas: elas aparecem só como efeito no degrau 2.
 - **Question:** A planilha deve mudar essas duas fórmulas (no incremento 7 ou depois), ou as simplificações ficam documentadas?
 - **Alternatives:** (a) manter as fórmulas e documentar o efeito medido pela escada; (b) trocar as fórmulas por versões sem a simplificação, com EDR próprio e aprovação, numa planilha nova.
-- **Decision:** Pendente. Nenhuma fórmula da planilha muda neste incremento.
+- **Decision:** (b), aprovada em princípio pelo usuário em 2026-10-28: as duas fórmulas trocam no incremento 7, numa planilha nova. As duas simplificações erram na forma, não só no tamanho: com 0 % de Ackermann a planilha dá zero e o real não, e o termo de Fx vai a zero em raio grande enquanto o arrasto induzido continua. A escada mede o efeito antes e depois da troca. Nenhuma fórmula da planilha muda no incremento 6.
   1. **Ackermann (hipótese 2, SUS-414).** A deriva de Ackermann da planilha supõe velocidades paralelas nas duas rodas dianteiras. Na cinemática real as direções diferem de ≈ L·t/R², que é justamente a diferença do Ackermann ideal. Com 100 % de Ackermann o α real das duas rodas é igual e a planilha dá ±L·t/(2R²); com 0 % (paralelo) a planilha dá zero e o real não. A variante `alfa` mede o efeito.
   2. **Fx exigido na traseira (hipótese 9, EDR-057).** `fx_exigido_traseira` usa |F_yf|·tan(L/R) ≈ m·A·b/R, que depende de R. O balanço completo é F_yf·sen δ − m·A·sen β (a forma do adendo §7.2, F_yf·|α_F| + F_yr·|α_R|, é o arrasto induzido equivalente a esta, em primeira ordem). Os dois têm ordem parecida perto de R ≈ 8 m e divergem em raio grande, onde o arrasto induzido continua existindo e o termo da planilha vai a zero. A variante `fx_exigido="balanco"` mede a diferença.
   3. Reabre parcialmente o EDR-057 e o SUS-414 sem alterá-los: ficam como estão até a decisão do usuário.
