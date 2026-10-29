@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 67 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1)
+Total: 68 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-067 como PROPOSED, Task 2)
 
 | ID | Título | Status |
 |---|---|---|
@@ -103,6 +103,7 @@ Total: 67 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-064 | Método do MMM em raio fixo e da escada de hipóteses no Python | AWAITING_DECISION |
 | EDR-065 | Tolerância da escada e regra do NEUTRO | AWAITING_DECISION |
 | EDR-066 | Achados da escada sobre fórmulas da planilha | AWAITING_DECISION |
+| EDR-067 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | PROPOSED |
 | EDR-068 | Executor dos testes: tempo-limite que encerra a árvore de processos | IMPLEMENTED |
 
 ## 3. Decisões que dependem do usuário (agora)
@@ -117,6 +118,7 @@ Total: 67 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 - **EDR-064** (AWAITING_DECISION): Método do MMM em raio fixo e da escada de hipóteses no Python (implementado; as decisões do controlador aguardam o usuário no PR)
 - **EDR-065** (AWAITING_DECISION): Tolerância da escada de hipóteses e regra do NEUTRO (valor e regra são do usuário)
 - **EDR-066** (AWAITING_DECISION): Achados da escada sobre as fórmulas de Ackermann e de Fx exigido da planilha
+- **EDR-067** (PROPOSED): Centro de curva único e raio do skidpad; D4, D5 e D6 aguardam aprovação do usuário (passo entre a 7a e a 7b)
 
 ## 4. Proposta de IDs para camber/toe estáticos (Decisão C — NÃO criados)
 
@@ -1588,6 +1590,36 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-052, EDR-057, EDR-064.
 - **Source_Conversation_or_Document:** Adendo `2026-10-27-inc6-mmm-escada-design.md` §7 (revisão do conselho).
 
+### EDR-067 — Centro de curva único, raio do skidpad e decomposição do incremento 7
+
+- **Date:** 2026-10-29
+- **Status:** PROPOSED. D4, D5 e D6 (★) aguardam aprovação do usuário (passo entre a 7a e a 7b); as demais decisões valem como proposta do plano.
+- **Context:** O conselho achou, no adendo do incremento 6, que a fórmula de Ackermann da planilha (β = 0, centro na linha lateral do CG) e o termo traseiro ±b·t/2R² são artefatos dessa escolha, e que o R da planilha (vazio hoje) precisa de um método e de uma fonte. O incremento 7 troca as fórmulas de Ackermann e de Fx exigido (EDR-066, aprovado em princípio) e traz o R para a planilha.
+- **Question:** Qual geometria de curva e qual método de R o Python e a planilha usam, e como se divide o incremento 7?
+- **Alternatives:** (a) manter β = 0 (centro na linha lateral do CG) e o R digitado; (b) centro da curva único, na linha do eixo traseiro, com R pelos modos linha central, rente aos cones e manual; (c) β real do MMM (centro deslocado pelo α_R), sem geometria fechada.
+- **Decision:** (b), pela decisão U8 do usuário. (1) **Centro de curva único** C = (0, R_c) na linha do eixo traseiro (ISO 8855, curva à esquerda, origem no meio do eixo traseiro, CG em (b, 0)); R = √(b² + R_c²); θ_i = atan(X_i/(R_c − Y_i)); vale para R, Ackermann e Fx. (2) **Raio do skidpad** em `python/skidpad.py` (SUS-1009), por dois métodos e o modo manual: linha central R = (D_int + D_ext)/4 = 9,125 m (raio do CG); rente aos cones, com R_in' = D_int/2 + meia largura do pneu, R_c = máx(R_in' + t_r/2, t_f/2 + √(R_in'² − L²)) (o termo dianteiro só se R_in' > L) e R = √(b² + R_c²); manual (R digitado, origem própria). Eixo que manda (SUS-1010): "traseiro", "dianteiro" ou "empate" (diferença dos limites ≤ 1e-9 m). Meia largura do pneu (SUS-1011): WIDTH/2 do `.tir` em uso = 0,0889 m, origem "◐ Provisório (.tir TTC)"; vazia, entra 0 e o resultado fica rotulado "a confirmar". Bitola traseira vazia: R "a confirmar", sem supor a dianteira. Os diâmetros do círculo interno (15,25 m) e do externo (21,25 m) e a fonte "Formula SAE Rules 2026 v1.0 (10/09/2025), D.10.1.1" entram como entradas com fonte. (3) **Decomposição:** 7a (Python: Formas, Fx novo, raio, escada com V4.3) e 7b (planilha V4.3, com catálogo de células e aprovação célula a célula); o regulamento da FSAE Brasil fica para o inc. 9. (4) **Decisões do plano D1 a D10:**
+  - D1: `equilibrio.Formas` (ackermann e fx, "v42" ou "v43"), `FORMAS_V42` por padrão, argumento só de palavra-chave nas funções que usam as fórmulas.
+  - D2: duas réplicas do Fx novo numa função (`n_alfa` inteiro = réplica de grade; None = réplica contínua, bisseção de 200 iterações, usada como física); `equilibrio` não importa `mmm`.
+  - D3: sem curva dianteira válida, sem Fx na forma v43 (`MSG_FX_SEM_FRENTE`); conservador, como a planilha.
+  - D4 ★: o R continua em `16_EQUILIBRIO!B9` (nome `ent_16_raio_do_skidpad_r`), que passa de entrada a fórmula que escolhe o R pelo modo; apelido `res_16_raio_do_skidpad_usado`; o R digitado vira a entrada "R manual" da `24_CURVA`; a E9 vira a fórmula da pior origem do R; `migrar_viva` leva o B9 da viva V4.2 ao R manual com o modo "Manual". Aguarda aprovação do usuário (passo entre a 7a e a 7b).
+  - D5 ★: modo padrão "Linha central" (9,125 m com a fonte do regulamento); só entra no resultado com h2, h3, h8 ou h9 ligada (padrão 0). A alternativa, "Manual" com R vazio, mantém a V4.2. Aguarda aprovação do usuário (passo entre a 7a e a 7b).
+  - D6 ★: origem dos diâmetros do skidpad `● Dado do T11`, com a Fonte do regulamento (sem rótulo novo na lista Origens); alternativa: tirar os diâmetros da pior origem. Aguarda aprovação do usuário (passo entre a 7a e a 7b).
+  - D7: as bitolas já existem (`05_VEHICLE` B7 e B8); os 1300 mm do T11 entram por commit `dados:`.
+  - D8: aba nova `24_CURVA` depois da `23_LISTAS`.
+  - D9: avisos da V4.3 na `14_DASHBOARD` A48:B48.
+  - D10: `escada.degrau_2(caso, ay_max_g=2.0, incluir_v43=False)`; com True entra a linha "planilha V4.3" depois da "planilha".
+- **Rationale:** Um centro único dá o par de ângulos de Ackermann ideal (cot θ_FR − cot θ_FL = t_f/L) e elimina o resíduo b·t/R² da escolha β = 0. O modo rente aos cones usa o círculo interno como limite (a base do cone fica, no máximo, encostada nele: lado seguro); a figura do regulamento não foi vista e os textos da FSAE e da FSG divergem sobre o lado da linha marcada. Passar o R de entrada a fórmula (D4) preserva o texto das milhares de fórmulas que citam o nome.
+- **Evidence:** Spec `docs/superpowers/specs/2026-10-29-inc7-fisica-planilha-design.md` §3; Formula SAE Rules 2026 v1.0 D.10.1.1 e D.10.1.2 e Formula Student Rules 2026 v1.1 D 4.1.3 e 4.1.4 (só pelo texto, conferido em 2026-10-29); `.tir` com WIDTH = 0,1778 m; `tests/test_skidpad.py` (TC-SKP-001 e 002).
+- **Assumptions:** CG com y nulo; o skidpad tem R único; o R rente aos cones é o limite de ocupação, não a trajetória. Os valores de L, b e bitolas dos testes são sintéticos. Os diâmetros valem para a competição do T11 até a conferência da FSAE Brasil (inc. 9).
+- **Consequences:** O α_R real desloca o centro para a frente da linha do eixo traseiro; a diferença contra o β real do MMM é medida pela escada, não corrigida. Novos IDs de equilíbrio, por autorização do usuário em 2026-10-29, ao lado dos SUS-1001 a SUS-1008 do EDR-059: SUS-1009 (raio do skidpad R), SUS-1010 (eixo que manda) e SUS-1011 (meia largura do pneu). Nenhum outro ID.
+- **Affected_Artifacts:** `python/skidpad.py`; `tools/rodar_testes.py` (`TESTES`, `MODULOS`); candidatos da 7a e da 7b: `python/equilibrio.py`, `python/escada.py`, `python/aba_equilibrio.py`, planilha V4.3.
+- **Affected_Tests:** TC-SKP-001, TC-SKP-002 (`tests/test_skidpad.py`).
+- **Dependencies:** EDR-052, EDR-057, EDR-059, EDR-064, EDR-066.
+- **Approval_Conditions:** D4, D5 e D6 pelo usuário antes da 7b; regulamento da FSAE Brasil conferido no inc. 9.
+- **Reopening_Criteria:** O regulamento da FSAE Brasil ou a figura do D.10.1 divergirem dos diâmetros ou do lado dos cones; o usuário rejeitar D4, D5 ou D6; a escada mostrar diferença relevante entre o centro único e o β real.
+- **Related_Decisions:** EDR-057, EDR-059, EDR-064, EDR-065, EDR-066, EDR-068.
+- **Source_Conversation_or_Document:** Spec do inc. 7 §3 e plano do inc. 7 (decisões D1 a D10), usuário, 2026-10-29 ("lista enxuta" de IDs; decisão U8).
+
 ### EDR-068 — Executor dos testes: tempo-limite que encerra a árvore de processos
 
 - **Date:** 2026-10-29
@@ -1678,6 +1710,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-064 | — | python/mmm.py; python/escada.py; tools/relatorio_escada.py; tools/rodar_testes.py; adendo e spec base (§7.5); docs/inc6/; CLAUDE.md. | TC-MMM-001..011, TC-ESC-001..003, mutação do MMM (5) |
 | EDR-065 | — | python/escada.py; tools/relatorio_escada.py; docs/inc6/escada-hipoteses.md. | TC-ESC-002 |
 | EDR-066 | SUS-414, SUS-415 | nenhum alterado (candidatas: python/equilibrio.py; python/aba_equilibrio.py). | TC-ESC-002 |
+| EDR-067 | SUS-1009, SUS-1010, SUS-1011 | python/skidpad.py; tools/rodar_testes.py; spec e plano do inc. 7. | TC-SKP-001, 002 |
 | EDR-068 | — | python/executor_testes.py; tools/rodar_testes.py; tests/mutation_planilha_equilibrio.py; tests/mutation_mmm.py; tests/mutation_equilibrio.py; tests/mutation_tire.py. | TC-RUN-001 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
