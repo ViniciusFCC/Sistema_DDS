@@ -82,6 +82,11 @@ de tração exigida na traseira, com o diferencial dividindo-a entre as rodas, f
   Fx_r = D + RR + F_yf,pneu·sen δ − m·A·sen β
 
 onde D é o arrasto, RR a resistência ao rolamento e F_yf,pneu a força lateral do pneu dianteiro nos eixos da roda.
+(Revisto em 2026-10-28, EDR-064 item 5.) A rotação para os eixos do carro é a opção `Hipoteses.rotacao_beta`
+(padrão `True`, só no caminho acoplado). Com `False`, a_y = A e a_x = 0 em todos os termos (cargas, camber, `transf_long`
+"regime", o balanço de Fx via `+ m·a_x` e o fator a_y do ponto P no limite): é a simplificação da planilha, usada como
+linha de controle da escada (§5.2). `rotacao_beta` não é uma das hipóteses numeradas; fica em `mmm.FORA_DE_VARIANTES`
+junto com `h_cp_m`.
 Com ângulos pequenos, δ = L/R + |α_F| − |α_R| e β = b/R − |α_R|, os dois últimos termos somam
 F_yf·|α_F| + F_yr·|α_R|: é o arrasto induzido pela deriva. A §7 trata da diferença em relação à fórmula da
 planilha.
@@ -165,6 +170,10 @@ Fixado A_Y, ficam determinados V = √(A_Y·R), a downforce, as cargas, γ e as 
 3. **Limite (T):** bisseção em A_Y sobre a existência de trim, com o intervalo inicial tirado da varredura do
    `analise_par`. A resolução é parâmetro explícito e sai no resultado.
 4. **Q e push/loose:** em T, o eixo sem raiz é o que satura, e o outro dá a folga (Q).
+   (Revisto em 2026-10-28, EDR-064 item 5.) Nas variantes acopladas com T, `Limite.folga_outro_N` e
+   `folga_outro_fracao` trazem a folga do eixo que não satura: a capacidade acoplada dele em T menos a força exigida
+   dele, nos eixos do carro (a fração é sobre a capacidade dele). O a_y de saturação desse eixo continua `None`
+   (acima de T não há trim), e as duas folgas são `None` nas desacopladas e sem T. A regra do NEUTRO não muda (EDR-065).
 
 ### 4.2 Ponto e diagrama
 
@@ -211,8 +220,16 @@ números, e por isso a reorganização da §3.1 roda os 28 + 18 testes do equil�
 `escada.degrau_2(caso)` parte de `Hipoteses.planilha()` e liga uma variante Python por vez (1+2, 3, 7, 9a, 9b, 10,
 11). Depois liga **todas** juntas, que é o critério 3 da spec base. A tabela traz, para cada linha:
 - a_y de saturação de cada eixo, T, push/loose, `cn_estabilizante` em Q e K;
-- a diferença em relação à linha da planilha;
+- a diferença em relação à linha de referência dela;
 - o `motivo` de cada ponto que não convergiu.
+
+(Revisto em 2026-10-28, EDR-064 item 5.) A tabela tem 12 linhas, nesta ordem: `planilha` (Δ contra si);
+`planilha (acoplado, sem rotação)` (`escada.NOME_CONTROLE_SEM_ROTACAO`; Δ contra `planilha` = viés só do método,
+Newton 2-D com a_y = A e a_x = 0); `planilha (acoplado)` (Δ contra a linha sem rotação = efeito da simplificação
+a_y = A da planilha); as linhas acopladas 1+2, 3, 9a, 9b, 10, 10+9b e 11 (Δ contra `planilha (acoplado)`, para que
+cada número seja o efeito da hipótese); a `7`, que usa o caminho desacoplado (Δ contra `planilha`); e `todas`, acoplada
+(Δ contra `planilha (acoplado)`). Cota empírica do TC-ESC-002 para a linha sem rotação: |ΔT| ≤ 1e-4 m/s² e
+|ΔK| ≤ 1e-9 (medido no caso base sintético de teste: +4,49e-5 m/s² sem rotação; +1,343e-3 m/s² com).
 
 As sensibilidades da §4.3 vêm numa tabela à parte.
 
@@ -231,6 +248,10 @@ marca esses casos como "NEUTRO ↔ <veredito>" sem classificá-los.
 `excel/`, lido por nomes numa cópia recalculada. Nenhum número do Python vai para a planilha (spec base §7.5). Todo
 número do relatório leva o rótulo de origem: com dados demonstrativos, geometria sintética e o pneu R25B, nenhum é
 resultado do carro.
+
+(Revisto em 2026-10-28, EDR-064 item 5.) O relatório traz ΔT com 6 casas em g, para que as linhas de controle (ΔT
+da ordem de 1e-5 g) apareçam, e a coluna "Folga do outro eixo em T" (N e % da capacidade, só nas linhas acopladas com
+T; "—" nas demais), com a explicação de que acima de T o eixo que não satura fica sem a_y de saturação.
 
 ## 6. Interações conhecidas entre hipóteses
 
@@ -273,7 +294,7 @@ Scripts com `check()`, no padrão do projeto, cada um rodando em segundos. Os ID
 | TC-MMM-001 | Com δ = L/R, β = b/R e toe nulo, α = 0 nas quatro rodas em baixa velocidade; com δ um pouco maior, α_F < 0 e F_yf > 0 | Oráculo cinemático, fixa o sinal ISO |
 | TC-MMM-002 | Pneu de brinquedo (tanh, sem sensibilidade à carga): T e eixo limitante em forma fechada; com μ constante, os dois eixos saturam juntos (NEUTRO) | Oráculo analítico |
 | TC-MMM-003 | Força bruta numa grade β × δ, sem `capacidade_eixo`: a existência de trim em A_Y abaixo e acima de T concorda com a bisseção | Oráculo independente do caminho do solver |
-| TC-MMM-004 | K da curva de trim em a_y baixo = K de `equilibrio_linear.parcelas_k`, com as premissas conferidas no teste (sem aero, sem toe, sem Ackermann) | Oráculo linear |
+| TC-MMM-004 | K da curva de trim em a_y baixo = K de `equilibrio_linear.parcelas_k`, com as premissas conferidas no teste (sem aero, sem toe, sem Ackermann). Revisto em 2026-10-28 (EDR-064 item 5): oráculo de convergência, com K medido em A_Y = 0,05, 0,025 e 0,0125 g, queda monótona do erro e extrapolação quadrática a A_Y → 0 com erro ≤ 1e-2 | Oráculo linear |
 | TC-MMM-005 | Carro com a = b e eixos iguais: o trim fica em δ = L/R para qualquer β, e C_N em Q ≈ 0 | Simetria |
 | TC-MMM-006 | `espelhar`: \|T\| e push/loose iguais, `cn_iso` troca de sinal, `cn_estabilizante` não troca, forças por roda trocam de lado | Simetria e sinal |
 | TC-MMM-007 | No trim devolvido, os resíduos de ΣFy − m·A_Y e de C_N ficam abaixo da tolerância; um caso forçado sem trim devolve `None` com motivo | Consistência |
