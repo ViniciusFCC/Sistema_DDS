@@ -561,9 +561,9 @@ de GO): `fy0_R_0 … fy0_R_{n−1}`, `cap0_R`, `idx0_R`, `j_F`, `j_R`, `aF`, `aR
 | C-G1 | `fy0_R_i` | `=IF(AND({h9}=1,{h9v}=1,ISNUMBER(Fz_RL),Fz_RL>0,ISNUMBER(Fz_RR),Fz_RR>0,{amp}>0),fyL_i+fyR_i,"-")`, com fyL_i e fyR_i as mesmas expressões da soma traseira de `_linha_grade`, sem `fat` | termos MF da linha |
 | C-G2 | `cap0_R`, `idx0_R` | `=IF(ISNUMBER(fy0_R_0),MAX(faixa),"-")`; `=IF(ISNUMBER(cap0_R),MATCH(cap0_R,faixa,0),"-")` | C-G1 |
 | C-G3 | `j_F`, `j_R` | `=IFERROR(MATCH(TRUE,INDEX(faixa_fy_F>=req_F,0),0),0)` (na traseira, `faixa_fy0_R` e `req_R`) | fy_F, C-G1 |
-| C-G4 | `aF` | `=IF(AND({h9}=1,{h9v}=1),IF(mot_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F)),IF(j_F<=1,0,ABS(INDEX(alfa,j_F-1)+(INDEX(alfa,j_F)-INDEX(alfa,j_F-1))*(req_F-INDEX(fyF,j_F-1))/(INDEX(fyF,j_F)-INDEX(fyF,j_F-1)))))),"-")` | C-G3 |
-| C-G4b | `aR` | igual, com `cap0_R`, `idx0_R`, `j_R`, `req_R` e `fy0_R` | C-G2, C-G3 |
-| C-G5 | `fxr` (BP, existente) | antes: `=IF(AND(ISNUMBER(phi),{h9}=1),0.5*rho*cda*ABS(ay)*R+crr*m*9.81+ABS(req_F)*{tanf},0)`; depois: `=IF(AND(ISNUMBER(phi),{h9}=1),IF(AND({h9v}=1,aF="semF"),"semF",0.5*rho*cda*ABS(ay)*R+crr*m*9.81+IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})),0)` | C-G4 |
+| C-G4 | `aF` | `=IF(AND({h9}=1,{h9v}=1),IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F)),IF(j_F<=1,0,ABS(INDEX(alfa,j_F-1)+(INDEX(alfa,j_F)-INDEX(alfa,j_F-1))*(req_F-INDEX(fyF,j_F-1))/(INDEX(fyF,j_F)-INDEX(fyF,j_F-1)))))),"-")` | C-G3 |
+| C-G4b | `aR` | igual, com `cap0_R`, `idx0_R`, `j_R`, `req_R` e `fy0_R`, e o primeiro teste `NOT(ISNUMBER(cap0_R))` no lugar de `pre_F<>"-"` (o `pre_R` depende de `fat`, que depende de `aR`: usá-lo seria referência circular; com a traseira descolada, o `pre_R` já dá o descolamento antes do texto de tração) | C-G2, C-G3 |
+| C-G5 | `fxr` (BP, existente) | antes: `=IF(AND(ISNUMBER(phi),{h9}=1),0.5*rho*cda*ABS(ay)*R+crr*m*9.81+ABS(req_F)*{tanf},0)`; depois: `=IF(AND(ISNUMBER(phi),{h9}=1),IF(AND({h9v}=1,OR(aF="semF",aR="semF")),"semF",0.5*rho*cda*ABS(ay)*R+crr*m*9.81+IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})),0)` | C-G4 |
 | C-G6 | `fat_RL`, `fat_RR` (BW, CD; existentes) e `pre_R` (DL / EJ) | `fat`: acrescentar o primeiro teste `IF({C("fxr")}="semF","semF", <fórmula de hoje>)`; `pre_R`: no texto de tração, antes de "fora", `IF(OR(fat_RL="semF",fat_RR="semF"),"Fx exigido (h9v) indisponível: a curva dianteira é inválida nesta linha", …)` | C-G5 |
 
 Justificativa: spec §4.2 (EDR-066) e D3. α_R da curva sem a elipse (sem referência circular); α limitado ao pico.
