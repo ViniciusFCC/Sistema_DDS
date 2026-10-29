@@ -503,7 +503,8 @@ def _fator_elipse(caso: eq.CasoEquilibrio, c: str, fx: float, fz_u: dict, gam_u:
 def _avalia(caso: eq.CasoEquilibrio, hip: Hipoteses, beta_rad: float, delta_rad: float, ay_ms2: float) -> _Aval:
     """Forças por roda, resíduos e somas por eixo em (β, δ, A_Y), curva à esquerda, no caminho acoplado.
 
-    - Cargas: eq.cargas (aero e transferência lateral em A_Y) mais, em transf_long="regime", ΔFz_traseira =
+    - Cargas: eq.cargas_rotacionadas (transferência lateral e camber em a_y = A·cos β, aero em A; ver o bullet dos eixos
+      do carro) mais, em transf_long="regime", ΔFz_traseira =
       (m·a_x·h + D·h_cp)/L com a_x = −A·sen β (§2.6), meio a meio nas rodas traseiras e tirada meio a meio das
       dianteiras (a soma das Fz fica m·g); a parcela D·h_cp só com h_cp_m (decisão 5 do plano).
     - α: alfa_rodas (planilha ou cinemático). Dianteira em κ = 0 e Fx do pneu dianteiro nulo (a resistência ao
@@ -602,13 +603,15 @@ def _motivo_fora_do_ramo(eixo: str, caso: eq.CasoEquilibrio | None = None, hip: 
                          aval: "_Aval | None" = None) -> str:
     """Motivo de "um eixo saiu do ramo ascendente". Com o diferencial travado e tração ativa, o texto genérico engana: o
     travado reparte o Fx pela cinemática (κ comum), com Fx diferente nas duas traseiras, e o Fx de cada roda reduz a Fy dela
-    (elipse de atrito ou pneu combinado); o eixo R sai do ramo por isso, e não por ter chegado ao pico de Fy. Nesse caso o
-    motivo leva o Fx e o κ por roda traseira no ponto da falha."""
+    (elipse de atrito ou pneu combinado PAC2002, conforme hip.tracao). Esse Fx pode tirar o eixo R do ramo antes do pico de
+    Fy, mas a causa não foi isolada (não se mediu o mesmo ponto sem o Fx). Nesse caso o motivo leva o Fx e o κ por roda
+    traseira no ponto da falha, para quem lê julgar."""
     base = f"sem trim: o eixo {eixo} saiu do ramo ascendente da soma do eixo (dFy/dα ≤ 0)"
     if caso is None or hip is None or aval is None or hip.diferencial != "travado" or not eq.tracao_ativa(caso):
         return base
     fx = ", ".join(f"{c} {aval.fx[c]:.0f} N (κ = {aval.kappa[c]:.3f})" for c in _TRASEIRA)
-    return f"{base}; diferencial travado, Fx por roda traseira: {fx} (o Fx de cada roda reduz a Fy dela pela elipse de atrito)"
+    reducao = "pela elipse de atrito" if hip.tracao == "elipse" else "pelo pneu combinado (PAC2002)"
+    return f"{base}; diferencial travado, Fx por roda traseira: {fx} (o Fx de cada roda reduz a Fy dela {reducao})"
 
 
 def _newton(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, beta0: float, delta0: float) -> tuple:

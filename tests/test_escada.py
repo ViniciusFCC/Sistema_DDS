@@ -128,8 +128,9 @@ ok_ctrl = (ctrl.referencia == "planilha" and ctrl.hipoteses == () and ctrl.limit
            and all(abs(por_nome[n].d_ay_t - (por_nome[n].limite.ay_t_ms2 - ctrl.limite.ay_t_ms2)) < 1e-12
                    for n in ("3", "9a", "11") if por_nome[n].d_ay_t is not None))
 # I1: marca de hipótese desligada. O caso base não tem tração (cda_m2, crr) nem CG lateral, então as linhas 9a, 9b, 10, 10+9b,
-# 7 e todas levam "hipótese desligada no caso (<campo>)"; as demais, None. A linha desligada ainda é calculada e, sem a
-# hipótese, coincide com a referência por construção (Δ = 0 nas de tração, que são acopladas e idênticas à de controle).
+# 7 e todas levam "hipótese desligada no caso (<campo>)"; as demais, None. A linha desligada ainda é calculada e a
+# hipótese desligada não muda nada nela: as de uma hipótese só coincidem com a referência por construção (Δ = 0 nas de
+# tração, que são acopladas e idênticas à de controle); a "todas" ainda leva as hipóteses ligadas (1+2, 3, 11).
 ok_motivo = (all(por_nome[n].motivo == "hipótese desligada no caso (cda_m2 e crr)" for n in ("9a", "9b", "10", "10+9b"))
              and por_nome["7"].motivo == "hipótese desligada no caso (cg_lateral_m)"
              and por_nome["todas"].motivo == "hipótese desligada no caso (cda_m2 e crr; cg_lateral_m)"
