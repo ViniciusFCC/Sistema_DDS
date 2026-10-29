@@ -2,9 +2,11 @@
 Escada de hipóteses do MMM em raio fixo (incremento 6, Task 6; adendo §5 e §6).
 
 Degrau 1: o MMM na configuração da planilha contra equilibrio.analise_par (prova o reuso da física por roda, não a física
-do MMM). Degrau 2: a planilha, a linha de controle "planilha (acoplado)" e uma variante Python por vez, mais "10+9b" e
-"todas". As linhas acopladas medem o Δ contra a linha de controle (a planilha resolvida pelo mesmo Newton 2-D e a mesma
-rotação a_y = A·cos β), e a linha de controle mede o viés do método contra a planilha. Sensibilidades: uma por
+do MMM). Degrau 2: a planilha, as duas linhas de controle ("planilha (acoplado, sem rotação)" e "planilha (acoplado)") e
+uma variante Python por vez, mais "10+9b" e "todas". A linha sem rotação (a planilha resolvida pelo Newton 2-D com
+a_y = A, a_x = 0) mede contra a planilha só o viés do método; a linha com rotação (a_y = A·cos β, a_x = −A·sen β) mede
+contra a sem rotação o efeito da simplificação a_y = A da planilha; as linhas acopladas medem o Δ contra a linha com
+rotação (EDR-064, decisão 2.6 revista). Sensibilidades: uma por
 unidade, em outra tabela. Nenhuma função aqui decide "dentro da tolerância": a tolerância da escada é o EDR-065
 (pendente) e por isso não existe parâmetro de tolerância. O módulo não conhece a origem dos dados; quem o chama rotula
 o número (pior origem do caso, geometria sintética).
@@ -20,7 +22,9 @@ import mmm
 _N_ALFA = 401
 _PASSO_G = 0.01
 _RES_PADRAO_MS2 = 0.01   # o padrão de mmm.limite, quando o analise_par não devolve resolução (nenhum eixo satura)
-NOME_CONTROLE = "planilha (acoplado)"   # linha de controle do degrau 2: a planilha resolvida pelo Newton 2-D
+# Linhas de controle do degrau 2: a planilha resolvida pelo Newton 2-D, sem e com a rotação β (EDR-064, decisão 2.6 revista).
+NOME_CONTROLE_SEM_ROTACAO = "planilha (acoplado, sem rotação)"   # a_y = A, a_x = 0: Δ contra "planilha" = viés do método
+NOME_CONTROLE = "planilha (acoplado)"                            # a_y = A·cos β: Δ contra a anterior = efeito de a_y = A
 
 
 @dataclass(frozen=True)
@@ -42,12 +46,15 @@ class ComparacaoDegrau1:
 
 @dataclass(frozen=True)
 class LinhaEscada:
-    """Uma linha do degrau 2. nome ∈ {"planilha", "1+2", "3", "7", "9a", "9b", "10", "10+9b", "11", "todas"};
-    hipoteses são os números cobertos; limite é o mmm.Limite da linha (na 7 e na "todas", o do pior sentido).
+    """Uma linha do degrau 2. nome ∈ {"planilha", "planilha (acoplado, sem rotação)", "planilha (acoplado)", "1+2", "3",
+    "7", "9a", "9b", "10", "10+9b", "11", "todas"}; hipoteses são os números cobertos (vazio nas linhas de controle: a
+    rotação β não é hipótese numerada); limite é o mmm.Limite da linha (na 7 e na "todas", o do pior sentido).
     pior_sentido ("esquerda"/"direita") só existe onde a hipótese 7 está ligada (linhas "7" e "todas", que a inclui);
     nas outras é None (curva à esquerda apenas). d_* = linha − `referencia` (None se algum lado não tem número):
-    "planilha" para a própria linha de controle e para as linhas desacopladas, "planilha (acoplado)" para as linhas que
-    usam o Newton 2-D. `inverte` compara o veredito da linha com o da `referencia` e não classifica nada como "dentro da
+    "planilha" para a linha "planilha (acoplado, sem rotação)" (viés só do método) e para as linhas desacopladas;
+    "planilha (acoplado, sem rotação)" para a "planilha (acoplado)" (efeito da simplificação a_y = A da planilha);
+    "planilha (acoplado)" para as linhas que usam o Newton 2-D. A soma dos Δ das duas linhas de controle é o Δ da
+    "planilha (acoplado)" contra a "planilha". `inverte` compara o veredito da linha com o da `referencia` e não classifica nada como "dentro da
     tolerância" (EDR-065 pendente). `motivo` é None quando a hipótese da linha está ligada no caso; senão diz qual chave da
     planilha está desligada ("hipótese desligada no caso (<campo>)"): a linha ainda é calculada e a hipótese desligada
     não muda nada nela. Uma linha de uma hipótese só coincide então com a referência por construção; na "todas", só as
@@ -174,19 +181,24 @@ def _desligadas(caso: eq.CasoEquilibrio, hips: tuple[int, ...]) -> str | None:
 
 
 def degrau_2(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[LinhaEscada, ...]:
-    """Planilha, a linha de controle "planilha (acoplado)" e uma variante Python por vez (1+2, 3, 7, 9a, 9b, 10, 11), mais
-    10+9b (travado com o PAC2002 combinado, adendo §6) e todas, nesta ordem: planilha, planilha (acoplado), 1+2, 3, 7, 9a,
-    9b, 10, 10+9b, 11, todas. As linhas com a hipótese 7 (7 e todas) rodam os dois sentidos (caso e espelhar(caso)) e
-    guardam o pior; as outras, só a curva à esquerda.
+    """Planilha, as duas linhas de controle e uma variante Python por vez (1+2, 3, 7, 9a, 9b, 10, 11), mais 10+9b (travado
+    com o PAC2002 combinado, adendo §6) e todas, nesta ordem: planilha, planilha (acoplado, sem rotação), planilha
+    (acoplado), 1+2, 3, 7, 9a, 9b, 10, 10+9b, 11, todas. As linhas com a hipótese 7 (7 e todas) rodam os dois sentidos
+    (caso e espelhar(caso)) e guardam o pior; as outras, só a curva à esquerda.
 
-    Referência do Δ: a linha de controle é a planilha resolvida pelo caminho acoplado (Newton 2-D com a_y = A·cos β e
-    a_x = −A·sen β). O Δ dela contra a planilha mede o viés do método e da rotação, sem mudar hipótese. As linhas que usam
-    o Newton (todas menos a 7) medem Δ e `inverte` contra ela, para que o número de cada linha seja o efeito da hipótese;
-    a 7 usa o caminho desacoplado e mede contra a planilha. Linhas que terminam em N/A (por exemplo o travado a R pequeno)
+    Referência do Δ (EDR-064, decisão 2.6 revista), uma cadeia sem hipótese mudada nas linhas de controle:
+    - "planilha (acoplado, sem rotação)": as hipóteses da planilha pelo Newton 2-D com a_y = A e a_x = 0, as mesmas da
+      planilha; o Δ contra a "planilha" é só o viés do método.
+    - "planilha (acoplado)": idem com a rotação a_y = A·cos β e a_x = −A·sen β; o Δ contra a linha sem rotação é o efeito
+      da simplificação a_y = A da planilha (a rotação não tem número de hipótese).
+    - As linhas que usam o Newton (todas menos a 7) medem Δ e `inverte` contra a "planilha (acoplado)", para que o número
+      de cada linha seja o efeito da hipótese; a 7 usa o caminho desacoplado e mede contra a planilha. Linhas que terminam em N/A (por exemplo o travado a R pequeno)
     aparecem como N/A, sem exceção. ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g)."""
     pl = mmm.Hipoteses.planilha()
     v = mmm.VARIANTES
-    receitas = [("planilha", (), pl, False), (NOME_CONTROLE, (), mmm.planilha_acoplada(), False)]
+    receitas = [("planilha", (), pl, False),
+                (NOME_CONTROLE_SEM_ROTACAO, (), mmm.planilha_acoplada(rotacao=False), False),
+                (NOME_CONTROLE, (), mmm.planilha_acoplada(rotacao=True), False)]
     for campo in ("alfa", "cos_delta", "sentido", "fx_exigido", "tracao", "diferencial", "transf_long"):
         receitas.append((v[campo]["nome"], v[campo]["hipoteses"], replace(pl, **{campo: v[campo]["python"]}),
                          campo == "sentido"))
@@ -194,19 +206,23 @@ def degrau_2(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[LinhaEscad
             receitas.append(("10+9b", (10, 9), replace(pl, diferencial="travado", tracao="pac2002"), False))
     receitas.append(("todas", (1, 2, 3, 7, 9, 10, 11), mmm.Hipoteses.python_completo(), True))
     espelho = None
-    base = mmm.limite(caso, pl, ay_max_g=ay_max_g)
-    controle = None
+    refs = {}   # limite das linhas que servem de referência: planilha e as duas de controle
     linhas = []
     for nome, hips, hip, dois in receitas:
-        lim, pior = (base if nome == "planilha" else mmm.limite(caso, hip, ay_max_g=ay_max_g)), None
-        if nome == NOME_CONTROLE:
-            controle = lim
+        lim, pior = mmm.limite(caso, hip, ay_max_g=ay_max_g), None
+        if nome in ("planilha", NOME_CONTROLE_SEM_ROTACAO, NOME_CONTROLE):
+            refs[nome] = lim
         if dois:
             if espelho is None:
                 espelho = eq.espelhar(caso)
             lim, pior = _pior(lim, mmm.limite(espelho, hip, ay_max_g=ay_max_g))
-        usa_controle = nome != NOME_CONTROLE and mmm._e_acoplada(hip)
-        ref, nome_ref = (controle, NOME_CONTROLE) if usa_controle else (base, "planilha")
+        if nome == NOME_CONTROLE:
+            nome_ref = NOME_CONTROLE_SEM_ROTACAO
+        elif nome != NOME_CONTROLE_SEM_ROTACAO and mmm._e_acoplada(hip):
+            nome_ref = NOME_CONTROLE
+        else:
+            nome_ref = "planilha"
+        ref = refs[nome_ref]
         linhas.append(LinhaEscada(
             nome=nome, hipoteses=hips, limite=lim, pior_sentido=pior,
             d_ay_t=_dif(lim.ay_t_ms2, ref.ay_t_ms2),

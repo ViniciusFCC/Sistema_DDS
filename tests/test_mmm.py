@@ -544,6 +544,21 @@ T_n_rot = T_a_g / math.cos(b_b / R_GRANDE - a0_t)
 ok_lim_n = (lim_cd_g.ay_t_ms2 is not None and abs(lim_cd_g.ay_t_ms2 - T_n_rot) < 1e-4 and lim_cd_g.veredito == eq.NEUTRO
             and lim_cd_g.motivo_sat == MSG_ACOPLADO
             and sorted(x is None for x in (lim_cd_g.ay_sat_f, lim_cd_g.ay_sat_r)) == [False, True])
+# Folga do outro eixo em T (decisão 1.3 revista), derivada à mão no mesmo ponto fixo: a traseira (o eixo que não satura) tem
+# capacidade μ·W_r (o patamar do brinquedo; sem aero a soma das Fz do eixo não muda com a transferência lateral) e faz
+# μ·W_r·s_r no trim, logo folga = μ·W_r·(1 − s_r) [N] e fração = 1 − s_r. Tolerância: a do Q acima (1e-5 em C_N), convertida
+# exatamente em força por Q = folga·b/(W·L), isto é, 1e-5·W·L/b [N], e em fração dividindo por μ·W_r; nenhuma cota nova.
+# O Q tem de ser a mesma folga vezes o braço (1e-12). R grande (NEUTRO): pela regra, folga <= (força do eixo/T)·res, e como a
+# força do eixo é <= a capacidade dele, fração <= res/T (res = 0,01 m/s², o padrão do limite). Desacoplado: None.
+folga_mao = MU_B * W_r_t * (1.0 - s_r_it)
+tol_folga_N = 1e-5 * W_b * L_b / b_b
+ok_folga = (lim_cd.folga_outro_N is not None and abs(lim_cd.folga_outro_N - folga_mao) <= tol_folga_N
+            and abs(lim_cd.folga_outro_fracao - (1.0 - s_r_it)) <= tol_folga_N / (MU_B * W_r_t)
+            and abs(lim_cd.cn_estabilizante_q - lim_cd.folga_outro_N * b_b / (W_b * L_b)) <= 1e-12
+            and lim_cd_g.folga_outro_N is not None and lim_cd_g.folga_outro_N >= 0.0
+            and lim_cd_g.folga_outro_fracao <= 0.01 / lim_cd_g.ay_t_ms2
+            and lim_a_85.folga_outro_N is None and lim_a_85.folga_outro_fracao is None
+            and lim_desc.folga_outro_N is None and lim_desc.folga_outro_fracao is None)
 # A variante Python completa no limite não pode lançar nem devolver T sem motivo; o trim em A_Y acima de T não converge.
 tr_acima = mmm.trim(caso_pc, hip_pc, 1.05 * lim_pc.ay_t_ms2)
 ok_acima = (not tr_acima.convergiu and bool(tr_acima.motivo) and tr_acima.fy is None and tr_acima.delta_rodas is None
@@ -564,6 +579,17 @@ res_y_sem_cos = abs(sum(tr_ctrl.fy.values()) - cfg.mass_total * tr_ctrl.ay_ms2) 
 ok_rot = (tr_ctrl.convergiu and tr_desac.convergiu and tr_ctrl.delta_rodas is not None and abs(tr_ctrl.beta_rad) > 1e-3
           and res_y_ctrl < 1e-6 and res_y_desac < 1e-6 and res_y_sem_cos > 1e-3
           and abs(mmm.cn(tr_ctrl, caso_t)[0] * cfg.mass_total * G * cfg.wheelbase) < 1e-6)
+# Sem a rotação (Hipoteses.rotacao_beta=False, decisão 2.6 revista): a linha de controle planilha_acoplada(rotacao=False) passa
+# pelo Newton 2-D (delta_rodas não é None) com a_y = A, as equações do trim desacoplado; o trim é o mesmo (β e δ a 1e-9 rad) e
+# fecha ΣFy = m·A (1e-6 N). Com rotacao_beta=False todo termo segue a_x = 0: em transf_long="regime" com h_cp_m None a parcela
+# m·a_x·h some e as Fz são as de eq.cargas(caso, A) (1e-6 N).
+tr_sem = mmm.trim(caso_t, mmm.planilha_acoplada(rotacao=False), 1.0 * G)
+tr_reg_sem = mmm.trim(caso_pc, mmm.Hipoteses(transf_long="regime", rotacao_beta=False), 0.8 * G)
+ok_rot = (ok_rot and tr_sem.convergiu and tr_sem.delta_rodas is not None
+          and abs(tr_sem.beta_rad - tr_desac.beta_rad) < 1e-9 and abs(tr_sem.delta_rad - tr_desac.delta_rad) < 1e-9
+          and abs(sum(tr_sem.fy.values()) - cfg.mass_total * tr_sem.ay_ms2) < 1e-6
+          and tr_reg_sem.convergiu and abs(tr_reg_sem.beta_rad) > 1e-3
+          and max(abs(tr_reg_sem.fz[c] - eq.cargas(caso_pc, tr_reg_sem.ay_ms2)[c]) for c in CANTOS_T) < 1e-6)
 
 # Estrutura da falha (Trim.causa): o limite acoplado decide por ela, e não pelo texto do motivo. Descolamento é "dominio";
 # eixo sem raiz (caso_larga a 3 g) é a saturação, causa None com eixo_sem_raiz.
@@ -614,25 +640,43 @@ for h_cp_t in (None, 0.4):   # 0,4 m: sintético de teste
     det_regime.append(f"h_cp={h_cp_t}: |ΔFz − (m·a_x·h + D·h_cp)/L|={e_fz:.1e} N, |ΔΣFz|={e_soma:.1e} N, "
                       f"β={math.degrees(tr_r.beta_rad):.3f}°" if tr_r.convergiu else f"h_cp={h_cp_t}: sem trim")
 
+def _f(x, spec):
+    """Formata x com spec, ou "None": o detalhe do check não pode lançar quando um limite sai sem número (senão o teste
+    termina em exceção sem a linha [FAIL], e a mutação não conta o mutante como detectado)."""
+    return "None" if x is None else format(x, spec)
+
+
+def _dif_ang(t1, t2, campo):
+    a, b = getattr(t1, campo), getattr(t2, campo)
+    return None if a is None or b is None else abs(a - b)
+
+
 check("TC-MMM-007: no trim |ΣFy−m·A_Y|<1e-6 N e |N|<1e-6 N·m; A_Y acima do limite -> convergiu=False com motivo e "
       "campos None; sem raio_m -> ValueError; limite: descolamento, toe que consome a faixa e pico na borda -> N/A com o "
       "motivo de capacidade_eixo e sem T; variante Python completa em 0,5·T: resíduos Fx, Fy, N em eixos do carro (§2.5) "
       "< 1e-6, com Ackermann também; limite acoplado: eixo que satura com ay_sat = T e o outro None (decisão 3), T e Q à mão; "
       "transf_long=regime: ΔFz traseira = (m·a_x·h + D·h_cp)/L com e sem h_cp (1e-6 N); rotação β sempre no acoplado "
-      "(planilha_acoplada fecha ΣFy = m·A·cos β, o desacoplado ΣFy = m·A); Trim.causa estruturada; conferência de margem "
-      "do limite acoplado (capacidade enorme -> N/A, sem eixo limitante)",
+      "(planilha_acoplada fecha ΣFy = m·A·cos β, o desacoplado ΣFy = m·A); sem rotação (rotacao_beta=False) o Newton dá o "
+      "trim desacoplado e a_x = 0 no regime; Trim.causa estruturada; conferência de margem "
+      "do limite acoplado (capacidade enorme -> N/A, sem eixo limitante); folga do outro eixo em T à mão (N e fração), "
+      "NEUTRO com fração <= res/T e None nas desacopladas",
       ok_res and ok_alto and ok_raio and ok_acopl and ok_desc and ok_toe and ok_pc and ok_lim_a and ok_lim_n and ok_acima
-      and ok_regime and ok_rot and ok_causa and ok_margem,
+      and ok_regime and ok_rot and ok_causa and ok_margem and ok_folga,
       f"resíduos(F,N)={[(f'{rf:.1e}', f'{rn:.1e}') for _, rf, rn in rs]}; motivo(5g)={tr_alto.motivo!r}; "
       f"eixo_sem_raiz={tr_alto.eixo_sem_raiz}; descolamento: {lim_desc.motivo!r}; toe: {lim_toe.motivo!r}; "
       f"borda: {lim_borda.motivo!r}; completo: {det_pc[0]}; com Ackermann: {det_pc[1]}; "
-      f"limite acoplado (cos δ trim, brinquedo): T={lim_cd.ay_t_ms2:.6f} (mão {T_acopl:.6f}) Q={lim_cd.cn_estabilizante_q:.6f} "
-      f"(mão {Q_acopl:.6f}) {lim_cd.veredito}; R grande T={lim_cd_g.ay_t_ms2:.6f} (mão μ·g/cos β = {T_n_rot:.6f}; sem rotação "
+      f"limite acoplado (cos δ trim, brinquedo): T={_f(lim_cd.ay_t_ms2, '.6f')} (mão {T_acopl:.6f}) Q={_f(lim_cd.cn_estabilizante_q, '.6f')} "
+      f"(mão {Q_acopl:.6f}) {lim_cd.veredito}; R grande T={_f(lim_cd_g.ay_t_ms2, '.6f')} (mão μ·g/cos β = {T_n_rot:.6f}; sem rotação "
       f"{T_a_g:.6f}) {lim_cd_g.veredito}; "
       f"acima de T: {tr_acima.motivo!r}; regime (ΔFz traseira): {det_regime}; rotação (planilha_acoplada): "
-      f"β={math.degrees(tr_ctrl.beta_rad):.3f}°, |ΣFy − m·A·cos β|={res_y_ctrl:.1e} N, sem o cos β={res_y_sem_cos:.2f} N, "
+      f"β={_f(None if tr_ctrl.beta_rad is None else math.degrees(tr_ctrl.beta_rad), '.3f')}°, |ΣFy − m·A·cos β|={res_y_ctrl:.1e} N, sem o cos β={res_y_sem_cos:.2f} N, "
       f"desacoplado |ΣFy − m·A|={res_y_desac:.1e} N; T(cos δ trim, 8,5 m) com a rotação={T_acopl:.6f}, sem ela "
-      f"(derivação antiga)={T_acopl_sem_rot:.6f}; margem: {lim_margem.motivo!r}")
+      f"(derivação antiga)={T_acopl_sem_rot:.6f}; margem: {lim_margem.motivo!r}; folga do outro eixo em T (brinquedo, 8,5 m): "
+      f"{_f(lim_cd.folga_outro_N, '.4f')} N (mão {folga_mao:.4f}, tol {tol_folga_N:.3f}), "
+      f"fração {_f(lim_cd.folga_outro_fracao, '.6f')} "
+      f"(mão {1.0 - s_r_it:.6f}); R grande (NEUTRO): {lim_cd_g.folga_outro_N} N, fração {lim_cd_g.folga_outro_fracao}; "
+      f"sem rotação: |Δβ|={_f(_dif_ang(tr_sem, tr_desac, 'beta_rad'), '.1e')}, "
+      f"|Δδ|={_f(_dif_ang(tr_sem, tr_desac, 'delta_rad'), '.1e')} rad")
 
 # ---------------- TC-MMM-008 : α cinemático ----------------
 # Ackermann 100 % em R = 8,5 m e β pequeno. Com o centro instantâneo na linha do eixo traseiro, sen β = b/R, o raio do
@@ -755,7 +799,12 @@ check("TC-MMM-010: CzA alto (200 m², sintético de teste): ponto com n_raizes �
 
 # ---------------- TC-MMM-011 : contrato de Hipoteses e VARIANTES ----------------
 campos = {f.name for f in dataclasses.fields(mmm.Hipoteses)}
-ok_campos = set(mmm.VARIANTES) == campos - {"h_cp_m"}
+# Todo campo de Hipoteses é uma hipótese de VARIANTES ou está declarado fora delas (h_cp_m e rotacao_beta, que não têm número
+# de hipótese: EDR-064, decisão 2.6 revista); rotacao_beta é bool, padrão True em todas as receitas.
+ok_campos = (set(mmm.VARIANTES) == campos - {"h_cp_m", "rotacao_beta"}
+             and set(mmm.FORA_DE_VARIANTES) == {"h_cp_m", "rotacao_beta"}
+             and hip_pl.rotacao_beta is True and mmm.Hipoteses.python_completo().rotacao_beta is True
+             and raises(lambda: mmm.Hipoteses(rotacao_beta=0), ValueError, "rotacao_beta"))
 ok_hip = all(set(v["hipoteses"]) <= {1, 2, 3, 7, 9, 10, 11} for v in mmm.VARIANTES.values())
 ok_valor = raises(lambda: mmm.Hipoteses(alfa="x"), ValueError, "alfa")
 ok_py = mmm.Hipoteses.python_completo() == mmm.Hipoteses(
@@ -767,7 +816,11 @@ ok_var = all(v["planilha"] == getattr(hip_pl, k) and v["python"] == getattr(mmm.
 # A linha de controle da escada tem as hipóteses da planilha em todos os campos, mas força o caminho acoplado; fica fora do
 # contrato de campos e de VARIANTES, e `_SemNumero` (o erro esperado de K e do SI) é um ValueError.
 hip_ctrl = mmm.planilha_acoplada()
+hip_ctrl_sem = mmm.planilha_acoplada(rotacao=False)   # a outra linha de controle: sem a rotação β (decisão 2.6 revista)
 ok_ctrl = (all(getattr(hip_ctrl, k) == getattr(hip_pl, k) for k in mmm.VARIANTES) and hip_ctrl != hip_pl
+           and all(getattr(hip_ctrl_sem, k) == getattr(hip_pl, k) for k in mmm.VARIANTES)
+           and hip_ctrl.rotacao_beta is True and hip_ctrl_sem.rotacao_beta is False and hip_ctrl_sem != hip_ctrl
+           and mmm._e_acoplada(hip_ctrl_sem)
            and mmm._e_acoplada(hip_ctrl) and not mmm._e_acoplada(hip_pl)
            and {f.name for f in dataclasses.fields(mmm.Hipoteses)} == campos
            and issubclass(mmm._SemNumero, ValueError)
@@ -796,7 +849,8 @@ ok_sens = (set(mmm.UNIDADES) == set(unid_esperadas) and all(mmm.UNIDADES[k] == v
            and raises(lambda: mmm.sensibilidade(eq.CasoEquilibrio(cfg=cfg, ds=ds_teste), hip_pl, "h_cg"), ValueError, MSG_SEM_RAIO)
            and caso_s11.cfg.cg_height == cfg.cg_height and caso_s11.cg_lateral_m == 0.005
            and hip_pl == mmm.Hipoteses.planilha())
-check("TC-MMM-011: VARIANTES = campos de Hipoteses (sem h_cp_m); hipóteses ⊂ {1,2,3,7,9,10,11}; "
+check("TC-MMM-011: VARIANTES = campos de Hipoteses (sem h_cp_m e rotacao_beta, fora de VARIANTES); rotacao_beta bool e "
+      "padrão True; linhas de controle com e sem rotação só com as hipóteses da planilha; hipóteses ⊂ {1,2,3,7,9,10,11}; "
       "Hipoteses(alfa='x') -> ValueError; UNIDADES e sensibilidade (chaves, unidade, diferença central de h_cg conferida "
       "com dois limites, h_cp sem regime com motivo, caso intacto)",
       ok_campos and ok_hip and ok_valor and ok_py and ok_nomes and ok_var and ok_sens and ok_ctrl,

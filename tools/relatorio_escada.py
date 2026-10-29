@@ -2,7 +2,8 @@
 
 Monta o caso da planilha V4.2 de `excel/` (lido por nomes numa CÓPIA recalculada, como em tools/relatorio_inc4.py) e
 escreve, em Markdown, o degrau 1 (MMM na configuração da planilha contra `equilibrio.analise_par`), o degrau 2 (a planilha,
-a linha de controle `planilha (acoplado)`, uma variante Python por vez, mais `10+9b` e `todas`) e as sensibilidades. Sem veredito: a tolerância da escada é o EDR-065
+as linhas de controle `planilha (acoplado, sem rotação)` e `planilha (acoplado)`, uma variante Python por vez, mais `10+9b`
+e `todas`) e as sensibilidades. Sem veredito: a tolerância da escada é o EDR-065
 (pendente). Nenhum número do Python vai para a planilha, que nunca é aberta para escrita (spec base 7.5).
 
 Uso (Git Bash, depois de export UV_SYSTEM_CERTS=1):
@@ -105,6 +106,13 @@ def g_de(ay_ms2, casas: int = 3) -> str:
 def k_graus_por_g(k_rad_por_ms2, casas: int = 3) -> str:
     """K [rad/(m/s²)] em °/g."""
     return "—" if k_rad_por_ms2 is None else n(math.degrees(k_rad_por_ms2) * G, casas)
+
+
+def folga(lim) -> str:
+    """Folga em T do eixo que não satura (variantes acopladas), em N e em % da capacidade dele; '—' sem ela."""
+    if lim.folga_outro_N is None:
+        return "—"
+    return f"{n(lim.folga_outro_N, 1)} N ({n(100.0 * lim.folga_outro_fracao, 2)} %)"
 
 
 def txt(s) -> str:
@@ -290,12 +298,23 @@ def main() -> int:
       "sai em 1/g, com o sinal do C_N estabilizante: positivo = estabilizante (carro estável, subesterço); o Milliken usa "
       "o C_N do ISO, de sinal oposto.")
     w("")
-    w("**Linha de controle `planilha (acoplado)`.** As variantes Python (menos a `7`) são resolvidas por um Newton 2-D "
-      "em (β, δ) com a rotação a_y = A·cos β e a_x = −A·sen β; a `planilha` usa o trim desacoplado, com a_y = A. Para o "
-      "número de cada linha ser o efeito da hipótese, e não o do método, a linha de controle resolve as hipóteses da "
-      "planilha pelo mesmo Newton com a mesma rotação. Δ e \"Inverte\" das linhas acopladas são contra a linha de "
-      "controle; o Δ da própria linha de controle e o da `7` são contra a `planilha` (coluna \"Δ contra\"). O Δ da "
-      "linha de controle é o viés do método e da rotação.")
+    w("**Linhas de controle.** As variantes Python (menos a `7`) são resolvidas por um Newton 2-D em (β, δ) com a "
+      "rotação a_y = A·cos β e a_x = −A·sen β; a `planilha` usa o trim desacoplado, com a_y = A. Duas linhas de controle "
+      "resolvem as hipóteses da planilha pelo Newton, sem mudar nenhuma hipótese, e separam os dois efeitos (coluna "
+      "\"Δ contra\"):")
+    w("")
+    w("- `planilha (acoplado, sem rotação)`: o Newton com a_y = A e a_x = 0, as mesmas da planilha. O Δ contra a "
+      "`planilha` é só o viés do método.")
+    w("- `planilha (acoplado)`: o Newton com a rotação. O Δ contra a linha sem rotação é o efeito da simplificação "
+      "a_y = A da planilha (a rotação não tem número de hipótese). A soma dos dois Δ é o Δ dela contra a `planilha`.")
+    w("")
+    w("Δ e \"Inverte\" das linhas acopladas são contra a `planilha (acoplado)`, para que o número de cada linha seja o "
+      "efeito da hipótese, e não o do método nem o da rotação; o Δ da `7` (desacoplada) é contra a `planilha`.")
+    w("")
+    w("**Folga do outro eixo em T** (só nas linhas acopladas com T): acima de T não existe trim, então o eixo que não "
+      "satura fica sem ay_sat (\"—\"), e a coluna mostra a folga dele em T, nos eixos do carro: a capacidade dele em T "
+      "menos a força que ele faz no trim, em N e em % da capacidade. É a mesma folga que dá o Q. Nas linhas desacopladas os "
+      "dois ay_sat existem e a coluna fica \"—\".")
     w("")
     if any(ln.motivo for ln in d2):
         w("Linhas cuja hipótese está desligada no caso (a chave da planilha está desligada) ainda são calculadas, e a "
@@ -306,12 +325,13 @@ def main() -> int:
     for ln in d2:
         lim = ln.limite
         linhas.append([f"`{ln.nome}`", ", ".join(map(str, ln.hipoteses)) or "—", lim.veredito, txt(lim.eixo_satura),
-                       g_de(lim.ay_sat_f, 4), g_de(lim.ay_sat_r, 4), g_de(lim.ay_t_ms2, 4), n(lim.cn_estabilizante_q, 4),
-                       k_graus_por_g(lim.k_rad_por_ms2), txt(ln.pior_sentido),
-                       g_de(ln.d_ay_t, 4), n(ln.d_cn_estabilizante_q, 4),
+                       g_de(lim.ay_sat_f, 4), g_de(lim.ay_sat_r, 4), g_de(lim.ay_t_ms2, 4), folga(lim),
+                       n(lim.cn_estabilizante_q, 4), k_graus_por_g(lim.k_rad_por_ms2), txt(ln.pior_sentido),
+                       g_de(ln.d_ay_t, 6), n(ln.d_cn_estabilizante_q, 4),
                        k_graus_por_g(ln.d_k) if ln.d_k is not None else "—", f"`{ln.referencia}`", ln.inverte,
                        "—" if lim.stability_index is None else n(lim.stability_index * G, 4)])
-    md += tabela(["Linha", "Hipóteses", "Veredito", "Eixo que satura", "ay_sat F", "ay_sat R", "T", "C_N estab. (Q)",
+    md += tabela(["Linha", "Hipóteses", "Veredito", "Eixo que satura", "ay_sat F", "ay_sat R", "T",
+                  "Folga do outro eixo em T", "C_N estab. (Q)",
                   "K [°/g]", "Pior sentido", "Δ T", "Δ C_N", "Δ K [°/g]", "Δ contra", "Inverte", "SI [1/g]"], linhas)
     w("")
     motivos = [(ln.nome, ln.motivo, ln.limite.motivo, ln.limite.motivo_sat, ln.limite.limitacoes) for ln in d2]
