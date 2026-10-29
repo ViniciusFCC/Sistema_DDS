@@ -86,8 +86,9 @@ Funções (nomes indicativos; o plano fixa as assinaturas):
   R_c = máximo dos dois; R = √(b² + R_c²). Devolve R, R_c e o eixo que manda ("traseiro", "dianteiro" ou
   "empate"). Esta forma substitui a que foi aprovada em 2026-10-28 (com x_i medido do CG e β = 0), pela decisão U8.
 - Meia largura do pneu: WIDTH/2 do `.tir` em uso, `data/Hoosier_R25B_13x7_TTC_provisional.tir` (WIDTH = 0,1778 m,
-  "Nominal section width of the tyre", tamanho 177.8/53.6R13), ou seja **0,0889 m**, com origem "◐ pneu de outro
-  carro (Hoosier R25B do TTC, provisório, EDR-038)". A largura de seção é a parte mais larga do pneu, a que encosta
+  "Nominal section width of the tyre", tamanho 177.8/53.6R13), ou seja **0,0889 m**, com a origem **"◐ Provisório
+  (.tir TTC)"**, o mesmo rótulo que a planilha já usa para os dados desse `.tir` (lista Origens; `atualizar_planilha.TTC`),
+  para não criar nomenclatura nova (usuário, 2026-10-29). A largura de seção é a parte mais larga do pneu, a que encosta
   no cone. Quando o pneu do T11 tiver dado, o valor troca pela entrada. Vazia, entra 0 e o resultado é rotulado
   "sem a meia largura do pneu (a confirmar)".
 - Modo **manual**: R digitado pela equipe, com origem própria. A planilha tem três modos: linha central, rente aos
@@ -217,6 +218,14 @@ para a aprovação célula a célula.
   usuário decidir no estudo.
 - Avisos junto de cada veredito (não só no README): o veredito não inclui as hipóteses que ficam só no Python; aviso no
   14_DASHBOARD quando alguma chave estiver em 0 ("resultado não comparável com a V4.3 padrão").
+- **Fórmula visível na barra de fórmulas** (usuário, 2026-10-29): ao clicar numa célula com fórmula (nomeada ou não),
+  a barra de fórmulas do Excel tem de mostrar a fórmula, para a equipe conferir as contas sem sair da planilha. Hoje
+  isso não acontece na viva, por causa não diagnosticada (o gerador não usa `Protection(hidden=True)` nem proteção de
+  aba, pela busca em `python/`). Diagnóstico no 7b, no Excel via COM e numa cópia: proteção de aba e
+  `FormulaHidden` das células; `Application.DisplayFormulaBar`; Modo de Exibição Protegido do arquivo baixado do Drive
+  (marca da internet), que desliga a edição; fórmulas gravadas como matriz ou como texto. A correção vai para o
+  gerador (ou, se for do ambiente da equipe, para o LEIA-ME), com teste que abre a V4.3 e confere que a célula tem
+  fórmula e que nem a aba nem a célula a escondem.
 - 00_README e 15_CHANGELOG da V4.3; `docs/registro-de-versoes-V4_3.md` e o arquivo de células.
 - Fechamento, só com confirmação: viva do Drive vira a V4.3 com os dados mantidos (`conferir_viva`, `migrar_viva`;
   diretriz de 2026-10-23) e os LEIA-ME e .docx de `Documentacao\` (hoje os da V4.1) são atualizados.
