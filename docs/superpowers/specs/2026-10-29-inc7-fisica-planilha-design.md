@@ -19,6 +19,7 @@ autorização do usuário. Nenhuma fórmula da planilha muda sem a aprovação c
 | U6 | Chaves 1/0 só onde a planilha calcula a variante em forma fechada: as duas fórmulas do EDR-066. A chave 1 é a fórmula nova, a 0 é a antiga (para a escada comparar). **Padrão = 1.** As variantes acopladas e o `sentido` (h7) ficam só no Python, com aviso na planilha | 2026-10-28 |
 | U7 | Inc. 9: baixar o regulamento da Formula SAE Brasil (download autorizado para o inc. 9); a coerência passa a ser verificada também contra as regras da competição, não só contra a literatura | 2026-10-28 |
 | U8 | Desenho revisto pelo conselho aprovado (seções 3 a 7 abaixo): centro de curva único na linha do eixo traseiro; fator 4/3 do NEUTRO reaberto e medido antes; α_R limitado ao pico, com a forma exata como oráculo; chave na tabela `mmm.VARIANTES`; divisão em 7a e 7b; correção do executor dos testes primeiro | 2026-10-29 |
+| U9 | Spec aprovada. Meia largura do pneu tirada do `.tir` em uso; posição dos cones conferida no texto do regulamento; a chave 0 pode sair já ou na V5.0 (a planilha do inc. 9): fica até a V5.0 (seção 5) | 2026-10-29 |
 
 Decisões anteriores que continuam: EDR-064 APPROVED; EDR-065 APPROVED em parte (regra do NEUTRO (a); a tolerância
 espera o relatório com R); EDR-066 APPROVED em princípio (troca das duas fórmulas no inc. 7, célula a célula).
@@ -68,9 +69,14 @@ esta geometria e a do Python "cinemático" (β real) é medida pela escada, não
 ### 3.2 Raio do skidpad (`python/skidpad.py`)
 
 Fonte: Formula SAE Rules 2026, versão 1.0 (10/09/2025), D.10.1.1: círculos internos de 15,25 m de diâmetro, externos de
-21,25 m, faixa de 3,0 m, centros a 18,25 m. Texto extraído do PDF; a figura não foi vista; não se conferiu se os
-15,25 m vão até a linha dos cones ou até a base deles (fica "a confirmar"); o regulamento da FSAE Brasil fica para o
-inc. 9. Os diâmetros entram como **entradas com fonte**, não como constantes, para a equipe corrigir sem planilha nova.
+21,25 m, faixa de 3,0 m, centros a 18,25 m. Texto extraído do PDF; a figura não foi vista; o regulamento da FSAE
+Brasil fica para o inc. 9.
+Onde ficam os cones (conferido em 2026-10-29, só pelo texto): FSAE D.10.1.2 põe os cones "around the inside of each
+inner circle" e a linha de giz "inside the inner circle"; o Formula Student Rules 2026 v1.1 (FSG), D 4.1.3 e 4.1.4 (p.
+125), põe os cones "around the inside of each inner circle" e a linha "outside the inner circle". Nos dois, o círculo de
+15,25 m é a borda interna da faixa de 3 m e os cones ficam dentro dele: a base do cone fica, no máximo, encostada no
+círculo. O modo (ii) usa o círculo como limite, o que é o lado seguro. A figura (que poderia cotar o centro do cone)
+não foi vista, e os dois textos divergem sobre o lado da linha marcada. Os diâmetros entram como **entradas com fonte**, não como constantes, para a equipe corrigir sem planilha nova.
 
 Funções (nomes indicativos; o plano fixa as assinaturas):
 - `raio_linha_central(d_int, d_ext) = (d_int + d_ext)/4` → 9,125 m. É o raio do CG.
@@ -79,8 +85,11 @@ Funções (nomes indicativos; o plano fixa as assinaturas):
   √(L² + (R_c − t_f/2)²) ≥ R_in', isto é, R_c ≥ t_f/2 + √(R_in'² − L²) (se R_in' ≤ L, a dianteira não restringe).
   R_c = máximo dos dois; R = √(b² + R_c²). Devolve R, R_c e o eixo que manda ("traseiro", "dianteiro" ou
   "empate"). Esta forma substitui a que foi aprovada em 2026-10-28 (com x_i medido do CG e β = 0), pela decisão U8.
-- Meia largura do pneu: **a confirmar** (sem fonte). Vazia, entra 0 e o resultado é rotulado "sem a meia largura do
-  pneu (a confirmar)".
+- Meia largura do pneu: WIDTH/2 do `.tir` em uso, `data/Hoosier_R25B_13x7_TTC_provisional.tir` (WIDTH = 0,1778 m,
+  "Nominal section width of the tyre", tamanho 177.8/53.6R13), ou seja **0,0889 m**, com origem "◐ pneu de outro
+  carro (Hoosier R25B do TTC, provisório, EDR-038)". A largura de seção é a parte mais larga do pneu, a que encosta
+  no cone. Quando o pneu do T11 tiver dado, o valor troca pela entrada. Vazia, entra 0 e o resultado é rotulado
+  "sem a meia largura do pneu (a confirmar)".
 - Modo **manual**: R digitado pela equipe, com origem própria. A planilha tem três modos: linha central, rente aos
   cones e manual.
 - Bitola traseira vazia: o R do modo (ii) sai "a confirmar" com o motivo, em vez de supor a dianteira.
@@ -145,8 +154,11 @@ das acopladas, EDR-064 1.3), uma fonte só.
 - **`equilibrio.py` só com adições:** as funções antigas ficam; as novas entram ao lado; o `analise_par` recebe a escolha
   por argumento com padrão igual ao de hoje, de modo que os 28 + 18 checks existentes não mudam. O leitor da planilha
   (`caso_planilha`) devolve a escolha lida das chaves junto com o caso.
-- **Chave 0 com prazo:** proposta para o usuário decidir: o ramo antigo (Python e gerador) sai na V4.4, depois do
-  relatório da escada arquivado; a tag `v4.2` e o arquivo em `excel/` guardam o comportamento antigo.
+- **Chave 0 com prazo (decidido em 2026-10-29):** o usuário deixou a escolha entre retirá-la já ou na V5.0, a planilha
+  do inc. 9. Fica até a **V5.0**: a regressão por valor "V4.3 com chave 0 = V4.2" (seção 6.3) é a prova mais forte de
+  que só as células aprovadas mudaram e serve de semente à equivalência por valor do inc. 8; o custo é um IF por
+  célula. Na V5.0 saem o ramo antigo do Python e do gerador; a tag `v4.2` e o arquivo em `excel/` guardam o
+  comportamento antigo.
 - **Fonte única do R:** a fórmula da célula sai do gerador e é conferida por teste contra `skidpad.py`.
 - **Nomes:** as células novas recebem nomes definidos pelas regras do EDR-058, como na V4.1 e na V4.2 (tabela de nomes
   da V4.3). A reescrita das fórmulas existentes para nomes fica no inc. 8 (U1).
@@ -226,7 +238,7 @@ Commits separados por propósito (executor, física Python, estudo, relatório, 
   incrementos 7 a 9 e regulamento da FSAE Brasil no inc. 9.
 - **EDR-068:** executor dos testes (tempo-limite que encerra a árvore, orçamentos coerentes).
 - **Revisão do EDR-065 item 2** (faixa do NEUTRO) com o resultado do estudo, em vez de EDR novo.
-- **SUS-1009 a SUS-1011:** raio do skidpad R, eixo que manda, meia largura do pneu (a confirmar).
+- **SUS-1009 a SUS-1011:** raio do skidpad R, eixo que manda, meia largura do pneu.
 - **Chaves:** nomes de entrada para as duas chaves (por exemplo h2v e h9v), a definir no plano.
 - **TC-SKP-001 a 004** (R), **TC-ACK-001 a 003** (Ackermann), **TC-FXI-001 a 004** (Fx), **TC-NEU-001 a 003** (estudo e
   faixa), **TC-RUN-001** (executor), **TC-WB43-001 a 008** (V4.3).
@@ -244,8 +256,8 @@ Commits separados por propósito (executor, física Python, estudo, relatório, 
 
 - Tolerância do EDR-065: decisão do usuário a partir do relatório com os dois R.
 - Faixa do NEUTRO: decisão do usuário a partir do estudo (seção 4.3).
-- Prazo da chave 0 (proposta: V4.4).
-- Meia largura do pneu e o que os 15,25 m medem: a confirmar.
+- A meia largura do pneu vem do `.tir` provisório (outro pneu); a figura do skidpad não foi vista.
+- Versão do inc. 9: V5.0 (usuário, 2026-10-29).
 - O centro na linha do eixo traseiro despreza o deslocamento causado por α_R; o skidpad real tem entrada e saída; a
   bitola de 1300 mm é provisória e L, b são do T09 (demonstrativos).
 - Fora do escopo da re-revisão do inc. 6 e ainda abertos: linha de controle e planilha só à esquerda; `fx_exigido=
