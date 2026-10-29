@@ -48,10 +48,11 @@ TESTES = [
     ("MMM em raio fixo", "tests/test_mmm.py", 11, "plano do incremento 6 (TC-MMM-001 a 011)"),
     ("escada de hipóteses", "tests/test_escada.py", 3, "plano do incremento 6 (TC-ESC-001 a 003)"),
     ("executor dos testes", "tests/test_executor.py", 1, "plano do inc. 7 (TC-RUN-001)"),
+    ("raio do skidpad", "tests/test_skidpad.py", 2, "plano do inc. 7 (TC-SKP-001 e 002)"),
 ]
 MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
-           "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada", "executor_testes"]
+           "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada", "executor_testes", "skidpad"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
            ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5)]
 # A mutação da planilha recalcula cópias pelo Excel (6 execuções do teste, de minutos cada): o limite de 1800 s dos outros não basta.
