@@ -49,8 +49,9 @@ class LinhaEscada:
     "planilha" para a própria linha de controle e para as linhas desacopladas, "planilha (acoplado)" para as linhas que
     usam o Newton 2-D. `inverte` compara o veredito da linha com o da `referencia` e não classifica nada como "dentro da
     tolerância" (EDR-065 pendente). `motivo` é None quando a hipótese da linha está ligada no caso; senão diz qual chave da
-    planilha está desligada ("hipótese desligada no caso (<campo>)"): a linha ainda é calculada e coincide com a
-    referência por construção."""
+    planilha está desligada ("hipótese desligada no caso (<campo>)"): a linha ainda é calculada e a hipótese desligada
+    não muda nada nela. Uma linha de uma hipótese só coincide então com a referência por construção; na "todas", só as
+    hipóteses ligadas contam no Δ."""
     nome: str
     hipoteses: tuple[int, ...]
     limite: mmm.Limite
@@ -87,7 +88,7 @@ def _julga(veredito_mmm: str, veredito_par: str, d_f: float | None, d_r: float |
         motivos.append(f"veredito {veredito_mmm} (MMM) ≠ {veredito_par} (analise_par)")
     for eixo, d in (("F", d_f), ("R", d_r)):
         if d is not None and abs(d) > cota:
-            motivos.append(f"|ay_sat_{eixo} MMM − analise_par| = {abs(d):.3e} > resolucao MMM + analise_par = {cota:.3e}")
+            motivos.append(f"|ay_sat_{eixo} MMM − analise_par| = {abs(d):.3e} > cota empírica 2·resolucao_ms2 = {cota:.3e}")
     if (cn_mmm is None) != (cn_par is None):
         motivos.append(f"C_N só num dos lados (MMM {cn_mmm}, analise_par {cn_par})")
     elif cn_mmm is not None and cn_par is not None:

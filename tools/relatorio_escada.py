@@ -274,7 +274,7 @@ def main() -> int:
                   "C_N par", "Resolução [m/s²]", "Passa o critério numérico", "Motivo"], linhas)
     w("")
     if all(c.veredito_mmm == eq.NA and c.veredito_par == eq.NA for c in d1):
-        w("Os dois lados dão N/A nos dois sentidos (nenhum eixo satura até 2 g neste caso e neste R): o \"sim\" vale "
+        w(f"Os dois lados dão N/A nos dois sentidos (nenhum eixo satura até {n(a.ay_max_g, 2)} g neste caso e neste R): o \"sim\" vale "
           "para a coincidência do N/A, e a identidade das saturações e do C_N não foi exercitada neste caso.")
         w("")
     w("\"Passa o critério numérico\" é o critério de identidade do degrau 1 (mesmo veredito, saturações dentro da cota, C_N "
@@ -298,8 +298,9 @@ def main() -> int:
       "linha de controle é o viés do método e da rotação.")
     w("")
     if any(ln.motivo for ln in d2):
-        w("Linhas cuja hipótese está desligada no caso (a chave da planilha está desligada) ainda são calculadas e "
-          "coincidem com a referência por construção; o motivo vem na lista abaixo da tabela.")
+        w("Linhas cuja hipótese está desligada no caso (a chave da planilha está desligada) ainda são calculadas, e a "
+          "hipótese desligada não muda nada nelas: uma linha de uma hipótese só coincide com a referência por construção; "
+          "na `todas`, só as hipóteses ligadas contam no Δ. O motivo vem na lista abaixo da tabela.")
         w("")
     linhas = []
     for ln in d2:
@@ -353,13 +354,15 @@ def main() -> int:
       f"na linha `1+2`: ΔT = {g_de(l12.d_ay_t, 4)}, ΔC_N = {n(l12.d_cn_estabilizante_q, 4)}, ΔK = "
       f"{k_graus_por_g(l12.d_k, 4)} °/g, veredito {l12.limite.veredito} (inverte: {l12.inverte}).")
     w(f"2. **Fx exigido (hipótese 9, EDR-057).** `fx_exigido_traseira` usa |F_yf|·tan(L/R) ≈ m·A·b/R, que depende de R e "
-      f"não da deriva; o balanço completo dá F_yf·|α_F| + F_yr·|α_R|, o arrasto induzido. Efeito medido na linha `9a`: "
+      f"não da deriva; o balanço completo é F_yf·sen δ − m·A·sen β (em primeira ordem, F_yf·|α_F| + F_yr·|α_R|, o arrasto "
+      f"induzido). Efeito medido na linha `9a`: "
       f"ΔT = {g_de(l9a.d_ay_t, 4)}, ΔC_N = {n(l9a.d_cn_estabilizante_q, 4)}, ΔK = {k_graus_por_g(l9a.d_k, 4)} °/g, "
       f"veredito {l9a.limite.veredito} (inverte: {l9a.inverte}).")
     w("")
     if l12.d_ay_t is None or l9a.d_ay_t is None:
-        w("Onde ΔT e ΔC_N aparecem como \"—\", a linha (ou a planilha) não tem T: com este caso e este R nenhum eixo "
-          "satura até 2 g, então só o K tem número. O efeito no limite não foi medido.")
+        w(f"Onde ΔT e ΔC_N aparecem como \"—\", a linha (ou a referência dela, coluna \"Δ contra\") não tem T: com este "
+          f"caso e este R nenhum eixo satura até {n(a.ay_max_g, 2)} g, então só o K tem número. O efeito no limite não foi "
+          f"medido.")
         w("")
     w("Nada foi ajustado para bater. Cada efeito vale para este R e para o caso sintético, não para o carro.")
     w("")
