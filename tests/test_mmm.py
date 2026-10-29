@@ -251,24 +251,36 @@ def veiculo_sim(lambda_f=0.5):
 # Caso sem aero, toe, Ackermann nem roll steer (CasoEquilibrio padrão). K = dδ/dA_Y por diferença central do trim
 # comparado a equilibrio_linear.parcelas_k(...).k_total (Gillespie, cap. 6), relativo 1e-2. O stability index é outra
 # grandeza (adendo §2.4) e não entra aqui. O K do trim é a tangente dδ/dA_Y e o do oráculo linear é a razão (secante)
-# calculada com a rigidez do eixo na carga de A_Y, então os dois só coincidem quando A_Y → 0: o carro-base (K ≈ 0)
-# passa em 0,05 g, e o segundo caso (rolagem mais rígida na frente, R grande, K maior) passa em 0,0125 g, perto do
-# limite em que o passo da diferença central (0,01 g) permite. Em 0,05 g esse segundo caso difere 5,8 %: informativo.
+# calculada com a rigidez do eixo na carga de A_Y, então os dois só coincidem quando A_Y → 0, com diferença O(A_Y^p)
+# (p ≈ 2 esperado). O carro-base (K ≈ 0) passa direto em 0,05 g (relativo 1e-2). O segundo caso (rolagem mais rígida
+# na frente, R grande, K maior) é um oráculo de convergência: e_rel(A) = |K_trim − K_lin|/|K_lin| em 0,05, 0,025 e
+# 0,0125 g (0,0125 g é o menor A seguro: k_trim exige A > passo de 0,01 g) deve cair monotonicamente, e a diferença
+# assinada d(A) = (K_trim − K_lin)/|K_lin|, extrapolada para A → 0 pelo polinômio quadrático pelos três pontos
+# (d = d0 + c1·A + c2·A²), deve ficar em |d(0)| ≤ 1e-2 (a tolerância não é afrouxada). Richardson com a ordem
+# observada dos mesmos pontos daria d(0) = 0 por construção quando d tem sinal constante: não testaria nada. A ordem
+# observada p = log2(e(0,025)/e(0,0125)) entra só como informação.
 caso_k4 = eq.CasoEquilibrio(cfg=cfg, ds=ds_teste, raio_m=R_TESTE)
 k_mmm = mmm.k_trim(caso_k4, hip_pl, 0.05 * G)
 k_lin = eql.parcelas_k(caso_k4, 0.05 * G).k_total
 caso_k4b = eq.CasoEquilibrio(cfg=veiculo_sim(0.7), ds=ds_teste, raio_m=R_GRANDE)
-k_mmm_b = mmm.k_trim(caso_k4b, hip_pl, 0.0125 * G)
-k_lin_b = eql.parcelas_k(caso_k4b, 0.0125 * G).k_total
-k_mmm_b5 = mmm.k_trim(caso_k4b, hip_pl, 0.05 * G)
-k_lin_b5 = eql.parcelas_k(caso_k4b, 0.05 * G).k_total
-check("TC-MMM-004: K da curva de trim em 0,05 g = parcelas_k.k_total (relativo 1e-2); idem em 0,0125 g com rolagem "
-      "mais rígida na frente",
+d_conv = []  # d(A) assinada em 0,05, 0,025 e 0,0125 g
+for g_a in (0.05, 0.025, 0.0125):
+    k_t_b = mmm.k_trim(caso_k4b, hip_pl, g_a * G)
+    k_l_b = eql.parcelas_k(caso_k4b, g_a * G).k_total
+    d_conv.append((k_t_b - k_l_b) / abs(k_l_b))
+e_conv = [abs(d) for d in d_conv]
+ok_conv = e_conv[0] > e_conv[1] > e_conv[2] > 0.0
+p_obs = math.log2(e_conv[1] / e_conv[2]) if ok_conv else math.nan
+# Lagrange em u = A/0,0125 g = 4, 2, 1 avaliado em u = 0: d(0) = (8/3)·d(1) − 2·d(2) + (1/3)·d(4).
+d_zero = (8.0 / 3.0) * d_conv[2] - 2.0 * d_conv[1] + d_conv[0] / 3.0
+check("TC-MMM-004: K da curva de trim em 0,05 g = parcelas_k.k_total (relativo 1e-2); com rolagem mais rígida na "
+      "frente (λf=0,7), erro relativo cai com A_Y (0,05 > 0,025 > 0,0125 g) e a diferença extrapolada a A_Y → 0 é ≤ 1e-2",
       k_lin is not None and abs(k_mmm - k_lin) <= 1e-2 * abs(k_lin)
-      and k_lin_b is not None and abs(k_mmm_b - k_lin_b) <= 1e-2 * abs(k_lin_b),
+      and ok_conv and abs(d_zero) <= 1e-2,
       f"K_trim={k_mmm:.6e} rad/(m/s²), K_linear={k_lin:.6e}, relativo={abs(k_mmm - k_lin) / abs(k_lin):.2e}; "
-      f"λf=0,7 a 0,0125 g: {k_mmm_b:.6e} vs {k_lin_b:.6e}, relativo={abs(k_mmm_b - k_lin_b) / abs(k_lin_b):.2e}; "
-      f"informativo a 0,05 g: relativo={abs(k_mmm_b5 - k_lin_b5) / abs(k_lin_b5):.2e}")
+      f"λf=0,7: e_rel(0,05; 0,025; 0,0125 g)=({e_conv[0]:.2e}; {e_conv[1]:.2e}; {e_conv[2]:.2e}), "
+      f"d assinada=({d_conv[0]:.2e}; {d_conv[1]:.2e}; {d_conv[2]:.2e}), ordem observada p={p_obs:.3f}, "
+      f"d(0) extrapolada (quadrática)={d_zero:.2e} (limite 1e-2)")
 
 
 # ---------------- TC-MMM-005 : carro simétrico ----------------
