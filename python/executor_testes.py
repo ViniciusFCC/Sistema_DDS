@@ -59,15 +59,24 @@ def orcamento_do_ambiente(padrao_s: float) -> Orcamento:
     return Orcamento(padrao_s)
 
 
-def _matar_arvore(pid: int) -> None:
-    if os.name == "nt":
-        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], stdin=subprocess.DEVNULL,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
-    else:
-        try:
-            os.killpg(pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+def _matar_arvore(pid: int) -> bool:
+    """Encerra a árvore do PID. Devolve False (e avisa no stderr) se o encerramento falhar; nunca levanta exceção."""
+    try:
+        if os.name == "nt":
+            r = subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], stdin=subprocess.DEVNULL,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
+            if r.returncode != 0:
+                print(f"[executor] AVISO: taskkill do PID {pid} saiu com código {r.returncode}", file=sys.stderr, flush=True)
+                return False
+        else:
+            try:
+                os.killpg(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        return True
+    except Exception as e:  # noqa: BLE001  (não mascarar a exceção original de quem chamou)
+        print(f"[executor] AVISO: não consegui encerrar a árvore do PID {pid}: {e!r}", file=sys.stderr, flush=True)
+        return False
 
 
 def _ler(arq) -> str:
@@ -84,16 +93,22 @@ def executar(cmd: list[str], *, cwd: Path | str, env: dict | None = None, timeou
     with tempfile.TemporaryFile() as f_out, tempfile.TemporaryFile() as f_err:
         p = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=f_out, stderr=f_err, **extra)
         try:
-            codigo = p.wait(timeout=timeout_s)
-        except subprocess.TimeoutExpired:
-            estourou = True
-            _matar_arvore(p.pid)
             try:
-                p.wait(timeout=ESPERA_APOS_MATAR_S)
+                codigo = p.wait(timeout=timeout_s)
             except subprocess.TimeoutExpired:
-                print(f"[executor] AVISO: o PID {p.pid} não encerrou {ESPERA_APOS_MATAR_S:.0f} s após o encerramento da árvore",
-                      file=sys.stderr, flush=True)
-            codigo = CODIGO_TEMPO
+                estourou = True
+                _matar_arvore(p.pid)
+                try:
+                    p.wait(timeout=ESPERA_APOS_MATAR_S)
+                except subprocess.TimeoutExpired:
+                    print(f"[executor] AVISO: o PID {p.pid} não encerrou {ESPERA_APOS_MATAR_S:.0f} s após o encerramento da árvore",
+                          file=sys.stderr, flush=True)
+                codigo = CODIGO_TEMPO
+        finally:
+            # KeyboardInterrupt ou outra exceção: com CREATE_NEW_PROCESS_GROUP o Ctrl+C não chega ao filho, então a árvore
+            # seria deixada órfã. Sempre encerra o que sobrou (sem mascarar a exceção original).
+            if p.poll() is None:
+                _matar_arvore(p.pid)
         tempo = time.monotonic() - t0
         saida, erro = _ler(f_out), _ler(f_err)
     fim = dt.datetime.now()
