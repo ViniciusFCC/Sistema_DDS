@@ -298,6 +298,9 @@ como teste do máximo numérico.
 Implementação: chaves 1/0 na planilha para as hipóteses que ela implementa; `tests/test_escada.py` na suíte para o
 resto. Nenhum número do Python é copiado para a planilha (valor estático envelhece em silêncio).
 
+> **Nota (2026-10-28, incremento 6).** As chaves h2, h3, h7, h8 e h9 já existem na V4.1, e as variantes Python das
+> hipóteses não vão para a planilha. A escada roda só em Python (adendo `2026-10-27-inc6-mmm-escada-design.md`, EDR-064).
+
 ### 7.6 Robustez ao pneu (D15)
 
 O sinal de push/loose depende sobretudo da sensibilidade do pneu à carga, a parte menos confiável do `.tir` do TTC
