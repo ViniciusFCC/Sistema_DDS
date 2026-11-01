@@ -41,21 +41,19 @@
 2. Avaliação de ponto devolve Fx, Fy, Mx, My, Mz com unidades/convenções e faixa válidas identificadas.
 3. Overlay editável pode ser salvo e reaberto apenas sobre a exata fonte, sem sobrescrever o `.tir`.
 4. Notebook permite comparar pressões disponíveis e varrer α, γ, κ, Fz e Vx sem repetir equações.
-5. Nenhum workbook ou documento preexistente muda; nenhuma alteração é commitada ou enviada ao GitHub.
+5. Nenhum workbook ou documento preexistente muda; arquivos `.tir` e PDFs locais não são enviados ao GitHub.
 
 ## Estado da execução
 
 - [x] Permissão de escrita no repositório e permissão de rede conferidas; PDF oficial do Adams baixado localmente.
 - [x] Material PAC2002, formato TTC, convenções e fronteira Excel/Python revisados.
 - [x] Implementar e revisar o módulo estático novo contra as equações e os contratos acima.
-- [x] Preparar o notebook de exploração para as funções finais; execução fica pendente da instalação local de Jupyter/Matplotlib.
+- [x] Preparar e executar o notebook de exploração com os quatro perfis; ajustar a velocidade de referência para respeitar `LONGVL`.
 - [x] Fazer revisão estática do código, do estado Git e da ausência de alterações em arquivos existentes.
 - [x] Incorporar revisão independente e lint local: vincular overlays ao eixo, tratar coeficientes de momento omitidos explicitamente, validar coerência de faixas e parâmetros positivos revisados (incluindo `LONGVL`), corrigir achados do Ruff.
 
 ## Verificação
 
-AST do módulo Python, lint Ruff, JSON/estrutura do notebook e `git diff --check` passaram. Os quatro perfis do ZIP Round 6 foram carregados, selecionados pelas pressões nominais 8/10/12/14 psi e avaliados em pontos centrais dos domínios declarados; Fx/Fy/Mx/My/Mz foram finitos. `PRESSURE_TOLERANCE_PSI` foi elevado a 1e-3 para acomodar o arredondamento das pressões armazenadas nos arquivos. O teste legado `tests/test_tire_model.py` não roda com esse pacote porque espera `data/Hoosier_R25B_13x7_TTC_provisional.tir`, arquivo com nome distinto. Matplotlib, Jupyter e nbclient não estão instalados, portanto o notebook não foi executado. Qualquer afirmação de validade física requer validação futura contra medição/solver independente; o R25B permanece apenas proxy do R60A.
-
-OpenTirePython foi revisado como referência de interface de estado e comparação de PAC2002. Não foi adotado como dependência: não foi confirmado suporte a leitura `.tir` nem compatibilidade com uma versão MF específica.
+AST do módulo Python, lint Ruff, JSON/estrutura do notebook e `git diff --check` passaram na etapa anterior à execução integral. Depois foram executadas todas as seis células de código com `nbclient`; as três figuras renderizaram. O domínio comum de slip angle foi -15° a +15°, com 121 pontos; cambagem foi -4° a +4°, com 81 pontos; slip ratio foi -0,25 a +0,25, com 101 pontos; velocidade percorreu 0 a `LONGVL`, com 81 pontos. Foram corrigidos dois bloqueios descobertos pela execução: velocidade inicial de 15 m/s excedia `LONGVL` (~11,2 m/s) e `_sgn()` em `python/tire_model.py` subtraía booleanos, incompatível com NumPy 2. `PRESSURE_TOLERANCE_PSI` é 1e-3 psi para acomodar o arredondamento nos `.tir`. As curvas mostraram `My=0` porque `QSY1..QSY8` são zero; μ efetivo máximo foi aproximadamente 2,6 e `Mx` chegou a algumas centenas de N·m. Esses valores são resultados do modelo, ainda sem validação independente. O teste legado `tests/test_tire_model.py` espera outro nome de `.tir` (`Hoosier_R25B_13x7_TTC_provisional.tir`) e não rodou com esse pacote. Jupyter e Matplotlib estão instalados apenas no `.venv` local, sem alteração do `pyproject.toml` ou `uv.lock`. Os `.tir` estão em `data/local_tires/round_6_hoosier_r25b/`, ignorados pelo Git. O notebook executou do diretório raiz com `nbclient`; houve apenas warnings de IDs ausentes nas células e configuração de event loop no Windows. Qualquer afirmação de validade física requer validação futura contra medição/solver independente; o R25B permanece apenas proxy do R60A.
 
 OpenTirePython foi revisado como referência de interface de estado e comparação de PAC2002. Não foi adotado como dependência: não foi confirmado suporte a leitura `.tir` nem compatibilidade com uma versão MF específica.

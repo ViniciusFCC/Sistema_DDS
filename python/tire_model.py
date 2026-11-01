@@ -134,7 +134,7 @@ def in_range(ds, fz, alpha, gamma, kappa):
 
 
 def _sgn(x):
-    return (x > 0) - (x < 0)
+    return int(x > 0) - int(x < 0)
 
 
 def _mf(B, C, D, E, x):
