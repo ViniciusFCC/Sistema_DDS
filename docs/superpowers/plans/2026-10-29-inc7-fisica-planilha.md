@@ -104,7 +104,7 @@ Nenhum outro ID é criado. A aprovação de um ID não valida a equação.
 | 1 Executor dos testes | general-purpose | sonnet | medium | desenho fixado aqui; conferível pelo TC-RUN-001 |
 | 2 `skidpad.py` | general-purpose | sonnet | medium | geometria fechada na spec §3.2; oráculo por `hypot` |
 | 3 Ackermann v43 | general-purpose | opus | high | física e convenção de sinal |
-| 4 Fx v43 (duas réplicas e oráculo) | general-purpose | opus | high | física (balanço vetorial, O(α³), elipse) |
+| 4 Fx v43 (duas réplicas e oráculo) | general-purpose | opus | high | física (balanço vetorial, O(ε³), elipse) |
 | 5 Variantes no `mmm` e escada | general-purpose | sonnet | medium | plumbing especificado; regressão conferível |
 | 6 Estudo do NEUTRO | general-purpose | opus | high | estudo numérico, ordem observada |
 | 7 Mutação Python e relatório com dois R | general-purpose | sonnet | medium | mecânico, com a lista de mutantes fixada |
@@ -248,7 +248,7 @@ Create `tests/test_formas_v43.py` (TC-ACK-001).
   de cada roda é `atan2(v_y, v_x)`, sem a fórmula atan(L/…). Ele coincide com `angulos_velocidade` (1e-12).
   (b) Com 100 % de Ackermann, a diferença do Δα v43 entre FL e FR é ≤ a cota de 2ª ordem
   |δ̄ − θ̄_F| ≤ (L/R)·(t_f/(2R_c))² + |δ_ref − atan(L/R_c)|. A cota é medida e o valor entra no docstring.
-  (c) Com 0 %: Δα_FL − Δα_FR = (θ_FL − θ_FR) ≈ L·t_f/R_c² (1 % relativo).
+  (c) Com 0 %: Δα_FL − Δα_FR = (θ_FL − θ_FR) ≈ L·t_f/R_c² (1 % relativo só com R ≳ 15 m; a forma exata é atan(L·t_f/(R_c² + L² − t_f²/4))).
   (d) Curva à direita: `deriva_ackermann(espelhar(caso), formas=FORMAS_V43)` é a troca L↔R da esquerda.
   (e) `formas=FORMAS_V42` é igual ao valor de hoje (comparar com um valor congelado antes da mudança).
 - [ ] **Passo 2: rodar e ver falhar.**
@@ -279,8 +279,8 @@ Create `tests/test_formas_v43.py` (TC-ACK-001).
 - [ ] **Passo 1: TC-FXI-001 (equivalência e física, um check).**
   (a) Réplica de grade × contínua: |Δ| ≤ cota do passo, (F_yf + F_yr)·h_α/2 com h_α o passo da grade.
   (b) Oráculo exato: `fx_balanco_exato` faz o balanço longitudinal em X do carro, F_pneu,f·sen δ − m·A·sen β, com
-  δ = atan(L/R_c) + α_F − α_R e β = atan(b/R_c) − α_R. A diferença para o arrasto induzido cai como O(α³): escalando
-  os α por 1/2, a razão das diferenças fica em [6, 10].
+  δ = atan(L/R_c) + α_F − α_R e β = atan(b/R_c) − α_R. A diferença para o arrasto induzido cai como O(ε³), ε = max(α, L/R), com α e L/R
+  escalados juntos (R → 2R); com R fixo, o resto tem termos α(L/R)² e a razão tende a 2. A razão das diferenças fica em [6, 10].
   (c) `formas=FORMAS_V42` é igual ao valor de hoje.
 - [ ] **Passo 2: TC-FXI-002 (elipse, pico, sem frente; um check).**
   (a) Ponto fixo com a elipse (α_R da curva com o fator de cada iteração, até |ΔFx| < 1e-6 N) contra a aproximação sem
