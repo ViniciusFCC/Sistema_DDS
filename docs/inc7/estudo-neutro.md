@@ -1,6 +1,6 @@
 # Estudo da faixa do NEUTRO (incremento 7, Task 6)
 
-- **Data:** 2026-10-29. Código nos commits a98252c e f42566a (`python/estudo_neutro.py`), branch `claude/inc7-plano-0926f7`.
+- **Data:** 2026-10-29. Código nos commits a98252c, f42566a e 82d31c6 (`python/estudo_neutro.py`), branch `claude/inc7-plano-0926f7`.
 - **Situação:** estudo para a decisão do usuário sobre o EDR-065 item 2 (spec §4.3). A regra do `analise_par` não
   mudou: o TC-NEU-001 confere que o veredito do caso-base é o mesmo de antes do estudo.
 - **Todos os números são de casos SINTÉTICOS.** Nenhum é resultado do carro, do T11 ou do TX.
@@ -10,8 +10,9 @@
 A regra de hoje declara NEUTRO quando |Δ| <= faixa, com Δ = S_r − S_f (a_y de saturação de cada eixo) e
 faixa = max(|S_F,h − S_F,h/2|, |S_R,h − S_R,h/2|, 1e-9 g). A spec §4.3 levantou três dúvidas sobre essa faixa: o
 serrote do máximo discreto em α, o erro de Δ, que pode chegar a e_F + e_R, e o ramo em que só um eixo satura. O estudo
-mede as duas primeiras. A terceira já está fixada na spec §4.3: "O ramo de um eixo só continua com o passo." Fica
-fora da decisão e fora das alternativas deste estudo.
+mede as duas primeiras. Para a terceira, a spec §4.3 diz que "O ramo de um eixo só continua com o passo.", mas o
+código de hoje usa nesse ramo a `_resolucao`, que nem sempre é o passo. Ela fica fora das alternativas deste estudo
+e entra nas perguntas ao usuário como PENDING_CONFIRMATION.
 
 **Caso-base (sintético).** O `veiculo_base` de `tests/test_escada.py` (250 kg, L = 1,550 m, b = 0,713 m), o `.tir`
 provisório do TTC com LMUY = 0,5 (escala de teste), R = 8,5 m, downforce de 400 N com 45 % na frente, toe zero, formas
@@ -29,7 +30,8 @@ da V4.2 (`FORMAS_V42`), a_y até 2,0 g. É o `casos["base"]` do `test_escada.py`
 **Varredura perto do neutro (sintética).** λ_f de +4 % a +7 % (relativo), em passos de 0,5 %, sete casos, só sem
 refino (`estudo_neutro.casos_perto_do_neutro`). Entre o caso-base (LOOSE) e λ_f +10 % (PUSH) o Δ troca de sinal; a
 revisão da Task 6 estimou, por interpolação, Δ_h/8 = 0 perto de +4,8 % e Δ_h = 0 perto de +5,6 %, e a varredura
-existe para medir isso.
+existe para medir isso. Um caso de conferência em λ_f +4,85 % (Tabela 9) testa a janela de sinal errado que
+a Tabela 8 sugere.
 
 **Grades.** h = (0,05 g em a_y; 25 pontos de α), h/2 = (0,025 g; 49), h/4 = (0,0125 g; 97), h/8 = (0,00625 g; 193).
 É a regra do refinamento do `analise_par` (passo/2 e 2n − 1 pontos) aplicada três vezes, então cada grade contém os
@@ -163,6 +165,38 @@ Classe: NEUTRO; "certo" ou "ERRADO" contra o sinal de Δ_h/8 (a h/8 não converg
 - Cruzamento de zero por interpolação linear entre casos vizinhos: Δ_h = 0 em λ_f +5,63 %; Δ_h/8 = 0 em λ_f +4,84 %.
 - Sinal errado / NEUTRO em 7 casos: regra atual 0 / 3; alt. 1 (p medido) 0 / 3; alt. 1 com 4/3 0 / 4; alt. 2 0 / 3.
 
+### Tabela 8. Margem = faixa − erro de Δ na varredura, sem refino [g] (sintético)
+
+| Caso | erro de Δ | e_F + e_R | violação de (c) | margem: hoje | margem: alt. 1 (p medido) | margem: alt. 1 com 4/3 | margem: alt. 2 |
+|---|---|---|---|---|---|---|---|
+| λ_f +4,0 % (sintético) | 1,15e-03 | 1,15e-03 | SIM | -1,54e-05 | -1,46e-05 | 3,63e-04 | -3,86e-06 |
+| λ_f +4,5 % (sintético) | 1,13e-03 | 1,12e-03 | SIM | -2,04e-05 | -1,97e-05 | 3,51e-04 | -8,89e-06 |
+| λ_f +5,0 % (sintético) | 1,12e-03 | 1,10e-03 | SIM | -2,54e-05 | -2,48e-05 | 3,38e-04 | -1,39e-05 |
+| λ_f +5,5 % (sintético) | 1,10e-03 | 1,08e-03 | SIM | -3,03e-05 | -2,98e-05 | 3,26e-04 | -1,89e-05 |
+| λ_f +6,0 % (sintético) | 1,08e-03 | 1,06e-03 | SIM | -3,52e-05 | -3,49e-05 | 3,14e-04 | -2,40e-05 |
+| λ_f +6,5 % (sintético) | 1,07e-03 | 1,04e-03 | SIM | -4,02e-05 | -4,00e-05 | 3,02e-04 | -2,90e-05 |
+| λ_f +7,0 % (sintético) | 1,05e-03 | 1,02e-03 | SIM | -4,51e-05 | -4,50e-05 | 2,90e-04 | -3,40e-05 |
+
+- Violações de (c): 7 de 7. Margem negativa: hoje 7; alt. 1 (p medido) 7; alt. 1 com 4/3 0; alt. 2 7 de 7.
+
+### Tabela 9. Caso de conferência λ_f +4,85 %, sem refino [g] (sintético)
+
+Classe: NEUTRO; "certo" ou "ERRADO" contra o sinal de Δ_h/8 (a h/8 não convergiu por completo). A alternativa 3 (refino) não foi calculada nesta varredura.
+
+| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) | Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R |
+|---|---|---|---|---|---|---|---|---|
+| λ_f +4,85 % (sintético) | -0,0011052 | 0,0000166 | PUSH | 1,10e-03 / LOOSE / ERRADO | 1,10e-03 / LOOSE / ERRADO | 1,46e-03 / NEUTRO / NEUTRO | 1,11e-03 / NEUTRO / NEUTRO | 4,71 / 10,74 |
+
+- Sinal errado / NEUTRO em 1 caso: regra atual 1 / 0; alt. 1 (p medido) 1 / 0; alt. 1 com 4/3 0 / 1; alt. 2 0 / 1.
+
+Margem do caso de conferência [g] (sintético)
+
+| Caso | erro de Δ | e_F + e_R | violação de (c) | margem: hoje | margem: alt. 1 (p medido) | margem: alt. 1 com 4/3 | margem: alt. 2 |
+|---|---|---|---|---|---|---|---|
+| λ_f +4,85 % (sintético) | 1,12e-03 | 1,11e-03 | SIM | -2,39e-05 | -2,32e-05 | 3,42e-04 | -1,24e-05 |
+
+- Violações de (c): 1 de 1. Margem negativa: hoje 1; alt. 1 (p medido) 1; alt. 1 com 4/3 0; alt. 2 1 de 1.
+
 ## O que os números mostram
 
 1. **Não há p ≈ 2 estável.** Sem refino, p vai de −1,85 (toe +0,1°, frente) a 10,51 (λ_f +10 %, traseira). Na
@@ -195,28 +229,45 @@ Classe: NEUTRO; "certo" ou "ERRADO" contra o sinal de Δ_h/8 (a h/8 não converg
    então na mesma a_y a capacidade da h nunca é maior que a da h/8, e menos capacidade antecipa a saturação. Para S
    isso não é garantia, porque a interpolação linear em a_y também entra; o sinal fixo foi observado, não provado.
 
-5. **e_F + e_R contra o erro de Δ.** Sem refino, a razão entre o erro de Δ e a faixa de hoje vai de 0,93 a 1,11. Há
-   duas violações de (c): λ_f +10 % (erro de Δ 9,49e-04 contra 8,83e-04) e toe −0,1° (8,73e-04 contra 8,00e-04).
-   Nos dois casos o excesso (6,6e-05 e 7,3e-05) é da mesma ordem do d3 da traseira (8,84e-05 e 8,54e-05), ou seja,
-   a própria referência h/8 ainda não convergiu nesse nível. Os números não permitem afirmar que essas violações são
-   reais, nem que não são.
+5. **e_F + e_R contra o erro de Δ.** Nos sete casos de base, sem refino, a razão entre o erro de Δ e a faixa de
+   hoje vai de 0,93 a 1,11, e há duas violações de (c): λ_f +10 % (erro de Δ 9,49e-04 contra 8,83e-04) e
+   toe −0,1° (8,73e-04 contra 8,00e-04). Nos dois casos o excesso (6,6e-05 e 7,3e-05) é da mesma ordem do d3 da
+   traseira (8,84e-05 e 8,54e-05), ou seja, a própria referência h/8 ainda não convergiu nesse nível. Na varredura
+   perto do neutro (Tabela 8), (c) é violada nos 7 casos, e também no caso de conferência de +4,85 % (Tabela 9): o
+   excesso do erro de Δ sobre e_F + e_R vai de 3,9e-06 (+4,0 %) a 3,4e-05 g (+7,0 %) e cresce com o λ_f. A mesma
+   ressalva da h/8 vale aqui; os d3 dos casos da varredura não estão nas tabelas. Os números não permitem afirmar que
+   essas violações são reais, nem que não são.
 
 6. **Nos sete casos, nenhum veredito muda, por construção.** As cinco faixas (hoje, alternativa 1 com p medido,
    alternativa 1 com 4/3, alternativa 2 e alternativa 3) dão o mesmo veredito: PUSH em λ_f +10 % e LOOSE nos outros
    seis. O menor |Δ_h| é o de R −10 % (0,0024104 g), 1,4 vez a maior faixa (1,71e-03, alternativa 1 com 4/3). Com Δ
    tão longe da faixa, nenhuma regra poderia mudar o veredito; esses casos não distinguem as alternativas.
 
-7. **Perto do neutro (Tabela 7).** Por interpolação linear entre os casos da varredura, Δ_h = 0 em λ_f +5,63 % e
-   Δ_h/8 = 0 em λ_f +4,84 %, perto da estimativa da revisão (+5,6 % e +4,8 %). Entre os dois pontos, Δ_h e Δ_h/8 têm
-   sinais opostos; dois casos calculados caem nessa faixa, +5,0 % e +5,5 %. Nenhuma regra deu sinal errado em nenhum
-   dos sete casos da varredura:
+7. **Perto do neutro (Tabelas 7, 8 e 9).** Por interpolação linear entre os casos da varredura, Δ_h = 0 em
+   λ_f +5,63 % e Δ_h/8 = 0 em λ_f +4,84 %, perto da estimativa da revisão (+5,6 % e +4,8 %). Entre os dois pontos,
+   Δ_h e Δ_h/8 têm sinais opostos. Nos sete casos da varredura nenhuma regra deu sinal errado:
    - regra de hoje, alternativa 1 com p medido e alternativa 2: NEUTRO em +5,0 %, +5,5 % e +6,0 %, sinal certo nos
      outros quatro;
    - alternativa 1 com 4/3: NEUTRO também em +6,5 %, onde Δ_h/8 = 2,29e-03 indica PUSH.
 
-   Os dois casos de sinais opostos saíram NEUTRO em todas as regras. A folga é pequena: em +5,0 %, |Δ_h| = 8,94e-04
-   contra a faixa de hoje de 1,09e-03 (sobram 1,96e-04 g). Entre +4,84 % e +5,0 %, onde Δ_h/8 é positivo e pequeno e
-   Δ_h ainda é negativo, não há caso calculado. A alternativa 3 não entrou na varredura.
+   Isso não quer dizer que haja folga. A margem que decide o sinal é faixa − erro de Δ (Tabela 8), e ela é negativa
+   nos 7 casos para a regra de hoje (de −1,54e-05 a −4,51e-05 g), para a alternativa 1 com p medido (de −1,46e-05 a
+   −4,50e-05 g, quase igual à de hoje) e para a alternativa 2 (de −3,86e-06 a −3,40e-05 g). Com 4/3 ela é positiva
+   nos 7 (de 2,90e-04 a 3,63e-04 g). Em +5,0 %, por exemplo, o erro de Δ é 1,12e-03 contra a faixa de hoje de
+   1,09e-03 (margem −2,54e-05 g).
+
+   Margem negativa abre uma janela de sinal errado logo depois de Δ_h/8 = 0: enquanto 0 < Δ_h/8 < −margem, o Δ_h é
+   negativo e |Δ_h| passa da faixa, e a regra dá LOOSE com a h/8 indicando PUSH. Pela interpolação da Tabela 7, essa
+   janela vai de λ_f +4,84 % a cerca de +4,86 % para a regra de hoje e a alternativa 1 com p medido, e é mais
+   estreita para a alternativa 2. A 4/3 não tem essa janela. É uma estimativa por interpolação, com a h/8 como
+   referência não convergida.
+
+   **Caso de conferência λ_f +4,85 % (Tabela 9).** Δ_h = −0,0011052 e Δ_h/8 = +0,0000166, então a h/8 indica PUSH.
+   A regra de hoje e a alternativa 1 com p medido (faixa 1,10e-03) dão LOOSE, sinal errado. A alternativa 2 (faixa
+   1,11e-03) e a 4/3 (faixa 1,46e-03) dão NEUTRO. Isso bate com a margem: a da alternativa 2 é −1,24e-05, menor em
+   módulo que o Δ_h/8 desse caso, e a de hoje é −2,39e-05, maior. Ressalva: o Δ_h/8 de 1,66e-05 g é menor que
+   diferenças d3 vistas na Tabela 1 (até 8,84e-05 g), então o "sinal real" desse caso é o da h/8, não o de uma
+   solução convergida. A alternativa 3 não entrou na varredura nem na conferência.
 
 8. **Refino por parábola (alternativa 3).** O erro de Δ cai em seis dos sete casos (no caso-base, de 1,28e-03 para
    1,33e-04) e sobe em toe +0,1° (de 6,34e-04 para 7,30e-04), que passa a violar (c): 7,30e-04 contra 7,11e-04. O
@@ -236,31 +287,37 @@ Classe: NEUTRO; "certo" ou "ERRADO" contra o sinal de Δ_h/8 (a h/8 não converg
   frente), sai negativo, o que deixa o fator sem definição.
 - Que o fator 4/3 seja a correção certa. Ele cobre o erro de Δ nos sete casos (a menor folga é a de λ_f +10 %:
   1,16e-03 contra 9,49e-04), mas cobre porque é maior, e não porque o erro siga c·h².
-- Que nenhuma regra erre o sinal perto do neutro. Na varredura nenhuma errou, mas o passo de 0,5 % em λ_f deixa sem
-  caso o trecho de +4,84 % a +5,0 %, e a folga medida em +5,0 % é de 1,96e-04 g.
+- O sinal "real" dentro da janela de sinal errado. O Δ_h/8 do caso de conferência (1,66e-05 g) é menor que a
+  incerteza que a própria h/8 mostra nos casos de base; uma grade mais fina poderia mudar esse sinal.
+- A largura exata da janela: ela sai de interpolação entre casos com passo de 0,5 % e de um único caso de
+  conferência.
 - Qualquer conclusão sobre as formas da V4.3, sobre o raio do skidpad do T11 ou sobre outro pneu: o estudo usou só
   as formas da V4.2 e o pneu de escala.
 
-O ramo de um eixo só não foi estudado: a spec §4.3 o fixa ("O ramo de um eixo só continua com o passo"). Nenhum caso
-caiu nele, e cortar a varredura em ay_max_g = 1,47 não o produz no caso-base: com passo de 0,05 g as linhas da grade
-h são 1,45 g e 1,50 g, e as duas saturações (1,4764 e 1,4685 g) ficam entre elas, então nenhum eixo satura. Registro
-para a Task 9: no código de hoje, nesse ramo a faixa é a `_resolucao` (o d1 do eixo que satura, ou o passo quando o
-outro eixo satura numa só das duas grades), e não sempre o passo.
+O ramo de um eixo só não foi estudado. Nenhum caso caiu nele, e cortar a varredura em ay_max_g = 1,47 não o produz
+no caso-base: com passo de 0,05 g a última linha da grade h é 1,45 g, e as duas saturações (1,4764 e 1,4685 g) ficam
+acima dela, então nenhum eixo satura. A regra desse ramo está nas perguntas (PENDING_CONFIRMATION): a spec §4.3 diz
+que ele "continua com o passo", e o código de hoje usa a `_resolucao`, que é o d1 do eixo que satura e só vale o
+passo quando um eixo satura numa das duas grades e não na outra.
 
 ## As três alternativas e o efeito nos casos
 
 **Alternativa 1: fator 2^p/(2^p − 1) com o p medido, só no ramo de Richardson.** Com os p medidos (todos acima de
 2,8, menos dois), o fator fica entre 1,00 e 1,28 e a faixa quase não muda em relação à de hoje, porque é o e_R, com p
 alto, que manda nela (Tabelas 3 e 7). Em toe +0,1° o p da frente é negativo e a alternativa não se aplica. Não cobre
-as duas violações de (c). Na varredura dá as mesmas classes da regra de hoje. Com 4/3 fixo, a faixa cresce um terço,
-cobre o erro de Δ nos sete casos e, na varredura, põe mais um caso em NEUTRO (+6,5 %, que a h/8 indica PUSH). Para
+as duas violações de (c). Na varredura dá as mesmas classes da regra de hoje, e a margem faixa − erro de Δ é
+negativa nos 7 casos, quase igual à de hoje. No caso de conferência de +4,85 % dá LOOSE com a h/8 indicando PUSH. Com
+4/3 fixo, a faixa cresce um terço, cobre o erro de Δ nos sete casos de base, tem margem positiva nos 7 da varredura
+(de 2,90e-04 a 3,63e-04 g), dá NEUTRO em +4,85 % e põe mais um caso em NEUTRO na varredura (+6,5 %, que a h/8 indica
+PUSH). Nos casos de base cobre o erro porque é maior, não porque o p medido seja 2. Para
 valer na planilha, o p teria de ser uma constante nomeada (a spec §4.3 pede uma fonte só para a célula e para o
 `mmm`). Os números daqui não indicam qual valor.
 
 **Alternativa 2: faixa de Δ igual a e_F + e_R.** A faixa cresce pouco em relação à de hoje (no máximo 1,7 %, em
 toe +0,1°), porque o e_F é de 61 a 175 vezes menor que o e_R nestes casos. Usa a soma, e o erro de Δ medido é a
-diferença dos erros dos eixos (item 4). Não cobre as duas violações de (c), que vêm de e_R subestimado. Na varredura
-dá as mesmas classes da regra de hoje.
+diferença dos erros dos eixos (item 4). Não cobre as duas violações de (c) dos casos de base, que vêm de e_R
+subestimado. Na varredura dá as mesmas classes da regra de hoje, viola (c) nos 7 casos e tem margem negativa nos 7,
+menor em módulo que a de hoje (de −3,86e-06 a −3,40e-05 g). No caso de conferência de +4,85 % dá NEUTRO.
 
 **Alternativa 3: refino do pico por parábola.** Muda a fórmula da capacidade no Python e na planilha, e só entra com
 aprovação. Diminui o erro de Δ em seis dos sete casos, aumenta em um e cria uma violação nele. Não traz p ≈ 2: o
@@ -272,7 +329,9 @@ erro cresce. Nos sete casos não muda nenhum veredito. Não foi calculada na var
 - Qual das três alternativas (ou nenhuma) vai para o EDR-065 item 2.
 - Na alternativa 1: qual p usar, como a constante nomeada que a spec pede, e o que fazer quando o p medido sai
   indefinido ou negativo.
-- Se o estudo deve crescer antes da decisão: a alternativa 3 na varredura perto do neutro, casos entre +4,84 % e
-  +5,0 %, as formas da V4.3, ou uma grade h/16 para fechar a dúvida sobre as duas violações de (c).
-
-Fixado, fora das perguntas: o ramo de um eixo só continua com o passo (spec §4.3).
+- PENDING_CONFIRMATION, ramo de um eixo só: a spec §4.3 diz que ele "continua com o passo"; o código de hoje usa a
+  `_resolucao` (o d1 do eixo que satura; o passo só quando um eixo satura numa das duas grades e não na outra).
+  Manter a `_resolucao`, como o código faz, ou passar a usar o passo, como a spec diz ao pé da letra?
+- Se o estudo deve crescer antes da decisão: a alternativa 3 na varredura perto do neutro, mais casos na janela de
+  +4,84 % a +4,86 %, as formas da V4.3, ou uma grade h/16 para fechar a dúvida sobre as violações de (c) e sobre o
+  sinal dentro da janela.
