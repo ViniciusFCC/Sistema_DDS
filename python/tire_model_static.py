@@ -457,8 +457,9 @@ def _mz(
     O Fy do termo de trilha usa a cambagem real (F'y = Fy - SVyk, como na
     Eq. 4.E71 do Pacejka). O help do Adams escreve F'y,gamma=0 na Eq. 103, mas o
     Pacejka só usa Fy em gamma=0 no modelo de motocicleta (seção 11.6). A escolha
-    do Fy com cambagem real foi decidida no EDR-067, item 3; reabre se o
-    OptimumTire usar Fy em gamma=0.
+    entre as duas formas está PENDENTE até a comparação com o OptimumTire
+    (EDR-067, item 3): a diferença chega a ~18 N·m (~28 % do Mz) com |alpha|
+    pequeno e cambagem. Até lá o código usa o Fy com cambagem real.
     """
     p = profile.dataset.p
     fz0 = p["LFZO"] * p["FNOMIN"]
@@ -525,7 +526,7 @@ def _mz(
         + (_get(p, "SSZ3") + _get(p, "SSZ4") * dfz) * gamma
     ) * _get(p, "LS", 1.0)
     # F'y = Fy - SVyk com a cambagem real (Pacejka 4.E71; o Adams escreve F'y,gamma=0 na
-    # Eq. 103). Escolha decidida no EDR-067, item 3; reabre se o OptimumTire usar Fy em gamma=0.
+    # Eq. 103). Escolha pendente até a comparação com o OptimumTire (EDR-067, item 3).
     fy_without_kappa_shift = fy - float(info["SVyk"])
     return -trail * fy_without_kappa_shift + residual + offset * fx
 
