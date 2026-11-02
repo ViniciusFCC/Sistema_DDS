@@ -204,6 +204,91 @@ except ts.StaticTireError:
 
 
 # ---------------------------------------------------------------------------------------------------------
+# Perfis e pressões
+# ---------------------------------------------------------------------------------------------------------
+check("estático /Perfis-1: os quatro perfis (8, 10, 12 e 14 psi) carregam e a lista de pressões bate",
+      len(FAMILIA.profiles) == 4 and all(abs(a - b) < 1e-3 for a, b in zip(FAMILIA.pressures_psi, (8.0, 10.0, 12.0, 14.0))),
+      str(FAMILIA.pressures_psi))
+check("estático /Perfis-2: cada perfil declara eixo ISO_TYDEX e IP == IP_NOM",
+      all(pr.dataset.axis_system == "ISO_TYDEX" and pr.dataset.p["IP"] == pr.dataset.p["IP_NOM"] for pr in FAMILIA.profiles.values()))
+for psi_sem_perfil in (9.0, 11.0, 13.0, 16.0):
+    try:
+        FAMILIA.at_pressure(psi_sem_perfil)
+        check(f"estático /Perfis-3: {psi_sem_perfil:g} psi sem perfil é recusada (sem interpolação)", False, "não lançou")
+    except ts.StaticTireError as exc:
+        check(f"estático /Perfis-3: {psi_sem_perfil:g} psi sem perfil é recusada (sem interpolação)", "Interpolação" in str(exc))
+try:
+    ts.load_profile(next(iter(FAMILIA.profiles.values())).source_path)
+    check("estático /Perfis-4: load_profile exige o eixo declarado", False, "não lançou")
+except ts.StaticTireError:
+    check("estático /Perfis-4: load_profile exige o eixo declarado", True)
+
+# ---------------------------------------------------------------------------------------------------------
+# Overlay de revisão (num diretório temporário)
+# ---------------------------------------------------------------------------------------------------------
+def recusa(nome, fn, trecho):
+    try:
+        fn()
+        check(nome, False, "não lançou")
+    except ts.StaticTireError as exc:
+        check(nome, trecho in str(exc), str(exc))
+
+
+sha_antes = hashlib.sha256(P12.source_path.read_bytes()).hexdigest()
+with tempfile.TemporaryDirectory() as tmp:
+    rev = ts.revise_profile(P12, {"PDY1": P["PDY1"] * 1.05}, reason="teste de overlay", revision_id="T-OVL")
+    arq = Path(tmp) / "rev.json"
+    ts.save_revision(rev, arq)
+    de_volta = ts.load_revision(P12, arq)
+    r1, r2 = operar(rev, 1054.0, 4.0, -2.0, 0.05), operar(de_volta, 1054.0, 4.0, -2.0, 0.05)
+    check("estático /Overlay-1: salvar e reabrir reproduz a revisão (mesmo resultado, mesmo id) e difere do perfil base",
+          (r1.fy_n, r1.mz_nm) == (r2.fy_n, r2.mz_nm) and de_volta.revision_id == "T-OVL"
+          and abs(r1.fy_n - operar(P12, 1054.0, 4.0, -2.0, 0.05).fy_n) > 1.0)
+    recusa("estático /Overlay-2: não sobrescreve overlay existente", lambda: ts.save_revision(rev, arq), "já existe")
+    import json
+    payload = json.loads(arq.read_text(encoding="utf-8"))
+
+    def variante(nome, **mudanca):
+        d = Path(tmp) / f"{nome}.json"
+        d.write_text(json.dumps({**payload, **mudanca}), encoding="utf-8")
+        return d
+
+    recusa("estático /Overlay-3: recusa hash do .tir diferente", lambda: ts.load_revision(P12, variante("hash", source_sha256="0" * 64)), "hash")
+    recusa("estático /Overlay-4: recusa eixo diferente", lambda: ts.load_revision(P12, variante("eixo", axis_system="SAE_CALSPAN")), "eixos")
+    recusa("estático /Overlay-5: recusa pressão diferente", lambda: ts.load_revision(P12, variante("psi", pressure_psi=10.0)), "pressão")
+    recusa("estático /Overlay-6: aplicar o overlay de 12 psi a outro perfil é recusado (hash)",
+           lambda: ts.load_revision(FAMILIA.at_pressure(10.0), arq), "hash")
+    recusa("estático /Overlay-7: overlay de outra versão do modelo é recusado (as equações mudaram na 4.1.0)",
+           lambda: ts.load_revision(P12, variante("versao", model_version="4.0.1-static")), "outra versão")
+check("estático /Overlay-8: o .tir de origem continua com o mesmo SHA-256",
+      hashlib.sha256(P12.source_path.read_bytes()).hexdigest() == sha_antes == P12.base_sha256)
+
+# ---------------------------------------------------------------------------------------------------------
+# Resultados finitos dentro das faixas declaradas
+# ---------------------------------------------------------------------------------------------------------
+n_pts = 0
+n_ruim = 0
+for psi in FAMILIA.pressures_psi:
+    pr = FAMILIA.at_pressure(psi)
+    q = pr.dataset.p
+    for fz in (q["FZMIN"], 0.5 * (q["FZMIN"] + q["FZMAX"]), q["FNOMIN"], q["FZMAX"]):
+        for a in (q["ALPMIN"], 0.0, 0.5 * q["ALPMAX"], q["ALPMAX"]):
+            for g in (q["CAMMIN"], 0.0, q["CAMMAX"]):
+                for k in (q["KPUMIN"], 0.0, q["KPUMAX"]):
+                    r = ts.evaluate_static(pr, fz_n=fz, alpha_rad=a, camber_rad=g, kappa=k, vx_mps=15.0)
+                    n_pts += 1
+                    if not all(math.isfinite(v) for v in (r.fx_n, r.fy_n, r.mx_nm, r.my_nm, r.mz_nm, r.mu_effective)):
+                        n_ruim += 1
+check(f"estático /Faixas-1: Fx, Fy, Mx, My, Mz e mu finitos em {n_pts} pontos dentro das faixas declaradas (4 perfis)",
+      n_pts > 0 and n_ruim == 0, f"{n_ruim} não finitos")
+try:
+    operar(P12, 1054.0, 20.0, 0.0, 0.0)
+    check("estático /Faixas-2: alpha fora da faixa declarada é recusado", False, "não lançou")
+except base.TireRangeError:
+    check("estático /Faixas-2: alpha fora da faixa declarada é recusado", True)
+
+
+# ---------------------------------------------------------------------------------------------------------
 def encerrar():
     print("\n--- Resumo ---")
     n = sum(1 for _, s in results if s == "PASS")
