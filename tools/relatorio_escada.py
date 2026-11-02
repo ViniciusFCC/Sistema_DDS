@@ -252,16 +252,24 @@ def _rodada(caso, a, nome: str, texto_raio: str, obs_raio: str, aviso_raio) -> t
       "do caso sintético, não é resultado do carro.")
     w("")
     l_v43 = next((ln for ln in d2 if ln.nome == escada.NOME_PLANILHA_V43), None)
-    if l_v43 is not None and (caso.ackermann_pct is None or l_v43.limite.veredito == eq.NA):
+    if l_v43 is not None:
+        ack_off = caso.ackermann_pct is None
+        h9_off = not eq.tracao_ativa(caso)
         causas = []
-        if caso.ackermann_pct is None:
+        if ack_off:
             causas.append("o Ackermann está desligado no caso (a forma v43 do Ackermann não tem deriva para corrigir)")
+        if h9_off:
+            causas.append("hipótese 9 desligada no caso: o Fx exigido não entra")
         if l_v43.limite.veredito == eq.NA:
-            causas.append(f"nenhum eixo satura até {n(a.ay_max_g, 2)} g, então o Fx exigido por arrasto induzido (que só "
-                          "muda o limite) não aparece em T")
-        w("**Neste caso a linha `planilha V4.3` coincide com a `planilha` por construção, não por medida:** "
-          + "; ".join(causas) + ". O efeito das formas novas só aparece com Ackermann ligado e um eixo que sature.")
-        w("")
+            causas.append(f"nenhum eixo satura até {n(a.ay_max_g, 2)} g, então ΔT e ΔC_N ficam sem valor")
+        if causas:
+            if ack_off and h9_off:
+                w("**Neste caso a linha `planilha V4.3` coincide com a `planilha` por construção, não por medida:** "
+                  + "; ".join(causas) + ". O efeito aparece com a h2 ou a h9 ligada; ΔT e ΔC_N só com saturação.")
+            else:
+                w("**Sobre a linha `planilha V4.3` neste caso:** " + "; ".join(causas)
+                  + ". O efeito aparece com a h2 ou a h9 ligada; ΔT e ΔC_N só com saturação.")
+            w("")
     w("**Linhas de controle.** As variantes Python (menos a `7`) são resolvidas por um Newton 2-D em (β, δ) com a "
       "rotação a_y = A·cos β e a_x = −A·sen β; a `planilha` usa o trim desacoplado, com a_y = A. Duas linhas de controle "
       "resolvem as hipóteses da planilha pelo Newton, sem mudar nenhuma hipótese, e separam os dois efeitos (coluna "
@@ -513,6 +521,9 @@ def main() -> int:
     w("- Geometria sintética, pneu provisório do TTC e dados demonstrativos: os números mostram o tamanho relativo de cada "
       "hipótese neste caso, não o do carro.")
     w("- A tolerância da escada (EDR-065) está pendente; nada aqui é \"dentro\" nem \"fora\".")
+    w("- Este relatório não dá base para fixar a tolerância do EDR-065: nos dois R (9,125 e 8,385 m) todas as linhas dão N/A, "
+      "porque nenhum eixo satura até 2 g e o Ackermann e a h9 estão desligados. A tolerância precisa de outro caso "
+      "(Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.")
     w("- O raio R é entrada a confirmar; os resultados dependem dele (ver a primeira linha).")
     w("- Passou nos critérios do degrau 1 = os dois códigos concordam; não é validação física.")
     w("- O arrasto entra inteiro no eixo x do carro; a componente lateral D·sen β (a velocidade faz o ângulo β com o carro) "
