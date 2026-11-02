@@ -346,15 +346,45 @@ def _sinal(a, b):
     return "−" if a < b else ("+" if a > b else "0")
 
 
-def tabela_perto(perto: dict) -> str:
-    """Tabela 7: varredura de λ_f perto do neutro (sem refino), com a classe de cada veredito contra o sinal da h/8."""
-    L = ["### Tabela 7. Varredura de λ_f perto do neutro, sem refino [g] (sintético)\n",
+_ALTS = ("atual", "alt1", "alt1_43", "alt2")
+
+
+def tabela_margens(perto: dict, titulo: str) -> str:
+    """Erro de Δ, violação de (c) e margem = faixa − erro de Δ de cada regra [g]. Margem < 0: a faixa não cobre o
+    erro de Δ medido contra a h/8 (referência não convergida)."""
+    L = [f"{titulo}\n",
+         "| Caso | erro de Δ | e_F + e_R | violação de (c) | margem: hoje | margem: alt. 1 (p medido) "
+         "| margem: alt. 1 com 4/3 | margem: alt. 2 |",
+         "|---|---|---|---|---|---|---|---|"]
+    for nome, r in perto.items():
+        ed = r["erro_delta"]
+        marg = [None if ed is None or r["faixas"][k] is None else r["faixas"][k] - ed for k in _ALTS]
+        L.append(f"| {nome} | {_e(ed)} | {_e(r['soma_erros'])} | {'SIM' if r['violacao'] else 'não'} | "
+                 + " | ".join(_e(m) for m in marg) + " |")
+    viol = sum(1 for r in perto.values() if r["violacao"])
+    negs = {k: sum(1 for r in perto.values() if r["erro_delta"] is not None and r["faixas"][k] is not None
+                   and r["faixas"][k] - r["erro_delta"] < 0.0) for k in _ALTS}
+    nomes = {"atual": "hoje", "alt1": "alt. 1 (p medido)", "alt1_43": "alt. 1 com 4/3", "alt2": "alt. 2"}
+    L.append("")
+    L.append(f"- Violações de (c): {viol} de {len(perto)}. Margem negativa: "
+             + "; ".join(f"{nomes[k]} {negs[k]}" for k in _ALTS) + f" de {len(perto)}.")
+    return "\n".join(L) + "\n"
+
+
+def tabela_perto(perto: dict, titulo: str = "### Tabela 7. Varredura de λ_f perto do neutro, sem refino [g] "
+                 "(sintético)", xs: list | None = None) -> str:
+    """Tabela 7: varredura de λ_f perto do neutro (sem refino), com a classe de cada veredito contra o sinal da h/8.
+
+    xs: λ_f [%] de cada caso, para o cruzamento de zero (padrão: os da casos_perto_do_neutro). Sem cruzamento com
+    menos de dois casos.
+    """
+    L = [f"{titulo}\n",
          "Classe: NEUTRO; \"certo\" ou \"ERRADO\" contra o sinal de Δ_h/8 (a h/8 não convergiu por completo). "
          "A alternativa 3 (refino) não foi calculada nesta varredura.\n",
          "| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) "
          "| Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R |",
          "|---|---|---|---|---|---|---|---|---|"]
-    erradas = {k: 0 for k in ("atual", "alt1", "alt1_43", "alt2")}
+    erradas = {k: 0 for k in _ALTS}
     neutros = dict(erradas)
     for nome, r in perto.items():
         d_ref = r["delta"][3]
@@ -370,16 +400,17 @@ def tabela_perto(perto: dict) -> str:
             return f"{_e(r['faixas'][k])} / {v} / {c}"
         L.append(f"| {nome} | {_f(r['delta'][0])} | {_f(d_ref)} | {real} | {cel('atual')} | {cel('alt1')} "
                  f"| {cel('alt1_43')} | {cel('alt2')} | {_f(r['F'].p, '.2f')} / {_f(r['R'].p, '.2f')} |")
-    xs = [4.0 + 0.5 * k for k in range(len(perto))]
+    xs = [4.0 + 0.5 * k for k in range(len(perto))] if xs is None else xs
     rs = list(perto.values())
     x_h = _cruzamento(xs, [r["delta"][0] for r in rs])
     x_8 = _cruzamento(xs, [r["delta"][3] for r in rs])
     L.append("")
-    L.append(f"- Cruzamento de zero por interpolação linear entre casos vizinhos: Δ_h = 0 em λ_f "
-             f"{'—' if x_h is None else '+' + _f(x_h, '.2f') + ' %'}; Δ_h/8 = 0 em λ_f "
-             f"{'—' if x_8 is None else '+' + _f(x_8, '.2f') + ' %'}.")
+    if len(perto) > 1:
+        L.append(f"- Cruzamento de zero por interpolação linear entre casos vizinhos: Δ_h = 0 em λ_f "
+                 f"{'—' if x_h is None else '+' + _f(x_h, '.2f') + ' %'}; Δ_h/8 = 0 em λ_f "
+                 f"{'—' if x_8 is None else '+' + _f(x_8, '.2f') + ' %'}.")
     nomes = {"atual": "regra atual", "alt1": "alt. 1 (p medido)", "alt1_43": "alt. 1 com 4/3", "alt2": "alt. 2"}
-    L.append("- Sinal errado / NEUTRO em " + str(len(perto)) + " casos: "
+    L.append(f"- Sinal errado / NEUTRO em {len(perto)} caso{'s' if len(perto) != 1 else ''}: "
              + "; ".join(f"{nomes[k]} {erradas[k]} / {neutros[k]}" for k in nomes) + ".")
     return "\n".join(L) + "\n"
 
@@ -505,6 +536,13 @@ def main(argv=None) -> int:
     texto += "\n" + "\n".join(L)
     perto = {n: estudar(c) for n, c in casos_perto_do_neutro(base).items()}
     texto += "\n" + tabela_perto(perto)
+    texto += "\n" + tabela_margens(perto, "### Tabela 8. Margem = faixa − erro de Δ na varredura, sem refino [g] "
+                                          "(sintético)")
+    # Caso de conferência da janela estimada por interpolação (λ_f entre +4,84 % e ~+4,86 %; revisão da Task 6)
+    extra = {f"λ_f +4,85 % ({ROTULO})": estudar(_com_lambda(base, 1.0485))}
+    texto += "\n" + tabela_perto(extra, "### Tabela 9. Caso de conferência λ_f +4,85 %, sem refino [g] (sintético)",
+                                 xs=[4.85])
+    texto += "\n" + tabela_margens(extra, "Margem do caso de conferência [g] (sintético)")
     saida = Path(a.saida)
     saida.parent.mkdir(parents=True, exist_ok=True)
     saida.write_text(texto, encoding="utf-8", newline="\n")
