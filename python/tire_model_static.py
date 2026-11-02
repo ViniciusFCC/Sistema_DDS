@@ -329,11 +329,6 @@ def _validate(profile: StaticTireProfile, fz: float, alpha: float, gamma: float,
         raise StaticTireError("Vx deve ser >= 0 m/s.")
     if fz <= 0:
         raise StaticTireError("Fz deve ser > 0 N para avaliação estática.")
-    vmax = profile.dataset.p.get("LONGVL")
-    if vmax is not None and vx > vmax:
-        raise StaticTireError(
-            f"Vx={vx:g} m/s excede LONGVL={vmax:g} m/s, velocidade de referência do .tir."
-        )
     violations = _base.in_range(profile.dataset, fz, alpha, gamma, kappa)
     if violations:
         raise _base.TireRangeError("; ".join(violations))
@@ -532,6 +527,13 @@ def evaluate_static(
         "Pressão suportada somente nos perfis nominais disponíveis; sem interpolação.",
         "Validation = NOT_VALIDATED contra medição independente.",
     ]
+    vref = profile.dataset.p.get("LONGVL")
+    if vref is not None and vx_mps > vref:
+        # LONGVL é a velocidade de medição do TTC, não um limite: Fx/Fy do PAC2002 não dependem de Vx.
+        limitations.append(
+            f"Vx={vx_mps:g} m/s acima de LONGVL={vref:g} m/s (velocidade de medição do TTC); "
+            "efeito da velocidade fora dos dados medidos."
+        )
     if all(_get(profile.dataset.p, f"QSY{i}") == 0.0 for i in range(1, 9)):
         limitations.append("QSY1..QSY8 são zero no .tir; My resulta zero da parametrização.")
     missing_moments = [key for key in MOMENT_COEFFICIENTS if key not in profile.dataset.p]

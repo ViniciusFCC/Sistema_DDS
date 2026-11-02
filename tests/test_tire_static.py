@@ -181,6 +181,29 @@ for (fz, a, g, k), esperado in (((1054.0, 4.0, 0.0, 0.08), 7.5), ((1054.0, 4.0, 
 
 
 # ---------------------------------------------------------------------------------------------------------
+# Velocidade: LONGVL é a velocidade de medição do TTC, não um limite
+# ---------------------------------------------------------------------------------------------------------
+vref = P["LONGVL"]
+r_ok = operar(P12, 1054.0, 4.0, 0.0, 0.0, vx=vref)
+check("estático /Vx-1: Vx == LONGVL não gera aviso de velocidade",
+      not any("LONGVL" in m for m in r_ok.limitations))
+try:
+    r_alta = operar(P12, 1054.0, 4.0, 0.0, 0.0, vx=1.5 * vref)
+    avisos = [m for m in r_alta.limitations if "LONGVL" in m]
+    check("estático /Vx-2: Vx > LONGVL não lança erro e acrescenta aviso em limitations",
+          len(avisos) == 1 and "fora dos dados medidos" in avisos[0], avisos[0] if avisos else "sem aviso")
+    check("estático /Vx-3: Fx, Fy, Mx e Mz não dependem de Vx (só o My usa a velocidade)",
+          (r_alta.fx_n, r_alta.fy_n, r_alta.mx_nm, r_alta.mz_nm) == (r_ok.fx_n, r_ok.fy_n, r_ok.mx_nm, r_ok.mz_nm))
+except ts.StaticTireError as exc:
+    check("estático /Vx-2: Vx > LONGVL não lança erro e acrescenta aviso em limitations", False, f"lançou {exc}")
+try:
+    operar(P12, 1054.0, 4.0, 0.0, 0.0, vx=-1.0)
+    check("estático /Vx-4: Vx < 0 lança StaticTireError", False, "não lançou")
+except ts.StaticTireError:
+    check("estático /Vx-4: Vx < 0 lança StaticTireError", True)
+
+
+# ---------------------------------------------------------------------------------------------------------
 def encerrar():
     print("\n--- Resumo ---")
     n = sum(1 for _, s in results if s == "PASS")
