@@ -30,7 +30,7 @@
 
 ## Arquivos
 
-- Atualizar somente o arquivo novo e ainda local `python/tire_model_static_v4.py` para fechar os contratos PAC2002 e de revisão.
+- Atualizar somente o arquivo novo e ainda local `python/tire_model_static.py` para fechar os contratos PAC2002 e de revisão.
 - Atualizar somente o notebook novo `notebooks/tire_static_exploration.ipynb` para inspecionar perfis, respeitar limites e mostrar curvas de Fx/Fy/Mx/My/Mz.
 - Atualizar este plano novo, criado nesta tarefa. Não editar documentos versionados preexistentes ou arquivos `.xlsx`.
 - Os `.tir` e o PDF do guia ficam sob regras locais/ignoradas; não adicionar nem publicar esses dados.

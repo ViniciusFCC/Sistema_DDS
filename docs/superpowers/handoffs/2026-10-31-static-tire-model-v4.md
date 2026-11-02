@@ -8,7 +8,7 @@ Não editar planilhas nem documentos preexistentes. Os perfis `.tir` e PDFs de r
 
 ## Estado atual
 
-- O protótipo está em `python/tire_model_static_v4.py`; exploração em `notebooks/tire_static_exploration.ipynb`.
+- O protótipo está em `python/tire_model_static.py`; exploração em `notebooks/tire_static_exploration.ipynb`.
 - O ZIP Round 6 fornecido pelo usuário contém quatro perfis PAC2002 (8, 10, 12 e 14 psi). Estão em `data/local_tires/round_6_hoosier_r25b/`, caminho local ignorado pelo Git.
 - `load_profile_family()` carrega os quatro perfis com `source_axis_system='ISO_TYDEX'`. Pressões numéricas observadas: 7.999992, 10.000062, 11.999987 e 14.000058 psi. A tolerância de seleção está em `1e-3 psi` para corresponder ao arredondamento do arquivo, sem interpolar perfis.
 - Notebook executado com sucesso via `nbclient`, seis células de código e três figuras renderizadas. O kernel precisa iniciar com a raiz do repositório como `cwd`.
@@ -36,7 +36,7 @@ Na raiz do repositório:
 
 ```powershell
 .venv\Scripts\python.exe -X utf8 -c "import pathlib,nbformat; from nbclient import NotebookClient; n=nbformat.read('notebooks/tire_static_exploration.ipynb',as_version=4); NotebookClient(n,timeout=180,kernel_name='python3',resources={'metadata':{'path':str(pathlib.Path.cwd())}}).execute(); print('notebook OK')"
-uv run ruff check python/tire_model_static_v4.py python/tire_model.py
+uv run ruff check python/tire_model_static.py python/tire_model.py
 ```
 
 Se os `.tir` locais não estiverem presentes, solicitar novamente o ZIP/perfil ao usuário; não procurar cópias em locais não especificados nem versionar os dados.
