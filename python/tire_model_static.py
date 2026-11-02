@@ -29,7 +29,7 @@ from types import MappingProxyType
 
 import tire_model as _base
 
-__version__ = "4.0.1-static"
+__version__ = "4.1.0-static"
 SUPPORTED_FORMATS = {"PAC2002"}
 PRESSURE_TOLERANCE_PSI = 1e-3
 MOMENT_COEFFICIENTS = (
@@ -374,13 +374,12 @@ def _mx(profile: StaticTireProfile, fz: float, fy: float, gamma: float) -> float
     coupling = (
         _get(p, "QSX3") * fy_n
         + _get(p, "QSX4")
-        * math.cos(_get(p, "QSX5") * math.atan(_get(p, "QSX6") * fz_n))
+        * math.cos(_get(p, "QSX5") * math.atan((_get(p, "QSX6") * fz_n) ** 2))
         * math.sin(
             _get(p, "QSX7") * gamma
             + _get(p, "QSX8") * math.atan(_get(p, "QSX9") * fy_n)
         )
-        + _get(p, "QSX10") * math.atan(_get(p, "QSX11") * fz_n)
-        - _get(p, "QSX2") * gamma
+        + (_get(p, "QSX10") * math.atan(_get(p, "QSX11") * fz_n) - _get(p, "QSX2")) * gamma
         + _get(p, "QSX1") * _get(p, "LVMX", 1.0)
     )
     return r0 * fz * coupling * _get(p, "LMX", 1.0)
@@ -427,7 +426,14 @@ def _mz(
     fy: float,
     info: Mapping[str, float],
 ) -> float:
-    """PAC2002 aligning moment Mz, Eqs. 100-108, Adams Tire User Guide 2022.3."""
+    """PAC2002 aligning moment Mz, Eqs. 100-108, Adams Tire User Guide 2022.3.
+
+    Eq. 100: Mz = -t*F'y + Mzr + s*Fx (o termo de Fx entra com sinal positivo).
+    O Fy do termo de trilha usa a cambagem real (F'y = Fy - SVyk, como na
+    Eq. 4.E71 do Pacejka). O help do Adams escreve F'y,gamma=0 na Eq. 103, mas o
+    Pacejka só usa Fy em gamma=0 no modelo de motocicleta (seção 11.6), então
+    essa variante não foi adotada; pendente de decisão.
+    """
     p = profile.dataset.p
     fz0 = p["LFZO"] * p["FNOMIN"]
     r0 = p["UNLOADED_RADIUS"]
@@ -494,7 +500,7 @@ def _mz(
     ) * _get(p, "LS", 1.0)
     # Adams PAC2002 Eq. 103: F'y = Fy - SVyk, preserving combined-slip Fy.
     fy_without_kappa_shift = fy - float(info.get("SVyk", 0.0))
-    return -trail * fy_without_kappa_shift + residual - offset * fx
+    return -trail * fy_without_kappa_shift + residual + offset * fx
 
 
 def evaluate_static(
