@@ -7,12 +7,18 @@ e `todas`) e as sensibilidades. Sem veredito: a tolerância da escada é o EDR-0
 (pendente). Nenhum número do Python vai para a planilha, que nunca é aberta para escrita (spec base 7.5).
 
 Uso (Git Bash, depois de export UV_SYSTEM_CERTS=1):
-    uv run python -X utf8 tools/relatorio_escada.py [--raio R --origem-raio TEXTO] [--ay-max-g G] [--saida ARQ] [--sobrescrever]
+    uv run python -X utf8 tools/relatorio_escada.py [--raio R --origem-raio TEXTO | --metodo-raio M [--metodo-raio M2]]
+        [--bitola-m T] [--ay-max-g G] [--saida ARQ] [--sobrescrever]
 
 O raio R do skidpad é entrada "a confirmar". Este script nunca escolhe um R:
 - caso da planilha sem R e sem --raio: sai com código 3 e a mensagem "informe --raio";
 - --raio R exige --origem-raio TEXTO, vale só para o caso deste relatório e vai no topo ("R = <valor> m (origem: ...)").
   Num caso sem R, o --raio liga no Python a hipótese 3 (cos δ_ref), que a planilha com R vazio tem desligada: o relatório avisa.
+- --metodo-raio {linha_central,rente_aos_cones} (incremento 7, EDR-067; pode repetir): o R sai de `skidpad.raio` com as
+  bitolas do caso (a provisória `--bitola-m`, padrão 1,3 m, rotulada "provisória do T11", só entra onde o caso não tem
+  bitola), a meia largura do pneu do `.tir` e os diâmetros do skidpad (Formula SAE Rules 2026 v1.0, D.10.1.1). A origem do
+  R vai sozinha para o relatório; é exclusivo de --raio. Cada método dá uma rodada (seção) no mesmo arquivo.
+- O degrau 2 roda sempre com a linha "planilha V4.3" (`incluir_v43=True`).
 - --ay-max-g G (padrão 2,0) é a faixa de busca da saturação, rotulada no relatório; não é dado do carro.
 
 Saída: 0 = gravado; 1 = a referência mudou durante a execução; 2 = recusa (argumentos, arquivo existente);
@@ -42,11 +48,14 @@ import equilibrio as eq  # noqa: E402
 import escada  # noqa: E402
 import mmm  # noqa: E402
 import recalculo_planilha as rc  # noqa: E402
+import skidpad as sk  # noqa: E402
 from suspension_model import G  # noqa: E402
 
 XLSX = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
 TIR = RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
 SAIDA_PADRAO = RAIZ / "docs" / "inc6" / "escada-hipoteses.md"
+BITOLA_PROVISORIA_M = 1.3   # provisória do T11 (U3 do plano do inc. 7): sem dado do carro; só onde o caso não tem bitola
+NOME_METODO = {"linha_central": "linha central", "rente_aos_cones": "rente aos cones"}
 
 # Passo 1 da Task 7 (conferência do .tir combinado). Fonte: help do Adams 2024.1, "Example of PAC2002 Tire Property
 # Files" (PDF pp. 92-107; a segunda listagem, pp. 105-107, confirmada na imagem das pp. 106 e 107), e
@@ -123,17 +132,255 @@ def tabela(cab: list[str], linhas: list[list[str]]) -> list[str]:
     return ["| " + " | ".join(cab) + " |", "|" + "---|" * len(cab)] + ["| " + " | ".join(l) + " |" for l in linhas]
 
 
+AVISO_R_VAZIO = (
+    "**Aviso: a base \"planilha\" deste relatório não é a planilha de hoje.** A planilha com R vazio tem a hipótese 3 "
+    "(cos δ_ref) desligada, e no Python o raio liga o cos δ_ref na dianteira (a Fy dianteira leva cos(L/R)). Com o R "
+    "informado, a linha `planilha` já tem a hipótese 3 ligada, e o Δ da linha `3` mede só o cos δ do trim contra esse "
+    "cos δ_ref, não contra a falta dele. Preencha o R na planilha (e ligue a chave da hipótese 3) para a base ser a da "
+    "planilha."
+)
+
+
+def _raio_do_metodo(caso, metodo: str, bitola_m: float):
+    """(R, texto_raio, obs_raio, rotulos) do método, ou (None, motivo, None, None). Origem do R automática (EDR-067)."""
+    cfg = caso.cfg
+    def valida(t):
+        return t is not None and math.isfinite(t) and t > 0.0
+    t_f, t_r = cfg.track_front, cfg.track_rear
+    rot_bitola = []
+    if valida(t_f) and valida(t_r):
+        txt_bitola = (f"bitolas do caso da planilha (dados demonstrativos, não do carro): t_f = {n(t_f, 3)} m, "
+                      f"t_r = {n(t_r, 3)} m")
+    else:
+        if not valida(t_f):
+            t_f = bitola_m
+            rot_bitola.append("t_f")
+        if not valida(t_r):
+            t_r = bitola_m
+            rot_bitola.append("t_r")
+        txt_bitola = (f"bitola provisória do T11 ({', '.join(rot_bitola)} = {n(bitola_m, 3)} m, `--bitola-m`; sem dado do "
+                      "carro, a confirmar)")
+    try:
+        meia = sk.meia_largura_do_tir(caso.ds)
+    except ValueError:
+        meia = None
+    R, motivo = sk.raio(metodo, d_int=sk.D_INTERNO_M, d_ext=sk.D_EXTERNO_M, L=cfg.wheelbase, b=cfg.cg_to_rear,
+                        t_f=t_f, t_r=t_r, meia_largura=meia, r_manual=None)
+    if R is None:
+        return None, motivo, None, None
+    diam = (f"D_int = {n(sk.D_INTERNO_M, 2)} m e D_ext = {n(sk.D_EXTERNO_M, 2)} m ({sk.FONTE_DIAMETROS}; entrada "
+            "provisória, a confirmar com o regulamento da prova)")
+    if metodo == "linha_central":
+        origem = f"skidpad, linha central: R = (D_int + D_ext)/4 com {diam}"
+    else:
+        rr = sk.raio_rente_aos_cones(sk.D_INTERNO_M, cfg.wheelbase, cfg.cg_to_rear, t_f, t_r, meia)
+        origem = (f"skidpad, rente aos cones: R = √(b² + R_c²), R_c = {n(rr.raio_c_m, 4)} m (eixo {rr.eixo} limita), "
+                  f"limite geométrico de ocupação e não a trajetória real; {diam}; meia largura do pneu "
+                  f"{'ausente (entrou 0)' if meia is None else n(meia, 4) + ' m, ' + sk.ORIGEM_MEIA_LARGURA}; {txt_bitola}")
+    if metodo == "linha_central":
+        origem += f"; {txt_bitola} (não entra no R da linha central)"
+    texto = f"R = {n(R, 3)} m (origem: {origem})"
+    obs = ("O caso da planilha não tem R (R vazio); o valor do método foi aplicado só ao caso deste relatório. "
+           "A planilha não foi alterada." if caso.raio_m is None else
+           f"O caso da planilha tinha R = {n(caso.raio_m, 3)} m e este valor foi substituído só no caso deste relatório.")
+    if motivo:
+        obs += f" Aviso do cálculo do R: {motivo}."
+    return R, texto, obs, rot_bitola
+
+
+def _rodada(caso, a, nome: str, texto_raio: str, obs_raio: str, aviso_raio) -> tuple[list[str], dict]:
+    """Degraus 1 e 2 e sensibilidades de um caso (um R) e as seções 3 a 6 dele; devolve (linhas, tempos)."""
+    t0 = time.perf_counter()
+    d1 = escada.degrau_1(caso, a.ay_max_g)
+    t_d1 = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    d2 = escada.degrau_2(caso, a.ay_max_g, incluir_v43=True)
+    t_d2 = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    sens = escada.sensibilidades(caso, a.ay_max_g)
+    t_sens = time.perf_counter() - t0
+
+    md: list[str] = []
+    w = md.append
+    w(f"## Rodada: {nome}")
+    w("")
+    w(f"- {texto_raio}")
+    w(f"- {obs_raio}")
+    w(f"- Caso: L = {n(caso.cfg.wheelbase, 3)} m, bitola dianteira {n(caso.cfg.track_front, 3)} m, "
+      f"Ackermann {'desligado' if caso.ackermann_pct is None else n(caso.ackermann_pct, 1) + ' %'}, "
+      f"CG lateral {n(caso.cg_lateral_m, 3)} m, "
+      f"aero {'CzA/ρ' if caso.cza_m2 is not None else 'downforce fixa'}, "
+      f"arrasto {'ligado (CdA, Crr)' if caso.cda_m2 is not None else 'desligado'}.")
+    w(f"- Tempos desta rodada: degrau 1 {n(t_d1, 1)} s, degrau 2 {n(t_d2, 1)} s, sensibilidades {n(t_sens, 1)} s")
+    w("")
+    if aviso_raio:
+        w(aviso_raio)
+        w("")
+    w("### 3. Degrau 1: MMM na configuração da planilha contra `analise_par`")
+    w("")
+    w("O degrau 1 é uma identidade quase por construção: os dois códigos usam a física por roda do mesmo módulo. Ele prova "
+      "o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 2 × a "
+      "resolução. Diferenças = MMM − `analise_par`.")
+    w("")
+    linhas = []
+    for c in d1:
+        linhas.append([c.sentido, c.veredito_mmm, c.veredito_par, sci(c.d_ay_sat_f), sci(c.d_ay_sat_r),
+                       sci(c.cn_mmm), sci(c.cn_par), sci(c.resolucao_ms2), "sim" if c.ok else "não", txt(c.motivo)])
+    md += tabela(["Sentido", "Veredito MMM", "Veredito par", "Δ ay_sat F [m/s²]", "Δ ay_sat R [m/s²]", "C_N MMM (Q)",
+                  "C_N par", "Resolução [m/s²]", "Passa o critério numérico", "Motivo"], linhas)
+    w("")
+    if all(c.veredito_mmm == eq.NA and c.veredito_par == eq.NA for c in d1):
+        w(f"Os dois lados dão N/A nos dois sentidos (nenhum eixo satura até {n(a.ay_max_g, 2)} g neste caso e neste R): o \"sim\" vale "
+          "para a coincidência do N/A, e a identidade das saturações e do C_N não foi exercitada neste caso.")
+        w("")
+    w("\"Passa o critério numérico\" é o critério de identidade do degrau 1 (mesmo veredito, saturações dentro da cota, C_N "
+      "dentro da folga equivalente). Não é o veredito de tolerância do degrau 2 (EDR-065).")
+    w("")
+
+    w("### 4. Degrau 2: uma variante Python por vez a partir da planilha")
+    w("")
+    w("Uma linha por variante. Hipóteses numeradas como na spec (1+2 = α cinemático e Ackermann; 3 = cos δ no trim; 7 = "
+      "os dois sentidos; 9a = Fx exigido por balanço; 9b = PAC2002 combinado; 10 = diferencial travado; 11 = "
+      "transferência longitudinal em regime; `10+9b` = travado com o PAC2002 combinado). As linhas com a hipótese 7 "
+      "(`7` e `todas`) mostram o pior sentido. K em °/g; K e o stability index valem em 0,05 g. O stability index (SI) "
+      "sai em 1/g, com o sinal do C_N estabilizante: positivo = estabilizante (carro estável, subesterço); o Milliken usa "
+      "o C_N do ISO, de sinal oposto.")
+    w("")
+    w("A linha `planilha V4.3` (incremento 7, EDR-066) vem logo depois da `planilha`: as fórmulas da V4.3 (Ackermann com o "
+      "centro da curva na linha do eixo traseiro e Fx exigido por arrasto induzido), desacoplada, com referência na "
+      "`planilha`. O Δ dela é o efeito das duas formas novas sobre a V4.2. Valor sintético: depende do R desta rodada e "
+      "do caso sintético, não é resultado do carro.")
+    w("")
+    l_v43 = next((ln for ln in d2 if ln.nome == escada.NOME_PLANILHA_V43), None)
+    if l_v43 is not None and (caso.ackermann_pct is None or l_v43.limite.veredito == eq.NA):
+        causas = []
+        if caso.ackermann_pct is None:
+            causas.append("o Ackermann está desligado no caso (a forma v43 do Ackermann não tem deriva para corrigir)")
+        if l_v43.limite.veredito == eq.NA:
+            causas.append(f"nenhum eixo satura até {n(a.ay_max_g, 2)} g, então o Fx exigido por arrasto induzido (que só "
+                          "muda o limite) não aparece em T")
+        w("**Neste caso a linha `planilha V4.3` coincide com a `planilha` por construção, não por medida:** "
+          + "; ".join(causas) + ". O efeito das formas novas só aparece com Ackermann ligado e um eixo que sature.")
+        w("")
+    w("**Linhas de controle.** As variantes Python (menos a `7`) são resolvidas por um Newton 2-D em (β, δ) com a "
+      "rotação a_y = A·cos β e a_x = −A·sen β; a `planilha` usa o trim desacoplado, com a_y = A. Duas linhas de controle "
+      "resolvem as hipóteses da planilha pelo Newton, sem mudar nenhuma hipótese, e separam os dois efeitos (coluna "
+      "\"Δ contra\"):")
+    w("")
+    w("- `planilha (acoplado, sem rotação)`: o Newton com a_y = A e a_x = 0, as mesmas da planilha. O Δ contra a "
+      "`planilha` é só o viés do método.")
+    w("- `planilha (acoplado)`: o Newton com a rotação. O Δ contra a linha sem rotação é o efeito da simplificação "
+      "a_y = A da planilha (a rotação não tem número de hipótese). A soma dos dois Δ é o Δ dela contra a `planilha`.")
+    w("")
+    w("Δ e \"Inverte\" das linhas acopladas são contra a `planilha (acoplado)`, para que o número de cada linha seja o "
+      "efeito da hipótese, e não o do método nem o da rotação; o Δ da `7` (desacoplada) é contra a `planilha`.")
+    w("")
+    w("**Folga do outro eixo em T** (só nas linhas acopladas com T): acima de T não existe trim, então o eixo que não "
+      "satura fica sem ay_sat (\"—\"), e a coluna mostra a folga dele em T, nos eixos do carro: a capacidade dele em T "
+      "menos a força que ele faz no trim, em N e em % da capacidade. É a mesma folga que dá o Q. Nas linhas desacopladas os "
+      "dois ay_sat existem e a coluna fica \"—\".")
+    w("")
+    if any(ln.motivo for ln in d2):
+        w("Linhas cuja hipótese está desligada no caso (a chave da planilha está desligada) ainda são calculadas, e a "
+          "hipótese desligada não muda nada nelas: uma linha de uma hipótese só coincide com a referência por construção; "
+          "na `todas`, só as hipóteses ligadas contam no Δ. O motivo vem na lista abaixo da tabela.")
+        w("")
+    linhas = []
+    for ln in d2:
+        lim = ln.limite
+        linhas.append([f"`{ln.nome}`", ", ".join(map(str, ln.hipoteses)) or "—", lim.veredito, txt(lim.eixo_satura),
+                       g_de(lim.ay_sat_f, 4), g_de(lim.ay_sat_r, 4), g_de(lim.ay_t_ms2, 4), folga(lim),
+                       n(lim.cn_estabilizante_q, 4), k_graus_por_g(lim.k_rad_por_ms2), txt(ln.pior_sentido),
+                       g_de(ln.d_ay_t, 6), n(ln.d_cn_estabilizante_q, 4),
+                       k_graus_por_g(ln.d_k) if ln.d_k is not None else "—", f"`{ln.referencia}`", ln.inverte,
+                       "—" if lim.stability_index is None else n(lim.stability_index * G, 4)])
+    md += tabela(["Linha", "Hipóteses", "Veredito", "Eixo que satura", "ay_sat F", "ay_sat R", "T",
+                  "Folga do outro eixo em T", "C_N estab. (Q)",
+                  "K [°/g]", "Pior sentido", "Δ T", "Δ C_N", "Δ K [°/g]", "Δ contra", "Inverte", "SI [1/g]"], linhas)
+    w("")
+    motivos = [(ln.nome, ln.motivo, ln.limite.motivo, ln.limite.motivo_sat, ln.limite.limitacoes) for ln in d2]
+    if any(d or m or s or l for _, d, m, s, l in motivos):
+        w("Motivos e avisos por linha (onde existem):")
+        w("")
+        for nome, d, m, s, l in motivos:
+            partes = [p for p in (d, m, s, "; ".join(l) if l else None) if p]
+            if partes:
+                w(f"- `{nome}`: {' | '.join(partes)}")
+        w("")
+
+    w("### 5. Sensibilidades")
+    w("")
+    w("Diferença central de ± um passo, na unidade da coluna. Valores em torno da planilha, sem faixa afirmada. "
+      "`h_cp` liga com a transferência em regime; `h_cg` é por 10 mm de altura do CG (decisão 4 do plano: o jacking não "
+      "muda a soma das Fz, e o camber já está em `ganho_camber`). A sensibilidade de `h_cp` é em torno de h_cp = 0: sem "
+      "dado de altura do centro de pressão, `h_cp_m = None` equivale a h_cp = 0 (a parcela D·h_cp/L fica fora), e a "
+      "tabela mostra o efeito de subir 10 mm a partir daí, não de uma altura medida.")
+    w("")
+    linhas = [[f"`{s['parametro']}`", s["unidade"], g_de(s["d_ay_t"], 5), n(s["d_cn_estabilizante_q"], 5),
+               k_graus_por_g(s["d_k"], 4), txt(s["veredito_menos"]), txt(s["veredito_mais"]), txt(s["motivo"])]
+              for s in sens]
+    md += tabela(["Parâmetro", "Unidade", "∂T", "∂C_N estab. (Q)", "∂K [°/g]", "Veredito −", "Veredito +", "Motivo"], linhas)
+    w("")
+
+    # --- Achados do adendo §7, com os números medidos nas linhas 1+2 e 9a ---
+    por_nome = {ln.nome: ln for ln in d2}
+    l12, l9a = por_nome["1+2"], por_nome["9a"]
+    esperado_dalfa = caso.cfg.wheelbase * caso.cfg.track_front / caso.raio_m ** 2   # L·t/R² [rad]
+    w("### 6. Achados do adendo §7 sobre fórmulas da planilha (nenhuma mudança agora)")
+    w("")
+    w("Estas são duas simplificações físicas da planilha, conferidas no código. O incremento 6 não mexe nelas; "
+      "qualquer mudança exige EDR e aprovação explícita do usuário. Aqui aparece só o efeito medido no degrau 2.")
+    w("")
+    w(f"1. **Ackermann (hipótese 2, SUS-414).** `deriva_ackermann` supõe a mesma direção de velocidade nas duas "
+      f"dianteiras; na cinemática real as direções diferem de ≈ L·t/R², que é o próprio Ackermann ideal. Com L = "
+      f"{n(caso.cfg.wheelbase, 3)} m, t = {n(caso.cfg.track_front, 3)} m e R = {n(caso.raio_m, 3)} m, L·t/R² = "
+      f"{n(math.degrees(esperado_dalfa), 3)}° entre as rodas (estimativa analítica, não medida no solver). Efeito medido "
+      f"na linha `1+2`: ΔT = {g_de(l12.d_ay_t, 4)}, ΔC_N = {n(l12.d_cn_estabilizante_q, 4)}, ΔK = "
+      f"{k_graus_por_g(l12.d_k, 4)} °/g, veredito {l12.limite.veredito} (inverte: {l12.inverte}).")
+    w(f"2. **Fx exigido (hipótese 9, EDR-057).** `fx_exigido_traseira` usa |F_yf|·tan(L/R) ≈ m·A·b/R, que depende de R e "
+      f"não da deriva; o balanço completo é F_yf·sen δ − m·A·sen β (em primeira ordem, F_yf·|α_F| + F_yr·|α_R|, o arrasto "
+      f"induzido). Efeito medido na linha `9a`: "
+      f"ΔT = {g_de(l9a.d_ay_t, 4)}, ΔC_N = {n(l9a.d_cn_estabilizante_q, 4)}, ΔK = {k_graus_por_g(l9a.d_k, 4)} °/g, "
+      f"veredito {l9a.limite.veredito} (inverte: {l9a.inverte}).")
+    w("")
+    if l12.d_ay_t is None or l9a.d_ay_t is None:
+        w(f"Onde ΔT e ΔC_N aparecem como \"—\", a linha (ou a referência dela, coluna \"Δ contra\") não tem T: com este "
+          f"caso e este R nenhum eixo satura até {n(a.ay_max_g, 2)} g, então só o K tem número. O efeito no limite não foi "
+          f"medido.")
+        w("")
+    w("Nada foi ajustado para bater. Cada efeito vale para este R e para o caso sintético, não para o carro.")
+    w("")
+
+    return md, {"d1": t_d1, "d2": t_d2, "sens": t_sens}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--saida", type=Path, default=SAIDA_PADRAO)
     ap.add_argument("--sobrescrever", action="store_true", help="regrava um relatório que já existe")
     ap.add_argument("--raio", type=float, default=None, help="raio R do skidpad [m], só para o caso deste relatório")
     ap.add_argument("--origem-raio", default=None, help="de onde vem o R (obrigatório com --raio)")
+    ap.add_argument("--metodo-raio", action="append", choices=["linha_central", "rente_aos_cones"], default=None,
+                    help="método do R do skidpad (skidpad.raio); repita para mais de uma rodada")
+    ap.add_argument("--bitola-m", type=float, default=BITOLA_PROVISORIA_M,
+                    help="bitola provisória do T11 [m], só onde o caso não tem bitola (padrão 1,3)")
     ap.add_argument("--ay-max-g", type=float, default=2.0,
                     help="faixa de busca da saturação [g] (rotulada no relatório; padrão 2,0; não é dado do carro)")
     a = ap.parse_args()
     if not (a.ay_max_g > 0.0 and math.isfinite(a.ay_max_g)):
         print("RECUSADO: --ay-max-g deve ser um número finito > 0 (g)", file=sys.stderr)
+        return 2
+    if a.metodo_raio and a.raio is not None:
+        print("RECUSADO: --metodo-raio e --raio são exclusivos", file=sys.stderr)
+        return 2
+    if a.metodo_raio and len(set(a.metodo_raio)) != len(a.metodo_raio):
+        print("RECUSADO: --metodo-raio repetido com o mesmo método", file=sys.stderr)
+        return 2
+    if not (a.bitola_m > 0.0 and math.isfinite(a.bitola_m)):
+        print("RECUSADO: --bitola-m deve ser um número finito > 0 (m)", file=sys.stderr)
+        return 2
+    if a.metodo_raio and a.origem_raio:
+        print("RECUSADO: com --metodo-raio a origem do R é automática; não use --origem-raio", file=sys.stderr)
         return 2
     if a.raio is not None:
         if not (a.raio > 0.0 and math.isfinite(a.raio)):
@@ -183,42 +430,44 @@ def main() -> int:
         print("ERRO: a V4.2 de referência mudou durante a execução; relatório não gravado", file=sys.stderr)
         return 1
 
-    if a.raio is not None:
+    # --- rodadas: cada uma tem o seu R, a sua origem e o seu caso ---
+    rodadas = []   # (nome, caso, texto_raio, obs_raio, aviso_raio)
+    if a.metodo_raio:
+        for metodo in a.metodo_raio:
+            R, texto, obs, _ = _raio_do_metodo(caso, metodo, a.bitola_m)
+            if R is None:
+                print(f"RECUSADO (código 3): sem R pelo método {metodo}: {texto}. O script não escolhe um R.",
+                      file=sys.stderr)
+                return 3
+            rodadas.append((f"método {NOME_METODO[metodo]}", replace(caso, raio_m=R), texto, obs,
+                            AVISO_R_VAZIO if caso.raio_m is None else None))
+    elif a.raio is not None:
         r_planilha = caso.raio_m
-        caso = replace(caso, raio_m=a.raio)
         texto_raio = f"R = {n(a.raio, 3)} m (origem: {a.origem_raio.strip()})"
         obs_raio = (f"O caso da planilha tinha R = {n(r_planilha, 3)} m e este valor foi substituído só no caso deste "
                     "relatório." if r_planilha is not None else
                     "O caso da planilha não tem R (chaves que o usam desligadas ou R vazio); o valor foi aplicado só ao "
                     "caso deste relatório. A planilha não foi alterada.")
-        aviso_raio = (None if r_planilha is not None else
-                      "**Aviso: a base \"planilha\" deste relatório não é a planilha de hoje.** A planilha com R vazio tem a "
-                      "hipótese 3 (cos δ_ref) desligada, e no Python o raio liga o cos δ_ref na dianteira (a Fy dianteira "
-                      "leva cos(L/R)). Com o `--raio` informado, a linha `planilha` já tem a hipótese 3 ligada, e o Δ da "
-                      "linha `3` mede só o cos δ do trim contra esse cos δ_ref, não contra a falta dele. Preencha o R na "
-                      "planilha (e ligue a chave da hipótese 3) para a base ser a da planilha.")
+        rodadas.append(("R informado", replace(caso, raio_m=a.raio), texto_raio, obs_raio,
+                        None if r_planilha is not None else AVISO_R_VAZIO))
     elif caso.raio_m is not None:
-        texto_raio = f"R = {n(caso.raio_m, 3)} m (origem: planilha V4.2, caso lido por nomes)"
-        obs_raio = "R lido da planilha."
-        aviso_raio = None
+        rodadas.append(("R da planilha", caso, f"R = {n(caso.raio_m, 3)} m (origem: planilha V4.2, caso lido por nomes)",
+                        "R lido da planilha.", None))
     else:
         print("RECUSADO (código 3): o caso da planilha não tem raio R (\"a confirmar\"); informe --raio R "
-              "--origem-raio TEXTO. O script não escolhe um R.", file=sys.stderr)
+              "--origem-raio TEXTO ou --metodo-raio. O script não escolhe um R.", file=sys.stderr)
         return 3
 
-    t0 = time.perf_counter()
-    d1 = escada.degrau_1(caso, a.ay_max_g)
-    t_d1 = time.perf_counter() - t0
-    t0 = time.perf_counter()
-    d2 = escada.degrau_2(caso, a.ay_max_g)
-    t_d2 = time.perf_counter() - t0
-    t0 = time.perf_counter()
-    sens = escada.sensibilidades(caso, a.ay_max_g)
-    t_sens = time.perf_counter() - t0
+    blocos = []
+    for nome, caso_r, texto, obs, aviso in rodadas:
+        print(f"Rodada: {nome} ({texto[:60]}...)", flush=True)
+        linhas_r, tempos = _rodada(caso_r, a, nome, texto, obs, aviso)
+        blocos.append((linhas_r, tempos))
 
     md: list[str] = []
     w = md.append
-    w(texto_raio)
+    w(" | ".join(f"R = {n(r[1].raio_m, 3)} m ({r[0]})" for r in rodadas)
+      + " (a origem de cada R está na rodada correspondente)")
     w("")
     w("# Incremento 6: MMM em raio fixo e escada de hipóteses")
     w("")
@@ -227,19 +476,16 @@ def main() -> int:
     w(f"**Pior origem do caso: {pior_caso}. Geometria sintética** (não há hardpoints do CAD). O pneu é o `.tir` provisório "
       "do TTC (R25B); mola, MR, barra e RC são valores demonstrativos (T09/E03). **Nenhum número deste relatório é "
       "resultado do carro** nem validação física (Validation = NOT_VALIDATED, EDR-022). O raio R do skidpad é entrada "
-      "\"a confirmar\", e o valor usado está na primeira linha. \"? A confirmar\" na pior origem quer dizer que pelo menos "
-      "uma entrada do caso (ou o pneu) não tem origem registrada na planilha: a célula de origem está vazia ou fora da lista.")
+      "\"a confirmar\" (diâmetros e bitola provisórios), e cada rodada traz o R usado e a origem dele. \"? A confirmar\" "
+      "na pior origem quer dizer que pelo menos uma entrada do caso (ou o pneu) não tem origem registrada na planilha: "
+      "a célula de origem está vazia ou fora da lista.")
     w("")
-    if aviso_raio:
-        w(aviso_raio)
-        w("")
     w(f"Faixa de busca da saturação: 0 a {n(a.ay_max_g, 2)} g (parâmetro `--ay-max-g`, rótulo de varredura e não dado do "
       "carro; o padrão é 2,0 g). Eixo que não satura nela sai como \"não satura\" ou N/A.")
     w("")
     w("**Sem veredito: tolerância pendente (EDR-065).** As tabelas mostram diferenças e se o sinal inverte, mas nenhuma "
       "linha é classificada como \"dentro\" ou \"fora\" da tolerância; essa classificação depende do EDR-065.")
     w("")
-
     w("## 1. Origem")
     w("")
     w(f"- Data: {data}")
@@ -251,141 +497,16 @@ def main() -> int:
     w(f"- Motor de recálculo da cópia: {motor} ({detalhe_motor}); {resumo_rec['total_formulas']} fórmulas, "
       f"{resumo_rec['total_errors']} erros, {n(t_rec, 1)} s")
     w(f"- Pneu: `{TIR.relative_to(RAIZ).as_posix()}` (SHA-256 `{sha256(TIR)}`), em ISO_TYDEX (EDR-039)")
-    w(f"- Python {platform.python_version()}, numpy {version('numpy')}; tempos: degrau 1 {n(t_d1, 1)} s, degrau 2 "
-      f"{n(t_d2, 1)} s, sensibilidades {n(t_sens, 1)} s")
-    w(f"- {obs_raio}")
-    w(f"- Caso: L = {n(caso.cfg.wheelbase, 3)} m, bitola dianteira {n(caso.cfg.track_front, 3)} m, "
-      f"Ackermann {'desligado' if caso.ackermann_pct is None else n(caso.ackermann_pct, 1) + ' %'}, "
-      f"CG lateral {n(caso.cg_lateral_m, 3)} m, "
-      f"aero {'CzA/ρ' if caso.cza_m2 is not None else 'downforce fixa'}, "
-      f"arrasto {'ligado (CdA, Crr)' if caso.cda_m2 is not None else 'desligado'}.")
+    w(f"- Python {platform.python_version()}, numpy {version('numpy')}; rodadas: {len(rodadas)} (uma por R, abaixo)")
     w("")
-
     w("## 2. Conferência do `.tir` (passo 1)")
     w("")
     w(f"**Conclusão: {CONCLUSAO_TIR}.**")
     w("")
     w(NOTA_TIR)
     w("")
-
-    w("## 3. Degrau 1: MMM na configuração da planilha contra `analise_par`")
-    w("")
-    w("O degrau 1 é uma identidade quase por construção: os dois códigos usam a física por roda do mesmo módulo. Ele prova "
-      "o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 2 × a "
-      "resolução. Diferenças = MMM − `analise_par`.")
-    w("")
-    linhas = []
-    for c in d1:
-        linhas.append([c.sentido, c.veredito_mmm, c.veredito_par, sci(c.d_ay_sat_f), sci(c.d_ay_sat_r),
-                       sci(c.cn_mmm), sci(c.cn_par), sci(c.resolucao_ms2), "sim" if c.ok else "não", txt(c.motivo)])
-    md += tabela(["Sentido", "Veredito MMM", "Veredito par", "Δ ay_sat F [m/s²]", "Δ ay_sat R [m/s²]", "C_N MMM (Q)",
-                  "C_N par", "Resolução [m/s²]", "Passa o critério numérico", "Motivo"], linhas)
-    w("")
-    if all(c.veredito_mmm == eq.NA and c.veredito_par == eq.NA for c in d1):
-        w(f"Os dois lados dão N/A nos dois sentidos (nenhum eixo satura até {n(a.ay_max_g, 2)} g neste caso e neste R): o \"sim\" vale "
-          "para a coincidência do N/A, e a identidade das saturações e do C_N não foi exercitada neste caso.")
-        w("")
-    w("\"Passa o critério numérico\" é o critério de identidade do degrau 1 (mesmo veredito, saturações dentro da cota, C_N "
-      "dentro da folga equivalente). Não é o veredito de tolerância do degrau 2 (EDR-065).")
-    w("")
-
-    w("## 4. Degrau 2: uma variante Python por vez a partir da planilha")
-    w("")
-    w("Uma linha por variante. Hipóteses numeradas como na spec (1+2 = α cinemático e Ackermann; 3 = cos δ no trim; 7 = "
-      "os dois sentidos; 9a = Fx exigido por balanço; 9b = PAC2002 combinado; 10 = diferencial travado; 11 = "
-      "transferência longitudinal em regime; `10+9b` = travado com o PAC2002 combinado). As linhas com a hipótese 7 "
-      "(`7` e `todas`) mostram o pior sentido. K em °/g; K e o stability index valem em 0,05 g. O stability index (SI) "
-      "sai em 1/g, com o sinal do C_N estabilizante: positivo = estabilizante (carro estável, subesterço); o Milliken usa "
-      "o C_N do ISO, de sinal oposto.")
-    w("")
-    w("**Linhas de controle.** As variantes Python (menos a `7`) são resolvidas por um Newton 2-D em (β, δ) com a "
-      "rotação a_y = A·cos β e a_x = −A·sen β; a `planilha` usa o trim desacoplado, com a_y = A. Duas linhas de controle "
-      "resolvem as hipóteses da planilha pelo Newton, sem mudar nenhuma hipótese, e separam os dois efeitos (coluna "
-      "\"Δ contra\"):")
-    w("")
-    w("- `planilha (acoplado, sem rotação)`: o Newton com a_y = A e a_x = 0, as mesmas da planilha. O Δ contra a "
-      "`planilha` é só o viés do método.")
-    w("- `planilha (acoplado)`: o Newton com a rotação. O Δ contra a linha sem rotação é o efeito da simplificação "
-      "a_y = A da planilha (a rotação não tem número de hipótese). A soma dos dois Δ é o Δ dela contra a `planilha`.")
-    w("")
-    w("Δ e \"Inverte\" das linhas acopladas são contra a `planilha (acoplado)`, para que o número de cada linha seja o "
-      "efeito da hipótese, e não o do método nem o da rotação; o Δ da `7` (desacoplada) é contra a `planilha`.")
-    w("")
-    w("**Folga do outro eixo em T** (só nas linhas acopladas com T): acima de T não existe trim, então o eixo que não "
-      "satura fica sem ay_sat (\"—\"), e a coluna mostra a folga dele em T, nos eixos do carro: a capacidade dele em T "
-      "menos a força que ele faz no trim, em N e em % da capacidade. É a mesma folga que dá o Q. Nas linhas desacopladas os "
-      "dois ay_sat existem e a coluna fica \"—\".")
-    w("")
-    if any(ln.motivo for ln in d2):
-        w("Linhas cuja hipótese está desligada no caso (a chave da planilha está desligada) ainda são calculadas, e a "
-          "hipótese desligada não muda nada nelas: uma linha de uma hipótese só coincide com a referência por construção; "
-          "na `todas`, só as hipóteses ligadas contam no Δ. O motivo vem na lista abaixo da tabela.")
-        w("")
-    linhas = []
-    for ln in d2:
-        lim = ln.limite
-        linhas.append([f"`{ln.nome}`", ", ".join(map(str, ln.hipoteses)) or "—", lim.veredito, txt(lim.eixo_satura),
-                       g_de(lim.ay_sat_f, 4), g_de(lim.ay_sat_r, 4), g_de(lim.ay_t_ms2, 4), folga(lim),
-                       n(lim.cn_estabilizante_q, 4), k_graus_por_g(lim.k_rad_por_ms2), txt(ln.pior_sentido),
-                       g_de(ln.d_ay_t, 6), n(ln.d_cn_estabilizante_q, 4),
-                       k_graus_por_g(ln.d_k) if ln.d_k is not None else "—", f"`{ln.referencia}`", ln.inverte,
-                       "—" if lim.stability_index is None else n(lim.stability_index * G, 4)])
-    md += tabela(["Linha", "Hipóteses", "Veredito", "Eixo que satura", "ay_sat F", "ay_sat R", "T",
-                  "Folga do outro eixo em T", "C_N estab. (Q)",
-                  "K [°/g]", "Pior sentido", "Δ T", "Δ C_N", "Δ K [°/g]", "Δ contra", "Inverte", "SI [1/g]"], linhas)
-    w("")
-    motivos = [(ln.nome, ln.motivo, ln.limite.motivo, ln.limite.motivo_sat, ln.limite.limitacoes) for ln in d2]
-    if any(d or m or s or l for _, d, m, s, l in motivos):
-        w("Motivos e avisos por linha (onde existem):")
-        w("")
-        for nome, d, m, s, l in motivos:
-            partes = [p for p in (d, m, s, "; ".join(l) if l else None) if p]
-            if partes:
-                w(f"- `{nome}`: {' | '.join(partes)}")
-        w("")
-
-    w("## 5. Sensibilidades")
-    w("")
-    w("Diferença central de ± um passo, na unidade da coluna. Valores em torno da planilha, sem faixa afirmada. "
-      "`h_cp` liga com a transferência em regime; `h_cg` é por 10 mm de altura do CG (decisão 4 do plano: o jacking não "
-      "muda a soma das Fz, e o camber já está em `ganho_camber`). A sensibilidade de `h_cp` é em torno de h_cp = 0: sem "
-      "dado de altura do centro de pressão, `h_cp_m = None` equivale a h_cp = 0 (a parcela D·h_cp/L fica fora), e a "
-      "tabela mostra o efeito de subir 10 mm a partir daí, não de uma altura medida.")
-    w("")
-    linhas = [[f"`{s['parametro']}`", s["unidade"], g_de(s["d_ay_t"], 5), n(s["d_cn_estabilizante_q"], 5),
-               k_graus_por_g(s["d_k"], 4), txt(s["veredito_menos"]), txt(s["veredito_mais"]), txt(s["motivo"])]
-              for s in sens]
-    md += tabela(["Parâmetro", "Unidade", "∂T", "∂C_N estab. (Q)", "∂K [°/g]", "Veredito −", "Veredito +", "Motivo"], linhas)
-    w("")
-
-    # --- Achados do adendo §7, com os números medidos nas linhas 1+2 e 9a ---
-    por_nome = {ln.nome: ln for ln in d2}
-    l12, l9a = por_nome["1+2"], por_nome["9a"]
-    esperado_dalfa = caso.cfg.wheelbase * caso.cfg.track_front / caso.raio_m ** 2   # L·t/R² [rad]
-    w("## 6. Achados do adendo §7 sobre fórmulas da planilha (nenhuma mudança agora)")
-    w("")
-    w("Estas são duas simplificações físicas da planilha, conferidas no código. O incremento 6 não mexe nelas; "
-      "qualquer mudança exige EDR e aprovação explícita do usuário. Aqui aparece só o efeito medido no degrau 2.")
-    w("")
-    w(f"1. **Ackermann (hipótese 2, SUS-414).** `deriva_ackermann` supõe a mesma direção de velocidade nas duas "
-      f"dianteiras; na cinemática real as direções diferem de ≈ L·t/R², que é o próprio Ackermann ideal. Com L = "
-      f"{n(caso.cfg.wheelbase, 3)} m, t = {n(caso.cfg.track_front, 3)} m e R = {n(caso.raio_m, 3)} m, L·t/R² = "
-      f"{n(math.degrees(esperado_dalfa), 3)}° entre as rodas (estimativa analítica, não medida no solver). Efeito medido "
-      f"na linha `1+2`: ΔT = {g_de(l12.d_ay_t, 4)}, ΔC_N = {n(l12.d_cn_estabilizante_q, 4)}, ΔK = "
-      f"{k_graus_por_g(l12.d_k, 4)} °/g, veredito {l12.limite.veredito} (inverte: {l12.inverte}).")
-    w(f"2. **Fx exigido (hipótese 9, EDR-057).** `fx_exigido_traseira` usa |F_yf|·tan(L/R) ≈ m·A·b/R, que depende de R e "
-      f"não da deriva; o balanço completo é F_yf·sen δ − m·A·sen β (em primeira ordem, F_yf·|α_F| + F_yr·|α_R|, o arrasto "
-      f"induzido). Efeito medido na linha `9a`: "
-      f"ΔT = {g_de(l9a.d_ay_t, 4)}, ΔC_N = {n(l9a.d_cn_estabilizante_q, 4)}, ΔK = {k_graus_por_g(l9a.d_k, 4)} °/g, "
-      f"veredito {l9a.limite.veredito} (inverte: {l9a.inverte}).")
-    w("")
-    if l12.d_ay_t is None or l9a.d_ay_t is None:
-        w(f"Onde ΔT e ΔC_N aparecem como \"—\", a linha (ou a referência dela, coluna \"Δ contra\") não tem T: com este "
-          f"caso e este R nenhum eixo satura até {n(a.ay_max_g, 2)} g, então só o K tem número. O efeito no limite não foi "
-          f"medido.")
-        w("")
-    w("Nada foi ajustado para bater. Cada efeito vale para este R e para o caso sintético, não para o carro.")
-    w("")
+    for linhas_r, _ in blocos:
+        md += linhas_r
 
     w("## 7. Limitações")
     w("")
