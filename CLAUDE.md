@@ -164,6 +164,15 @@ Aprovadas em 2026-10-18 (passo 5). Configuração em `.claude/settings.json`.
   somente leitura (testado: a edição é recusada).
 - Push e repositório: use o `gh` CLI. O MCP do plugin `github` falha (HTTP 400).
 - Skill `xlsx` só para ler e inspecionar: o recálculo dela usa LibreOffice.
+- Token Savior (MCP, ativado em 2026-10-27 pelo plano de tokens de `docs/passagem-2026-10-26.md`;
+  `.mcp.json` + `enabledMcpjsonServers` no `.claude/settings.json`): leitura de código por símbolo
+  (`get_function_source`, `find_symbol`, `get_call_chain`) e busca com número de linha
+  (`search_codebase`), em vez de abrir os módulos inteiros (`aba_equilibrio.py` e `build_workbook.py`
+  são grandes). `CLAUDE_PROJECT_ROOT` fixo no projeto (sem ele indexaria `Documents` inteira) e
+  `TOKEN_SAVIOR_MAX_FILE_SIZE=5000000` para os `.md` grandes. Índice local em `.token-savior*`
+  (fora do Git). Nunca rodar `ts init`. Não indexa xlsx nem PDF: para a planilha, `MAPA.md` e dumps.
+  Medição antes/depois com `token-usage` (linha de base: ~287 mil tokens de contexto médio por
+  requisição, 30 dias até 2026-10-26).
 - Para depois (não ativar sem pedido): `serena` (fase B), MCP `matlab` (verificação
   cruzada), `citation-needed` (revisão de fichas e Guide), conector Autodesk Product
   Help (script de exportação do Fusion), hook de testes após `tools/rodar_testes.py`.
