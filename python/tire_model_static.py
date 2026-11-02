@@ -41,6 +41,15 @@ MOMENT_COEFFICIENTS = (
     *(f"QHZ{i}" for i in range(1, 5)),
     "SSZ1", "SSZ2", "SSZ3", "SSZ4",
 )
+# Fatores de escala usados nos momentos (Mx, My e Mz); ausente no .tir vale 1 (default do help do Adams).
+MOMENT_SCALING_FACTORS = (
+    "LMX", "LVMX", "LMY", "LS", "LTR", "LKY", "LMUY", "LGAZ", "LRES", "LMUGAMMA",
+)
+# Parâmetros sem os quais o perfil não pode ser avaliado nem validado contra as faixas declaradas.
+REQUIRED_PARAMETERS = (
+    "FNOMIN", "LFZO", "UNLOADED_RADIUS", "FZMIN", "FZMAX",
+    "ALPMIN", "ALPMAX", "CAMMIN", "CAMMAX", "KPUMIN", "KPUMAX",
+)
 
 
 class StaticTireError(ValueError):
@@ -65,7 +74,7 @@ def _validate_parameter_ranges(params: Mapping[str, float]) -> None:
             raise StaticTireError(f"Faixa inválida após revisão: {lower} deve ser menor que {upper}.")
     if "FZMIN" in params and params["FZMIN"] <= 0:
         raise StaticTireError("FZMIN deve permanecer positivo.")
-    for key in ("FNOMIN", "LFZO", "UNLOADED_RADIUS", "LONGVL"):
+    for key in ("FNOMIN", "LFZO", "UNLOADED_RADIUS", "LONGVL", "LMUY"):
         if key in params and params[key] <= 0:
             raise StaticTireError(f"{key} deve permanecer positivo.")
 
@@ -179,11 +188,17 @@ def load_profile(
     if not math.isclose(p_raw["IP"], p_raw["IP_NOM"], rel_tol=0, abs_tol=1e-9):
         raise StaticTireError("Cada perfil desta versão deve estar avaliado na pressão nominal IP=IP_NOM.")
     pp_keys = ("PPX1", "PPX2", "PPX3", "PPX4", "PPY1", "PPY2", "PPY3", "PPY4")
+    missing_required = [k for k in REQUIRED_PARAMETERS if k not in p_raw]
+    if missing_required:
+        raise StaticTireError(
+            f"O .tir não declara parâmetros obrigatórios: {', '.join(missing_required)}."
+        )
     nonzero = {k: p_raw[k] for k in pp_keys if p_raw.get(k, 0.0) != 0.0}
     if nonzero:
         raise StaticTireError(
             f"Correções de pressão PP* não implementadas nesta versão estática: {nonzero}"
         )
+    _validate_parameter_ranges(p_raw)
     dataset = _base.load_dataset(
         str(path), source=str(path), source_axis_system=source_axis_system
     )
@@ -223,9 +238,17 @@ def revise_profile(
     revision_id: str,
 ) -> StaticTireProfile:
     """Return an in-memory parameter revision without modifying the source .tir."""
-    if not revision_id.strip() or not reason.strip():
-        raise StaticTireError("Toda revisão precisa de revision_id e justificativa.")
-    normalized = {str(k).upper(): float(v) for k, v in changes.items()}
+    if (not isinstance(revision_id, str) or not isinstance(reason, str)
+            or not revision_id.strip() or not reason.strip()):
+        raise StaticTireError("Toda revisão precisa de revision_id e justificativa (textos não vazios).")
+    normalized: dict[str, float] = {}
+    for key, value in changes.items():
+        if isinstance(value, bool):
+            raise StaticTireError(f"Valor inválido para {key}: {value!r}; use um número.")
+        try:
+            normalized[str(key).upper()] = float(value)
+        except (TypeError, ValueError) as exc:
+            raise StaticTireError(f"Valor inválido para {key}: {value!r}; use um número.") from exc
     if not normalized:
         raise StaticTireError("A revisão precisa alterar ao menos um parâmetro.")
     if {"IP", "IP_NOM"}.intersection(normalized):
@@ -302,11 +325,17 @@ def load_revision(profile: StaticTireProfile, path: str | Path) -> StaticTirePro
         raise StaticTireError("A pressão nominal do overlay não corresponde ao perfil.")
     if not isinstance(payload.get("overrides"), dict):
         raise StaticTireError("O campo overrides do overlay deve ser um objeto.")
+    for key in ("reason", "revision_id"):
+        if not isinstance(payload.get(key), str):
+            raise StaticTireError(f"O campo {key} do overlay deve ser um texto.")
+    for key in ("parent_revision_id", "created_at_utc"):
+        if payload.get(key) is not None and not isinstance(payload[key], str):
+            raise StaticTireError(f"O campo {key} do overlay deve ser texto ou nulo.")
     revised = revise_profile(
         profile,
-        payload.get("overrides", {}),
-        reason=str(payload.get("reason", "")),
-        revision_id=str(payload.get("revision_id", "")),
+        payload["overrides"],
+        reason=payload["reason"],
+        revision_id=payload["revision_id"],
     )
     return StaticTireProfile(
         dataset=_clone_dataset(revised.dataset),
@@ -441,7 +470,7 @@ def _mz(
     alpha_t = alpha + _get(p, "QHZ1") + _get(p, "QHZ2") * dfz + (
         _get(p, "QHZ3") + _get(p, "QHZ4") * dfz
     ) * gamma_z
-    alpha_r = alpha + float(info.get("SHy", 0.0)) + float(info.get("SVy", 0.0)) / ky
+    alpha_r = alpha + float(info["SHy"]) + float(info["SVy"]) / ky
 
     def equivalent_angle(angle: float) -> float:
         sign = 1.0 if angle > 0 else (-1.0 if angle < 0 else 0.0)
@@ -454,7 +483,7 @@ def _mz(
         (_get(p, "QBZ1") + _get(p, "QBZ2") * dfz + _get(p, "QBZ3") * dfz**2)
         * (1.0 + _get(p, "QBZ4") * gamma_z + _get(p, "QBZ5") * abs(gamma_z))
         * _get(p, "LKY", 1.0)
-        / max(_get(p, "LMUY", 1.0), 1e-12)
+        / _get(p, "LMUY", 1.0)
     )
     ct = _get(p, "QCZ1")
     dt = (
@@ -480,8 +509,8 @@ def _mz(
     trail = _mf_cos(bt, ct, dt, et, alpha_t_eq) * math.cos(alpha)
 
     br = (
-        _get(p, "QBZ9") * _get(p, "LKY", 1.0) / max(_get(p, "LMUY", 1.0), 1e-12)
-        + _get(p, "QBZ10") * float(info.get("By", 0.0)) * float(info.get("Cy", 0.0))
+        _get(p, "QBZ9") * _get(p, "LKY", 1.0) / _get(p, "LMUY", 1.0)
+        + _get(p, "QBZ10") * float(info["By"]) * float(info["Cy"])
     )
     dr = fz * r0 * _get(p, "LMUGAMMA", 1.0) * _get(p, "LRES", 1.0) * (
         _get(p, "QDZ6") + _get(p, "QDZ7") * dfz
@@ -494,7 +523,7 @@ def _mz(
         + (_get(p, "SSZ3") + _get(p, "SSZ4") * dfz) * gamma
     ) * _get(p, "LS", 1.0)
     # Adams PAC2002 Eq. 103: F'y = Fy - SVyk, preserving combined-slip Fy.
-    fy_without_kappa_shift = fy - float(info.get("SVyk", 0.0))
+    fy_without_kappa_shift = fy - float(info["SVyk"])
     return -trail * fy_without_kappa_shift + residual + offset * fx
 
 
