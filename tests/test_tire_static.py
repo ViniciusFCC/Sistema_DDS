@@ -14,7 +14,6 @@ Uso: uv run python -X utf8 tests/test_tire_static.py
 import hashlib
 import math
 import os
-import sys
 import tempfile
 from pathlib import Path
 
