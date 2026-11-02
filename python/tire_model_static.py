@@ -7,8 +7,9 @@ families, non-destructive coefficient revisions, and PAC2002 steady-state
 moments. It does not implement transient response, thermal evolution, or wear.
 
 Source for the moment equations: MSC Adams Tire User Guide 2022.3,
-"Using the PAC2002 Tire Model", equations 100-110 and 109, and the PAC2002
-parameter tables. Forces and moments are returned in the explicitly declared
+"Using the PAC2002 Tire Model", Eqs. 100-110 (Mx is Eq. 109), and the PAC2002
+parameter tables. In 4.1.0 the Mx (Eq. 109) and the sign of s*Fx in Mz (Eq. 100)
+were corrected (EDR-067); results and overlays produced before 4.1.0 are not valid. Forces and moments are returned in the explicitly declared
 tire-file axes. The four Round 6 profiles are separate fixed-pressure fits; their PP*
 coefficients are zero, so this module deliberately does not interpolate them.
 
@@ -455,8 +456,9 @@ def _mz(
     Eq. 100: Mz = -t*F'y + Mzr + s*Fx (o termo de Fx entra com sinal positivo).
     O Fy do termo de trilha usa a cambagem real (F'y = Fy - SVyk, como na
     Eq. 4.E71 do Pacejka). O help do Adams escreve F'y,gamma=0 na Eq. 103, mas o
-    Pacejka só usa Fy em gamma=0 no modelo de motocicleta (seção 11.6), então
-    essa variante não foi adotada; pendente de decisão.
+    Pacejka só usa Fy em gamma=0 no modelo de motocicleta (seção 11.6). A escolha
+    do Fy com cambagem real foi decidida no EDR-067, item 3; reabre se o
+    OptimumTire usar Fy em gamma=0.
     """
     p = profile.dataset.p
     fz0 = p["LFZO"] * p["FNOMIN"]
@@ -522,7 +524,8 @@ def _mz(
         + _get(p, "SSZ2") * (fy / fz0)
         + (_get(p, "SSZ3") + _get(p, "SSZ4") * dfz) * gamma
     ) * _get(p, "LS", 1.0)
-    # Adams PAC2002 Eq. 103: F'y = Fy - SVyk, preserving combined-slip Fy.
+    # F'y = Fy - SVyk com a cambagem real (Pacejka 4.E71; o Adams escreve F'y,gamma=0 na
+    # Eq. 103). Escolha decidida no EDR-067, item 3; reabre se o OptimumTire usar Fy em gamma=0.
     fy_without_kappa_shift = fy - float(info["SVyk"])
     return -trail * fy_without_kappa_shift + residual + offset * fx
 
@@ -558,10 +561,11 @@ def evaluate_static(
     ]
     vref = profile.dataset.p.get("LONGVL")
     if vref is not None and vx_mps > vref:
-        # LONGVL é a velocidade de medição do TTC, não um limite: Fx/Fy do PAC2002 não dependem de Vx.
+        # LONGVL é a velocidade de medição do TTC, não um limite: Fx/Fy do PAC2002 não dependem de Vx;
+        # o resultado afetado é o My (QSY3*Vx/Vref e QSY4*(Vx/Vref)^4 extrapolam).
         limitations.append(
-            f"Vx={vx_mps:g} m/s acima de LONGVL={vref:g} m/s (velocidade de medição do TTC); "
-            "efeito da velocidade fora dos dados medidos."
+            f"Vx={vx_mps:g} m/s acima de LONGVL={vref:g} m/s (Vx/LONGVL={vx_mps / vref:.2f}; "
+            "velocidade de medição do TTC): My extrapola os termos QSY3 e QSY4 fora dos dados medidos."
         )
     if all(_get(profile.dataset.p, f"QSY{i}") == 0.0 for i in range(1, 9)):
         limitations.append("QSY1..QSY8 são zero no .tir; My resulta zero da parametrização.")
@@ -570,6 +574,13 @@ def evaluate_static(
         limitations.append(
             "Coeficientes de momento ausentes foram tratados como zero nesta implementação: "
             + ", ".join(missing_moments)
+            + "."
+        )
+    missing_scaling = [key for key in MOMENT_SCALING_FACTORS if key not in profile.dataset.p]
+    if missing_scaling:
+        limitations.append(
+            "Fatores de escala ausentes no .tir foram assumidos iguais a 1: "
+            + ", ".join(missing_scaling)
             + "."
         )
     return StaticTireResult(
