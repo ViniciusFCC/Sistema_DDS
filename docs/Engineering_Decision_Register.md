@@ -1535,7 +1535,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Rationale:** O MMM em raio fixo, parametrizado por A_Y, é mais robusto perto do pico do que uma grade β × δ e responde à pergunta da escada (quanto vale cada hipótese). Manter o `equilibrio.py` só com adições preserva os 28 e 18 checks existentes. Nada do Python vai para a planilha.
 - **Evidence:** `tests/test_mmm.py` 11/11, `tests/test_escada.py` 3/3, `tests/mutation_mmm.py` 5/5 (rodados pelos implementadores por tarefa; a suíte inteira fica para o controlador). Onda de correção da revisão final (2026-10-28): `test_mmm` 11/11, `test_escada` 3/3, `test_equilibrio` 28/28 e `test_equilibrio_linear` 18/18; os cinco textos da mutação continuam aplicando uma vez cada (a mutação completa fica para a suíte). Revisão do usuário (2026-10-28, item 5.6): `test_mmm` 11/11, `test_escada` 3/3, `test_equilibrio` 28/28, `test_equilibrio_linear` 18/18 e `mutation_mmm` 5/5 (896 s, rodada pelo subagente). Plano e ledger em `.superpowers/sdd/2026-10-27-inc6-mmm-escada/` (fora do Git).
 - **Assumptions:** O raio do skidpad é dado pelo usuário. A geometria é sintética e os dados são demonstrativos (T09/E03 e TX/E05), então nada é resultado do carro.
-- **Consequences:** Existe a escada medida em Python, sem veredito de tolerância. O relatório `docs/inc6/escada-hipoteses.md` ainda não existe: fica pendente do raio R do usuário (`tools/relatorio_escada.py` sai com código 3 sem ele). O incremento 7 pode levar as chaves 1/0 à planilha, depois do EDR-065 e da resposta ao EDR-066.
+- **Consequences:** Existe a escada medida em Python, sem veredito de tolerância. O relatório `docs/inc6/escada-hipoteses.md` ficou pendente do raio R do usuário na 6; a 7a o gerou com os dois R do skidpad (EDR-067). O incremento 7 pode levar as chaves 1/0 à planilha, depois do EDR-065 e da resposta ao EDR-066.
 - **Affected_Artifacts:** `python/mmm.py`; `python/escada.py`; `tools/relatorio_escada.py`; `tools/rodar_testes.py`; `tests/mutation_mmm.py`; `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`; `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md` (§7.5, nota); CLAUDE.md; MAPA.md.
 - **Affected_Tests:** TC-MMM-001..011; TC-ESC-001..003; mutação do MMM (5).
 - **Dependencies:** EDR-010, EDR-053, EDR-055, EDR-056, EDR-057, EDR-060.
@@ -1556,7 +1556,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
   2. **Faixa do NEUTRO:** a `resolucao_ms2` do `analise_par` subestima o erro em cerca de 4/3 (EDR-064, 2.9). A faixa passa a usar o erro estimado, e não a resolução declarada, no incremento 7: na planilha (EDR-056 item 2) é mudança de fórmula e entra no plano com aprovação por célula; nas variantes acopladas, a regra da folga (EDR-064, 1.3) é revista junto.
   3. **Tolerância de a_y de saturação, C_N e K:** pendente até o relatório `docs/inc6/escada-hipoteses.md` rodar com o raio R informado pelo usuário e o caso saturar. Com R = 8,5 m (sintético) a tabela é quase toda N/A e não sustenta um valor.
 - **Rationale:** A mesma regra estrita já vale para a robustez ao pneu; usar outra na escada daria dois critérios para a mesma pergunta.
-- **Evidence:** Adendo §5.3; EDR-060 item 8. A tabela da escada marca esses casos como "NEUTRO ↔ PUSH" ou "NEUTRO ↔ LOOSE", sem classificá-los.
+- **Evidence:** Adendo §5.3; EDR-060 item 8. A tabela da escada marca esses casos como "NEUTRO ↔ PUSH" ou "NEUTRO ↔ LOOSE", sem classificá-los. Como evidência do item 2 (sem decidi-lo): `docs/inc7/estudo-neutro.md` e o TC-NEU-001 (`tests/test_neutro.py`), do incremento 7. A rodada da 7a do relatório `docs/inc6/escada-hipoteses.md` (R = 9,125 e 8,385 m) dá N/A em todas as linhas: nenhum eixo satura até 2 g, e o Ackermann e a h9 estão desligados no caso. Por isso ela não dá base para a tolerância do item 3, que precisa de outro caso (Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.
 - **Assumptions:** A tabela do relatório (com raio informado) é a base da decisão.
 - **Consequences:** Até a decisão, nenhuma linha da escada tem campo de veredito de tolerância (testado no TC-ESC-002).
 - **Affected_Artifacts:** `python/escada.py`; `tools/relatorio_escada.py`; `docs/inc6/escada-hipoteses.md`.
@@ -1582,8 +1582,8 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Evidence:** Adendo §7; `python/equilibrio.py` (`deriva_ackermann`, `fx_exigido_traseira`).
 - **Assumptions:** Os achados valem para a cinemática de curva em regime com raio fixo.
 - **Consequences:** Se aprovada a troca, entra numa planilha nova com aba, célula, fórmula anterior e nova, dependências, justificativa e teste.
-- **Affected_Artifacts:** nenhum alterado. Candidatas: planilha V4.1 e seguintes (`python/aba_equilibrio.py`), `python/equilibrio.py`.
-- **Affected_Tests:** — (efeito medido no degrau 2: TC-ESC-002).
+- **Affected_Artifacts:** a 7a do incremento 7 implementa as formas v43 (Ackermann com centro único e Fx exigido por arrasto induzido) só no Python: `python/equilibrio.py`, `python/mmm.py` e `python/escada.py` (commits ae7d8bb, a41f0e0, 50018f8 e b8d622d). A planilha continua sem mudança; as candidatas a mudar são a planilha V4.3 e `python/aba_equilibrio.py` (7b).
+- **Affected_Tests:** TC-ACK-001, TC-ACK-002, TC-FXI-001 e TC-FXI-002 (`tests/test_formas_v43.py`); efeito medido no degrau 2: TC-ESC-002.
 - **Dependencies:** EDR-052, EDR-057, EDR-064.
 - **Approval_Conditions:** —
 - **Reopening_Criteria:** —
@@ -1612,7 +1612,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Evidence:** Spec `docs/superpowers/specs/2026-10-29-inc7-fisica-planilha-design.md` §3; Formula SAE Rules 2026 v1.0 D.10.1.1 e D.10.1.2 e Formula Student Rules 2026 v1.1 D 4.1.3 e 4.1.4 (só pelo texto, conferido em 2026-10-29); `.tir` com WIDTH = 0,1778 m; `tests/test_skidpad.py` (TC-SKP-001 e 002).
 - **Assumptions:** CG com y nulo; o skidpad tem R único; o R rente aos cones é o limite de ocupação, não a trajetória. Os valores de L, b e bitolas dos testes são sintéticos. Os diâmetros valem para a competição do T11 até a conferência da FSAE Brasil (inc. 9).
 - **Consequences:** O α_R real desloca o centro para a frente da linha do eixo traseiro; a diferença contra o β real do MMM é medida pela escada, não corrigida. Novos IDs de equilíbrio, por autorização do usuário em 2026-10-29, ao lado dos SUS-1001 a SUS-1008 do EDR-059: SUS-1009 (raio do skidpad R), SUS-1010 (eixo que manda) e SUS-1011 (meia largura do pneu). Nenhum outro ID.
-- **Affected_Artifacts:** `python/skidpad.py`; `tools/rodar_testes.py` (`TESTES`, `MODULOS`); candidatos da 7a e da 7b: `python/equilibrio.py`, `python/escada.py`, `python/aba_equilibrio.py`, planilha V4.3.
+- **Affected_Artifacts:** `python/skidpad.py`; `tools/rodar_testes.py` (`TESTES`, `MODULOS`); `python/equilibrio.py`; `python/escada.py`; candidatos da 7b: `python/aba_equilibrio.py`, planilha V4.3.
 - **Affected_Tests:** TC-SKP-001, TC-SKP-002 (`tests/test_skidpad.py`).
 - **Dependencies:** EDR-052, EDR-057, EDR-059, EDR-064, EDR-066.
 - **Approval_Conditions:** D4, D5 e D6 pelo usuário antes da 7b; regulamento da FSAE Brasil conferido no inc. 9.
@@ -1631,7 +1631,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Rationale:** O diagnóstico reproduziu a causa: um filho Python que lança um neto herdando a saída e dorme 60 s, chamado com `subprocess.run(capture_output=True, timeout=3)`, voltou em 60,5 s (esperado, se o timeout valesse: ≈ 3 s). Com arquivos no lugar de pipes, nenhum neto prende a leitura; o encerramento por PID (nunca por nome de programa) não atinge o Excel de outras pessoas. O Excel do teste da planilha já está num Job Object (`tests/recalculo_planilha.py`) e morre junto.
 - **Evidence:** Medição de 2026-10-29 (Windows 11, Python 3.13): `subprocess.run(..., capture_output=True, timeout=3)` com neto dormindo 60 s voltou em 60,5 s. Com o executor, o mesmo filho com `timeout_s=3` volta em 3,5 s e o neto não existe mais (`tasklist /FI "PID eq <neto>"`). TC-RUN-001.
 - **Assumptions:** O processo-filho é Python ou um programa cujos descendentes pertençam à árvore do PID (o `taskkill /T` segue a ligação pai-filho; um neto que perdeu o pai não é alcançado).
-- **Consequences:** A saída agora é lida de arquivo depois que o processo termina, não em fluxo. Os testes de mutação não mudam de lógica. Um item que estoura o tempo aparece no log com código 124 e a linha `[executor] ... TIMEOUT depois de N s`.
+- **Consequences:** A saída agora é lida de arquivo depois que o processo termina, não em fluxo. Os testes de mutação não mudam de lógica. Um item que estoura o tempo aparece no log com código 124 e a linha `[executor] ... TIMEOUT depois de N s`. Limitação: o tempo-limite usa a espera do Windows, que não conta o tempo em espera moderna (tampa fechada), e o orçamento usa o relógio de parede. Numa rodada de 2026-11-02, o notebook ficou em espera de cerca de 07:20 a 13:15, e uma rodada da mutação da planilha "durou" 20785 s pelo relógio sem disparar o limite de 1500 s, até esgotar o orçamento. Repetida com a máquina acordada, deu 5/5, com rodadas de 330 a 462 s. A suíte deve rodar com a máquina sem espera.
 - **Affected_Artifacts:** `python/executor_testes.py`; `tools/rodar_testes.py` (`rodar`, `TESTES`, `MODULOS`); `tests/mutation_planilha_equilibrio.py`; `tests/mutation_mmm.py`; `tests/mutation_equilibrio.py`; `tests/mutation_tire.py`.
 - **Affected_Tests:** TC-RUN-001 (`tests/test_executor.py`).
 - **Dependencies:** nenhuma.
@@ -1709,8 +1709,8 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-063 | — | python/viva.py; tools/conferir_viva.py; tools/retrato_viva.py; tools/migrar_viva.py; tools/medir_recalculo.py; tools/comparar_planilhas.py; tools/rodar_testes.py; data/viva/; docs/v4-2/; CLAUDE.md. | TC-WB42-004; CA-07 |
 | EDR-064 | — | python/mmm.py; python/escada.py; tools/relatorio_escada.py; tools/rodar_testes.py; adendo e spec base (§7.5); docs/inc6/; CLAUDE.md. | TC-MMM-001..011, TC-ESC-001..003, mutação do MMM (5) |
 | EDR-065 | — | python/escada.py; tools/relatorio_escada.py; docs/inc6/escada-hipoteses.md. | TC-ESC-002 |
-| EDR-066 | SUS-414, SUS-415 | nenhum alterado (candidatas: python/equilibrio.py; python/aba_equilibrio.py). | TC-ESC-002 |
-| EDR-067 | SUS-1009, SUS-1010, SUS-1011 | python/skidpad.py; tools/rodar_testes.py; spec e plano do inc. 7. | TC-SKP-001, 002 |
+| EDR-066 | SUS-414, SUS-415 | 7a: formas v43 no Python (python/equilibrio.py; python/mmm.py; python/escada.py), planilha sem mudança (candidata na 7b: python/aba_equilibrio.py). | TC-ESC-002, TC-ACK-001/002, TC-FXI-001/002 |
+| EDR-067 | SUS-1009, SUS-1010, SUS-1011 | python/skidpad.py; python/equilibrio.py; python/escada.py; tools/rodar_testes.py; spec e plano do inc. 7. | TC-SKP-001, 002 |
 | EDR-068 | — | python/executor_testes.py; tools/rodar_testes.py; tests/mutation_planilha_equilibrio.py; tests/mutation_mmm.py; tests/mutation_equilibrio.py; tests/mutation_tire.py. | TC-RUN-001 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
