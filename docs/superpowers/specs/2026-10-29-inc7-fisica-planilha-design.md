@@ -110,7 +110,7 @@ Nova (chave 1): Δα_i = toe_i + (δ_i − δ̄_F) − (θ_i − θ̄_F) nas dia
 seção 3.1, R_c = √(R² − b²) e θ̄_F a média de θ_FL e θ_FR. Forma fechada por roda, sem iteração.
 Consequências: com 100 % de Ackermann o Δα relativo das dianteiras é zero (a menos da diferença entre a média de δ,
 amarrada a δ_ref = L/R pela bisseção atual, e a média de θ, de 2ª ordem; o plano mede e justifica a cota); com 0 %
-(paralelo) sobra −(θ_i − θ̄_F) ≈ ∓L·t_f/(2R_c²), o termo que a planilha de hoje zera.
+(paralelo) sobra −(θ_i − θ̄_F) ≈ ∓L·t_f/(2R_c²), o termo que a planilha de hoje zera (aproximação que só fica em 1 % com R ≳ 15 m; a forma exata é atan(L·t_f/(R_c² + L² − t_f²/4)) para a diferença entre as duas rodas).
 
 ### 4.2 Fx exigido na traseira (hipótese 9, EDR-057, família F9)
 
@@ -186,7 +186,7 @@ no tempo-limite só o processo filho morre, e o neto (o Python do teste) segura 
   bitola traseira vazia; valores da seção 3.2 (9,125 m; com t = 1,3 m e L, b do caso, rotulados).
 - Ackermann: oráculo independente pela velocidade de cada roda (ω × r a partir do centro C), sem a fórmula atan; 100 % e
   0 %; curva à esquerda e à direita (sinal no ISO 8855); chave 0 igual ao de hoje.
-- Fx: oráculo pelo balanço vetorial exato no desacoplado; a diferença para o arrasto induzido cai como O(α³); ponto fixo
+- Fx: oráculo pelo balanço vetorial exato no desacoplado; a diferença para o arrasto induzido cai como O(ε³), ε = max(α, L/R), com α e L/R escalados juntos (R → 2R); com R fixo, o resto tem termos α(L/R)² e a razão tende a 2; ponto fixo
   com a elipse contra a aproximação sem elipse (erro medido, não suposto); caso LOOSE com a força exigida acima do pico.
 - Duas réplicas no Python: a de grade (busca e interpolação, igual à célula) para a equivalência célula × Python com
   tolerância apertada; a contínua para a física, com tolerância derivada do passo. Nenhuma tolerância é afrouxada.
