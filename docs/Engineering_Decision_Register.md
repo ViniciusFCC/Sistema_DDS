@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21; EDR-057 acrescentado em 2026-10-21, incremento 2 da V4.0; EDR-058 acrescentado em 2026-10-21, incremento 3 da V4.0; EDR-059 e EDR-060 acrescentados em 2026-10-22, incremento 4 da V4.1; EDR-061 a EDR-063 acrescentados e EDR-034 decidido em 2026-10-23, incremento 5 da V4.2, e EDR-060 item 8 (x) resolvido e (xi) acrescentado). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21; EDR-057 acrescentado em 2026-10-21, incremento 2 da V4.0; EDR-058 acrescentado em 2026-10-21, incremento 3 da V4.0; EDR-059 e EDR-060 acrescentados em 2026-10-22, incremento 4 da V4.1; EDR-061 a EDR-063 acrescentados e EDR-034 decidido em 2026-10-23, incremento 5 da V4.2, e EDR-060 item 8 (x) resolvido e (xi) acrescentado; EDR-067 acrescentado em 2026-11-02, modelo estático de pneu, PR #25; os IDs EDR-064 a EDR-066 estão em uso na branch `feat/inc6-mmm-escada`, ainda não mesclada). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 63 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 5 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED)
+Total: 64 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 5 · IMPLEMENTED: 3 · PENDING_CONFIRMATION: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-11-02, EDR-067 entrou como APPROVED_WITH_CONDITIONS)
 
 | ID | Título | Status |
 |---|---|---|
@@ -100,7 +100,7 @@ Total: 63 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-061 | Processo de metas e coerência (V4.2) | APPROVED |
 | EDR-062 | Projeto T11: Origens e prefixo D16 | APPROVED |
 | EDR-063 | Viva da equipe no Drive: conferência, retrato por nome e troca a cada versão | APPROVED |
-| EDR-067 | Modelo estático de pneu (família de pressões e momentos PAC2002): correções de Mx e Mz | APPROVED |
+| EDR-067 | Modelo estático de pneu (família de pressões e momentos PAC2002): correções de Mx e Mz | APPROVED_WITH_CONDITIONS |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1470,7 +1470,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-067 — Modelo estático de pneu (família de pressões e momentos PAC2002): correções de Mx e Mz
 
 - **Date:** 2026-11-02
-- **Status:** APPROVED (2026-11-02)
+- **Status:** APPROVED_WITH_CONDITIONS (2026-11-02; condição em Approval_Conditions)
 - **Context:** Os commits e5de218 e 4035935 (2026-10-31) trouxeram uma camada estática sobre o `tire_model.py`: lê os quatro `.tir` PAC2002 do TTC Round 6 (Hoosier R25B 20.5x7-13, 8, 10, 12 e 14 psi, eixo ISO_TYDEX, EDR-039), calcula Fx/Fy pelo núcleo existente e acrescenta Mx, My e Mz, com revisões de coeficientes em overlays JSON presos ao SHA-256 do `.tir`. O perfil de 12 psi tem o mesmo conteúdo do `data/Hoosier_R25B_13x7_TTC_provisional.tir` (diferem só fins de linha e espaços). A análise de 2026-11-02, feita contra as imagens das equações do help do Adams PAC2002 (`references/pdf/Adams_2024_1_PAC2002_help.pdf`), achou erros nos momentos: o Mx do código chegava a 240 N·m em γ = 0 e Fz nominal, contra −1,2 N·m pela equação.
 - **Question:** O que corrigir na camada estática, e com qual regra para Vx, nome do módulo e o Fy do termo de trilha do Mz?
 - **Alternatives:** Mz, termo de trilha: (a) Fy com a cambagem real, F'y = Fy − SVyκ (Pacejka, eq. 4.E71 a 4.E73); (b) Fy calculado em γ = 0, como sugere o índice da eq. 103 do Adams. Vx: (c) recusar Vx > LONGVL; (d) aceitar e avisar.
@@ -1482,10 +1482,10 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
   5. **Nome:** `tire_model_static_v4.py` passa a `tire_model_static.py` (EDR-043); a versão fica em `__version__ = "4.1.0-static"`. Overlays da 4.0.1 são recusados de propósito, porque as equações mudaram.
   6. **Sem mudança:** pressão só nos perfis nominais, sem interpolar (os PP* são zero); My zero porque QSY1..QSY8 = 0 (falta de parametrização, não resistência ao rolamento nula); fatores de escala do Dr (eq. 58) como estão, com efeito nulo enquanto valem 1.
 - **Rationale:** As correções 1 e 2 seguem a equação publicada pela REFERENCE do formato (EDR-004) e, no caso do Mz, também o Pacejka. Na escolha 3, a fonte primária do modelo MF (Pacejka) prevalece sobre o índice do help, e a diferença numérica não muda conclusão nenhuma hoje. Recusar Vx acima de LONGVL bloqueava as velocidades de FSAE sem base física.
-- **Evidence:** `tests/test_tire_static.py` 32/32 (Mx contra transcrição independente da eq. 109: −38,65, −1,25 e −83,04 N·m; Mz com s·Fx isolado: 7,55 e 46,92 N·m; perfis, overlays, Vx e faixas); `tests/test_tire_model.py` 43/43 e `tests/test_tire_oracles.py` 5/5 (o `_sgn` do e5de218 não muda Fx/Fy); notebook executado de ponta a ponta numa cópia. Commits bba5b29, 4d36683, 1381da5, 69faddb e d9abb89.
+- **Evidence:** `tests/test_tire_static.py` 87/87, registrado em `tools/rodar_testes.py` (sem os `.tir` do TTC sai NÃO EXECUTÁVEL, nunca aprovado): Mx contra transcrição da eq. 109 (−38,65, −1,25 e −83,04 N·m); Mz com s·Fx isolado (7,55 e 46,92 N·m); fatores de escala ≠ 1, teto de Et, sensibilidades de QSX2 e do quadrado do QSX6; perfis, overlays (inclusive malformados), Vx, faixas e caminhos de erro. Mutações temporárias (QSX6 sem o quadrado, QSX10 sem γ, −s·Fx, LMX ignorado) foram pegas. As transcrições do teste seguem a mesma leitura do help que o código: pegam regressão, não erro de leitura da equação (daí a condição de aprovação). `tests/test_tire_model.py` 43/43 e `tests/test_tire_oracles.py` 5/5 (o `_sgn` do e5de218 não muda Fx/Fy); notebook executado de ponta a ponta numa cópia. Revisão do PR com o pr-review-toolkit (código, testes, comentários, falhas silenciosas), sem achado crítico; os achados confirmados foram aplicados (chaves do núcleo sem default, LMUY > 0, parâmetros obrigatórios, overlays malformados, aviso de My acima de LONGVL, fatores de escala ausentes avisados).
 - **Assumptions:** R25B do TTC como substituto do R60A da equipe (sem dado do R60A); Validation = NOT_VALIDATED; os perfis são ajustes independentes em cada pressão.
 - **Consequences:** Mx cai de centenas de N·m para dezenas; Mz muda com κ ≠ 0. Resultados de Mx e Mz tirados antes destas correções (gráficos do notebook de 2026-10-31) não valem.
-- **Affected_Artifacts:** `python/tire_model_static.py`; `notebooks/tire_static_exploration.ipynb`; `tests/test_tire_static.py`; `docs/superpowers/plans/2026-10-31-static-tire-model-v4.md` e `docs/superpowers/handoffs/2026-10-31-static-tire-model-v4.md` (só o nome do módulo).
+- **Affected_Artifacts:** `python/tire_model_static.py`; `notebooks/tire_static_exploration.ipynb`; `tests/test_tire_static.py`; `tools/rodar_testes.py`; `docs/superpowers/plans/2026-10-31-static-tire-model-v4.md` e `docs/superpowers/handoffs/2026-10-31-static-tire-model-v4.md` (só o nome do módulo).
 - **Affected_Tests:** `tests/test_tire_static.py` (sem ID TC; IDs não foram autorizados).
 - **Dependencies:** EDR-004, EDR-039, EDR-043.
 - **Approval_Conditions:** Comparar Mx e Mz com o OptimumTire (REFERENCE, EDR-004) para o mesmo `.tir` antes de qualquer uso de projeto.
@@ -1560,7 +1560,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-061 | SUS-1001, SUS-1004, SUS-205, SUS-208, SUS-301, SUS-302; TARGET-001 a TARGET-007 | python/metas.py; python/aba_metas.py; python/gerar_v4_2.py; data/nomes_V4_2.csv; docs/metas/; docs/registro-de-versoes-V4_2.md; planilha V4.2 (03_TARGETS, 23_LISTAS, 14_DASHBOARD); CLAUDE.md. | TC-WB42-001, 002, 003, 006 |
 | EDR-062 | — | python/origens.py; python/gerar_v4_2.py; python/equilibrio.py; python/equilibrio_linear.py; python/raizes.py; python/aba_equilibrio.py; planilha V4.2 (00_README, 05, 06, 14, 16, 20, 21, 22); docs/registro-de-versoes-V4_2-celulas.md. | TC-WB42-001, 002, 005 |
 | EDR-063 | — | python/viva.py; tools/conferir_viva.py; tools/retrato_viva.py; tools/migrar_viva.py; tools/medir_recalculo.py; tools/comparar_planilhas.py; tools/rodar_testes.py; data/viva/; docs/v4-2/; CLAUDE.md. | TC-WB42-004; CA-07 |
-| EDR-067 | — | python/tire_model_static.py; notebooks/tire_static_exploration.ipynb; tests/test_tire_static.py. | tests/test_tire_static.py (32 verificações, sem ID TC) |
+| EDR-067 | — | python/tire_model_static.py; notebooks/tire_static_exploration.ipynb; tests/test_tire_static.py; tools/rodar_testes.py. | tests/test_tire_static.py (87 verificações, sem ID TC) |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
