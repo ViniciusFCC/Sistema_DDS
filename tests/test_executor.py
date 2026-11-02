@@ -2,8 +2,9 @@
 Teste do executor dos testes (EDR-068, incremento 7, Task 1).
 TC-RUN-001: (a) filho com neto que dorme: o tempo-limite volta em segundos e encerra o neto (o `subprocess.run` com
             capture_output esperava o neto soltar o pipe: 60,5 s medidos para um timeout de 3 s); (b) saída normal em
-            UTF-8; (c) Orcamento; (d) a regra da mutação da planilha: com DDS_ORCAMENTO_S=5 e um teste que trava, o
-            mutante conta como NÃO detectado (tempo), em poucos segundos e sem 2ª tentativa.
+            UTF-8; (c) Orcamento; (d) a regra da mutação da planilha: com DDS_ORCAMENTO_S=8 e um teste que trava, o
+            mutante conta como NÃO detectado (tempo), em poucos segundos e sem 2ª tentativa; (e) o Ctrl+C simulado
+            durante a espera.
 Roda como script: uv run python -X utf8 tests/test_executor.py
 """
 import os
