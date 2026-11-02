@@ -12,8 +12,11 @@ da equação, não validação contra medição (Validation = NOT_VALIDATED).
 Uso: uv run python -X utf8 tests/test_tire_static.py
 """
 import hashlib
+import json
 import math
 import os
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -31,18 +34,26 @@ def check(name, cond, detail=""):
     print(f"[{'PASS' if cond else 'FAIL'}] {name}  {detail}")
 
 
+def tem_quatro_tir(c):
+    return c.is_dir() and len(list(c.glob("*PAC02_UM4.tir"))) >= 4
+
+
 def achar_diretorio_ttc():
-    """DDS_TTC_DIR, a raiz deste checkout ou a raiz do repositório principal (worktrees ficam em .claude/worktrees/x)."""
-    candidatos = []
+    """DDS_TTC_DIR (se definido, só ele: inválido = NÃO EXECUTÁVEL, sem cair para outra pasta), a raiz deste
+    checkout ou a raiz do repositório principal (worktrees ficam em .claude/worktrees/x)."""
     env = os.environ.get("DDS_TTC_DIR")
     if env:
-        candidatos.append(Path(env))
+        if tem_quatro_tir(Path(env)):
+            return Path(env)
+        print(f"NÃO EXECUTÁVEL: DDS_TTC_DIR={env} não é uma pasta com os quatro .tir *PAC02_UM4.tir do TTC "
+              "Round 6; nenhuma outra pasta foi tentada. Não conta como aprovado.")
+        raise SystemExit(3)
     raiz = HERE.parent
-    candidatos.append(raiz / SUBDIR)
+    candidatos = [raiz / SUBDIR]
     if len(raiz.parents) >= 3 and raiz.parent.name == "worktrees":
         candidatos.append(raiz.parents[2] / SUBDIR)
     for c in candidatos:
-        if c.is_dir() and any(c.glob("*PAC02_UM4.tir")):
+        if tem_quatro_tir(c):
             return c
     return None
 
@@ -67,21 +78,22 @@ class Par(dict):
 # ---------------------------------------------------------------------------------------------------------
 # Transcrições independentes (não reutilizam _mx nem _mz do módulo)
 # ---------------------------------------------------------------------------------------------------------
-def mx_eq109(P, fz, fy, gam):
+def mx_eq109(P, fz, fy, gam, qsx6_quadrado=True):
     """Help do Adams, eq. 109 (p. 48), com dpi = 0 (perfil em IP = IP_NOM):
     Mx = R0 Fz { QSX3 Fy/F'z0 + QSX4 cos[QSX5 atan((QSX6 Fz/F'z0)^2)] sin[QSX7 gam + QSX8 atan(QSX9 Fy/F'z0)]
                  + [QSX10 atan(QSX11 Fz/F'z0) - QSX2 (1 + QPX1 dpi)] gam + QSX1 LVMX } LMX"""
     fz0 = P["LFZO"] * P["FNOMIN"]
     R0 = P["UNLOADED_RADIUS"]
+    expoente = 2 if qsx6_quadrado else 1                      # False só para provar que o quadrado importa
     chave = (P["QSX3"] * fy / fz0
-             + P["QSX4"] * math.cos(P["QSX5"] * math.atan((P["QSX6"] * fz / fz0) ** 2))
+             + P["QSX4"] * math.cos(P["QSX5"] * math.atan((P["QSX6"] * fz / fz0) ** expoente))
              * math.sin(P["QSX7"] * gam + P["QSX8"] * math.atan(P["QSX9"] * fy / fz0))
              + (P["QSX10"] * math.atan(P["QSX11"] * fz / fz0) - P["QSX2"]) * gam
              + P["QSX1"] * P["LVMX"])
     return R0 * fz * chave * P["LMX"]
 
 
-def mz_eq100(P, fz, alpha, gam, kappa, fx, fy, info):
+def mz_eq100(P, fz, alpha, gam, kappa, fx, fy, info, teto_et=True):
     """Help do Adams, eqs. 100-108 (p. 47). Devolve (termo de trilha, resíduo, s*Fx) separados, para isolar o
     termo de Fx. O Fy do termo de trilha é o Fy com a cambagem real, F'y = Fy - SVyk (Pacejka 4.E71)."""
     fz0 = P["LFZO"] * P["FNOMIN"]
@@ -100,7 +112,8 @@ def mz_eq100(P, fz, alpha, gam, kappa, fx, fy, info):
     Ct = P["QCZ1"]
     Dt = fz * (P["QDZ1"] + P["QDZ2"] * dfz) * (1 + P["QDZ3"] * gz + P["QDZ4"] * gz ** 2) * (R0 / fz0) * P["LTR"]
     Et = (P["QEZ1"] + P["QEZ2"] * dfz + P["QEZ3"] * dfz ** 2) * (1 + (P["QEZ4"] + P["QEZ5"] * gz) * (2 / math.pi) * math.atan(Bt * Ct * a_t))
-    Et = min(Et, 1.0)
+    if teto_et:                                                                      # Et <= 1 (False só para provar o teto)
+        Et = min(Et, 1.0)
     at = a_eq(a_t)
     t = Dt * math.cos(Ct * math.atan(Bt * at - Et * (Bt * at - math.atan(Bt * at)))) * math.cos(alpha)      # eq. 102
     Br = P["QBZ9"] * P["LKY"] / P["LMUY"] + P["QBZ10"] * info["By"] * info["Cy"]
@@ -190,7 +203,7 @@ try:
     r_alta = operar(P12, 1054.0, 4.0, 0.0, 0.0, vx=1.5 * vref)
     avisos = [m for m in r_alta.limitations if "LONGVL" in m]
     check("estático /Vx-2: Vx > LONGVL não lança erro e acrescenta aviso em limitations",
-          len(avisos) == 1 and "fora dos dados medidos" in avisos[0], avisos[0] if avisos else "sem aviso")
+          len(avisos) == 1 and "My" in avisos[0] and "1.50" in avisos[0], avisos[0] if avisos else "sem aviso")
     check("estático /Vx-3: Fx, Fy, Mx e Mz não dependem de Vx (só o My usa a velocidade)",
           (r_alta.fx_n, r_alta.fy_n, r_alta.mx_nm, r_alta.mz_nm) == (r_ok.fx_n, r_ok.fy_n, r_ok.mx_nm, r_ok.mz_nm))
 except ts.StaticTireError as exc:
@@ -244,7 +257,6 @@ with tempfile.TemporaryDirectory() as tmp:
           (r1.fy_n, r1.mz_nm) == (r2.fy_n, r2.mz_nm) and de_volta.revision_id == "T-OVL"
           and abs(r1.fy_n - operar(P12, 1054.0, 4.0, -2.0, 0.05).fy_n) > 1.0)
     recusa("estático /Overlay-2: não sobrescreve overlay existente", lambda: ts.save_revision(rev, arq), "já existe")
-    import json
     payload = json.loads(arq.read_text(encoding="utf-8"))
 
     def variante(nome, **mudanca):
@@ -285,6 +297,233 @@ try:
     check("estático /Faixas-2: alpha fora da faixa declarada é recusado", False, "não lançou")
 except base.TireRangeError:
     check("estático /Faixas-2: alpha fora da faixa declarada é recusado", True)
+
+# ---------------------------------------------------------------------------------------------------------
+# Avisos de coeficientes e fatores ausentes
+# ---------------------------------------------------------------------------------------------------------
+sem_aviso_momentos = True
+fatores_ausentes = {}
+for psi in FAMILIA.pressures_psi:
+    lim = operar(FAMILIA.at_pressure(psi), 1054.0, 4.0, -2.0, 0.05).limitations
+    if any("Coeficientes de momento ausentes" in m for m in lim):
+        sem_aviso_momentos = False
+    fatores_ausentes[psi] = [m for m in lim if "Fatores de escala ausentes" in m]
+check("estático /Avisos-1: nenhum dos quatro perfis tem coeficiente de momento ausente (sem aviso em limitations)",
+      sem_aviso_momentos)
+esperado_fator = "Fatores de escala ausentes no .tir foram assumidos iguais a 1: LMUGAMMA."
+check("estático /Avisos-2: nos quatro perfis falta exatamente o fator LMUGAMMA (os outros nove estão no .tir) e o aviso diz isso",
+      all(v == [esperado_fator] for v in fatores_ausentes.values())
+      and all(set(ts.MOMENT_SCALING_FACTORS) - set(pr.dataset.p) == {"LMUGAMMA"} for pr in FAMILIA.profiles.values()),
+      str(fatores_ausentes))
+
+# ---------------------------------------------------------------------------------------------------------
+# Fatores de escala diferentes de 1 (revise_profile), contra as transcrições
+# ---------------------------------------------------------------------------------------------------------
+FATORES = {"LMX": 0.9, "LVMX": 1.2, "LS": 0.8, "LTR": 1.1, "LKY": 0.95, "LMUY": 1.05, "LGAZ": 0.85}
+MOMENTO_DO_FATOR = {"LMX": "mx", "LVMX": "mx", "LS": "mz", "LTR": "mz", "LKY": "mz", "LMUY": "mz", "LGAZ": "mz"}
+pontos_fator = [(1054.0, 4.0, -2.0, 0.08), (1500.0, 8.0, -3.0, -0.10), (500.0, 2.0, -1.0, 0.05)]
+
+
+def mx_mz_transcritos(rev, fz, a, g, k):
+    Pr = Par(rev.dataset.p)
+    fx, fy, info = forcas(rev, fz, a, g, k)
+    return mx_eq109(Pr, fz, fy, g * DEG), sum(mz_eq100(Pr, fz, a * DEG, g * DEG, k, fx, fy, info))
+
+
+def dif_com_transcricao(rev):
+    dmax = 0.0
+    for fz, a, g, k in pontos_fator:
+        r = operar(rev, fz, a, g, k)
+        mx_ref, mz_ref = mx_mz_transcritos(rev, fz, a, g, k)
+        dmax = max(dmax, abs(r.mx_nm - mx_ref), abs(r.mz_nm - mz_ref))
+    return dmax
+
+
+for fator, valor in FATORES.items():
+    assert fator in P12.dataset.p, fator              # revise_profile recusa parâmetro ausente no .tir
+    rev = ts.revise_profile(P12, {fator: valor}, reason=f"teste do fator {fator}", revision_id=f"T-{fator}")
+    dif = dif_com_transcricao(rev)
+    moment = MOMENTO_DO_FATOR[fator]
+    mudou = max(abs(getattr(operar(rev, fz, a, g, k), f"{moment}_nm") - getattr(operar(P12, fz, a, g, k), f"{moment}_nm"))
+                for fz, a, g, k in pontos_fator)
+    check(f"estático /Escala-1: {fator}={valor:g} -> Mx e Mz do módulo == transcrição e {moment.upper()} muda em relação ao perfil base; tol. 1e-9",
+          dif < 1e-9 and mudou > 1e-4, f"dif máx={dif:.2e}; mudança em {moment.upper()}={mudou:.4f}")
+rev_todos = ts.revise_profile(P12, FATORES, reason="todos os fatores juntos", revision_id="T-TODOS")
+dif = dif_com_transcricao(rev_todos)
+check("estático /Escala-2: os sete fatores juntos (LMX, LVMX, LS, LTR, LKY, LMUY, LGAZ) == transcrição; tol. 1e-9",
+      dif < 1e-9, f"dif máx={dif:.2e}")
+
+# ---------------------------------------------------------------------------------------------------------
+# Teto Et <= 1 (eq. 105)
+# ---------------------------------------------------------------------------------------------------------
+rev_et = ts.revise_profile(P12, {"QEZ1": 5.0}, reason="QEZ1 alto para ativar o teto de Et", revision_id="T-ET")
+Pet = Par(rev_et.dataset.p)
+dmax_teto = 0.0
+dmax_sem_teto = 0.0
+for fz, a, g, k in pontos_fator:
+    fx, fy, info = forcas(rev_et, fz, a, g, k)
+    com = sum(mz_eq100(Pet, fz, a * DEG, g * DEG, k, fx, fy, info))
+    sem = sum(mz_eq100(Pet, fz, a * DEG, g * DEG, k, fx, fy, info, teto_et=False))
+    mz = operar(rev_et, fz, a, g, k).mz_nm
+    dmax_teto = max(dmax_teto, abs(mz - com))
+    dmax_sem_teto = max(dmax_sem_teto, abs(mz - sem))
+check("estático /Teto-1: com QEZ1=5 (Et > 1 sem o teto) o Mz do módulo == transcrição com min(Et, 1) e difere da sem teto",
+      dmax_teto < 1e-9 and dmax_sem_teto > 1e-3, f"dif com teto={dmax_teto:.2e}; dif sem teto={dmax_sem_teto:.4f} N.m")
+
+# ---------------------------------------------------------------------------------------------------------
+# Sensibilidades de Mx: QSX2 e o quadrado do QSX6
+# ---------------------------------------------------------------------------------------------------------
+fz_s, g_s = 1054.0, -3.0
+rev_q2 = ts.revise_profile(P12, {"QSX2": P["QSX2"] + 0.5}, reason="sensibilidade de QSX2", revision_id="T-QSX2")
+dmx = operar(rev_q2, fz_s, 0.0, g_s, 0.0).mx_nm - operar(P12, fz_s, 0.0, g_s, 0.0).mx_nm
+esperado_q2 = -0.5 * (g_s * DEG) * P["UNLOADED_RADIUS"] * fz_s * P["LMX"]
+check("estático /Sens-1: somar 0,5 ao QSX2 muda Mx em -0,5*gamma*R0*Fz*LMX (Fy não depende do QSX2); tol. 1e-9 N.m",
+      abs(dmx - esperado_q2) < 1e-9 and abs(dmx) > 1.0, f"dMx={dmx:.6f}; esperado={esperado_q2:.6f}")
+rev_q6 = ts.revise_profile(P12, {"QSX4": 1.0, "QSX5": 1.0, "QSX6": 3.0, "QSX8": 0.0},
+                           reason="QSX6 grande para distinguir atan(x^2) de atan(x)", revision_id="T-QSX6")
+P6 = Par(rev_q6.dataset.p)
+dq = 0.0
+dsem = 0.0
+for fz, a, g, k in pontos_fator:
+    mx = operar(rev_q6, fz, a, g, k).mx_nm
+    fy = forcas(rev_q6, fz, a, g, k)[1]
+    dq = max(dq, abs(mx - mx_eq109(P6, fz, fy, g * DEG)))
+    dsem = max(dsem, abs(mx - mx_eq109(P6, fz, fy, g * DEG, qsx6_quadrado=False)))
+check("estático /Sens-2: com QSX6 grande, Mx do módulo == transcrição com atan((QSX6 Fz/F'z0)^2) e difere da variante sem o quadrado",
+      dq < 1e-9 and dsem > 1e-2, f"dif com quadrado={dq:.2e}; dif sem quadrado={dsem:.4f} N.m")
+
+# ---------------------------------------------------------------------------------------------------------
+# Velocidade: Vx = 0 e conteúdo do aviso
+# ---------------------------------------------------------------------------------------------------------
+try:
+    r_zero = operar(P12, 1054.0, 4.0, 0.0, 0.0, vx=0.0)
+    check("estático /Vx-5: Vx = 0 é aceito, sem aviso de velocidade e com My finito",
+          math.isfinite(r_zero.my_nm) and not any("LONGVL" in m for m in r_zero.limitations))
+except ts.StaticTireError as exc:
+    check("estático /Vx-5: Vx = 0 é aceito, sem aviso de velocidade e com My finito", False, f"lançou {exc}")
+aviso_vx = [m for m in operar(P12, 1054.0, 4.0, 0.0, 0.0, vx=2.0 * vref).limitations if "LONGVL" in m]
+check("estático /Vx-6: o aviso de Vx > LONGVL cita My, os termos QSY3/QSY4 e a razão Vx/LONGVL (2.00)",
+      len(aviso_vx) == 1 and all(t in aviso_vx[0] for t in ("My", "QSY3", "QSY4", "2.00")),
+      aviso_vx[0] if aviso_vx else "sem aviso")
+
+# ---------------------------------------------------------------------------------------------------------
+# Caminhos de erro
+# ---------------------------------------------------------------------------------------------------------
+q = P12.dataset.p
+
+
+def recusa_tipo(nome, fn, tipo, trecho=""):
+    try:
+        fn()
+        check(nome, False, "não lançou")
+    except tipo as exc:
+        check(nome, trecho in str(exc), str(exc))
+
+
+for rotulo, kwargs, trecho in (
+    ("Fz = 0", {"fz": 0.0}, "Fz deve ser > 0"),
+    ("Fz < 0", {"fz": -100.0}, "Fz deve ser > 0"),
+    ("Fz = NaN", {"fz": math.nan}, "finitas"),
+    ("alpha = inf", {"alpha_deg": math.inf}, "finitas"),
+    ("gamma = NaN", {"gam_deg": math.nan}, "finitas"),
+    ("kappa = inf", {"kappa": math.inf}, "finitas"),
+    ("Vx = NaN", {"vx": math.nan}, "finitas"),
+):
+    args = {"fz": 1054.0, "alpha_deg": 4.0, "gam_deg": 0.0, "kappa": 0.0, "vx": 10.0}
+    args.update(kwargs)
+    recusa_tipo(f"estático /Erro-1: evaluate_static recusa {rotulo}",
+                lambda args=args: operar(P12, args["fz"], args["alpha_deg"], args["gam_deg"], args["kappa"], vx=args["vx"]),
+                ts.StaticTireError, trecho)
+recusa_tipo("estático /Erro-2: gamma acima de CAMMAX é recusado (TireRangeError)",
+            lambda: operar(P12, 1054.0, 4.0, q["CAMMAX"] / DEG + 1.0, 0.0),
+            base.TireRangeError)
+recusa_tipo("estático /Erro-3: kappa acima de KPUMAX é recusado (TireRangeError)",
+            lambda: operar(P12, 1054.0, 4.0, 0.0, q["KPUMAX"] + 0.1), base.TireRangeError)
+recusa_tipo("estático /Erro-4: Fz acima de FZMAX é recusado (TireRangeError)",
+            lambda: operar(P12, q["FZMAX"] + 100.0, 4.0, 0.0, 0.0), base.TireRangeError)
+
+for nome, args, trecho in (
+    ("sem justificativa", {"changes": {"PDY1": 1.5}, "reason": "", "revision_id": "X"}, "justificativa"),
+    ("sem id", {"changes": {"PDY1": 1.5}, "reason": "motivo", "revision_id": "  "}, "revision_id"),
+    ("reason não texto", {"changes": {"PDY1": 1.5}, "reason": None, "revision_id": "X"}, "justificativa"),
+    ("parâmetro desconhecido", {"changes": {"XYZ99": 1.0}, "reason": "m", "revision_id": "X"}, "ausentes"),
+    ("valor não finito (NaN)", {"changes": {"PDY1": math.nan}, "reason": "m", "revision_id": "X"}, "finitos"),
+    ("valor não finito (inf)", {"changes": {"PDY1": math.inf}, "reason": "m", "revision_id": "X"}, "finitos"),
+    ("valor não numérico", {"changes": {"PDY1": "abc"}, "reason": "m", "revision_id": "X"}, "Valor inválido"),
+    ("valor booleano", {"changes": {"PDY1": True}, "reason": "m", "revision_id": "X"}, "Valor inválido"),
+    ("revisão vazia", {"changes": {}, "reason": "m", "revision_id": "X"}, "ao menos um"),
+    ("alterar IP", {"changes": {"IP": 1.0e5}, "reason": "m", "revision_id": "X"}, "IP/IP_NOM"),
+    ("FZMIN <= 0", {"changes": {"FZMIN": 0.0}, "reason": "m", "revision_id": "X"}, "FZMIN deve permanecer positivo"),
+    ("faixa invertida (ALPMIN >= ALPMAX)", {"changes": {"ALPMIN": q["ALPMAX"] + 0.1}, "reason": "m", "revision_id": "X"},
+     "Faixa inválida"),
+    ("LMUY <= 0", {"changes": {"LMUY": 0.0}, "reason": "m", "revision_id": "X"}, "LMUY deve permanecer positivo"),
+    ("LMUY < 0", {"changes": {"LMUY": -1.0}, "reason": "m", "revision_id": "X"}, "LMUY deve permanecer positivo"),
+):
+    recusa_tipo(f"estático /Erro-5: revise_profile recusa {nome}",
+                lambda args=args: ts.revise_profile(P12, args["changes"], reason=args["reason"], revision_id=args["revision_id"]),
+                ts.StaticTireError, trecho)
+
+with tempfile.TemporaryDirectory() as tmp:
+    tmpd = Path(tmp)
+    valido = tmpd / "valido.json"
+    ts.save_revision(ts.revise_profile(P12, {"PDY1": P["PDY1"] * 1.05}, reason="base das variantes", revision_id="T-ERRO"), valido)
+    base_json = json.loads(valido.read_text(encoding="utf-8"))
+
+    def json_com(nome, **mudanca):
+        d = tmpd / f"{nome}.json"
+        d.write_text(json.dumps({**base_json, **mudanca}), encoding="utf-8")
+        return d
+
+    quebrado = tmpd / "quebrado.json"
+    quebrado.write_text("{ isto não é json", encoding="utf-8")
+    raiz_lista = tmpd / "lista.json"
+    raiz_lista.write_text("[1, 2]", encoding="utf-8")
+    for nome, arq, trecho in (
+        ("JSON inválido", quebrado, "Não foi possível ler"),
+        ("arquivo inexistente", tmpd / "nao_existe.json", "Não foi possível ler"),
+        ("raiz que não é objeto", raiz_lista, "objeto na raiz"),
+        ("schema incompatível", json_com("schema", schema="outro.v9"), "Schema"),
+        ("overrides que não é objeto", json_com("ovr", overrides=[1, 2]), "overrides"),
+        ("reason nulo", json_com("reason", reason=None), "reason"),
+        ("revision_id nulo", json_com("rid", revision_id=None), "revision_id"),
+        ("parent_revision_id numérico", json_com("pai", parent_revision_id=7), "parent_revision_id"),
+        ("pressão não numérica", json_com("psi", pressure_psi="doze"), "Pressão inválida"),
+        ("override com parâmetro desconhecido", json_com("desc", overrides={"XYZ99": 1.0}), "ausentes"),
+    ):
+        recusa_tipo(f"estático /Erro-6: load_revision recusa {nome}", lambda arq=arq: ts.load_revision(P12, arq),
+                    ts.StaticTireError, trecho)
+
+    vazio = tmpd / "sem_tir"
+    vazio.mkdir()
+    recusa_tipo("estático /Erro-7: load_profile_family recusa diretório sem .tir", lambda: ts.load_profile_family(vazio, source_axis_system="ISO_TYDEX"),
+                ts.StaticTireError, "Nenhum perfil")
+
+    # cópia de um .tir sem a linha de FNOMIN (o original nunca é editado)
+    linhas = P12.source_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    sem_fnomin = [ln for ln in linhas if not ln.lstrip().startswith("FNOMIN")]
+    check("estático /Erro-8: a cópia de teste perdeu exatamente a linha de FNOMIN", len(sem_fnomin) == len(linhas) - 1)
+    copia = tmpd / P12.source_path.name
+    copia.write_text("".join(sem_fnomin), encoding="utf-8")
+    recusa_tipo("estático /Erro-8: load_profile recusa .tir sem parâmetro obrigatório (FNOMIN)",
+                lambda: ts.load_profile(copia, source_axis_system="ISO_TYDEX"), ts.StaticTireError, "FNOMIN")
+
+# ---------------------------------------------------------------------------------------------------------
+# DDS_TTC_DIR inválido: NÃO EXECUTÁVEL (código 3), sem cair para outra pasta
+# ---------------------------------------------------------------------------------------------------------
+with tempfile.TemporaryDirectory() as tmp:
+    pasta_vazia = Path(tmp) / "vazia"
+    pasta_vazia.mkdir()
+    pasta_incompleta = Path(tmp) / "incompleta"
+    pasta_incompleta.mkdir()
+    for arq in sorted(TTC.glob("*PAC02_UM4.tir"))[:3]:                     # só três dos quatro .tir
+        (pasta_incompleta / arq.name).write_bytes(arq.read_bytes())
+    for nome, pasta in (("inexistente", Path(tmp) / "nao_existe"), ("sem .tir", pasta_vazia), ("com só três .tir", pasta_incompleta)):
+        proc = subprocess.run([sys.executable, "-X", "utf8", str(Path(__file__).resolve())],
+                              env={**os.environ, "DDS_TTC_DIR": str(pasta)}, capture_output=True, text=True,
+                              encoding="utf-8", timeout=120, check=False)
+        check(f"estático /Ambiente-1: DDS_TTC_DIR {nome} -> NÃO EXECUTÁVEL, código 3, mensagem e nenhuma outra pasta tentada",
+              proc.returncode == 3 and "NÃO EXECUTÁVEL" in proc.stdout and "DDS_TTC_DIR" in proc.stdout
+              and "PASS" not in proc.stdout, f"código={proc.returncode}; {proc.stdout.strip()[:120]}")
 
 
 # ---------------------------------------------------------------------------------------------------------
