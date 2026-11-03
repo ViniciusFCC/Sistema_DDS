@@ -904,16 +904,26 @@ def _varredura(caso: CasoEquilibrio, ay_max_g: float, passo_g: float, n_alfa: in
 _PISO_RESOLUCAO_MS2 = 1e-9 * G
 
 
-def _resolucao(pedida: tuple, refinada: tuple, passo_ms2: float) -> float | None:
-    """Resolução numérica das saturações (EDR-056, item 2): max|S − S_refinado| sobre os eixos.
+# Fator da faixa do NEUTRO (EDR-065, item 2, decisão do usuário de 2026-11-02): o |S − S2| entre a grade pedida e a
+# refinada subestima o erro de S em cerca de 4/3 (Richardson com p = 2: 2^p/(2^p − 1) = 4/3; ver
+# docs/inc7/estudo-neutro.md). Fonte única: o analise_par e a regra da folga do mmm.limite usam a faixa calculada
+# em _resolucao (o mmm a recebe pronta em resolucao_ms2, sem fator próprio), e a célula da planilha (família F12)
+# repete este valor.
+FATOR_NEUTRO = 4.0 / 3.0
 
-    Se um eixo satura numa grade e não na outra, a resolução é o passo da grade pedida. None quando
-    nenhum eixo satura em nenhuma das grades.
+
+def _resolucao(pedida: tuple, refinada: tuple, passo_ms2: float) -> float | None:
+    """Faixa numérica do NEUTRO (EDR-056, item 2; fator do EDR-065, item 2): max sobre os eixos, no mínimo o piso.
+
+    Eixo que satura nas duas grades contribui FATOR_NEUTRO·|S − S_refinado|. Eixo que satura numa grade e não na
+    outra contribui o passo da grade pedida, sem o fator (o passo é um limite, não uma estimativa do |S − S2|). O
+    piso de 1e-9 g também fica sem o fator. O ramo de um eixo só (PUSH/LOOSE por um eixo, em analise_par) lê esta
+    mesma faixa. None quando nenhum eixo satura em nenhuma das grades.
     """
     difs = []
     for s, s_ref in zip(pedida, refinada):
         if s is not None and s_ref is not None:
-            difs.append(abs(s - s_ref))
+            difs.append(FATOR_NEUTRO * abs(s - s_ref))
         elif s is not None or s_ref is not None:
             difs.append(passo_ms2)
     if not difs:
@@ -970,7 +980,7 @@ def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.
     Milliken §7.1 (p. 283-286) e §8.6 (p. 320; EDR-056): o eixo que satura primeiro define o
     comportamento no limite (dianteiro = push, final understeer; traseiro = loose, final oversteer);
     o cruzamento das fronteiras sobre N = 0 é neutro. Regras (EDR-056, item 2 e 3), com S, V e a folga
-    da grade pedida e a resolução numérica R medida contra uma grade refinada (passo/2, 2·n_alfa − 1):
+    da grade pedida e a faixa numérica R (FATOR_NEUTRO·|S − S2| contra uma grade refinada passo/2, 2·n_alfa − 1; ver _resolucao):
     - os dois eixos saturam: Δ = S_r − S_f; |Δ| <= R -> NEUTRO; Δ > R -> PUSH; Δ < −R -> LOOSE;
     - só a frente satura: PUSH se a traseira segue válida até V_r >= S_f + R; senão N/A com o motivo
       da traseira (simétrico para LOOSE);
