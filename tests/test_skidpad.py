@@ -1,5 +1,5 @@
 """
-Testes do módulo skidpad (raio do skidpad, incremento 7, Task 2; EDR-067, SUS-1009 a 1011).
+Testes do módulo skidpad (raio do skidpad, incremento 7, Task 2; EDR-069, SUS-1009 a 1011).
 TC-SKP-001: geometria do raio rente aos cones (centro da curva na linha do eixo traseiro, spec §3.2).
 TC-SKP-002: entradas vazias, meia largura do .tir e modos do raio.
 Roda como script: uv run python -X utf8 tests/test_skidpad.py

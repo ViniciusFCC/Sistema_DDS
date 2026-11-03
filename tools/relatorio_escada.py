@@ -14,7 +14,7 @@ O raio R do skidpad é entrada "a confirmar". Este script nunca escolhe um R:
 - caso da planilha sem R e sem --raio: sai com código 3 e a mensagem "informe --raio";
 - --raio R exige --origem-raio TEXTO, vale só para o caso deste relatório e vai no topo ("R = <valor> m (origem: ...)").
   Num caso sem R, o --raio liga no Python a hipótese 3 (cos δ_ref), que a planilha com R vazio tem desligada: o relatório avisa.
-- --metodo-raio {linha_central,rente_aos_cones} (incremento 7, EDR-067; pode repetir): o R sai de `skidpad.raio` com as
+- --metodo-raio {linha_central,rente_aos_cones} (incremento 7, EDR-069; pode repetir): o R sai de `skidpad.raio` com as
   bitolas do caso (a provisória `--bitola-m`, padrão 1,3 m, rotulada "provisória do T11", só entra onde o caso não tem
   bitola), a meia largura do pneu do `.tir` e os diâmetros do skidpad (Formula SAE Rules 2026 v1.0, D.10.1.1). A origem do
   R vai sozinha para o relatório; é exclusivo de --raio. Cada método dá uma rodada (seção) no mesmo arquivo.
@@ -142,7 +142,7 @@ AVISO_R_VAZIO = (
 
 
 def _raio_do_metodo(caso, metodo: str, bitola_m: float):
-    """(R, texto_raio, obs_raio, rotulos) do método, ou (None, motivo, None, None). Origem do R automática (EDR-067)."""
+    """(R, texto_raio, obs_raio, rotulos) do método, ou (None, motivo, None, None). Origem do R automática (EDR-069)."""
     cfg = caso.cfg
     def valida(t):
         return t is not None and math.isfinite(t) and t > 0.0

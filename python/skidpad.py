@@ -1,5 +1,5 @@
 """
-Raio do skidpad (incremento 7, Task 2; EDR-067, SUS-1009 a 1011; spec 2026-10-29-inc7-fisica-planilha-design.md §3).
+Raio do skidpad (incremento 7, Task 2; EDR-069, SUS-1009 a 1011; spec 2026-10-29-inc7-fisica-planilha-design.md §3).
 
 Centro da curva único, na linha do eixo traseiro (U8). Referencial ISO 8855, curva à esquerda: origem no ponto médio do
 eixo traseiro, X para a frente, Y para a esquerda; rodas dianteiras em (L, ±t_f/2), traseiras em (0, ±t_r/2); CG em

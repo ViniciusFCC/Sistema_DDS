@@ -40,13 +40,15 @@ colunas nas abas existentes. As fórmulas existentes que mudam são só as do ca
 
 ## IDs autorizados (usuário, 2026-10-29: "lista enxuta")
 
-EDR-067 (centro de curva único, raio do skidpad, decomposição 7-9, regulamento FSAE Brasil no inc. 9); EDR-068
+> Nota: renumerado de EDR-067 para EDR-069 em 2026-11-02 (colisão com o EDR-067 do PR #25, modelo estático de pneu; autorização do usuário).
+
+EDR-069 (centro de curva único, raio do skidpad, decomposição 7-9, regulamento FSAE Brasil no inc. 9); EDR-068
 (executor dos testes); revisão do EDR-065 item 2 (faixa do NEUTRO, depois do estudo); SUS-1009 (raio do skidpad R),
 SUS-1010 (eixo que manda), SUS-1011 (meia largura do pneu); chaves `h2v` (forma do Ackermann) e `h9v` (forma do Fx
 exigido); TC-RUN-001, TC-SKP-001 e 002, TC-ACK-001 e 002, TC-FXI-001 e 002, TC-NEU-001 e 002, TC-WB43-001 a 006.
 Nenhum outro ID é criado. A aprovação de um ID não valida a equação.
 
-## Decisões deste plano (registrar no EDR-067; as marcadas com ★ vão à aprovação célula a célula)
+## Decisões deste plano (registrar no EDR-069; as marcadas com ★ vão à aprovação célula a célula)
 
 - **D1. `equilibrio.Formas` em vez de campo no caso.** `@dataclass(frozen=True) class Formas: ackermann:
   Literal["v42", "v43"] = "v42"; fx: Literal["v42", "v43"] = "v42"`, com `FORMAS_V42 = Formas()` e
@@ -188,10 +190,10 @@ usuário.
   "plano do inc. 7 (TC-RUN-001)")` e `"executor_testes"` em `MODULOS`). Commit:
   `fix(testes): executor com tempo-limite que encerra a árvore (EDR-068, TC-RUN-001)`.
 
-### Task 2: Raio do skidpad (`python/skidpad.py`; EDR-067, SUS-1009 a 1011)
+### Task 2: Raio do skidpad (`python/skidpad.py`; EDR-069, SUS-1009 a 1011)
 
 **Arquivos:** Create `python/skidpad.py`, `tests/test_skidpad.py`; Modify `docs/Engineering_Decision_Register.md`
-(EDR-067 com D1 a D10) e o registro dos SUS (onde estão os SUS-1001 a 1008).
+(EDR-069 com D1 a D10) e o registro dos SUS (onde estão os SUS-1001 a 1008).
 
 **Interfaces:**
 - Produz:
@@ -226,7 +228,7 @@ usuário.
   o termo dianteiro só se R_in' > L; empate quando a diferença dos dois limites é ≤ 1e-9 m; R = √(b² + R_c²). Sem
   constante física nova.
 - [ ] **Passo 4: rodar** (`2 PASS, 0 FAIL, de 2 testes`); acrescentar em `rodar_testes.TESTES` e `MODULOS`.
-- [ ] **Passo 5: commit** `feat(skidpad): R pelos dois métodos e modo manual (EDR-067, SUS-1009 a 1011)`. O EDR-067
+- [ ] **Passo 5: commit** `feat(skidpad): R pelos dois métodos e modo manual (EDR-069, SUS-1009 a 1011)`. O EDR-069
   e os SUS vão num commit `docs:` separado.
 
 ### Task 3: Ackermann com o centro no eixo traseiro (forma v43)
@@ -379,7 +381,7 @@ D10); `tests/test_formas_v43.py` (TC-ACK-002).
 
 Levar ao usuário, numa mensagem: o relatório da escada (tolerância do EDR-065), o estudo do NEUTRO (escolha entre as
 alternativas 1, 2 e 3), as decisões D4, D5 e D6 e o catálogo abaixo, para a aprovação célula a célula. As escolhas vão
-ao EDR (EDR-065 item 2 revisto; EDR-067). Sem essa aprovação a 7b não começa. Se a alternativa 3 (refino parabólico)
+ao EDR (EDR-065 item 2 revisto; EDR-069). Sem essa aprovação a 7b não começa. Se a alternativa 3 (refino parabólico)
 for escolhida, o catálogo ganha a família C-F12b (fórmulas de `cap_` e `idx_` em todas as grades), escrita e aprovada
 num adendo antes da Task 11.
 
@@ -586,7 +588,7 @@ Fica para o passo do usuário (alternativa escolhida no estudo). Texto pronto da
 | # | Célula | Antes | Depois | Testes |
 |---|---|---|---|---|
 | C-D1 | A48 / B48 | vazias | "Formas da V4.3" / `=IF(AND({h2v}=1,{h9v}=1),"padrão da V4.3 (h2v = 1, h9v = 1); hipóteses só no Python: ver 24_CURVA A27","resultado não comparável com a V4.3 padrão (chave h2v ou h9v em 0)")` | 004 |
-| C-D2 | C48 / D48 | vazias | "-" / "EDR-066; EDR-067" (padrão das linhas 41-47) | 001 |
+| C-D2 | C48 / D48 | vazias | "-" / "EDR-066; EDR-069" (padrão das linhas 41-47) | 001 |
 
 ---
 

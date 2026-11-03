@@ -1,5 +1,5 @@
 """
-Testes das formas v43 do equilíbrio (incremento 7; EDR-066, EDR-067, decisão D1 do plano).
+Testes das formas v43 do equilíbrio (incremento 7; EDR-066, EDR-069, decisão D1 do plano).
 TC-ACK-001: Ackermann com o centro da curva na linha do eixo traseiro (spec §3.1 e §4.1; Task 3).
 TC-FXI-001 e 002: Fx exigido por arrasto induzido (spec §4.2; decisões D2 e D3; Task 4).
 TC-ACK-002: variante planilha_v43 do mmm e linha "planilha V4.3" da escada (Task 5).

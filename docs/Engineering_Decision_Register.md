@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 68 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-067 como PROPOSED, Task 2)
+Total: 68 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2)
 
 | ID | Título | Status |
 |---|---|---|
@@ -103,7 +103,7 @@ Total: 68 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-064 | Método do MMM em raio fixo e da escada de hipóteses no Python | AWAITING_DECISION |
 | EDR-065 | Tolerância da escada e regra do NEUTRO | AWAITING_DECISION |
 | EDR-066 | Achados da escada sobre fórmulas da planilha | AWAITING_DECISION |
-| EDR-067 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | PROPOSED |
+| EDR-069 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | PROPOSED |
 | EDR-068 | Executor dos testes: tempo-limite que encerra a árvore de processos | IMPLEMENTED |
 
 ## 3. Decisões que dependem do usuário (agora)
@@ -118,7 +118,7 @@ Total: 68 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 - **EDR-064** (AWAITING_DECISION): Método do MMM em raio fixo e da escada de hipóteses no Python (implementado; as decisões do controlador aguardam o usuário no PR)
 - **EDR-065** (AWAITING_DECISION): Tolerância da escada de hipóteses e regra do NEUTRO (valor e regra são do usuário)
 - **EDR-066** (AWAITING_DECISION): Achados da escada sobre as fórmulas de Ackermann e de Fx exigido da planilha
-- **EDR-067** (PROPOSED): Centro de curva único e raio do skidpad; D4, D5 e D6 aguardam aprovação do usuário (passo entre a 7a e a 7b)
+- **EDR-069** (PROPOSED): Centro de curva único e raio do skidpad; D4, D5 e D6 aguardam aprovação do usuário (passo entre a 7a e a 7b)
 
 ## 4. Proposta de IDs para camber/toe estáticos (Decisão C — NÃO criados)
 
@@ -1535,7 +1535,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Rationale:** O MMM em raio fixo, parametrizado por A_Y, é mais robusto perto do pico do que uma grade β × δ e responde à pergunta da escada (quanto vale cada hipótese). Manter o `equilibrio.py` só com adições preserva os 28 e 18 checks existentes. Nada do Python vai para a planilha.
 - **Evidence:** `tests/test_mmm.py` 11/11, `tests/test_escada.py` 3/3, `tests/mutation_mmm.py` 5/5 (rodados pelos implementadores por tarefa; a suíte inteira fica para o controlador). Onda de correção da revisão final (2026-10-28): `test_mmm` 11/11, `test_escada` 3/3, `test_equilibrio` 28/28 e `test_equilibrio_linear` 18/18; os cinco textos da mutação continuam aplicando uma vez cada (a mutação completa fica para a suíte). Revisão do usuário (2026-10-28, item 5.6): `test_mmm` 11/11, `test_escada` 3/3, `test_equilibrio` 28/28, `test_equilibrio_linear` 18/18 e `mutation_mmm` 5/5 (896 s, rodada pelo subagente). Plano e ledger em `.superpowers/sdd/2026-10-27-inc6-mmm-escada/` (fora do Git).
 - **Assumptions:** O raio do skidpad é dado pelo usuário. A geometria é sintética e os dados são demonstrativos (T09/E03 e TX/E05), então nada é resultado do carro.
-- **Consequences:** Existe a escada medida em Python, sem veredito de tolerância. O relatório `docs/inc6/escada-hipoteses.md` ficou pendente do raio R do usuário na 6; a 7a o gerou com os dois R do skidpad (EDR-067). O incremento 7 pode levar as chaves 1/0 à planilha, depois do EDR-065 e da resposta ao EDR-066.
+- **Consequences:** Existe a escada medida em Python, sem veredito de tolerância. O relatório `docs/inc6/escada-hipoteses.md` ficou pendente do raio R do usuário na 6; a 7a o gerou com os dois R do skidpad (EDR-069). O incremento 7 pode levar as chaves 1/0 à planilha, depois do EDR-065 e da resposta ao EDR-066.
 - **Affected_Artifacts:** `python/mmm.py`; `python/escada.py`; `tools/relatorio_escada.py`; `tools/rodar_testes.py`; `tests/mutation_mmm.py`; `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`; `docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md` (§7.5, nota); CLAUDE.md; MAPA.md.
 - **Affected_Tests:** TC-MMM-001..011; TC-ESC-001..003; mutação do MMM (5).
 - **Dependencies:** EDR-010, EDR-053, EDR-055, EDR-056, EDR-057, EDR-060.
@@ -1590,7 +1590,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-052, EDR-057, EDR-064.
 - **Source_Conversation_or_Document:** Adendo `2026-10-27-inc6-mmm-escada-design.md` §7 (revisão do conselho).
 
-### EDR-067 — Centro de curva único, raio do skidpad e decomposição do incremento 7
+### EDR-069 — Centro de curva único, raio do skidpad e decomposição do incremento 7
 
 - **Date:** 2026-10-29
 - **Status:** PROPOSED. D4, D5 e D6 (★) aguardam aprovação do usuário (passo entre a 7a e a 7b); as demais decisões valem como proposta do plano.
@@ -1710,7 +1710,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-064 | — | python/mmm.py; python/escada.py; tools/relatorio_escada.py; tools/rodar_testes.py; adendo e spec base (§7.5); docs/inc6/; CLAUDE.md. | TC-MMM-001..011, TC-ESC-001..003, mutação do MMM (5) |
 | EDR-065 | — | python/escada.py; tools/relatorio_escada.py; docs/inc6/escada-hipoteses.md. | TC-ESC-002 |
 | EDR-066 | SUS-414, SUS-415 | 7a: formas v43 no Python (python/equilibrio.py; python/mmm.py; python/escada.py), planilha sem mudança (candidata na 7b: python/aba_equilibrio.py). | TC-ESC-002, TC-ACK-001/002, TC-FXI-001/002 |
-| EDR-067 | SUS-1009, SUS-1010, SUS-1011 | python/skidpad.py; python/equilibrio.py; python/escada.py; tools/rodar_testes.py; spec e plano do inc. 7. | TC-SKP-001, 002 |
+| EDR-069 | SUS-1009, SUS-1010, SUS-1011 | python/skidpad.py; python/equilibrio.py; python/escada.py; tools/rodar_testes.py; spec e plano do inc. 7. | TC-SKP-001, 002 |
 | EDR-068 | — | python/executor_testes.py; tools/rodar_testes.py; tests/mutation_planilha_equilibrio.py; tests/mutation_mmm.py; tests/mutation_equilibrio.py; tests/mutation_tire.py. | TC-RUN-001 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)

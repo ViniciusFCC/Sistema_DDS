@@ -261,7 +261,7 @@ def esterco_rodas(caso: CasoEquilibrio) -> dict:
 
 
 def angulos_velocidade(caso: CasoEquilibrio) -> dict:
-    """θ [rad] da velocidade de cada roda, em relação ao eixo X do carro, na curva à esquerda (spec §3.1; EDR-067).
+    """θ [rad] da velocidade de cada roda, em relação ao eixo X do carro, na curva à esquerda (spec §3.1; EDR-069).
 
     Centro da curva na linha do eixo traseiro: C = (0, R_c) no referencial com origem no meio do eixo traseiro (ISO
     8855), R_c = √(R² − b²) (b = cg_to_rear; CG na linha central). A velocidade da roda é perpendicular a C → roda:
