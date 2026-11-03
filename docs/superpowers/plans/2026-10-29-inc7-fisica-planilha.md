@@ -415,8 +415,8 @@ num adendo antes da Task 11.
 (regra da folga das acopladas lendo a mesma constante), `tests/test_neutro.py`.
 
 - [ ] **Passo 1: TC-NEU-002**, com a regra escolhida pelo usuário: o veredito do `analise_par` e o do `mmm.limite`
-  (acoplado) usam a mesma `FATOR_NEUTRO` (uma fonte só, EDR-064 1.3), e o ramo de um eixo continua com o passo. Para a
-  alternativa 1, fator = 2^p/(2^p − 1) com o p decidido. Para a 2, faixa = e_F + e_R. Casos: um NEUTRO na borda da
+  (acoplado) usam a mesma `FATOR_NEUTRO` (uma fonte só, EDR-064 1.3), e o ramo de um eixo mantém a `_resolucao`, com o mesmo fator.
+  **Decisão do usuário (2026-11-02): alternativa 1 com `FATOR_NEUTRO = 4/3` fixo** (EDR-065 item 2). Casos: um NEUTRO na borda da
   faixa nova e um PUSH logo fora dela.
 - [ ] **Passo 2: implementar; regressões 28/18/11/3** (as que mudarem de veredito são listadas e justificadas, não
   afrouxadas).
@@ -484,6 +484,13 @@ tuple[CasoEquilibrio, Formas]`).
   o orçamento medido na Task 8): sinal de θ no C-F2; aF ↔ aR no C-G5; sem o limite no pico no C-G4; modo de R trocado
   no C-A13. Esperado `4 / 4`.
 - [ ] **Passo 6: commits** `test(v4.3): ...`, `feat(viva): migração para a V4.3`.
+
+### Task 15: Caso sintético para a tolerância do EDR-065 (usuário, 2026-11-02)
+
+Última tarefa da 7b, porque a V4.3 não depende dela. Um caso sintético rotulado, com Ackermann (h2) e tração (h9)
+ligados e um eixo que sature antes de 2 g, rodado pelo `tools/relatorio_escada.py` com `incluir_v43=True`; a tabela
+vai ao usuário para decidir a tolerância do EDR-065 item 3. Nenhum valor do caso é dado do carro; nenhum ID novo.
+Commit `docs(inc6): escada num caso sintético que satura`.
 
 ### Task 14: Cópia, registro, suíte inteira e fechamento
 
