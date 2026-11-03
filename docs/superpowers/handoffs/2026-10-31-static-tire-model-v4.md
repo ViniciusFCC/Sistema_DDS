@@ -1,5 +1,7 @@
 # Handoff — Modelo estático de pneu V4
 
+> **Nota de 2026-11-02 (PR #25, EDR-067).** Este documento é o registro de 2026-10-31 e não foi reescrito. O que mudou depois: (1) o `LONGVL` (~11,2 m/s, velocidade de medição do TTC) deixou de ser limite e virou aviso em `limitations`, porque Fx e Fy do PAC2002 não dependem de Vx e só o My extrapola (QSY3, QSY4); onde este texto fala em "limites de ... Vx" ou em respeitar o `LONGVL`, vale o EDR-067; (2) os valores de Mx de "algumas centenas de N·m" vinham de um erro na eq. 109, corrigido; o Mz também foi corrigido (termo s·Fx); (3) o módulo virou `python/tire_model_static.py` (EDR-043), com 87 testes em `tests/test_tire_static.py`; (4) Mx e Mz continuam NOT_VALIDATED até a comparação com o OptimumTire (condição do EDR-067). As dependências do notebook ficam no grupo `notebook` do `pyproject.toml`.
+
 ## Objetivo e fronteiras
 
 Concluir uma camada exploratória PAC2002 estática, editável e rastreável, capaz de ler perfis `.tir`, avaliar Fx/Fy/Mx/My/Mz e visualizar curvas em Jupyter. O fluxo Excel e Python segue separado. A etapa transiente/dinâmica vem depois. O R25B do TTC é somente proxy do Hoosier R60A da equipe; não há dados nem validação física do R60A.
