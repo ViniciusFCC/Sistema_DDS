@@ -36,6 +36,13 @@ ENTREGUE_XLSX_V42 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
 # (aba_metas: famílias G1-G6; 56 na 03_TARGETS e 2 no 14_DASHBOARD). Constante fixa, de propósito.
 FORMULAS_ESPERADAS_V42 = 117627   # 117569 + 58
 
+ENTREGUE_XLSX_V43 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_3.xlsx"
+# V4.3 (incremento 7, parte 7b; EDR-069 e EDR-066): as 117627 da V4.2 mais 28746 de `gerar_v4_3` (aba 24_CURVA: 20;
+# colunas novas das
+# grades: 28723 (17: 1271; 18: 4455; 20a a 20d: 22904; mini-grade da 19: 93); B9 e E9 da 16 (que viram fórmula) e B48 do
+# 14_DASHBOARD: 3). Constante fixa, de propósito.
+FORMULAS_ESPERADAS_V43 = 146373   # 117627 + 28746
+
 
 def _formula(v) -> str | None:
     """Texto da fórmula da célula, ou None se a célula não tiver fórmula."""
