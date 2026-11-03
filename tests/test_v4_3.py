@@ -50,8 +50,7 @@ from nomes_v4_0 import ler_tabela  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 CSV43 = RAIZ / "data" / "nomes_V4_3.csv"
-CATALOGO = (RAIZ / ".superpowers" / "sdd" / "2026-10-29-inc7-fisica-planilha-plans"
-            / "catalogo-v43.md")
+CATALOGO = RAIZ / "docs" / "superpowers" / "plans" / "2026-10-29-inc7-fisica-planilha.md"   # versionado
 results = []
 
 FORMULAS_V42 = 117627          # as da V4.2 (cp.FORMULAS_ESPERADAS_V42)
@@ -209,7 +208,8 @@ def main() -> None:
         pega = mut[1] == [x1, ("X", "A2")] and mut[2] == [("X", "A2")]
         leitores_ok = len(leitores) > 100 and not sem_guarda and not isblank
         # texto literal do catálogo (catalogo-v43.md) em células-chave, com os {nomes} trocados pelos nomes reais
-        cat = " ".join(CATALOGO.read_text(encoding="utf-8").split()) if CATALOGO.exists() else None
+        plano = CATALOGO.read_text(encoding="utf-8")       # o catálogo é a seção "# Catálogo das células da V4.3"
+        cat = " ".join(plano[plano.index("# Catálogo das células da V4.3"):].split())
         nm = {**ae.NOME_ENT, **ae.NOME16, **ac.NOME24, "b": ae.V40["b"], "L": ae.V40["L"], "tF": ae.V40["tF"],
               "tR": ae.V40["tR"], "m": ae.V40["m"]}
         motivos = {"MOTIVO_MODO_INVALIDO": skidpad.MOTIVO_MODO_INVALIDO,
