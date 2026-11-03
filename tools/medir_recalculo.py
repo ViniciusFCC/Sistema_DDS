@@ -1,11 +1,14 @@
 """Medição do recálculo da planilha pelo Excel (COM), sem instância residual (V4.2, Task 6).
 
 Uso (Git Bash, depois de export UV_SYSTEM_CERTS=1):
-    uv run python -X utf8 tools/medir_recalculo.py [ARQ] [--n 3] [--saida docs/v4-2/medicao-recalculo-v4-1.md]
+    uv run python -X utf8 tools/medir_recalculo.py [ARQ | --arquivo ARQ] [--n 3]
+                                                   [--saida docs/v4-2/medicao-recalculo-v4-1.md]
 
-Sem ARQ, extrai `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx` da tag `v4.1` (git show). O arquivo medido é sempre uma
-CÓPIA em pasta temporária: a planilha de excel/ e a viva do Drive nunca são abertas (EDR-044, EDR-063); ARQ dentro de
-excel/ ou da pasta do Drive é recusado (passe uma cópia local), assim como --saida nesses lugares.
+ARQ vem como posicional ou por --arquivo, com o mesmo efeito (a opção entrou na V4.3, Task 8, para medir um protótipo
+contra a V4.2 da tag, extraída antes para uma pasta local). Sem ARQ, extrai `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx`
+da tag `v4.1` (git show). O arquivo medido é sempre uma CÓPIA em pasta temporária: a planilha de excel/ e a viva do
+Drive nunca são abertas (EDR-044, EDR-063); ARQ dentro de excel/ ou da pasta do Drive é recusado (passe uma cópia
+local), assim como --saida nesses lugares.
 
 Dois cenários, cada execução sobre uma cópia NOVA do arquivo de origem do cenário e numa instância nova do Excel
 (DispatchEx, no Job Object de tests/recalculo_planilha.py):
@@ -178,9 +181,15 @@ def tabela(execs: list[dict]) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("arq", nargs="?", help="planilha a medir (copiada antes); padrão: V4.1 da tag v4.1")
+    ap.add_argument("--arquivo", help="o mesmo que ARQ (não use os dois)")
     ap.add_argument("--n", type=int, default=3, help="execuções por cenário")
     ap.add_argument("--saida", default=str(SAIDA_PADRAO))
     a = ap.parse_args()
+    if a.arquivo:
+        if a.arq:
+            print("recusado: passe a planilha como ARQ ou por --arquivo, não pelos dois", file=sys.stderr)
+            return 2
+        a.arq = a.arquivo
 
     msg = viva.recusa_de_saida(Path(a.saida), [])
     if msg:
@@ -238,7 +247,7 @@ def main() -> int:
         return (f"`{e['calcPr']}`; fórmulas com valor em cache: {e['com_v']}; fórmulas sem valor em cache: {e['sem_v']}")
 
     linhas = [
-        "# Medição do recálculo da V4.1 sem Excel residual",
+        "# Medição do recálculo " + ("da V4.1" if not a.arq else f"de `{Path(a.arq).name}`") + " sem Excel residual",
         "",
         "Gerado por `tools/medir_recalculo.py`. Não edite à mão: rode de novo.",
         "",
