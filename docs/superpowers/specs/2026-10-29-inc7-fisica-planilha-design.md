@@ -243,7 +243,9 @@ Commits separados por propósito (executor, física Python, estudo, relatório, 
 
 ## 9. IDs propostos (nenhum criado)
 
-- **EDR-067:** centro de curva único e raio do skidpad (dois métodos e modo manual; fonte D.10.1.1), decomposição dos
+> Nota: renumerado de EDR-067 para EDR-069 em 2026-11-02 (colisão com o EDR-067 do PR #25, modelo estático de pneu; autorização do usuário).
+
+- **EDR-069:** centro de curva único e raio do skidpad (dois métodos e modo manual; fonte D.10.1.1), decomposição dos
   incrementos 7 a 9 e regulamento da FSAE Brasil no inc. 9.
 - **EDR-068:** executor dos testes (tempo-limite que encerra a árvore, orçamentos coerentes).
 - **Revisão do EDR-065 item 2** (faixa do NEUTRO) com o resultado do estudo, em vez de EDR novo.
