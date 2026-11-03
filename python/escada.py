@@ -21,6 +21,7 @@ import mmm
 # Grade do degrau 1: a do limite (401 pontos de α), a mesma nos dois lados (ver degrau_1).
 _N_ALFA = 401
 _PASSO_G = 0.01
+_COTA_RES = 1.5          # cota empírica do degrau 1 em múltiplos da resolucao_ms2 do analise_par (ver _julga)
 _RES_PADRAO_MS2 = 0.01   # o padrão de mmm.limite, quando o analise_par não devolve resolução (nenhum eixo satura)
 # Linhas de controle do degrau 2: a planilha resolvida pelo Newton 2-D, sem e com a rotação β (EDR-064, decisão 2.6 revista).
 NOME_CONTROLE_SEM_ROTACAO = "planilha (acoplado, sem rotação)"   # a_y = A, a_x = 0: Δ contra "planilha" = viés do método
@@ -31,7 +32,7 @@ NOME_PLANILHA_V43 = "planilha V4.3"   # as fórmulas da planilha V4.3 (Ackermann
 @dataclass(frozen=True)
 class ComparacaoDegrau1:
     """MMM (planilha) contra analise_par num sentido. d_ay_sat_* = MMM − analise_par [m/s²] (None se algum lado não tem
-    saturação no eixo). cn_mmm é o cn_estabilizante_q; cn_par é o c_n. ok = mesmo veredito, |d_ay_sat| <= 2·resolucao_ms2 (cota empírica,
+    saturação no eixo). cn_mmm é o cn_estabilizante_q; cn_par é o c_n. ok = mesmo veredito, |d_ay_sat| <= 1,5·resolucao_ms2 (cota empírica,
     ver _julga) em cada eixo e cn dentro da folga equivalente; motivo diz o que reprovou (None quando ok)."""
     sentido: str
     veredito_mmm: str
@@ -74,37 +75,37 @@ class LinhaEscada:
 
 def _julga(veredito_mmm: str, veredito_par: str, d_f: float | None, d_r: float | None, cn_mmm: float | None,
            cn_par: float | None, res_ms2: float, delta_sat_ms2: float | None) -> tuple[bool, str | None]:
-    """Critério do degrau 1: mesmo veredito (N/A com N/A conta como o mesmo), |d_ay_sat| <= 2·res_ms2 em cada eixo e, onde
-    os dois têm C_N, |cn_mmm − cn_par| <= 2·res·|cn_par|/Δsat. O C_N é a folga do outro eixo em T vezes o braço, e essa
+    """Critério do degrau 1: mesmo veredito (N/A com N/A conta como o mesmo), |d_ay_sat| <= 1,5·res_ms2 em cada eixo e, onde
+    os dois têm C_N, |cn_mmm − cn_par| <= 1,5·res·|cn_par|/Δsat. O C_N é a folga do outro eixo em T vezes o braço, e essa
     folga cresce linearmente com a distância Δsat entre as duas saturações (zero quando coincidem); um T deslocado de
-    2·res_ms2 muda o C_N de até 2·res·|cn|/Δsat. É a folga equivalente em força, sem número novo.
+    1,5·res_ms2 muda o C_N de até 1,5·res·|cn|/Δsat. É a folga equivalente em força, sem número novo.
 
-    Origem da cota 2·res_ms2 (o que se sabe e o que não). Os dois lados usam a mesma grade de α, então a discretização
+    Origem da cota 1,5·res_ms2 (o que se sabe e o que não). Os dois lados usam a mesma grade de α, então a discretização
     de α é comum e some na diferença. Sobra o erro de A_Y de cada código. O MMM acha a saturação por bisseção com
     tolerância resolucao·1e-4 (desprezível). O analise_par interpola linearmente a folga m(a) = capacidade − exigida entre
     linhas de passo h, e a raiz interpolada erra por até |m''|/(8·|m'|)·h² (erro da interpolação linear, com
     (a − a0)(a1 − a) <= h²/4). A curvatura m'' depende da carga e do pneu e não é conhecida a priori, então não há
-    cota rigorosa em função da resolução. A `resolucao_ms2` do analise_par é |S_h − S_h/2| (grade refinada): num erro
-    assintótico c·h² ela vale 3/4 do erro de S_h, ou seja, o erro real de S_h é cerca de 4/3 da resolução que ele
-    declara (Richardson). A resolução declarada SUBESTIMA o erro dele. Estimativa: (4/3 + 1e-4)·res. Adota-se 2·res, 1,5
-    vez essa estimativa, como cota EMPÍRICA (a razão |d_ay_sat|/res de cada caso do TC-ESC-001 sai no detalhe do teste).
+    cota rigorosa em função da resolução. A `resolucao_ms2` do analise_par é FATOR_NEUTRO·|S_h − S_h/2| (EDR-065 item 2: o
+    |S_h − S_h/2| de um erro assintótico c·h² vale 3/4 do erro de S_h, e o 4/3 de Richardson já está na faixa). A cota
+    1,5·res = 2·|S_h − S_h/2| é numericamente a de antes (2·|S_h − S_h/2|), 1,5 vez a estimativa do erro de S_h
+    (4/3·|S_h − S_h/2| + 1e-4·res); fora do caso de dois eixos (passo ou piso), vale 1,5 do passo. Cota EMPÍRICA (a razão |d_ay_sat|/res de cada caso do TC-ESC-001 sai no detalhe do teste).
     Não é cota provada, e a ciência do usuário é pedida no PR (EDR-064, item 2.9). Exigir só <= res_ms2 punha o
     oráculo no limite por construção."""
-    cota = 2.0 * res_ms2
+    cota = _COTA_RES * res_ms2
     motivos = []
     if veredito_mmm != veredito_par:
         motivos.append(f"veredito {veredito_mmm} (MMM) ≠ {veredito_par} (analise_par)")
     for eixo, d in (("F", d_f), ("R", d_r)):
         if d is not None and abs(d) > cota:
-            motivos.append(f"|ay_sat_{eixo} MMM − analise_par| = {abs(d):.3e} > cota empírica 2·resolucao_ms2 = {cota:.3e}")
+            motivos.append(f"|ay_sat_{eixo} MMM − analise_par| = {abs(d):.3e} > cota empírica 1,5·resolucao_ms2 = {cota:.3e}")
     if (cn_mmm is None) != (cn_par is None):
         motivos.append(f"C_N só num dos lados (MMM {cn_mmm}, analise_par {cn_par})")
     elif cn_mmm is not None and cn_par is not None:
         if delta_sat_ms2 is None or delta_sat_ms2 <= 0.0:
             motivos.append("C_N sem as duas saturações: a folga equivalente não é definida")
-        elif abs(cn_mmm - cn_par) > 2.0 * res_ms2 * abs(cn_par) / delta_sat_ms2:
+        elif abs(cn_mmm - cn_par) > _COTA_RES * res_ms2 * abs(cn_par) / delta_sat_ms2:
             motivos.append(f"|cn_mmm − c_n| = {abs(cn_mmm - cn_par):.3e} > folga equivalente "
-                           f"{2.0 * res_ms2 * abs(cn_par) / delta_sat_ms2:.3e}")
+                           f"{_COTA_RES * res_ms2 * abs(cn_par) / delta_sat_ms2:.3e}")
     return (not motivos), ("; ".join(motivos) or None)
 
 
@@ -135,7 +136,7 @@ def degrau_1(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[Comparacao
     Mesma grade de α dos dois lados: analise_par com n_alfa = 401 e passo_g = 0,01 (e o limite com o mesmo n_alfa e
     resolucao_ms2 igual à resolução que o próprio analise_par mede). Com a grade padrão dele (n_alfa = 25, passo
     0,05 g) a diferença é de ~3e-3 m/s² e vem da grade de α (a grossa subestima o pico), e não da hipótese; comparar
-    nela mediria a grade. A cota da saturação é 2·resolucao_ms2, empírica (ver _julga: a resolução que o
+    nela mediria a grade. A cota da saturação é 1,5·resolucao_ms2 (= 2·|S − S2|), empírica (ver _julga: a resolução que o
     analise_par declara subestima o erro dele), e `ok` usa a mesma cota. Onde o analise_par não mede resolução (nenhum eixo
     satura), usa-se o padrão do limite. ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g, o do analise_par
     e do limite).

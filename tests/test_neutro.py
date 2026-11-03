@@ -213,8 +213,8 @@ def tc_neu_002() -> tuple[bool, str]:
         # a faixa é a nova: o NEUTRO de dentro seria PUSH/LOOSE com a faixa de ontem (sem o fator)
         if not d_b > f_b / eq.FATOR_NEUTRO:
             falhas.append(f"(b) {rotulo}: |Δ| = {d_b:.4e} cabe na faixa de ontem {f_b / eq.FATOR_NEUTRO:.4e}; não prova o fator")
-        # os dois lados estão colados à borda (|Δ|/faixa perto de 1; o serrote da grade de a_y limita a colagem)
-        if not (abs(d_b / f_b - 1.0) < 2e-2 and abs(d_a / f_a - 1.0) < 2e-2):
+        # os dois lados estão colados à borda (|Δ|/faixa perto de 1; medido 1,0000, e 16 passos de bisseção dão margem de 1e-3)
+        if not (abs(d_b / f_b - 1.0) < 1e-3 and abs(d_a / f_a - 1.0) < 1e-3):
             falhas.append(f"(b) {rotulo}: |Δ|/faixa = {d_b / f_b:.5f} (dentro) e {d_a / f_a:.5f} (fora), longe da borda")
         det_b.append(f"{rotulo}: λ_f x{b:.7f} NEUTRO |Δ|/faixa = {d_b / f_b:.4f}; x{a:.7f} {r_a.veredito} {d_a / f_a:.4f}")
 
