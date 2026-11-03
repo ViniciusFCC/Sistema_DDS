@@ -2,7 +2,7 @@
 
 Data: 2026-11-02 a 2026-11-03. Brainstorming com o usuário (superpowers:brainstorming, caminho arquitetural), com dois
 conselhos (padrão, 4 assentos, sobre o rascunho; leve, 3 assentos, sobre as seções 3 e 4 revistas). Estado: design
-aprovado seção a seção pelo usuário; esta spec aguarda a revisão dele. Nada implementado.
+aprovado seção a seção pelo usuário; spec revisada e aprovada sem mudanças (2026-11-03). Nada implementado.
 
 ## 1. Contexto e progressão
 
@@ -155,7 +155,7 @@ Registrado em `tools/rodar_testes.py` com a contagem que o teste tiver.
     extremos nunca melhores sozinhos, recusa de critério TBD.
 13. Guarda QPZ1-2/QPX1 no loader; `tests/test_tire_static.py` continua 87/87 e o pneu 43/43.
 
-## 11. IDs que precisam de autorização
+## 11. IDs (autorizados pelo usuário em 2026-11-03: "Autorizo")
 
 - **EDR-070** (EDR-068 e EDR-069 já estão em uso em outras branches; 070 confirmado livre em `git log --all`): pressão
   com interpolação rotulada de saídas (emenda o item 6 do EDR-067), regra da banda e critérios do A1-escolha, guarda
