@@ -472,6 +472,10 @@ def tracao_ativa(caso: CasoEquilibrio) -> bool:
 
 
 MSG_FX_SEM_FRENTE = "Fx exigido (h9v) indisponível: a curva dianteira é inválida nesta linha"
+# Verificações da 24_CURVA na V4.3 (catálogo C-A21 e C-F5; aba_equilibrio.VERIFICACOES_24): o texto da célula e o da
+# lista.
+MSG_GEOMETRIA = "geometria do centro da curva inválida (R ≤ b ou R_c ≤ t_f/2)"
+MSG_FATOR = "fator da faixa do NEUTRO (24_CURVA B34) deve ser número ≥ 1"
 
 
 def _curva_sem_elipse(caso: CasoEquilibrio, eixo: str, ay_ms2: float, *, formas: Formas):
