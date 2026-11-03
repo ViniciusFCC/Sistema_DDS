@@ -709,6 +709,8 @@ CASOS4 = {
     "PUSH_PICO": ({**C3, **H239, **MAN8}, dict(pico="F")),
     "FRENTE_DESCOLADA": ({**C2, "ent_05_fracao_de_peso_no_eixo_dianteiro_f": 0.3, "ent_05_altura_do_cg_total": 0.6, **H239,
                           **MAN8}, dict(sem_frente=True, com_k=False)),
+    # veículo padrão (a != b: nos casos simétricos req_F = req_R e a troca aF <-> aR no Fx é invisível, como a a <-> b da V4.1)
+    "FX_ASSIM": ({**H239, **MAN8}, {}),
     "H2V_0": ({**BASE, **MAN8, N24["h2v"]: 0}, dict(b48=True)),
     "H9V_0": ({**BASE, **MAN8, N24["h9v"]: 0}, {}),
     "CHAVE_H2V_2": ({**BASE, **MAN8, N24["h2v"]: 2}, dict(b48=True, com_troca=True, status="chave h2v deve ser 0 ou 1")),
