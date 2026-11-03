@@ -581,14 +581,19 @@ Testes: TC-WB43-003 (h9v = 0 dá o valor da V4.2), 004 (caso `LOOSE_PICO`, diant
 
 ## C-F. F12: faixa do NEUTRO (16_EQUILIBRIO B137, B138, B139, B142 e as mesmas linhas de `_regras_limite` no bloco "cálculo por linha" da 20_EQ_TROCA)
 
-Fica para o passo do usuário (alternativa escolhida no estudo). Texto pronto das alternativas 1 e 2:
+Decidido pelo usuário em 2026-11-02 (EDR-065 item 2): alternativa 1 com fator fixo 4/3. O fator multiplica só o
+|S − S2| de cada eixo (o d1 de Richardson, que o estudo mostrou subestimado); o passo, usado quando o eixo satura numa
+grade e não na outra, fica como está. O ramo de um eixo só lê o mesmo `dif` do eixo que satura (a `_resolucao`).
 
-| # | Célula | Antes | Alternativa 1 (fator) | Alternativa 2 (e_F + e_R) |
+| # | Célula | Antes | Depois | Dep. |
 |---|---|---|---|---|
-| C-F1 | 24_CURVA B31 (nova) | — | `Fator da faixa do NEUTRO` = 2^p/(2^p − 1) com o p decidido (constante nomeada, lida também por `equilibrio.FATOR_NEUTRO`) | — |
-| C-F2 | B137 / B138 (dif) | `ABS(S−S2)` ou o passo | `{fator}*ABS(S−S2)` no ramo dos dois, o passo no outro | sem mudança |
-| C-F3 | B139 (resol) | `MAX(dif_F, dif_R, 1E-9*9.81)` | sem mudança | `MAX(IF(ISNUMBER(dif_F),dif_F,0)+IF(ISNUMBER(dif_R),dif_R,0),1E-9*9.81)` |
-| C-F4 | B142 (ver) | sem mudança de texto nas duas | — | — |
+| C-F1 | 24_CURVA B31 (nova) | — | rótulo `Fator da faixa do NEUTRO`; valor `=4/3`; Origem `○ Estimativa`; Fonte "EDR-065 item 2; docs/inc7/estudo-neutro.md (casos sintéticos)"; lido também por `equilibrio.FATOR_NEUTRO` (teste de igualdade no TC-WB43-002) | — |
+| C-F2 | B137 / B138 (dif_F, dif_R) | `ABS(S−S2)` quando o eixo satura nas duas grades, o passo quando satura numa só | `{fator}*ABS(S−S2)` no primeiro ramo; o passo no segundo, sem mudança | C-F1 |
+| C-F3 | B139 (resol) | `MAX(dif_F, dif_R, 1E-9*9.81)` | sem mudança | — |
+| C-F4 | B142 (ver) | — | sem mudança de texto | — |
+
+Justificativa: `docs/inc7/estudo-neutro.md` (Tabela 8): única alternativa com margem faixa − erro de Δ positiva nos 7
+casos sintéticos perto do neutro. Testes: TC-NEU-002 (Python), TC-WB43-003/004 (planilha = Python), mutação.
 
 ## C-D. Avisos (14_DASHBOARD)
 
