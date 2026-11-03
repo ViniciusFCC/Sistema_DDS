@@ -25,6 +25,10 @@ MODOS = ("linha_central", "rente_aos_cones", "manual")
 MOTIVO_BITOLA_TRASEIRA = "bitola traseira vazia: R rente aos cones a confirmar"
 MOTIVO_MANUAL_VAZIO = "R manual vazio: a confirmar"
 MOTIVO_SEM_MEIA_LARGURA = "sem a meia largura do pneu (a confirmar)"
+# Textos da 24_CURVA B21 (motivo do R) na V4.3, os mesmos da célula (catálogo C-A15; nenhum ID novo).
+MOTIVO_MODO_INVALIDO = "modo do R inválido (use Linha central, Rente aos cones ou Manual)"
+MOTIVO_DIAMETROS = "diâmetros do skidpad a confirmar (D_ext > D_int > 0)"
+MOTIVO_VEICULO = "L, b ou t_f a confirmar (05_VEHICLE)"
 TOL_EMPATE_M = 1e-9
 
 

@@ -159,14 +159,14 @@ def _alfa_operacao(caso):
     return ang, None
 
 
-def _rigidez_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float):
+def _rigidez_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float, *, formas=_eq.FORMAS_V42):
     """(C_α do eixo [N/rad], avisos de limitação, motivo de N/A) com Fz e γ dados por roda, no ponto α_ref = alfa_0.
 
     C_eixo = −∂Fy_eixo/∂α_ref em α_ref = alfa_0, por diferença central (passo _H_ALFA_RIGIDEZ) sobre
     equilibrio._fy_eixo_limitado: inclui o Δα do toe e do Ackermann em cada roda e o cos δ_ref da dianteira, como a
     curva do eixo do passo 2. Fz <= 0 em alguma roda: N/A por descolamento (equilibrio._descolamento). Fz e γ fora
     da faixa: limitados (equilibrio._entrada_limitada, EDR-056). C_α do eixo <= 0: N/A (nunca divisão por zero;
-    Review Focus 3).
+    Review Focus 3). `formas` (só de palavra-chave; padrão FORMAS_V42) escolhe a forma do Ackermann do Δα (EDR-066).
     """
     rodas = _eq._rodas(eixo)
     desc = _eq._descolamento(fz, rodas)
@@ -174,14 +174,14 @@ def _rigidez_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float):
         return None, (), desc
     fz_u, gam_u, lims = _eq._entrada_limitada(caso, rodas, fz, gam)
     h = _H_ALFA_RIGIDEZ
-    c = -(_eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0 + h)
-          - _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0 - h)) / (2.0 * h)
+    c = -(_eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0 + h, formas=formas)
+          - _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0 - h, formas=formas)) / (2.0 * h)
     if not c > 0.0:
         return None, tuple(lim.texto for lim in lims), f"C_α do eixo {eixo} = {_eq._num(c, '.1f')} N/rad ≤ 0"
     return c, tuple(lim.texto for lim in lims), None
 
 
-def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float) -> float:
+def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float, *, formas=_eq.FORMAS_V42) -> float:
     """C_γ do eixo [N/rad] no ponto de operação: −∂Fy_eixo/∂γ_eixo em α_ref = alfa_0, com Fz e γ dados por roda.
 
     γ_eixo é o camber de eixo da convenção do gradiente (R − L)/2: a roda direita recebe +γ_eixo e a esquerda
@@ -191,7 +191,7 @@ def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float) ->
     [CAMMIN + h, CAMMAX − h] (no referencial do pneu) se for preciso, para nenhuma avaliação sair da faixa. Com o carro
     simétrico em L/R, sem toe, raio e Ackermann, e γ estático nulo, é a soma de rigidez_camber nas duas rodas. Só a
     parte antissimétrica do ganho de camber, (R − L)/2, entra na parcela (a simétrica dá força nula no carro
-    simétrico). Exige Fz > 0 (quem chama verifica).
+    simétrico). Exige Fz > 0 (quem chama verifica). `formas`: como em `_rigidez_eixo`.
     """
     rodas = _eq._rodas(eixo)
     fz_u, gam_u, _ = _eq._entrada_limitada(caso, rodas, fz, gam)
@@ -202,7 +202,8 @@ def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float) ->
     sinal = {rodas[0]: -1.0, rodas[1]: 1.0}   # (esquerda, direita)
 
     def fy(d):
-        return _eq._fy_eixo_limitado(caso, rodas, fz_u, {c: centro[c] + sinal[c] * d for c in rodas}, alfa_0)
+        return _eq._fy_eixo_limitado(caso, rodas, fz_u, {c: centro[c] + sinal[c] * d for c in rodas}, alfa_0,
+                                     formas=formas)
 
     return -(fy(h) - fy(-h)) / (2.0 * h)
 
@@ -212,7 +213,7 @@ def _rigidez_camber_eixo(caso, eixo: str, fz: dict, gam: dict, alfa_0: float) ->
 _H_AY_DESLOCAMENTO = 1e-4 * G
 
 
-def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict, alfa_0: float):
+def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict, alfa_0: float, *, formas=_eq.FORMAS_V42):
     """(F0 do eixo [N, ISO], motivo): Fy do eixo em α_ref = alfa_0 (κ = 0), com o Fz de a_y = ay_fz e o γ dado,
     limitados à faixa (EDR-056).
 
@@ -220,7 +221,8 @@ def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict, alfa_0: float)
     α − α_0: deslocamentos PHY*/PVY* do PAC2002 (ply steer e conicidade), com o espelhamento esquerda/direita de
     wheel_forces, e a força do toe e do Ackermann. O γ é passado fixo por quem chama (o da linha) para que a
     derivada em a_y não conte de novo o empuxo de camber, que já é a parcela k_camber. O Δα de toe e Ackermann e o
-    cos δ_ref entram como em fy_eixo, o mesmo modelo do passo 2. Fz <= 0: (None, motivo de descolamento).
+    cos δ_ref entram como em fy_eixo, o mesmo modelo do passo 2. Fz <= 0: (None, motivo de descolamento). `formas`:
+    como em `_rigidez_eixo`.
     """
     rodas = _eq._rodas(eixo)
     fz = _eq.cargas(caso, ay_fz)
@@ -228,13 +230,13 @@ def _forca_deslocamento(caso, eixo: str, ay_fz: float, gam: dict, alfa_0: float)
     if desc is not None:
         return None, desc
     fz_u, gam_u, _ = _eq._entrada_limitada(caso, rodas, fz, gam)
-    return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0), None
+    return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, alfa_0, formas=formas), None
 
 
 SUF_DESLOCAMENTO = " (vizinhança da derivada do deslocamento do pneu)"
 
 
-def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float, alfa_0: tuple):
+def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float, alfa_0: tuple, *, formas=_eq.FORMAS_V42):
     """(k_deslocamento [rad/(m/s²)], motivo): parcela do deslocamento do pneu que varia com a carga.
 
     F0 é a Fy do eixo em α_ref = α_0 (ângulo exigido em a_y = 0; 0 no carro simétrico em L/R), com o Δα do toe e do
@@ -252,7 +254,7 @@ def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float, alfa_0: t
     0+, de 2ª ordem, (−3·F0(0) + 4·F0(h) − F0(2h))/(2h), que é a que a inclinação do passo 2 enxerga (ruling do
     controlador, 2026-10-22); sem h8 o valor muda só no erro de truncamento O(h²). Com o dataset sem deslocamentos,
     F0 não depende de Fz e a parcela some. As parcelas do Gillespie (pp. 202-226) usam só o C_α e não têm este
-    termo; ele existe no pneu PAC2002 e no passo 2 (ruling do controlador, Task 4).
+    termo; ele existe no pneu PAC2002 e no passo 2 (ruling do controlador, Task 4). `formas`: como em `_rigidez_eixo`.
     """
     h = _H_AY_DESLOCAMENTO
     gam = _eq.camber(caso, ay_ms2)
@@ -260,10 +262,10 @@ def _parcela_deslocamento(caso, ay_ms2: float, c_f: float, c_r: float, alfa_0: t
     k = 0.0
     for eixo, c, sinal, a0 in (("F", c_f, -1.0, alfa_0[0]), ("R", c_r, 1.0, alfa_0[1])):
         if um_lado:
-            pts = [_forca_deslocamento(caso, eixo, m * h, gam, a0) for m in (0.0, 1.0, 2.0)]
+            pts = [_forca_deslocamento(caso, eixo, m * h, gam, a0, formas=formas) for m in (0.0, 1.0, 2.0)]
         else:
-            pts = [_forca_deslocamento(caso, eixo, ay_ms2 + h, gam, a0),
-                   _forca_deslocamento(caso, eixo, ay_ms2 - h, gam, a0)]
+            pts = [_forca_deslocamento(caso, eixo, ay_ms2 + h, gam, a0, formas=formas),
+                   _forca_deslocamento(caso, eixo, ay_ms2 - h, gam, a0, formas=formas)]
         motivos = [m for _, m in pts if m is not None]
         if motivos:
             return None, motivos[0] + SUF_DESLOCAMENTO
@@ -285,7 +287,7 @@ def _juntar(*itens):
     return tuple(saida)
 
 
-def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
+def parcelas_k(caso, ay_ms2: float, *, formas=_eq.FORMAS_V42) -> ParcelasK:
     """Parcelas do gradiente de subesterço K em a_y [m/s²] (Gillespie cap. 6; spec §6), em rad/(m/s²).
 
     - k_pneus (eq. 6-15): (W_f/C_f − W_r/C_r)/G, com C de eixo nas cargas por roda de a_y = 0 e γ estático. Com
@@ -311,7 +313,9 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
     ponto de operação (`_rigidez_eixo`): −∂Fy_eixo/∂α_ref em α_ref = α_0, o ângulo exigido em a_y = 0, com o Δα do
     toe e do Ackermann, o cos δ_ref e a limitação do EDR-056; assim, na 1ª linha da tabela, k_pneus +
     k_deslocamento + k_camber é igual à inclinação do passo 2 (spec §6). Fz <= 0, C_α <= 0 ou α_0 indisponível: a
-    parcela fica None, com motivo, e k_total também.
+    parcela fica None, com motivo, e k_total também. `formas` (só de palavra-chave; padrão FORMAS_V42, EDR-066) vai ao
+    Δα do Ackermann de todo C_α, C_γ e deslocamento: com FORMAS_V43 o K é o do Ackermann com o centro da curva no eixo
+    traseiro (a planilha V4.3 com h2v = 1).
     """
     cfg = caso.cfg
     W_f, W_r = _pesos_eixo(caso)
@@ -327,11 +331,11 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
         cf0 = cr0 = cf = cr = None
         lf0 = lr0 = lf = lr = ()
     else:
-        cf0, lf0, mf0 = _rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0])
-        cr0, lr0, mr0 = _rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1])
+        cf0, lf0, mf0 = _rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0], formas=formas)
+        cr0, lr0, mr0 = _rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1], formas=formas)
         motivos += [m for m in (mf0, mr0) if m is not None]
-        cf, lf, mf = _rigidez_eixo(caso, "F", fz, gam, alfa_0[0])
-        cr, lr, mr = _rigidez_eixo(caso, "R", fz, gam, alfa_0[1])
+        cf, lf, mf = _rigidez_eixo(caso, "F", fz, gam, alfa_0[0], formas=formas)
+        cr, lr, mr = _rigidez_eixo(caso, "R", fz, gam, alfa_0[1], formas=formas)
         motivos += [m for m in (mf, mr) if m is not None and m not in motivos]
     k_pneus = gradiente_pneus(W_f, W_r, cf0, cr0) if (cf0 is not None and cr0 is not None) else None
     if k_pneus is not None and cf is not None and cr is not None:
@@ -341,7 +345,7 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
 
     k_desl = None
     if cf is not None and cr is not None:
-        k_desl, m_desl = _parcela_deslocamento(caso, ay_ms2, cf, cr, alfa_0)
+        k_desl, m_desl = _parcela_deslocamento(caso, ay_ms2, cf, cr, alfa_0, formas=formas)
         if m_desl is not None and m_desl not in motivos:
             motivos.append(m_desl)
 
@@ -349,8 +353,8 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
         g = caso.ganho_camber
         dgf = (g["FR"] - g["FL"]) / 2.0
         dgr = (g["RR"] - g["RL"]) / 2.0
-        cgf = _rigidez_camber_eixo(caso, "F", fz0, gam0, alfa_0[0])
-        cgr = _rigidez_camber_eixo(caso, "R", fz0, gam0, alfa_0[1])
+        cgf = _rigidez_camber_eixo(caso, "F", fz0, gam0, alfa_0[0], formas=formas)
+        cgr = _rigidez_camber_eixo(caso, "R", fz0, gam0, alfa_0[1], formas=formas)
         k_camber = parcela_camber(cgf, cf0, dgf, cgr, cr0, dgr, dphi)
     else:
         k_camber = None
@@ -365,7 +369,8 @@ def parcelas_k(caso, ay_ms2: float) -> ParcelasK:
                      limites=_juntar(lf0, lr0, lf, lr))
 
 
-def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401) -> tuple[float, float] | None:
+def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401, *,
+                        formas=_eq.FORMAS_V42) -> tuple[float, float] | None:
     """(α_f, α_r) [rad, ISO]: α de referência de cada eixo em que fy_eixo iguala a força exigida em a_y.
 
     Mesmo modelo do passo 2 (equilibrio.capacidade_eixo): Fy do eixo com Fz e γ limitados à faixa (EDR-056) e o
@@ -375,20 +380,21 @@ def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401) -> tuple[float, 
     lateral, toe ou camber assimétricos e os deslocamentos do pneu variando com Fz), com A a amplitude de
     `equilibrio.grade_alfa` (faixa de α do pneu menos o maior |Δα| de toe e Ackermann; a grade vai de 0 a −A).
     Devolve None se algum eixo não tiver capacidade (descolamento, toe), se a exigência passar da capacidade
-    (α < 0), ou se a Fy do eixo em +A ainda passar da exigência.
+    (α < 0), ou se a Fy do eixo em +A ainda passar da exigência. `formas` (só de palavra-chave; padrão FORMAS_V42,
+    EDR-066) vai a `capacidade_eixo`, `_fy_eixo_limitado` e `grade_alfa`.
     """
     if not (ay_ms2 >= 0.0 and math.isfinite(ay_ms2)):
         raise ValueError(f"angulos_necessarios cobre a curva à esquerda (a_y >= 0); recebido {ay_ms2!r}.")
     saida = []
     for eixo, req in zip(("F", "R"), _eq.forca_exigida(caso, ay_ms2)):
-        cap = _eq.capacidade_eixo(caso, eixo, ay_ms2, n_alfa)
+        cap = _eq.capacidade_eixo(caso, eixo, ay_ms2, n_alfa, formas=formas)
         if cap.fy_max_N is None or req > cap.fy_max_N:
             return None
         rodas = _eq._rodas(eixo)
         fz_u, gam_u, _ = _eq._entrada_limitada(caso, rodas, _eq.cargas(caso, ay_ms2), _eq.camber(caso, ay_ms2))
 
         def folga(a, rodas=rodas, fz_u=fz_u, gam_u=gam_u, req=req):
-            return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, a) - req
+            return _eq._fy_eixo_limitado(caso, rodas, fz_u, gam_u, a, formas=formas) - req
 
         tol = 1e-9 * abs(req) if req != 0.0 else 1e-9
         f_0 = folga(0.0)
@@ -401,7 +407,7 @@ def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401) -> tuple[float, 
         else:
             # Fy em α = 0 já passa da exigência (deslocamentos do pneu com carro assimétrico em L/R): raiz em α > 0,
             # até +A, o simétrico da borda da grade (mesma faixa de α do pneu, com o Δα de toe e Ackermann)
-            a_max = -_eq.grade_alfa(caso, 3)[-1]
+            a_max = -_eq.grade_alfa(caso, 3, formas=formas)[-1]
             if folga(a_max) > 0.0:
                 return None
             neg, pos = a_max, 0.0
@@ -420,7 +426,7 @@ def angulos_necessarios(caso, ay_ms2: float, n_alfa: int = 401) -> tuple[float, 
 
 
 def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_origem: str | None = None,
-                  n_alfa: int = 401, *, origem_do_carro: str = _origens.T11) -> list:
+                  n_alfa: int = 401, *, origem_do_carro: str = _origens.T11, formas=_eq.FORMAS_V42) -> list:
     """Tabela do passo 1 de a_y = 0 a ay_max_g (faixa linear até 0,4 g, Milliken p. 315; spec §6).
 
     Uma linha por a_y_k = k·passo (k = 0…⌊ay_max/passo⌋), com as parcelas (`parcelas_k`), o K tangente medido no
@@ -436,7 +442,8 @@ def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_orige
     sinal guardado (K > 0 = subesterço, como as parcelas). Sem ângulos (None de `angulos_necessarios`),
     k_inclinacao fica None com `motivo_inclinacao`.
     pior_origem e origem_do_carro vão para `texto_k`; None (não informado) conta como diferente do carro e dá
-    "DEMONSTRATIVO" (D16).
+    "DEMONSTRATIVO" (D16). `formas` (só de palavra-chave; padrão FORMAS_V42, EDR-066) vai a `parcelas_k` e a
+    `angulos_necessarios`.
     """
     if not (isinstance(ay_max_g, (int, float)) and ay_max_g > 0 and math.isfinite(ay_max_g)):
         raise ValueError(f"ay_max_g deve ser > 0 e finito; recebido {ay_max_g!r}.")
@@ -447,14 +454,14 @@ def tabela_linear(caso, ay_max_g: float = 0.4, passo_g: float = 0.05, pior_orige
     ang_ant, ay_ant = None, None
     for k in range(n + 1):
         ay = k * passo_g * G
-        p = parcelas_k(caso, ay)
-        ang = angulos_necessarios(caso, ay, n_alfa)
+        p = parcelas_k(caso, ay, formas=formas)
+        ang = angulos_necessarios(caso, ay, n_alfa, formas=formas)
         k_incl, motivo_incl = None, None
         if k == 0:
             secantes = []
             if ang is not None:   # ang = ângulos em a_y = 0 (≠ 0 com CG lateral ou outra assimetria L/R)
                 for ay1 in (0.005 * G, 0.01 * G):
-                    ang1 = angulos_necessarios(caso, ay1, n_alfa)
+                    ang1 = angulos_necessarios(caso, ay1, n_alfa, formas=formas)
                     if ang1 is None:
                         break
                     secantes.append(-((ang1[0] - ang1[1]) - (ang[0] - ang[1])) / ay1)
