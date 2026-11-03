@@ -562,6 +562,9 @@ Commit `docs(inc6): escada num caso sintético que satura`.
 # Catálogo das células da V4.3 (para a aprovação célula a célula)
 
 Revisto em 2026-11-03 com os ajustes 1 a 10 e as decisões A a D de `docs/inc7/conselho-catalogo-v43.md`.
+**Aprovado pelo usuário célula a célula em 2026-11-03 ("Aprovo tudo"),** inclusive as escolhas da sessão: verificações
+novas na 24_CURVA lidas pelo status da 16 (C-B8), listas `VERIFICACOES_V43` próprias, F9 → 24_CURVA F8 na migração,
+validação positiva na B7 e a pior origem do R no E173 (C-B7b).
 
 Notação: `{x}` é o nome definido gerado pelas regras do EDR-058; o texto final da célula leva o nome, como na V4.2.
 "Antes" é o texto da V4.2 da tag. "Dep." são as células que ela lê. "Testes" é o TC que cobre a célula (003 = TC-WB43-003
