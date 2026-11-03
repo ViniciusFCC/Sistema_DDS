@@ -10,7 +10,8 @@ downforce 400 N com 45 % na frente):
   os casos perturbados (λ_f ± 10 %, toe ± 0,1°, R ± 10 %) e a varredura perto do neutro (λ_f +4 % a +7 %) saem
   rotulados "sintético"; erro_delta e soma_erros são recalculados das saturações; o veredito_atual bate com o
   analise_par também no ramo PUSH (λ_f +10 %).
-TC-NEU-002 entra na Task 9, com a regra que o usuário escolher.
+TC-NEU-002 (Task 9): a faixa do NEUTRO decidida pelo usuário (EDR-065 item 2, 2026-11-02): FATOR_NEUTRO = 4/3 só no
+|S − S2| de cada eixo que satura nas duas grades; passo e piso sem fator; uma fonte só (analise_par e mmm.limite).
 Roda como script: uv run python -X utf8 tests/test_neutro.py
 
 Veículo, pneu de escala, R, downforce e balanço aero são entradas SINTÉTICAS de teste, não do carro.
@@ -20,6 +21,7 @@ import math
 import os
 
 import equilibrio as eq
+import mmm
 import tire_model as tm
 from suspension_model import G, VehicleConfig
 
@@ -157,6 +159,100 @@ except Exception as exc:   # RED: o módulo ainda não existe
     ok, det = False, f"exceção {type(exc).__name__}: {exc}"
 check("TC-NEU-001 estudo do NEUTRO: grades aninhadas, determinismo, erro de Δ × e_F + e_R e regra sem mudança",
       ok, det)
+
+def tc_neu_002() -> tuple[bool, str]:
+    import estudo_neutro as en
+
+    falhas = []
+    passo = 0.05 * G
+
+    # (a) a regra da faixa em _resolucao, valores exatos: fator só no |S − S2|; passo e piso sem fator
+    if not math.isclose(eq.FATOR_NEUTRO, 4.0 / 3.0, rel_tol=0, abs_tol=0):
+        falhas.append(f"(a) FATOR_NEUTRO = {eq.FATOR_NEUTRO!r}, esperado 4/3")
+    r_dois = eq._resolucao((10.0, 12.0), (9.99, 12.003), 0.5)
+    if r_dois is None or abs(r_dois - 4.0 / 3.0 * 0.01) > 1e-15:
+        falhas.append(f"(a) dois eixos nas duas grades: {r_dois!r}, esperado 4/3·0,01")
+    r_passo = eq._resolucao((10.0, None), (None, None), 0.5)      # um eixo numa grade só: o passo, sem fator
+    r_mista = eq._resolucao((10.0, 12.0), (9.99, None), 0.5)      # um eixo nas duas (4/3·0,01) e outro numa só (passo)
+    r_mista_pequena = eq._resolucao((10.0, 12.0), (9.99, None), 0.001)   # passo menor que 4/3·|S − S2|: vale o 4/3
+    if r_passo != 0.5 or r_mista != 0.5 or r_mista_pequena is None or abs(r_mista_pequena - 4.0 / 3.0 * 0.01) > 1e-15:
+        falhas.append(f"(a) passo sem fator: {r_passo!r}, {r_mista!r}, {r_mista_pequena!r}")
+    if eq._resolucao((10.0, 12.0), (10.0, 12.0), 0.5) != 1e-9 * G:   # piso sem fator
+        falhas.append("(a) o piso de 1e-9 g mudou ou ganhou o fator")
+    if eq._resolucao((None, None), (None, None), 0.5) is not None:
+        falhas.append("(a) nenhum eixo satura: esperado None")
+
+    # (b) as duas bordas da faixa nova no caso sintético da varredura do estudo (λ_f relativo, SINTÉTICO). O caso de
+    # λ_f +4,7 % dá LOOSE com a faixa de ontem (|Δ| > R) e NEUTRO com a nova; λ_f +6,5 %, o mesmo no PUSH. A bisseção em λ_f
+    # acha o par adjacente (fora, dentro) de cada borda e confere |Δ| × faixa dos dois lados.
+    def par_de(lam_rel):
+        return eq.analise_par(en._com_lambda(CASO, lam_rel))
+
+    def delta_e_faixa(r):
+        return abs(r.ay_sat_r - r.ay_sat_f), r.resolucao_ms2
+
+    det_b = []
+    for rotulo, fora, dentro, v_fora in (("borda LOOSE", 1.043, 1.047, eq.LOOSE), ("borda PUSH", 1.068, 1.065, eq.PUSH)):
+        r_fora, r_dentro = par_de(fora), par_de(dentro)
+        if r_fora.veredito != v_fora or r_dentro.veredito != eq.NEUTRO:
+            falhas.append(f"(b) {rotulo}: extremos {r_fora.veredito}/{r_dentro.veredito}, esperado {v_fora}/NEUTRO")
+            continue
+        a, b = fora, dentro            # a: fora da faixa; b: dentro. Invariante preservada passo a passo.
+        for _ in range(16):
+            m = 0.5 * (a + b)
+            if par_de(m).veredito == eq.NEUTRO:
+                b = m
+            else:
+                a = m
+        r_a, r_b = par_de(a), par_de(b)
+        d_a, f_a = delta_e_faixa(r_a)
+        d_b, f_b = delta_e_faixa(r_b)
+        if not (r_b.veredito == eq.NEUTRO and d_b <= f_b and r_a.veredito == v_fora and d_a > f_a):
+            falhas.append(f"(b) {rotulo}: dentro {r_b.veredito} |Δ| = {d_b:.4e} faixa {f_b:.4e}; fora {r_a.veredito} "
+                          f"|Δ| = {d_a:.4e} faixa {f_a:.4e}")
+        # a faixa é a nova: o NEUTRO de dentro seria PUSH/LOOSE com a faixa de ontem (sem o fator)
+        if not d_b > f_b / eq.FATOR_NEUTRO:
+            falhas.append(f"(b) {rotulo}: |Δ| = {d_b:.4e} cabe na faixa de ontem {f_b / eq.FATOR_NEUTRO:.4e}; não prova o fator")
+        # os dois lados estão colados à borda (|Δ|/faixa perto de 1; o serrote da grade de a_y limita a colagem)
+        if not (abs(d_b / f_b - 1.0) < 2e-2 and abs(d_a / f_a - 1.0) < 2e-2):
+            falhas.append(f"(b) {rotulo}: |Δ|/faixa = {d_b / f_b:.5f} (dentro) e {d_a / f_a:.5f} (fora), longe da borda")
+        det_b.append(f"{rotulo}: λ_f x{b:.7f} NEUTRO |Δ|/faixa = {d_b / f_b:.4f}; x{a:.7f} {r_a.veredito} {d_a / f_a:.4f}")
+
+    # (c) eixo que satura numa grade só: a faixa é o passo da grade pedida, como hoje, sem o fator. ay_max = 1,475 g
+    # deixa a última linha da grade pedida em 1,45 g (antes das saturações, em ~1,47 g) e a da refinada em 1,475 g
+    # (depois): os dois eixos saturam só na refinada. O ramo de um eixo só (PUSH/LOOSE por um eixo) lê esta mesma faixa.
+    r_c = eq.analise_par(CASO, ay_max_g=1.475)
+    if not (r_c.ay_sat_f is None and r_c.ay_sat_r is None and r_c.resolucao_ms2 == passo):
+        falhas.append(f"(c) satura numa grade só: S = ({r_c.ay_sat_f}, {r_c.ay_sat_r}), faixa {r_c.resolucao_ms2!r} ≠ passo {passo!r}")
+
+    # (d) uma fonte só: o mmm não tem constante própria e, recebendo a faixa do analise_par, dá o mesmo veredito
+    # (caminho desacoplado, mesma grade de α) dos dois lados das bordas e no meio da faixa; no acoplado, a folga lê a
+    # mesma faixa (resolucao_ms2 devolvida igual) e o meio da faixa continua NEUTRO.
+    if hasattr(mmm, "FATOR_NEUTRO"):
+        falhas.append("(d) mmm tem FATOR_NEUTRO próprio: a fonte deve ser só equilibrio.FATOR_NEUTRO")
+    det_d = []
+    for lam_rel in (1.043, 1.047, 1.055, 1.065, 1.07):
+        caso = en._com_lambda(CASO, lam_rel)
+        par = eq.analise_par(caso)
+        lim = mmm.limite(caso, mmm.Hipoteses.planilha(), resolucao_ms2=par.resolucao_ms2, n_alfa=25)
+        if lim.veredito != par.veredito or lim.resolucao_ms2 != par.resolucao_ms2:
+            falhas.append(f"(d) λ_f x{lam_rel}: mmm.limite {lim.veredito} ≠ analise_par {par.veredito}")
+        det_d.append(f"{par.veredito}")
+        if lam_rel == 1.055:
+            lim_ac = mmm.limite(caso, mmm.planilha_acoplada(), resolucao_ms2=par.resolucao_ms2, n_alfa=25)
+            if lim_ac.veredito != eq.NEUTRO or lim_ac.resolucao_ms2 != par.resolucao_ms2:
+                falhas.append(f"(d) acoplado no meio da faixa: {lim_ac.veredito}, resolução {lim_ac.resolucao_ms2}")
+
+    det = f"{'; '.join(det_b)}; (c) faixa = passo = {r_c.resolucao_ms2 / G:.4f} g; (d) vereditos {'/'.join(det_d)}"
+    return not falhas, ("; ".join(falhas) + " | " + det) if falhas else det
+
+
+try:
+    ok, det = tc_neu_002()
+except Exception as exc:
+    ok, det = False, f"exceção {type(exc).__name__}: {exc}"
+check("TC-NEU-002 faixa do NEUTRO (EDR-065 item 2): 4/3 só no |S − S2|, NEUTRO na borda, PUSH/LOOSE fora, passo sem fator, "
+      "analise_par e mmm.limite com a mesma constante", ok, det)
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")
