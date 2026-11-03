@@ -224,11 +224,11 @@ GANHO_TESTE = {"FL": -0.8, "FR": 0.8, "RL": -0.6, "RR": 0.6}   # gradientes de e
 ok_034, det_034 = [], []
 
 
-def _comparar_034(dset, ganho, **extra):
+def _comparar_034(dset, ganho, formas=eq.FORMAS_V42, **extra):
     """(rel, detalhe) de |k_inclinacao(1ª linha) − (pneus + deslocamento + camber)| / |...|, ou (None, erro).
     extra: outras entradas do CasoEquilibrio (toe, raio, Ackermann; valores de teste)."""
     caso34 = eq.CasoEquilibrio(cfg=cfg_b, ds=dset, ganho_camber=ganho, **extra)
-    tab, e34 = _sem_excecao(lambda: el.tabela_linear(caso34, ay_max_g=0.05))
+    tab, e34 = _sem_excecao(lambda: el.tabela_linear(caso34, ay_max_g=0.05, formas=formas))
     if (tab is None or tab[0]["k_inclinacao"] is None
             or any(x is None for x in (tab[0]["parcelas"].k_pneus, tab[0]["parcelas"].k_deslocamento,
                                        tab[0]["parcelas"].k_camber))):
@@ -270,14 +270,26 @@ for rotulo, extra in EXTRAS_034:
         rel34, _, d34 = _comparar_034(ds, ganho, **extra)
         ok_034.append(rel34 is not None and rel34 < 1e-3)
         det_034.append(f"{rotulo}, {rot_g}: {d34}")
+# Forma V4.3 do Ackermann (EDR-066; α_0, C_α, deslocamento e inclinação na mesma forma): mesma igualdade, mesma tolerância
+for rot_g, ganho in (("sem ganho", {c: 0.0 for c in eq.CANTOS}), ("ganho de teste", GANHO_TESTE)):
+    rel34, p34, d34 = _comparar_034(ds, ganho, eq.FORMAS_V43, raio_m=8.0, ackermann_pct=100.0)
+    if rel34 is not None and p34.k_camber != 0.0:
+        # com o ganho de teste as parcelas se cancelam (soma 3e-2 do maior termo): o erro relativo à soma sobe a 4,1e-3
+        # com o mesmo erro absoluto (~5e-6 °/g); a tolerância é então 1e-3 do maior termo (medido nesta correção)
+        maior = max(abs(p34.k_pneus), abs(p34.k_deslocamento), abs(p34.k_camber))
+        soma34 = p34.k_pneus + p34.k_deslocamento + p34.k_camber
+        rel34 = rel34 * abs(soma34) / maior
+        d34 += f" (relativo ao maior termo: {rel34:.2e})"
+    ok_034.append(rel34 is not None and rel34 < 1e-3)
+    det_034.append(f"FORMAS_V43, R = 8,0 m e Ackermann 100 % (teste), {rot_g}: {d34}")
 # Registro (não decide o check): no ds0 (sem PHY/PVY/RHY, só de teste) o deslocamento do pneu some.
 _, p34_0, d34_0 = _comparar_034(ds0, {c: 0.0 for c in eq.CANTOS})
 det_034.append(f"ds0 (sem deslocamentos): {d34_0}")
 check("TC-EQ-034: k_inclinacao da 1ª linha (passo 2, Richardson das secantes de 0,005 e 0,01 g) = k_pneus + k_deslocamento + k_camber "
       "(passo 1), rel < 1e-3, com e sem ganho de camber, também com toe dianteiro 0,25°, R = 8,0 m e R = 8,0 m com "
-      "Ackermann 100 %, e com a aerodinâmica da h8 (R 8 m, ρ 1,2, CzA 2,0) somada a toe, camber estático e CG lateral (derivada de um lado em a_y = 0) (veículo e entradas "
+      "Ackermann 100 %, e com a aerodinâmica da h8 (R 8 m, ρ 1,2, CzA 2,0) somada a toe, camber estático e CG lateral (derivada de um lado em a_y = 0), e com FORMAS_V43 (Ackermann 100 %, R 8 m) (veículo e entradas "
       "de teste, .tir real, sem roll steer: o passo 2 não tem roll steer)",
-      len(ok_034) == 2 + 2 * len(EXTRAS_034) and all(ok_034), " | ".join(det_034))
+      len(ok_034) == 2 + 2 * len(EXTRAS_034) + 2 and all(ok_034), " | ".join(det_034))
 
 # ---------------- TC-EQ-035 : sinal do camber (EDR-002) ----------------
 # Braços paralelos iguais na frente (gradiente de eixo +1, Gillespie p. 234): só de teste.

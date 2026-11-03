@@ -41,6 +41,7 @@ from openpyxl.worksheet.formula import ArrayFormula
 import aba_curva as ac
 import aba_equilibrio as ae
 import equilibrio
+import skidpad
 import gerar_v4_3 as g43
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
@@ -49,6 +50,8 @@ from nomes_v4_0 import ler_tabela  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 CSV43 = RAIZ / "data" / "nomes_V4_3.csv"
+CATALOGO = (RAIZ / ".superpowers" / "sdd" / "2026-10-29-inc7-fisica-planilha-plans"
+            / "catalogo-v43.md")
 results = []
 
 FORMULAS_V42 = 117627          # as da V4.2 (cp.FORMULAS_ESPERADAS_V42)
@@ -183,21 +186,108 @@ def main() -> None:
                 and all(formula(ws[f"{l}{r}"].value) is not None for l in cn.values() for r in range(p0, p1 + 1)) \
                 and all(ws[f"{l}{p1 + 1}"].value is None for l in cn.values()) \
                 and ws[f"{antes_c0}{linha_cab}"].value is not None
-        # leitores de {R}: guardados e sem ISBLANK
+        # leitores de {R}: guardados por raio, h8, h9 ou ok (C-B4 e C-B7, B65 e B173 da 16, têm o ISNUMBER({R}) como
+        # guarda catalogada) e sem ISBLANK; o detector é exercitado em fórmulas mutadas
         nome_R = ae.NOME_ENT["R"]
-        guardas = [ae.NOME_ENT["h2"], ae.NOME_ENT["h8"], ae.NOME_ENT["h9"], ae.NOME16["raio"], ae.NOME16["ok"]]
-        leitores = [(k, f) for k, f in ((k, formula(v)) for k, v in c43.items()) if f is not None and nome_R in f
-                    and k != ("16_EQUILIBRIO", f"B{r9}")]
-        sem_guarda = [k for k, f in leitores if not (any(g in f for g in guardas) or f"ISNUMBER({nome_R})" in f)]
-        isblank = [k for k, v in c43.items() if (formula(v) or "").find(f"ISBLANK({nome_R})") >= 0]
-        # fora das grades: a 16 (a bisseção do Ackermann em I:L e as linhas B65, B66, B84 a B86, B112, B113 e B173) e
-        # a 24_CURVA B28
+        guardas = [ae.NOME_ENT["h8"], ae.NOME_ENT["h9"], ae.NOME16["raio"], ae.NOME16["ok"]]
+        excecoes = {("16_EQUILIBRIO", f"B{ae.LINHAS16['tvolta']}"), ("16_EQUILIBRIO", "B65"),
+                    ("24_CURVA", "B28")}   # B28 (C-A21): guardada por h2, h2v e ISNUMBER({R}); é a única só com h2
+
+        def checar_leitores(formulas: dict):
+            lei = [(k, f) for k, f in formulas.items() if nome_R in f and k != ("16_EQUILIBRIO", f"B{r9}")]
+            sem = [k for k, f in lei if not any(g in f for g in guardas)
+                   and not (k in excecoes and f"ISNUMBER({nome_R})" in f)]
+            return lei, sem, [k for k, f in formulas.items() if f"ISBLANK({nome_R})" in f]
+
+        f43 = {k: formula(v) for k, v in c43.items() if formula(v) is not None}
+        leitores, sem_guarda, isblank = checar_leitores(f43)
         fora_grade = sorted({f"{a}!{c}" for (a, c), _ in leitores if a not in (ae.ABA17, ae.ABA18, ae.ABA19, *ABAS_AUX)
                              and not (a == "16_EQUILIBRIO" and c[0] in "IJKL")})
-        # no teste de aceitação a lista da 16/24 é conhecida: se aparecer leitor novo, tem guarda por construção acima
+        x1 = ("X", "A1")
+        mut = checar_leitores({x1: f"=IF(A1>0,{nome_R},0)", ("X", "A2"): f"=IF(ISBLANK({nome_R}),1,0)",
+                               ("X", "A3"): f"=IF({ae.NOME16['ok']}=1,{nome_R},0)"})
+        pega = mut[1] == [x1, ("X", "A2")] and mut[2] == [("X", "A2")]
         leitores_ok = len(leitores) > 100 and not sem_guarda and not isblank
-        # a guarda dos leitores novos: o próprio teste pega um leitor sem guarda e um ISBLANK
-        pega = ("ISBLANK(x)" in "=IF(ISBLANK(x),1,0)") and not any(g in "=IF(A1>0,res_x,0)" for g in guardas)
+        # texto literal do catálogo (catalogo-v43.md) em células-chave, com os {nomes} trocados pelos nomes reais
+        cat = " ".join(CATALOGO.read_text(encoding="utf-8").split()) if CATALOGO.exists() else None
+        nm = {**ae.NOME_ENT, **ae.NOME16, **ac.NOME24, "b": ae.V40["b"], "L": ae.V40["L"], "tF": ae.V40["tF"],
+              "tR": ae.V40["tR"], "m": ae.V40["m"]}
+        motivos = {"MOTIVO_MODO_INVALIDO": skidpad.MOTIVO_MODO_INVALIDO,
+                   "MOTIVO_SEM_MEIA_LARGURA": skidpad.MOTIVO_SEM_MEIA_LARGURA,
+                   "MOTIVO_MANUAL_VAZIO": skidpad.MOTIVO_MANUAL_VAZIO, "MOTIVO_DIAMETROS": skidpad.MOTIVO_DIAMETROS,
+                   "MOTIVO_BITOLA_TRASEIRA": skidpad.MOTIVO_BITOLA_TRASEIRA, "MOTIVO_VEICULO": skidpad.MOTIVO_VEICULO}
+
+        def sub(t, extra=None):
+            t = re.sub(r"\{(\w+)\}", lambda m_: (extra or {}).get(m_.group(1)) or nm[m_.group(1)], t)
+            return re.sub(r"MOTIVO_[A-Z_]+", lambda m_: '"' + motivos[m_.group(0)] + '"', t)
+
+        gvf = f"'16_EQUILIBRIO'!$G${ae.LINHAS16['vf' + str(len(ae.VERIFICACOES) - 1)]}"
+        s16_, s24_ = wb43["16_EQUILIBRIO"], wb43[ac.ABA24]
+        lit = [
+            ('=IF(OR({h2}=1,{h3}=1,{h8}=1,{h9}=1),IF(ISNUMBER({R}),"-",IF(ISERROR({R}),"raio do skidpad R com erro",'
+             'IF({R}="","raio do skidpad R a confirmar ("&{motivo_r}&")","raio do skidpad R não é número"))),"-")',
+             s16_["B65"], None),
+            ("={rusado}", s16_["B9"], None),
+            ('=IF({G_vfN}="-",IF({sit24}="-","OK",{sit24}),{G_vfN})', s16_["B78"], {"G_vfN": gvf}),
+            ('=IF(AND(ISNUMBER({S_F}),ISNUMBER({S2_F})),IF(ISNUMBER({fator}),{fator}*ABS({S_F}-{S2_F}),"-"),'
+             'IF(OR(ISNUMBER({S_F}),ISNUMBER({S2_F})),0.05*9.81,"-"))', s16_["B137"], None),
+            ('=IF(ISNUMBER({aylim}),IF(ISNUMBER({R}),IF({R}>0,2*PI()*SQRT({R}/{aylim}),"N/A: raio do skidpad R deve '
+             'ser > 0"),'
+             'IF(ISERROR({R}),"N/A: raio do skidpad R com erro",IF({R}="","N/A: raio do skidpad R a confirmar ("&'
+             '{motivo_r}&")","N/A: raio do skidpad R não é número"))),"N/A")', s16_["B173"], None),
+            ('=IFERROR(IF(EXACT({modo},"Manual"),IF(ISNUMBER({rman}),{rman},""),IF(EXACT({modo},"Linha central"),{rlc},'
+             'IF(EXACT({modo},"Rente aos cones"),{rrente},""))),"")', s24_["B20"], None),
+            ('=IF(NOT(OR(EXACT({modo},"Linha central"),EXACT({modo},"Rente aos cones"),EXACT({modo},"Manual"))),'
+             'MOTIVO_MODO_INVALIDO,IF(ISNUMBER({rusado}),IF(AND(EXACT({modo},"Rente aos cones"),NOT(ISNUMBER({w}))),'
+             'MOTIVO_SEM_MEIA_LARGURA,"-"),IF(EXACT({modo},"Manual"),MOTIVO_MANUAL_VAZIO,IF(NOT(ISNUMBER({rin})),'
+             'MOTIVO_DIAMETROS,IF(NOT(ISNUMBER({tR})),MOTIVO_BITOLA_TRASEIRA,MOTIVO_VEICULO)))))', s24_["B21"], None),
+            ("=4/3", s24_["B34"], None),
+        ]
+        cat_ok = cat is not None
+        cat_det = []
+        for tpl, cel_, extra in lit:
+            ok_c = cel_.value == sub(tpl, extra) and (cat is None or tpl in cat)
+            cat_ok &= ok_c
+            if not ok_c:
+                cat_det.append(cel_.coordinate)
+        # B114: o catálogo escreve o acréscimo `+IF({h2v}=1,{thFL}-{thm},0)` sobre o texto da V4.2
+        da = f"B{ae.LINHAS16['da_FL']}"
+        ack = "(-(" + nm["di"] + "-" + nm["dref"] + "))"
+        antes_da = wb42["16_EQUILIBRIO"][da].value
+        ok_c = s16_[da].value == antes_da.replace(ack, ack + sub("+IF({h2v}=1,{thFL}-{thm},0)")) \
+            and (cat is None or "+IF({h2v}=1,{thFL}-{thm},0)" in cat)
+        cat_ok &= ok_c
+        if not ok_c:
+            cat_det.append(da)
+        # grade da 17, linha 30: aF, aR e fxr pelas fórmulas do catálogo (abreviações trocadas pelas células da linha)
+        g17, cl17, cn17, r_ = wb43[ae.ABA17], ae._colunas(ae.N_ALFA, True), ae.colunas_v43(ae.N_ALFA, True), 30
+        cel17 = lambda n: f"{cl17[n]}{r_}" if n in cl17 else f"{cn17[n]}{r_}"
+        faixa = lambda n0, n1: f"{cel17(n0)}:{cel17(n1)}"
+        alfa_ref = f"$B${ae.LINHA_ALFA + 1}:${get_column_letter(1 + ae.N_ALFA)}${ae.LINHA_ALFA + 1}"
+        af = ('=IF(AND({h9}=1,{h9v}=1),IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F)),IF(j_F<=1,0,'
+              'ABS(INDEX(alfa,j_F-1)+(INDEX(alfa,j_F)-INDEX(alfa,j_F-1))*(req_F-INDEX(fyF,j_F-1))/(INDEX(fyF,j_F)-'
+              'INDEX(fyF,j_F-1)))))),"-")')
+        ar = (af.replace('pre_F<>"-"', "NOT(ISNUMBER(cap0_R))").replace("cap_F", "cap0_R").replace("idx_F", "idx0_R")
+              .replace("j_F", "j_R").replace("req_F", "req_R").replace("fyF", "fy0R"))
+        fx = ('=IF(AND(ISNUMBER(phi),{h9}=1),IF(AND({h9v}=1,OR(aF="semF",aR="semF")),"semF",0.5*{rho}*{cda}*ABS(ay)*{R}'
+              '+'
+              '{crr}*{m}*9.81+IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})),0)')
+        cel_map = {"pre_F": cel17("pre_F"), "req_F": cel17("req_F"), "cap_F": cel17("cap_F"), "idx_F": cel17("idx_F"),
+                   "j_F": cel17("j_F"), "j_R": cel17("j_R"), "cap0_R": cel17("cap0_R"), "idx0_R": cel17("idx0_R"),
+                   "req_R": cel17("req_R"), "aF": cel17("aF"), "aR": cel17("aR"), "phi": cel17("phi"),
+                   "ay": cel17("ay"), "alfa": alfa_ref, "fyF": faixa(("fy", "F", 0), ("fy", "F", ae.N_ALFA - 1)),
+                   "fy0R": faixa(("fy0", "R", 0), ("fy0", "R", ae.N_ALFA - 1))}
+        tok = re.compile(r"\b(" + "|".join(sorted(cel_map, key=len, reverse=True)) + r")\b")
+        for nome_c, tpl in (("aF", af), ("aR", ar), ("fxr", fx)):
+            alvo_c = g17[cel17(nome_c)].value
+            esperado_c = sub(tok.sub(lambda m_: cel_map[m_.group(1)], tpl))
+            ok_c = alvo_c == esperado_c
+            cat_ok &= ok_c
+            if not ok_c:
+                cat_det.append(f"17 {nome_c}: {alvo_c[:80]} != {esperado_c[:80]}")
+        if cat is not None:   # as fórmulas de aF e de fxr, no texto do catálogo
+            cat_ok &= 'IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F))' in cat \
+                and "IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})" in cat
         # proteção (C-B1)
         protegidas = [ws.title for ws in wb43.worksheets if ws.protection.sheet]
         ocultas = [k for k, v in c43.items() if formula(v) is not None and wb43[k[0]][k[1]].protection.hidden]
@@ -231,7 +321,7 @@ def main() -> None:
             and "\r" not in reg_md and "| 16_EQUILIBRIO | B9 |" in reg_md and "colunas FI a GM" in reg_md \
             and "colunas ES a FW" in reg_md
         ok_001 = abas_ok and diff_ok and n_form_ok and f24_ok and nomes_ok and b9_ok and dv24_ok and col_ok \
-            and leitores_ok and pega and prot_ok and a3_ok and ch_ok and est_ok and reg_md_ok
+            and leitores_ok and pega and cat_ok and prot_ok and a3_ok and ch_ok and est_ok and reg_md_ok
         check("TC-WB43-001: estrutura da V4.3 gerada da tag v4.2: abas (+24_CURVA no fim); diff de texto V4.2 -> "
               "V4.3 = exatamente o registro de células; nomes = os da V4.2 + data/nomes_V4_3.csv, um por célula; "
               "ent_16_raio_do_skidpad_r continua em B9 (fórmula, estilo de resultado, sem validação); validações da "
@@ -243,7 +333,8 @@ def main() -> None:
               f"nomes={nomes_ok} ({len(n43)}) B9={b9_ok} validações24={dv24_ok} colunas={col_ok} "
               f"leitores={leitores_ok} ({len(leitores)} células; sem guarda {sem_guarda[:3]}; ISBLANK "
               f"{isblank[:3]}; fora das grades {fora_grade}) proteção={prot_ok} ({protegidas}/{len(ocultas)}) "
-              f"A3={a3_ok} changelog={ch_ok} estrutura={est_ok} registro.md={reg_md_ok}")
+              f"catálogo={cat_ok} {cat_det[:3]} A3={a3_ok} changelog={ch_ok} estrutura={est_ok} "
+              f"registro.md={reg_md_ok}")
         wb42.close()
         wb43.close()
 
