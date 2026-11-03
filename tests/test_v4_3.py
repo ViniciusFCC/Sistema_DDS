@@ -222,6 +222,7 @@ def main() -> None:
             return re.sub(r"MOTIVO_[A-Z_]+", lambda m_: '"' + motivos[m_.group(0)] + '"', t)
 
         gvf = f"'16_EQUILIBRIO'!$G${ae.LINHAS16['vf' + str(len(ae.VERIFICACOES) - 1)]}"
+        gvf_ant = f"'16_EQUILIBRIO'!$G${ae.LINHAS16['vf' + str(ae.I_DEN - 1)]}"
         s16_, s24_ = wb43["16_EQUILIBRIO"], wb43[ac.ABA24]
         lit = [
             ('=IF(OR({h2}=1,{h3}=1,{h8}=1,{h9}=1),IF(ISNUMBER({R}),"-",IF(ISERROR({R}),"raio do skidpad R com erro",'
@@ -250,6 +251,20 @@ def main() -> None:
             cat_ok &= ok_c
             if not ok_c:
                 cat_det.append(cel_.coordinate)
+        # C-B11: status das linhas extras das 20a a 20d, texto literal do catálogo com os nomes de cada linha
+        tpl11 = ('=IF({G_vf_den_ant}<>"-",{G_vf_den_ant},IF({vden}<>"-",{vden},IF({vf_ack}<>"-",{vf_ack},'
+                 'IF({sit24}<>"-",{sit24},"OK"))))')
+        m20_ = ae._Subst(ac.mapa_v43())
+        m20_.update(ae.V40_20)
+        for j_ in ae.EXTRAS20:
+            ml_ = ae._mapa_linha(m20_, j_)
+            exp11 = tpl11.format_map({"G_vf_den_ant": gvf_ant, "vf_ack": ml_[f"vf{ae.I_ACK}"],
+                                      "vden": ml_["vden"], "sit24": ml_["sit24"]})
+            cel11 = wb43[ae.ABA20][f"{ae.COL_BLOCO[j_]}{ae.LINHA_BLOCO['status']}"]
+            ok_c = cel11.value == exp11 and (cat is None or tpl11 in cat)
+            cat_ok &= ok_c
+            if not ok_c:
+                cat_det.append(f"20 status linha {j_}: {cel11.value[:80]} != {exp11[:80]}")
         # B114: o catálogo escreve o acréscimo `+IF({h2v}=1,{thFL}-{thm},0)` sobre o texto da V4.2
         da = f"B{ae.LINHAS16['da_FL']}"
         ack = "(-(" + nm["di"] + "-" + nm["dref"] + "))"
