@@ -99,6 +99,8 @@ Foco declarado: completar a planilha (EDR-019).
   `tools/migrar_viva.py VIVA --para REF_NOVA.xlsx` (leva os dados à versão nova por nome; conflito listado, nunca
   sobrescrito); `tools/medir_recalculo.py` (tempo de recálculo da V4.1 no Excel, em cópia). A viva do Drive é seção informativa
   do log da suíte, fora do resumo.
+- Notebook do pneu estático (`notebooks/tire_static_exploration.ipynb`): `uv sync --group notebook` (matplotlib, ipykernel,
+  nbclient; fora do `uv sync` padrão, então a suíte não depende deles) e `DDS_TTC_DIR` apontando para os `.tir` do TTC.
 - Rode os testes afetados antes de dizer que uma tarefa terminou.
 
 ## Fontes de verdade
