@@ -146,14 +146,14 @@ def _pesos_eixo(caso) -> tuple[float, float]:
 _H_ALFA_RIGIDEZ = _tm._H_RIGIDEZ
 
 
-def _alfa_operacao(caso):
+def _alfa_operacao(caso, *, formas=_eq.FORMAS_V42):
     """((α_0f, α_0r) [rad, ISO], motivo): ângulos de referência exigidos em a_y = 0 (`angulos_necessarios`).
 
     São o ponto de operação em que a rigidez do eixo é avaliada (`_rigidez_eixo`). Zero com o carro simétrico em
     L/R (com ou sem toe simétrico); diferentes de zero com Ackermann, CG lateral ou outra assimetria. Sem ângulos:
-    (None, motivo).
+    (None, motivo). `formas` (só de palavra-chave; EDR-066): como em `angulos_necessarios`.
     """
-    ang = angulos_necessarios(caso, 0.0)
+    ang = angulos_necessarios(caso, 0.0, formas=formas)
     if ang is None:
         return None, "ângulo de referência exigido em a_y = 0 indisponível (ponto de operação da rigidez do eixo)"
     return ang, None
@@ -323,7 +323,7 @@ def parcelas_k(caso, ay_ms2: float, *, formas=_eq.FORMAS_V42) -> ParcelasK:
     dphi = lateral_dfz(cfg, ay_ref)["roll_angle_rad"] / ay_ref
     motivos = []
 
-    alfa_0, m_alfa = _alfa_operacao(caso)
+    alfa_0, m_alfa = _alfa_operacao(caso, formas=formas)
     fz0, gam0 = _eq.cargas(caso, 0.0), _eq.camber(caso, 0.0)
     fz, gam = _eq.cargas(caso, ay_ms2), _eq.camber(caso, ay_ms2)
     if alfa_0 is None:
@@ -545,7 +545,7 @@ def b_local(ds, fz: float) -> float:
     return -0.5 * c2
 
 
-def cruzamento_transferencia(caso, ay_ms2: float) -> dict:
+def cruzamento_transferencia(caso, ay_ms2: float, *, formas=_eq.FORMAS_V42) -> dict:
     """K_llt aproximado do livro (eq. 6-49, `parcela_transferencia_aprox`) contra o exato (`parcelas_k`) em a_y.
 
     O aproximado usa o b LOCAL de cada eixo (`b_local` no Fz estático por roda do eixo, limitado à faixa), o C_α de
@@ -555,10 +555,10 @@ def cruzamento_transferencia(caso, ay_ms2: float) -> dict:
     (a_global, b_global, r). A aproximação de 1ª ordem vale com C ≫ 2b·ΔFz² (eq. 6-47): o erro relativo esperado é
     da ordem de ε = 2b·ΔFz²/C do eixo mais carregado (maior carga estática de eixo, W). Devolve aprox, exato, eps,
     eps_f, eps_r, b_f, b_r, a_global, b_global, r e motivo. Com b local <= 0 em algum eixo, o polinômio não tem
-    sensibilidade à carga no trecho e não há comparação (aprox None; Review Focus 5).
+    sensibilidade à carga no trecho e não há comparação (aprox None; Review Focus 5). `formas`: como em `parcelas_k`.
     """
     a_g, b_g, r = ajuste_polinomio_rigidez(caso.ds)
-    p = parcelas_k(caso, ay_ms2)
+    p = parcelas_k(caso, ay_ms2, formas=formas)
     saida = {"aprox": None, "exato": p.k_transferencia, "eps": None, "eps_f": None, "eps_r": None,
              "b_f": None, "b_r": None, "a_global": a_g, "b_global": b_g, "r": r, "motivo": None}
     fz0, gam0 = _eq.cargas(caso, 0.0), _eq.camber(caso, 0.0)
@@ -574,9 +574,9 @@ def cruzamento_transferencia(caso, ay_ms2: float) -> dict:
         saida["motivo"] = p.motivo
         return saida
     W_f, W_r = _pesos_eixo(caso)
-    alfa_0, _ = _alfa_operacao(caso)   # k_transferencia não é None aqui, então alfa_0 também não
-    cf, _, _ = _rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0])
-    cr, _, _ = _rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1])
+    alfa_0, _ = _alfa_operacao(caso, formas=formas)   # k_transferencia não é None aqui, então alfa_0 também não
+    cf, _, _ = _rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0], formas=formas)
+    cr, _, _ = _rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1], formas=formas)
     lat = lateral_dfz(caso.cfg, ay_ms2)
     dff, dfr = lat["front_axle"], lat["rear_axle"]
     bf, br = saida["b_f"], saida["b_r"]
