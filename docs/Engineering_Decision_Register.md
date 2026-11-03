@@ -1,6 +1,6 @@
 # Engineering Decision Register — Sistema_DDS (Tupã Suspension System)
 
-**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21; EDR-057 acrescentado em 2026-10-21, incremento 2 da V4.0; EDR-058 acrescentado em 2026-10-21, incremento 3 da V4.0; EDR-059 e EDR-060 acrescentados em 2026-10-22, incremento 4 da V4.1; EDR-061 a EDR-063 acrescentados e EDR-034 decidido em 2026-10-23, incremento 5 da V4.2, e EDR-060 item 8 (x) resolvido e (xi) acrescentado; EDR-064 a EDR-066 acrescentados em 2026-10-28, incremento 6). **Estado do documento:** em construção; mantido a cada decisão relevante.
+**Versão do registro:** V2.4-PARCIAL (2026-10-14; EDR-043 acrescentado, implementado e VERIFIED, EDR-017 substituído e EDR-044 acrescentado e VERIFIED, em 2026-10-19; EDR-045 a EDR-049 acrescentados e EDR-026 aprovado com a revisão metodológica, em 2026-10-19; EDR-025 e EDR-035 decididos e EDR-050 e EDR-051 acrescentados na 1ª rodada de feedback da V3.0, em 2026-10-19; EDR-052 e EDR-053 na 2ª rodada; correções de integridade no índice, nas §1, §3 e §4 e nos EDR-032, 034 e 041, EDR-032 reaberto e EDR-054 acrescentado, em 2026-10-20; EDR-055 acrescentado em 2026-10-20, incremento 1 da V4.0; EDR-056 acrescentado em 2026-10-21; EDR-057 acrescentado em 2026-10-21, incremento 2 da V4.0; EDR-058 acrescentado em 2026-10-21, incremento 3 da V4.0; EDR-059 e EDR-060 acrescentados em 2026-10-22, incremento 4 da V4.1; EDR-061 a EDR-063 acrescentados e EDR-034 decidido em 2026-10-23, incremento 5 da V4.2, e EDR-060 item 8 (x) resolvido e (xi) acrescentado; EDR-064 a EDR-066 acrescentados em 2026-10-28, incremento 6; EDR-067 acrescentado em 2026-11-02, modelo estático de pneu, PR #25; EDR-068 e EDR-069 acrescentados em 2026-10-29, incremento 7, sendo o EDR-069 o antigo EDR-067 desta branch, renumerado em 2026-11-02 por colisão com o do PR #25). **Estado do documento:** em construção; mantido a cada decisão relevante.
 **Escopo:** registra as decisões de engenharia tomadas (ou pendentes) nas conversas do projeto, com rastreabilidade para artefatos, parâmetros e testes. **Não substitui** o Engineering Standard, o registro de versões, as fichas de validação nem a documentação técnica: conecta-os.
 
 ## 1. Convenções e governança
@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 68 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2)
+Total: 69 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2; em 2026-11-02, EDR-067 (modelo estático de pneu, PR #25, vindo da main) entrou como APPROVED_WITH_CONDITIONS, e o EDR-067 desta branch, do raio do skidpad, foi renumerado para EDR-069)
 
 | ID | Título | Status |
 |---|---|---|
@@ -103,8 +103,9 @@ Total: 68 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 9 · AWAITING_DEC
 | EDR-064 | Método do MMM em raio fixo e da escada de hipóteses no Python | AWAITING_DECISION |
 | EDR-065 | Tolerância da escada e regra do NEUTRO | AWAITING_DECISION |
 | EDR-066 | Achados da escada sobre fórmulas da planilha | AWAITING_DECISION |
-| EDR-069 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | PROPOSED |
+| EDR-067 | Modelo estático de pneu (família de pressões e momentos PAC2002): correções de Mx e Mz | APPROVED_WITH_CONDITIONS |
 | EDR-068 | Executor dos testes: tempo-limite que encerra a árvore de processos | IMPLEMENTED |
+| EDR-069 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | PROPOSED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1590,6 +1591,52 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-052, EDR-057, EDR-064.
 - **Source_Conversation_or_Document:** Adendo `2026-10-27-inc6-mmm-escada-design.md` §7 (revisão do conselho).
 
+### EDR-067 — Modelo estático de pneu (família de pressões e momentos PAC2002): correções de Mx e Mz
+
+- **Date:** 2026-11-02
+- **Status:** APPROVED_WITH_CONDITIONS (2026-11-02; condição em Approval_Conditions). O item 3 da decisão está PENDING_CONFIRMATION até a comparação com o OptimumTire (usuário, 2026-11-02); o status do registro não muda por isso.
+- **Context:** Os commits e5de218 e 4035935 (2026-10-31) trouxeram uma camada estática sobre o `tire_model.py`: lê os quatro `.tir` PAC2002 do TTC Round 6 (Hoosier R25B 20.5x7-13, 8, 10, 12 e 14 psi, eixo ISO_TYDEX, EDR-039), calcula Fx/Fy pelo núcleo existente e acrescenta Mx, My e Mz, com revisões de coeficientes em overlays JSON presos ao SHA-256 do `.tir`. O perfil de 12 psi tem o mesmo conteúdo do `data/Hoosier_R25B_13x7_TTC_provisional.tir` (diferem só fins de linha e espaços). A análise de 2026-11-02, feita contra as imagens das equações do help do Adams PAC2002 (`references/pdf/Adams_2024_1_PAC2002_help.pdf`), achou erros nos momentos: o Mx do código chegava a 240 N·m em γ = 0 e Fz nominal, contra −1,2 N·m pela equação.
+- **Question:** O que corrigir na camada estática, e com qual regra para Vx, nome do módulo e o Fy do termo de trilha do Mz?
+- **Alternatives:** Mz, termo de trilha: (a) Fy com a cambagem real, F'y = Fy − SVyκ (Pacejka, eq. 4.E71 a 4.E73); (b) Fy calculado em γ = 0, como sugere o índice da eq. 103 do Adams. Vx: (c) recusar Vx > LONGVL; (d) aceitar e avisar.
+- **Decision:**
+  1. **Mx, eq. 109 (p. 48):** `atan((QSX6·Fz/F'z0)²)` (faltava o quadrado) e `[QSX10·atan(QSX11·Fz/F'z0) − QSX2]·γ` (o termo do QSX10 não multiplicava γ).
+  2. **Mz, eq. 100 (p. 47):** `Mz = −t·F'y + Mzr + s·Fx`; o código subtraía s·Fx. O Pacejka (eq. 4.E71) traz o mesmo sinal.
+  3. **Mz, Fy da trilha: PENDING_CONFIRMATION até a comparação com o OptimumTire** (usuário, 2026-11-02: "Pendente até OptimumTire"). Enquanto isso o código usa (a), sem mudança de equação; (a) não está decidida. A favor de (a): o Pacejka só usa o Fy em γ = 0 na adaptação para motocicleta (seção 11.6), descrita como diferente do modelo original. A favor de (b): é a forma escrita na eq. 103 do Adams, e o `.tir` é `PAC2002 2018`/Adams Tire 2018 (Stackpole), provavelmente ajustado com ela (inferência, não confirmada). A diferença entre (a) e (b) não é pequena em todo o domínio. Conferido na conversa de 2026-11-02 (perfil de 12 psi, κ = 0, grade Fz 500/1054/1500 N, α de 0,5° a 8°, γ até ±3,9°): o máximo fica em α = +1° e Fz = 1500 N, com a cambagem se opondo ao escorregamento, 10,9 N·m em γ = −2° e 17,9 N·m em γ = −3,9°, cerca de 28 % do Mz. Só do revisor especialista do conselho (não reconferido): com α = −1° (cambagem e escorregamento somam) 5,9 a 8,9 N·m, e com |α| ≥ 2° no máximo ~1,6 N·m. O valor antes registrado aqui (46,9 contra 48,3 N·m em Fz = 1054 N, α = 4°, γ = −2°, κ = −0,10) é de um ponto só e não representa o pior caso.
+  4. **Vx:** (d). LONGVL é a velocidade de medição do TTC (11,18 m/s), não um limite; Fx/Fy do PAC2002 não dependem de Vx. Acima dela o resultado ganha um aviso em `limitations`. Vx < 0 continua recusado.
+  5. **Nome:** `tire_model_static_v4.py` passa a `tire_model_static.py` (EDR-043); a versão fica em `__version__ = "4.1.0-static"`. Overlays da 4.0.1 são recusados de propósito, porque as equações mudaram.
+  6. **Sem mudança:** pressão só nos perfis nominais, sem interpolar (os PP* são zero); My zero porque QSY1..QSY8 = 0 (falta de parametrização, não resistência ao rolamento nula); fatores de escala do Dr (eq. 58) como estão, com efeito nulo enquanto valem 1.
+- **Rationale:** As correções 1 e 2 seguem a equação publicada pela REFERENCE do formato (EDR-004) e, no caso do Mz, também o Pacejka. A escolha 3 fica pendente porque as duas fontes divergem e a diferença chega a cerca de 28 % do Mz em ângulos pequenos com cambagem; quem decide é a comparação com a REFERENCE (EDR-004), não a preferência por uma das fontes. Recusar Vx acima de LONGVL bloqueava as velocidades de FSAE sem base física.
+- **Evidence:** `tests/test_tire_static.py` 87/87, registrado em `tools/rodar_testes.py` (sem os `.tir` do TTC sai NÃO EXECUTÁVEL, nunca aprovado): Mx contra transcrição da eq. 109 (−38,65, −1,25 e −83,04 N·m); Mz com s·Fx isolado (7,55 e 46,92 N·m); fatores de escala ≠ 1, teto de Et, sensibilidades de QSX2 e do quadrado do QSX6; perfis, overlays (inclusive malformados), Vx, faixas e caminhos de erro. Mutações temporárias (QSX6 sem o quadrado, QSX10 sem γ, −s·Fx, LMX ignorado) foram pegas. As transcrições do teste seguem a mesma leitura do help que o código: pegam regressão, não erro de leitura da equação (daí a condição de aprovação). `tests/test_tire_model.py` 43/43 e `tests/test_tire_oracles.py` 5/5 (o `_sgn` do e5de218 não muda Fx/Fy); notebook executado de ponta a ponta numa cópia. Revisão do PR com o pr-review-toolkit (código, testes, comentários, falhas silenciosas), sem achado crítico; os achados confirmados foram aplicados (chaves do núcleo sem default, LMUY > 0, parâmetros obrigatórios, overlays malformados, aviso de My acima de LONGVL, fatores de escala ausentes avisados).
+- **Assumptions:** R25B do TTC como substituto do R60A da equipe (sem dado do R60A); Validation = NOT_VALIDATED; os perfis são ajustes independentes em cada pressão.
+- **Consequences:** Mx cai de centenas de N·m para dezenas; Mz muda com κ ≠ 0. Resultados de Mx e Mz tirados antes destas correções (gráficos do notebook de 2026-10-31) não valem. Com o item 3 pendente, o Mz com γ ≠ 0 e |α| pequeno pode mudar até ~18 N·m quando ele for decidido; Mx e Mz seguem NOT_VALIDATED e não entram em planilha nem em equilíbrio antes da comparação com o OptimumTire.
+- **Affected_Artifacts:** `python/tire_model_static.py`; `notebooks/tire_static_exploration.ipynb`; `tests/test_tire_static.py`; `tools/rodar_testes.py`; `docs/superpowers/plans/2026-10-31-static-tire-model-v4.md` e `docs/superpowers/handoffs/2026-10-31-static-tire-model-v4.md` (só o nome do módulo).
+- **Affected_Tests:** `tests/test_tire_static.py` (sem ID TC; IDs não foram autorizados).
+- **Dependencies:** EDR-004, EDR-039, EDR-043.
+- **Approval_Conditions:** Comparar Mx e Mz com o OptimumTire (REFERENCE, EDR-004) para o mesmo `.tir` antes de qualquer uso de projeto.
+- **Reopening_Criteria:** Item 3: decidido pela comparação com o OptimumTire para o mesmo `.tir` (γ = ±2° e ±3,9°, α = ±1° e ±2°, Fz de 1054 a 1500 N, κ = ±0,08, um canto esquerdo para o espelhamento do EDR-039); fica a forma, (a) ou (b), cujo Mz difere do OptimumTire em no máximo 5 % do |Mz| da referência ou 1 N·m, o que for maior, em todos os pontos; se nenhuma das duas atender, o item volta ao usuário com a tabela da comparação. Demais itens: chegar um `.tir` do R60A; `.tir` com PP* não nulos ou QSY preenchidos.
+- **Related_Decisions:** EDR-037 a EDR-042 (núcleo do pneu), EDR-049.
+- **Source_Conversation_or_Document:** Conversa de 2026-11-02 (análise dos commits e5de218 e 4035935; "Sim, corrija"; "Sim, EDR-067"; item 3: conselho de 4 assentos e "Pendente até OptimumTire").
+
+### EDR-068 — Executor dos testes: tempo-limite que encerra a árvore de processos
+
+- **Date:** 2026-10-29
+- **Status:** IMPLEMENTED
+- **Context:** Uma rodada da suíte travou 5 h, apesar de cada item ter tempo-limite. `subprocess.run(capture_output=True, timeout=T)` mata só o filho no tempo-limite e depois espera o pipe de saída fechar; um neto (o Excel via COM, por exemplo) que herdou o pipe o mantém aberto, e a chamada não volta.
+- **Question:** Como garantir que um item travado da suíte (ou uma rodada da mutação da planilha) volte no tempo-limite, sem deixar processos órfãos?
+- **Alternatives:** (a) manter `subprocess.run` e aumentar ou reduzir os tempos-limite (não resolve: o tempo-limite não é o que falha); (b) `subprocess.run` com saída em arquivo e `taskkill` por conta de cada chamador (repete a lógica em cinco scripts); (c) um módulo único, `python/executor_testes.py`, que usa arquivos temporários no lugar de pipes e encerra a árvore pelo PID.
+- **Decision:** (c). `executar(cmd, *, cwd, env, timeout_s) -> Execucao` roda o processo com stdout e stderr em `tempfile.TemporaryFile` (nunca pipe) e, no tempo-limite, encerra a árvore com `taskkill /PID <pid> /T /F` (em POSIX, `os.killpg`), espera até 10 s e devolve o código 124 (`CODIGO_TEMPO`) com `estourou=True`. A hora de início e de fim de cada execução vai no `stderr` devolvido. `Orcamento` e `orcamento_do_ambiente` (variável `DDS_ORCAMENTO_S`) limitam o total de um script com várias execuções. Adotado em `tools/rodar_testes.py` (`rodar`, que passa `DDS_ORCAMENTO_S = timeout − 200` ao item, para a soma interna ficar abaixo do limite externo) e nos quatro scripts de mutação. Na mutação da planilha: orçamento total de 7000 s, cada rodada com `min(TIMEOUT, restante)`, 2ª tentativa só se couber um `TIMEOUT` inteiro, tempo esgotado = mutante "NÃO DETECTADO (tempo)" (FAIL) e, na pré-checagem, código de saída 2.
+- **Rationale:** O diagnóstico reproduziu a causa: um filho Python que lança um neto herdando a saída e dorme 60 s, chamado com `subprocess.run(capture_output=True, timeout=3)`, voltou em 60,5 s (esperado, se o timeout valesse: ≈ 3 s). Com arquivos no lugar de pipes, nenhum neto prende a leitura; o encerramento por PID (nunca por nome de programa) não atinge o Excel de outras pessoas. O Excel do teste da planilha já está num Job Object (`tests/recalculo_planilha.py`) e morre junto.
+- **Evidence:** Medição de 2026-10-29 (Windows 11, Python 3.13): `subprocess.run(..., capture_output=True, timeout=3)` com neto dormindo 60 s voltou em 60,5 s. Com o executor, o mesmo filho com `timeout_s=3` volta em 3,5 s e o neto não existe mais (`tasklist /FI "PID eq <neto>"`). TC-RUN-001.
+- **Assumptions:** O processo-filho é Python ou um programa cujos descendentes pertençam à árvore do PID (o `taskkill /T` segue a ligação pai-filho; um neto que perdeu o pai não é alcançado).
+- **Consequences:** A saída agora é lida de arquivo depois que o processo termina, não em fluxo. Os testes de mutação não mudam de lógica. Um item que estoura o tempo aparece no log com código 124 e a linha `[executor] ... TIMEOUT depois de N s`. Limitação: o tempo-limite usa a espera do Windows, que não conta o tempo em espera moderna (tampa fechada), e o orçamento usa o relógio de parede. Numa rodada de 2026-11-02, o notebook ficou em espera de cerca de 07:20 a 13:15, e uma rodada da mutação da planilha "durou" 20785 s pelo relógio sem disparar o limite de 1500 s, até esgotar o orçamento. Repetida com a máquina acordada, deu 5/5, com rodadas de 330 a 462 s. A suíte deve rodar com a máquina sem espera.
+- **Affected_Artifacts:** `python/executor_testes.py`; `tools/rodar_testes.py` (`rodar`, `TESTES`, `MODULOS`); `tests/mutation_planilha_equilibrio.py`; `tests/mutation_mmm.py`; `tests/mutation_equilibrio.py`; `tests/mutation_tire.py`.
+- **Affected_Tests:** TC-RUN-001 (`tests/test_executor.py`).
+- **Dependencies:** nenhuma.
+- **Approval_Conditions:** —
+- **Reopening_Criteria:** Um item da suíte voltar a travar além do tempo-limite; o encerramento por PID deixar processos órfãos; o `taskkill` passar a falhar no ambiente.
+- **Related_Decisions:** EDR-044 (recálculo de cópias pelo Excel via COM).
+- **Source_Conversation_or_Document:** Plano do incremento 7, Task 1 (incremento 7), diagnóstico de 2026-10-29.
+
 ### EDR-069 — Centro de curva único, raio do skidpad e decomposição do incremento 7
 
 - **Date:** 2026-10-29
@@ -1620,25 +1667,6 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Related_Decisions:** EDR-057, EDR-059, EDR-064, EDR-065, EDR-066, EDR-068.
 - **Source_Conversation_or_Document:** Spec do inc. 7 §3 e plano do inc. 7 (decisões D1 a D10), usuário, 2026-10-29 ("lista enxuta" de IDs; decisão U8).
 
-### EDR-068 — Executor dos testes: tempo-limite que encerra a árvore de processos
-
-- **Date:** 2026-10-29
-- **Status:** IMPLEMENTED
-- **Context:** Uma rodada da suíte travou 5 h, apesar de cada item ter tempo-limite. `subprocess.run(capture_output=True, timeout=T)` mata só o filho no tempo-limite e depois espera o pipe de saída fechar; um neto (o Excel via COM, por exemplo) que herdou o pipe o mantém aberto, e a chamada não volta.
-- **Question:** Como garantir que um item travado da suíte (ou uma rodada da mutação da planilha) volte no tempo-limite, sem deixar processos órfãos?
-- **Alternatives:** (a) manter `subprocess.run` e aumentar ou reduzir os tempos-limite (não resolve: o tempo-limite não é o que falha); (b) `subprocess.run` com saída em arquivo e `taskkill` por conta de cada chamador (repete a lógica em cinco scripts); (c) um módulo único, `python/executor_testes.py`, que usa arquivos temporários no lugar de pipes e encerra a árvore pelo PID.
-- **Decision:** (c). `executar(cmd, *, cwd, env, timeout_s) -> Execucao` roda o processo com stdout e stderr em `tempfile.TemporaryFile` (nunca pipe) e, no tempo-limite, encerra a árvore com `taskkill /PID <pid> /T /F` (em POSIX, `os.killpg`), espera até 10 s e devolve o código 124 (`CODIGO_TEMPO`) com `estourou=True`. A hora de início e de fim de cada execução vai no `stderr` devolvido. `Orcamento` e `orcamento_do_ambiente` (variável `DDS_ORCAMENTO_S`) limitam o total de um script com várias execuções. Adotado em `tools/rodar_testes.py` (`rodar`, que passa `DDS_ORCAMENTO_S = timeout − 200` ao item, para a soma interna ficar abaixo do limite externo) e nos quatro scripts de mutação. Na mutação da planilha: orçamento total de 7000 s, cada rodada com `min(TIMEOUT, restante)`, 2ª tentativa só se couber um `TIMEOUT` inteiro, tempo esgotado = mutante "NÃO DETECTADO (tempo)" (FAIL) e, na pré-checagem, código de saída 2.
-- **Rationale:** O diagnóstico reproduziu a causa: um filho Python que lança um neto herdando a saída e dorme 60 s, chamado com `subprocess.run(capture_output=True, timeout=3)`, voltou em 60,5 s (esperado, se o timeout valesse: ≈ 3 s). Com arquivos no lugar de pipes, nenhum neto prende a leitura; o encerramento por PID (nunca por nome de programa) não atinge o Excel de outras pessoas. O Excel do teste da planilha já está num Job Object (`tests/recalculo_planilha.py`) e morre junto.
-- **Evidence:** Medição de 2026-10-29 (Windows 11, Python 3.13): `subprocess.run(..., capture_output=True, timeout=3)` com neto dormindo 60 s voltou em 60,5 s. Com o executor, o mesmo filho com `timeout_s=3` volta em 3,5 s e o neto não existe mais (`tasklist /FI "PID eq <neto>"`). TC-RUN-001.
-- **Assumptions:** O processo-filho é Python ou um programa cujos descendentes pertençam à árvore do PID (o `taskkill /T` segue a ligação pai-filho; um neto que perdeu o pai não é alcançado).
-- **Consequences:** A saída agora é lida de arquivo depois que o processo termina, não em fluxo. Os testes de mutação não mudam de lógica. Um item que estoura o tempo aparece no log com código 124 e a linha `[executor] ... TIMEOUT depois de N s`. Limitação: o tempo-limite usa a espera do Windows, que não conta o tempo em espera moderna (tampa fechada), e o orçamento usa o relógio de parede. Numa rodada de 2026-11-02, o notebook ficou em espera de cerca de 07:20 a 13:15, e uma rodada da mutação da planilha "durou" 20785 s pelo relógio sem disparar o limite de 1500 s, até esgotar o orçamento. Repetida com a máquina acordada, deu 5/5, com rodadas de 330 a 462 s. A suíte deve rodar com a máquina sem espera.
-- **Affected_Artifacts:** `python/executor_testes.py`; `tools/rodar_testes.py` (`rodar`, `TESTES`, `MODULOS`); `tests/mutation_planilha_equilibrio.py`; `tests/mutation_mmm.py`; `tests/mutation_equilibrio.py`; `tests/mutation_tire.py`.
-- **Affected_Tests:** TC-RUN-001 (`tests/test_executor.py`).
-- **Dependencies:** nenhuma.
-- **Approval_Conditions:** —
-- **Reopening_Criteria:** Um item da suíte voltar a travar além do tempo-limite; o encerramento por PID deixar processos órfãos; o `taskkill` passar a falhar no ambiente.
-- **Related_Decisions:** EDR-044 (recálculo de cópias pelo Excel via COM).
-- **Source_Conversation_or_Document:** Plano do incremento 7, Task 1 (incremento 7), diagnóstico de 2026-10-29.
 
 ## 6. Tabela de rastreabilidade
 
@@ -1710,8 +1738,9 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-064 | — | python/mmm.py; python/escada.py; tools/relatorio_escada.py; tools/rodar_testes.py; adendo e spec base (§7.5); docs/inc6/; CLAUDE.md. | TC-MMM-001..011, TC-ESC-001..003, mutação do MMM (5) |
 | EDR-065 | — | python/escada.py; tools/relatorio_escada.py; docs/inc6/escada-hipoteses.md. | TC-ESC-002 |
 | EDR-066 | SUS-414, SUS-415 | 7a: formas v43 no Python (python/equilibrio.py; python/mmm.py; python/escada.py), planilha sem mudança (candidata na 7b: python/aba_equilibrio.py). | TC-ESC-002, TC-ACK-001/002, TC-FXI-001/002 |
-| EDR-069 | SUS-1009, SUS-1010, SUS-1011 | python/skidpad.py; python/equilibrio.py; python/escada.py; tools/rodar_testes.py; spec e plano do inc. 7. | TC-SKP-001, 002 |
+| EDR-067 | — | python/tire_model_static.py; notebooks/tire_static_exploration.ipynb; tests/test_tire_static.py; tools/rodar_testes.py. | tests/test_tire_static.py (87 verificações, sem ID TC) |
 | EDR-068 | — | python/executor_testes.py; tools/rodar_testes.py; tests/mutation_planilha_equilibrio.py; tests/mutation_mmm.py; tests/mutation_equilibrio.py; tests/mutation_tire.py. | TC-RUN-001 |
+| EDR-069 | SUS-1009, SUS-1010, SUS-1011 | python/skidpad.py; python/equilibrio.py; python/escada.py; tools/rodar_testes.py; spec e plano do inc. 7. | TC-SKP-001, 002 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 

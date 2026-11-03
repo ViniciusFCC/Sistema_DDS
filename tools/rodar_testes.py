@@ -36,6 +36,7 @@ from executor_testes import Execucao, executar  # noqa: E402  (EDR-068)
 TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
+    ("pneu estático", "tests/test_tire_static.py", 87, "EDR-067; PR #25 (precisa dos .tir do TTC Round 6, fora do Git)"),
     ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V3_0.md"),
     ("cinemática", "tests/test_kinematics_model.py", 76, "registro-de-versoes-V3_0.md; plano do incremento 2 da V4.0"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),
@@ -52,7 +53,7 @@ TESTES = [
     ("formas v43", "tests/test_formas_v43.py", 4, "plano do inc. 7 (TC-ACK-001, TC-FXI-001 e 002, TC-ACK-002)"),
     ("estudo do NEUTRO", "tests/test_neutro.py", 1, "plano do inc. 7 (TC-NEU-001; TC-NEU-002 na Task 9)"),
 ]
-MODULOS = ["tire_model", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
+MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
            "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada", "executor_testes", "skidpad",
            "estudo_neutro"]
@@ -221,13 +222,17 @@ def main() -> None:
     for nome, script, esperado, fonte in TESTES:
         r = rodar([script])
         resumos = [m for m in map(RE_RESUMO.match, r.stdout.splitlines()) if m]
-        if resumos:
+        # Script sem os dados externos (ex.: .tir do TTC fora do Git) sai com código 3 e "NÃO EXECUTÁVEL:": nunca é aprovado.
+        nao_executavel = r.returncode == 3 and any(l.startswith("NÃO EXECUTÁVEL") for l in r.stdout.splitlines())
+        if nao_executavel:
+            obtido, ok = "não rodou", False
+        elif resumos:
             n_pass, n_fail, total = map(int, resumos[-1].groups())
             obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
             ok = n_fail == 0 and n_pass == total == esperado and r.returncode == 0
         else:
             obtido, ok = "sem linha de resumo", False
-        status = "PASS" if ok else "FAIL"
+        status = "NÃO EXECUTÁVEL" if nao_executavel else "PASS" if ok else "FAIL"
         resumo.append(("CA-05", nome, status))
         md.append(f"| {nome} | `{script}` | {esperado} | {obtido} | {r.returncode} | **{status}** | {fonte} |")
         falhas = "\n".join(l for l in r.stdout.splitlines() if l.startswith("[FAIL]"))
