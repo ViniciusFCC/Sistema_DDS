@@ -173,7 +173,11 @@ def _caso_de_valores(x: dict, tir: Path, passo1: bool, verificacoes: tuple, font
     import aba_equilibrio as ae
     from equilibrio import espelhar, esterco_rodas
     from kinematics_model import camber_gradient_from_body
-    motivo = ae.motivo_das_entradas(x, verificacoes)
+    # Ordem do catálogo (C-A, C-B8): as verificações da 16, a instabilidade de rolagem e o alcance do Ackermann, e só depois as
+    # da 24_CURVA (VERIFICACOES_24, no fim de VERIFICACOES_V43), como a situação das entradas da planilha.
+    n24 = len(ae.VERIFICACOES_24)
+    v24 = verificacoes[-n24:] if tuple(verificacoes[-n24:]) == tuple(ae.VERIFICACOES_24) else ()
+    motivo = ae.motivo_das_entradas(x, verificacoes[:len(verificacoes) - len(v24)])
     if motivo is not None:
         raise ValueError(motivo)
     h = {k: x[k] == 1 for k in ("h2", "h3", "h7", "h8", "h9")}
@@ -213,6 +217,9 @@ def _caso_de_valores(x: dict, tir: Path, passo1: bool, verificacoes: tuple, font
             esterco_rodas(caso)
         except ValueError:
             raise ValueError(ae.MSG_ACK) from None
+    motivo24 = ae.motivo_das_entradas(x, v24) if v24 else None
+    if motivo24 is not None:
+        raise ValueError(motivo24)
     return espelhar(caso) if x["sentido"] == "Direita" else caso
 
 
