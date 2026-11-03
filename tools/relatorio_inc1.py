@@ -57,7 +57,7 @@ SPEC = RAIZ / "docs" / "superpowers" / "specs" / "2026-10-20-v4-0-metas-equilibr
 MOTORES = ("excel", "libreoffice")
 CASOS_EXP = ("teste_LMUY045", "teste_LMUY045_toe_camber", "teste_LMUY045_LKY023_borda", "planilha_viva")
 PREFIXO = "DEMONSTRATIVO · "
-GRADE = {"ay_max_g": 2.0, "passo_g": 0.05, "n_alfa": 25}   # grade passada a analise_par e varredura_pneu
+GRADE = {"ay_max_g": 2.0, "passo_g": 0.05, "n_alfa": 25, "fator_neutro": 1.0}   # grade passada a analise_par e varredura_pneu
 ORIGEM_TESTE = "○ Arbitrário / demonstrativo"           # dataset de teste (LMUY 0,45): nunca é dado do TX
 
 # Hipóteses da tabela 7.4 da spec que o incremento 1 implementa (número -> o que o código faz).

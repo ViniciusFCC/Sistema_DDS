@@ -1372,9 +1372,10 @@ def limite(caso: eq.CasoEquilibrio, hip: Hipoteses, resolucao_ms2: float = 0.01,
        do eixo, o critério de capacidade_eixo). O intervalo inicial vem da saturação do analise_par (± 2 passos) e é
        validado (raiz na ponta baixa, sem raiz na alta); se não valer, varre de 0,05 g em 0,05 g. A tolerância da
        bisseção é resolucao_ms2 · 1e-4.
-    2. Veredito (_veredito): a regra do analise_par (EDR-056) com `resolucao_ms2` (a faixa já com equilibrio.FATOR_NEUTRO, sem fator próprio aqui) no lugar da resolução por refinamento
-       de grade. N/A quando o eixo que não satura deixa de ser válido (descolamento, toe, pico na borda, tração acima do
-       atrito) antes de S + resolucao_ms2: não há número de T, e o motivo é o do eixo (de capacidade_eixo).
+    2. Veredito (_veredito): a regra do analise_par (EDR-056) com `resolucao_ms2` (a faixa, já com
+       equilibrio.FATOR_NEUTRO; sem fator próprio aqui) no lugar da resolução por refinamento de grade. N/A quando o
+       eixo que não satura deixa de ser válido (descolamento, toe, pico na borda, tração acima do atrito) antes de
+       S + resolucao_ms2: não há número de T, e o motivo é o do eixo (de capacidade_eixo).
     3. T: bisseção em A_Y sobre trim(...).convergiu, com o intervalo inicial de analise_par.ay_lim, validado. T é o
        maior A_Y com trim dentro da tolerância e deve coincidir com min(S_f, S_r) (senão N/A).
     4. Q: folga do outro eixo em T (capacidade_eixo − força exigida), vezes o braço até o CG, sobre W·L, igual ao c_n do

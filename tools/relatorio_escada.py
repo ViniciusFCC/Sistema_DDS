@@ -219,8 +219,8 @@ def _rodada(caso, a, nome: str, texto_raio: str, obs_raio: str, aviso_raio) -> t
     w("### 3. Degrau 1: MMM na configuração da planilha contra `analise_par`")
     w("")
     w("O degrau 1 é uma identidade quase por construção: os dois códigos usam a física por roda do mesmo módulo. Ele prova "
-      "o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 2 × a "
-      "resolução. Diferenças = MMM − `analise_par`.")
+      "o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 1,5 × a "
+      "resolução (que já traz o 4/3 do EDR-065, item 2: igual a 2 × |S − S2|). Diferenças = MMM − `analise_par`.")
     w("")
     linhas = []
     for c in d1:
@@ -530,8 +530,8 @@ def main() -> int:
       "fica fora do balanço lateral. É de 2ª ordem em β e D é uma fração pequena de m·A.")
     w("- A precisão de T nas linhas acopladas é da ordem da resolução do limite (0,01 m/s²), e não a da bisseção: a dobra "
       "do Newton pode cair até essa distância antes do pico do eixo.")
-    w("- A cota do degrau 1 (2 × a resolução) é empírica: a resolução que o `analise_par` declara subestima o erro de "
-      "interpolação dele (EDR-064, item 2.9).")
+    w("- A cota do degrau 1 (1,5 × a resolução, igual a 2 × |S − S2|) é empírica: o |S − S2| que o `analise_par` mede "
+      "subestima o erro de interpolação dele (EDR-064, item 2.9; o 4/3 já está na resolução, EDR-065, item 2).")
     w("")
 
     saida.parent.mkdir(parents=True, exist_ok=True)
