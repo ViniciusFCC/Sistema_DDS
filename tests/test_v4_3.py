@@ -2,8 +2,8 @@
 """Testes sem motor de recálculo da V4.3 (incremento 7, parte 7b: centro da curva, raio do skidpad e Fx por arrasto
 induzido; projeto T11): estrutura do arquivo gerado e CA-07.
 Uso: uv run python -X utf8 tests/test_v4_3.py
-Namespace TC-WB43-xxx (IDs autorizados: 001 a 006; este script tem o 001 e o 002; o 003 a 006 (recálculo, nos dois
-motores, e migração) ficam em outros scripts). A V4.2 de partida é o arquivo da tag v4.2, extraído para uma pasta
+Namespace TC-WB43-xxx (IDs autorizados: 001 a 006; este script tem o 001, o 002 e o 006; o 003 a 005 (recálculo pelo
+Excel e barra de fórmulas) ficam em tests/test_workbook_v4_3.py). A V4.2 de partida é o arquivo da tag v4.2, extraído para uma pasta
 temporária; nada é gravado em excel/.
 
 TC-WB43-001 (estrutura da V4.3 gerada da tag v4.2 por gerar_v4_3.gerar, um check):
@@ -27,6 +27,15 @@ TC-WB43-002 (CA-07): duas regenerações (uma da tag, outra do arquivo extraído
 excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx se ele existir (a cópia vai a excel/ num commit próprio, Task 14); o gerador
 recusa saída em excel/ e saída = origem antes de abrir qualquer arquivo; data/nomes_V4_3.csv = aba_curva.NOMES_V43 e o
 gerador recusa um CSV diferente; o texto da 24_CURVA B34 é `=4/3` e `equilibrio.FATOR_NEUTRO == 4/3`.
+TC-WB43-006 (migração V4.2 -> V4.3, sem motor; catálogo C-M1 a C-M4; tools/migrar_viva.py, em cópias de pasta temporária):
+- C-M1: `dados_planilha._destinos` da V4.3 não tem `ent_16_raio_do_skidpad_r` nem `org_16_raio_do_skidpad_r` (B9 e E9 são
+  fórmula); os da V4.2 continuam todos (nenhum nome de dado da V4.2 tem fórmula);
+- viva V4.2 sintética (a da tag com dados de teste), migrada para a V4.3 gerada, com código 0 e 0 conflito (C-M2, C-M3):
+  B9 = 8,3 vai ao R manual (24_CURVA B8) e põe o modo em "Manual", as entradas novas ficam no padrão e o resto da V4.3
+  igual; B9 vazio deixa o modo em "Linha central" e B8 vazio; E9 trocado pela equipe vai a E8 e a E9 da V4.3 continua
+  fórmula; F9 trocado vai a F8, sem conflito;
+- C-M4: viva V4.3 com B9 ou E9 sobrescritos por número dá código 2 ("célula alterada fora dos nomes de dado") e não grava
+  a saída; uma viva V4.3 só com dado na 24_CURVA migra com código 0.
 "Passou" = estrutura e regeneração conferidas; não é validação física.
 """
 import re
@@ -40,12 +49,15 @@ from openpyxl.worksheet.formula import ArrayFormula
 
 import aba_curva as ac
 import aba_equilibrio as ae
+import dados_planilha as dp
 import equilibrio
+import origens
 import skidpad
 import gerar_v4_3 as g43
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 import comparar_planilhas as cp  # noqa: E402
+import migrar_viva as migr_viva  # noqa: E402
 from nomes_v4_0 import ler_tabela  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -385,6 +397,124 @@ def main() -> None:
               f"regen={ok_dup} entregue={ok_ent} recusas={rec_excel}/{rec_origem} csv={csv_ok} fator={fator_ok} | "
               + " ; ".join(r for r in rel_ent if not r.startswith("  DIF"))[:300]
               + ("" if ok_dup else " | " + " ; ".join(rel_dup[:6])))
+
+        # ---------------- TC-WB43-006 ----------------
+        tc_wb43_006(tmp, v42, regen1)
+
+
+def tc_wb43_006(tmp: Path, v42: Path, v43: Path) -> None:
+    """TC-WB43-006: migração da viva V4.2 para a V4.3 (C-M1 a C-M4) em cópias; nada vai ao Drive nem a excel/."""
+    base = tmp / "viva_t"
+    base.mkdir()
+    cont = [0]
+    R, ORG_R, FTE_R = (f"{p}_16_raio_do_skidpad_r" for p in ("ent", "org", "fte"))
+    N_RMAN, N_MODO = ac.NOME24["rman"], ac.NOME24["modo"]
+    N_ORG, N_FTE = "org_24_r_manual", "fte_24_r_manual"
+
+    def pasta() -> Path:
+        cont[0] += 1
+        d = base / f"tmp_{cont[0]}"
+        d.mkdir()
+        return d
+
+    def viva_v42(nome: str, dados: dict) -> Path:
+        d = base / nome
+        d.mkdir()
+        arq = d / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
+        dp.injetar(v42, dados, arq)
+        return arq
+
+    def viva_v43(nome: str, edicoes: dict) -> Path:
+        d = base / nome
+        d.mkdir()
+        arq = d / "FSAE_EV_Suspension_Fase1_V4_3.xlsx"
+        wb = openpyxl.load_workbook(v43)
+        try:
+            for (aba, cel), valor in edicoes.items():
+                wb[aba][cel].value = valor
+            wb.save(arq)
+        finally:
+            wb.close()
+        return arq
+
+    def migrar(viva: Path, nome: str, referencia=None):
+        s, r = base / f"mig_{nome}" / "saida.xlsx", base / f"mig_{nome}" / "relatorio.md"
+        cod = migr_viva.migrar(viva, v43, s, r, pasta(), referencia_antiga=referencia)
+        return cod, s, (r.read_text(encoding="utf-8") if r.exists() else "")
+
+    # C-M1: os nomes de B9 e E9 não são destinos na V4.3; na V4.2 são
+    wb43 = openpyxl.load_workbook(v43)
+    wb42 = openpyxl.load_workbook(v42)
+    try:
+        dest43, dest42 = dp._destinos(wb43), dp._destinos(wb42)
+        formulas_43 = [n for n, (a, c) in dest43.items() if dp._eh_formula(wb43[a][c].value)]
+    finally:
+        wb43.close()
+        wb42.close()
+    m1_ok = R not in dest43 and ORG_R not in dest43 and FTE_R in dest43 and dest42[R] == (ae.ABA16, "B9") \
+        and dest42[ORG_R] == (ae.ABA16, "E9") and not formulas_43 \
+        and dest43[N_RMAN] == (ac.ABA24, "B8") and dest43[N_ORG] == (ac.ABA24, "E8") \
+        and dest43[N_FTE] == (ac.ABA24, "F8") and dest43[N_MODO] == (ac.ABA24, "B4")
+    d43 = dp.ler_por_nome(v43)
+
+    def igual_ao_padrao(saida: Path, excecoes: set) -> bool:
+        ds = dp.ler_por_nome(saida)
+        return set(ds) == set(d43) and all(dp.iguais(ds[n], d43[n]) for n in d43 if n not in excecoes)
+
+    def sem_conflito(texto: str) -> bool:
+        return "| Conflitos (não escritos) | 0 |" in texto and "| Faltando na versão nova | 0 |" in texto \
+            and "Resultado: **PASS**" in texto
+
+    def b9_formula(saida: Path) -> bool:
+        wb = openpyxl.load_workbook(saida)
+        try:
+            return all(dp._eh_formula(wb[ae.ABA16][c].value) for c in ("B9", "E9"))
+        finally:
+            wb.close()
+
+    # B9 = 8,3 (E9 e F9 intactos): o R vira o manual, o modo vira Manual, as entradas novas no padrão
+    cod_a, s_a, t_a = migrar(viva_v42("b9", {R: 8.3}), "b9")
+    da = dp.ler_por_nome(s_a) if s_a.exists() else {}
+    a_ok = cod_a == 0 and da.get(N_RMAN) == 8.3 and da.get(N_MODO) == "Manual" and sem_conflito(t_a) \
+        and igual_ao_padrao(s_a, {N_RMAN, N_MODO}) and b9_formula(s_a) and f"`{N_RMAN}`" in t_a \
+        and f"`{N_MODO}`" in t_a and f"`{R}`" not in t_a.split("## Escritas")[1]
+    # B9 vazio e outro dado qualquer da equipe: o modo fica no padrão e o R manual vazio
+    d42 = dp.ler_por_nome(v42)
+    outro = next(n for n in sorted(d43) if n.startswith("ent_") and isinstance(d43[n], (int, float))
+                 and not isinstance(d43[n], bool) and n in d42)
+    cod_b, s_b, t_b = migrar(viva_v42("b9_vazio", {outro: d43[outro] + 1.5}), "b9_vazio")
+    db = dp.ler_por_nome(s_b) if s_b.exists() else {}
+    b_ok = cod_b == 0 and db.get(N_MODO) == "Linha central" and db.get(N_RMAN) is None and sem_conflito(t_b) \
+        and dp.iguais(db.get(outro), d43[outro] + 1.5) and igual_ao_padrao(s_b, {outro})
+    # E9 trocado pela equipe: vai à E8; a E9 da V4.3 continua fórmula
+    cod_c, s_c, t_c = migrar(viva_v42("e9", {ORG_R: origens.OUTRO_CARRO}), "e9")
+    dc = dp.ler_por_nome(s_c) if s_c.exists() else {}
+    c_ok = cod_c == 0 and dc.get(N_ORG) == origens.OUTRO_CARRO and dc.get(N_MODO) == "Linha central" \
+        and sem_conflito(t_c) and igual_ao_padrao(s_c, {N_ORG}) and b9_formula(s_c)
+    # F9 trocado pela equipe: vai à F8, sem conflito (o F8 padrão difere do F9 da V4.2)
+    texto_f = "fonte da equipe: regulamento da prova"
+    cod_d, s_d, t_d = migrar(viva_v42("f9", {FTE_R: texto_f}), "f9")
+    dd = dp.ler_por_nome(s_d) if s_d.exists() else {}
+    d_ok = cod_d == 0 and dd.get(N_FTE) == texto_f and sem_conflito(t_d) and igual_ao_padrao(s_d, {N_FTE}) \
+        and dd.get(FTE_R) == d43[FTE_R]
+    # C-M4: viva V4.3 com B9 ou E9 sobrescritos por número
+    rec_b9, s_e1, t_e1 = migrar(viva_v43("v43_b9", {(ae.ABA16, "B9"): 9.0}), "v43_b9", referencia=v43)
+    rec_e9, s_e2, t_e2 = migrar(viva_v43("v43_e9", {(ae.ABA16, "E9"): 7}), "v43_e9", referencia=v43)
+    cod_ok, s_ok, t_ok = migrar(viva_v43("v43_ok", {(ac.ABA24, "B8"): 8.5, (ac.ABA24, "B4"): "Manual"}), "v43_ok",
+                                referencia=v43)
+    dok = dp.ler_por_nome(s_ok) if s_ok.exists() else {}
+    m4_ok = rec_b9 == 2 and "fora dos nomes de dado" in t_e1 and "16_EQUILIBRIO!B9" in t_e1 and not s_e1.exists() \
+        and rec_e9 == 2 and "fora dos nomes de dado" in t_e2 and "16_EQUILIBRIO!E9" in t_e2 and not s_e2.exists() \
+        and cod_ok == 0 and dok.get(N_RMAN) == 8.5 and dok.get(N_MODO) == "Manual"
+    # o redirecionamento só vale para V4.2 -> V4.3
+    red_ok = set(migr_viva.REDIRECIONAMENTOS) == {("V4.2", "V4.3")} \
+        and migr_viva.REDIRECIONAMENTOS[("V4.2", "V4.3")] == {R: N_RMAN, ORG_R: N_ORG, FTE_R: N_FTE}
+    check("TC-WB43-006: migração V4.2 -> V4.3 (C-M1 a C-M4): nomes de B9 e E9 fora dos destinos da V4.3; B9 = 8,3 vai ao R "
+          "manual com o modo Manual e as entradas novas no padrão, sem conflito; B9 vazio mantém o modo Linha central; E9 e "
+          "F9 da equipe vão à E8 e F8 (E9 continua fórmula); viva V4.3 com B9 ou E9 sobrescritos dá código 2",
+          m1_ok and a_ok and b_ok and c_ok and d_ok and m4_ok and red_ok,
+          f"C-M1={m1_ok} B9={a_ok}({cod_a}) vazio={b_ok}({cod_b}) E9={c_ok}({cod_c}) F9={d_ok}({cod_d}) "
+          f"C-M4={m4_ok}({rec_b9},{rec_e9},{cod_ok}) redirecionamentos={red_ok}")
 
 
 main()
