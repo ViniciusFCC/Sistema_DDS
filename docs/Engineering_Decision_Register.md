@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 69 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 1 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2; em 2026-11-02, EDR-067 (modelo estático de pneu, PR #25, vindo da main) entrou como APPROVED_WITH_CONDITIONS, e o EDR-067 desta branch, do raio do skidpad, foi renumerado para EDR-069)
+Total: 69 registros. APPROVED: 28 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 8 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2; em 2026-11-02, EDR-067 (modelo estático de pneu, PR #25, vindo da main) entrou como APPROVED_WITH_CONDITIONS, e o EDR-067 desta branch, do raio do skidpad, foi renumerado para EDR-069; ainda em 2026-11-02, no passo do usuário entre a 7a e a 7b, EDR-069 passou de PROPOSED a APPROVED e o item 2 do EDR-065 foi decidido)
 
 | ID | Título | Status |
 |---|---|---|
@@ -105,7 +105,7 @@ Total: 69 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DE
 | EDR-066 | Achados da escada sobre fórmulas da planilha | AWAITING_DECISION |
 | EDR-067 | Modelo estático de pneu (família de pressões e momentos PAC2002): correções de Mx e Mz | APPROVED_WITH_CONDITIONS |
 | EDR-068 | Executor dos testes: tempo-limite que encerra a árvore de processos | IMPLEMENTED |
-| EDR-069 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | PROPOSED |
+| EDR-069 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -119,7 +119,7 @@ Total: 69 registros. APPROVED: 27 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DE
 - **EDR-064** (AWAITING_DECISION): Método do MMM em raio fixo e da escada de hipóteses no Python (implementado; as decisões do controlador aguardam o usuário no PR)
 - **EDR-065** (AWAITING_DECISION): Tolerância da escada de hipóteses e regra do NEUTRO (valor e regra são do usuário)
 - **EDR-066** (AWAITING_DECISION): Achados da escada sobre as fórmulas de Ackermann e de Fx exigido da planilha
-- **EDR-069** (PROPOSED): Centro de curva único e raio do skidpad; D4, D5 e D6 aguardam aprovação do usuário (passo entre a 7a e a 7b)
+- **EDR-069** (APPROVED): Centro de curva único e raio do skidpad; D4, D5 e D6 aprovadas pelo usuário em 2026-11-02
 
 ## 4. Proposta de IDs para camber/toe estáticos (Decisão C — NÃO criados)
 
@@ -1548,14 +1548,15 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-065 — Tolerância da escada e regra do NEUTRO
 
 - **Date:** 2026-10-28
-- **Status:** APPROVED em parte (usuário, 2026-10-28): regra do NEUTRO (a) e correção da faixa no incremento 7. A tolerância segue AWAITING_DECISION até o relatório com o raio R informado pelo usuário.
+- **Status:** APPROVED em parte (usuário, 2026-10-28: regra do NEUTRO (a); 2026-11-02: faixa do NEUTRO, item 2). A tolerância (item 3) segue AWAITING_DECISION até o relatório num caso sintético que sature, última tarefa da 7b.
 - **Context:** A spec base (§7.5 item 3) pede um critério para a planilha completa em relação ao Python completo: dentro de uma tolerância e nunca inverter push e loose. A tolerância é decisão de engenharia do usuário, e o incremento 6 entrega a tabela sem veredito.
 - **Question:** Qual a tolerância de a_y de saturação, de C_N e de K entre a planilha e o Python completo, e uma variante que leva NEUTRO para PUSH ou LOOSE conta como inversão?
 - **Alternatives:** Tolerância: **sem valor proposto**, o usuário decide a partir da tabela do relatório. Regra do NEUTRO: (a) NEUTRO ↔ PUSH/LOOSE conta como inversão, pela mesma regra estrita da robustez ao pneu (EDR-060 item 8); (b) não conta, porque NEUTRO é uma faixa em torno de zero.
 - **Decision:** (usuário, 2026-10-28)
   1. **Regra do NEUTRO: (a).** NEUTRO ↔ PUSH/LOOSE conta como inversão.
   2. **Faixa do NEUTRO:** a `resolucao_ms2` do `analise_par` subestima o erro em cerca de 4/3 (EDR-064, 2.9). A faixa passa a usar o erro estimado, e não a resolução declarada, no incremento 7: na planilha (EDR-056 item 2) é mudança de fórmula e entra no plano com aprovação por célula; nas variantes acopladas, a regra da folga (EDR-064, 1.3) é revista junto.
-  3. **Tolerância de a_y de saturação, C_N e K:** pendente até o relatório `docs/inc6/escada-hipoteses.md` rodar com o raio R informado pelo usuário e o caso saturar. Com R = 8,5 m (sintético) a tabela é quase toda N/A e não sustenta um valor.
+     **Decisão (usuário, 2026-11-02), a partir de `docs/inc7/estudo-neutro.md`:** alternativa 1 com fator fixo: a faixa do NEUTRO passa a ser `FATOR_NEUTRO` × a faixa de hoje, com a constante nomeada `FATOR_NEUTRO = 4/3` (uma fonte só para o Python e a célula da planilha). Foi a única das alternativas estudadas com margem faixa − erro de Δ positiva nos 7 casos sintéticos perto do neutro (2,90e-04 a 3,63e-04 g); a regra de hoje, a alternativa 1 com p medido e a alternativa 2 ficaram com margem negativa (medida contra a grade h/8, que não convergiu). O ramo em que só um eixo satura mantém a `_resolucao` (como o código faz; o texto da spec §4.3, "continua com o passo", é corrigido), com o mesmo `FATOR_NEUTRO`, para haver uma regra só. Implementação: Task 9 (TC-NEU-002) e família F12 do catálogo da V4.3.
+  3. **Tolerância de a_y de saturação, C_N e K:** (usuário, 2026-11-02) decidida a partir de um caso sintético rotulado, com Ackermann e tração ligados e um eixo que sature, rodado como última tarefa da 7b (Task 15 do plano do inc. 7), porque a V4.3 não depende dela. Antes disso, pendente até o relatório `docs/inc6/escada-hipoteses.md` rodar com o raio R informado pelo usuário e o caso saturar. Com R = 8,5 m (sintético) a tabela é quase toda N/A e não sustenta um valor.
 - **Rationale:** A mesma regra estrita já vale para a robustez ao pneu; usar outra na escada daria dois critérios para a mesma pergunta.
 - **Evidence:** Adendo §5.3; EDR-060 item 8. A tabela da escada marca esses casos como "NEUTRO ↔ PUSH" ou "NEUTRO ↔ LOOSE", sem classificá-los. Como evidência do item 2 (sem decidi-lo): `docs/inc7/estudo-neutro.md` e o TC-NEU-001 (`tests/test_neutro.py`), do incremento 7. A rodada da 7a do relatório `docs/inc6/escada-hipoteses.md` (R = 9,125 e 8,385 m) dá N/A em todas as linhas: nenhum eixo satura até 2 g, e o Ackermann e a h9 estão desligados no caso. Por isso ela não dá base para a tolerância do item 3, que precisa de outro caso (Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.
 - **Assumptions:** A tabela do relatório (com raio informado) é a base da decisão.
@@ -1640,7 +1641,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 ### EDR-069 — Centro de curva único, raio do skidpad e decomposição do incremento 7
 
 - **Date:** 2026-10-29
-- **Status:** PROPOSED. D4, D5 e D6 (★) aguardam aprovação do usuário (passo entre a 7a e a 7b); as demais decisões valem como proposta do plano.
+- **Status:** APPROVED (usuário, 2026-11-02: D4, D5 e D6 aprovadas no passo entre a 7a e a 7b; as demais vêm do plano revisado pelo usuário em 2026-10-29).
 - **Context:** O conselho achou, no adendo do incremento 6, que a fórmula de Ackermann da planilha (β = 0, centro na linha lateral do CG) e o termo traseiro ±b·t/2R² são artefatos dessa escolha, e que o R da planilha (vazio hoje) precisa de um método e de uma fonte. O incremento 7 troca as fórmulas de Ackermann e de Fx exigido (EDR-066, aprovado em princípio) e traz o R para a planilha.
 - **Question:** Qual geometria de curva e qual método de R o Python e a planilha usam, e como se divide o incremento 7?
 - **Alternatives:** (a) manter β = 0 (centro na linha lateral do CG) e o R digitado; (b) centro da curva único, na linha do eixo traseiro, com R pelos modos linha central, rente aos cones e manual; (c) β real do MMM (centro deslocado pelo α_R), sem geometria fechada.
@@ -1648,9 +1649,9 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
   - D1: `equilibrio.Formas` (ackermann e fx, "v42" ou "v43"), `FORMAS_V42` por padrão, argumento só de palavra-chave nas funções que usam as fórmulas.
   - D2: duas réplicas do Fx novo numa função (`n_alfa` inteiro = réplica de grade; None = réplica contínua, bisseção de 200 iterações, usada como física); `equilibrio` não importa `mmm`.
   - D3: sem curva dianteira válida, sem Fx na forma v43 (`MSG_FX_SEM_FRENTE`); conservador, como a planilha.
-  - D4 ★: o R continua em `16_EQUILIBRIO!B9` (nome `ent_16_raio_do_skidpad_r`), que passa de entrada a fórmula que escolhe o R pelo modo; apelido `res_16_raio_do_skidpad_usado`; o R digitado vira a entrada "R manual" da `24_CURVA`; a E9 vira a fórmula da pior origem do R; `migrar_viva` leva o B9 da viva V4.2 ao R manual com o modo "Manual". Aguarda aprovação do usuário (passo entre a 7a e a 7b).
-  - D5 ★: modo padrão "Linha central" (9,125 m com a fonte do regulamento); só entra no resultado com h2, h3, h8 ou h9 ligada (padrão 0). A alternativa, "Manual" com R vazio, mantém a V4.2. Aguarda aprovação do usuário (passo entre a 7a e a 7b).
-  - D6 ★: origem dos diâmetros do skidpad `● Dado do T11`, com a Fonte do regulamento (sem rótulo novo na lista Origens); alternativa: tirar os diâmetros da pior origem. Aguarda aprovação do usuário (passo entre a 7a e a 7b).
+  - D4 ★: o R continua em `16_EQUILIBRIO!B9` (nome `ent_16_raio_do_skidpad_r`), que passa de entrada a fórmula que escolhe o R pelo modo; apelido `res_16_raio_do_skidpad_usado`; o R digitado vira a entrada "R manual" da `24_CURVA`; a E9 vira a fórmula da pior origem do R; `migrar_viva` leva o B9 da viva V4.2 ao R manual com o modo "Manual". Aprovada pelo usuário em 2026-11-02.
+  - D5 ★: modo padrão "Linha central" (9,125 m com a fonte do regulamento); só entra no resultado com h2, h3, h8 ou h9 ligada (padrão 0). A alternativa, "Manual" com R vazio, mantém a V4.2. Aprovada pelo usuário em 2026-11-02.
+  - D6 ★: origem dos diâmetros do skidpad `● Dado do T11`, com a Fonte do regulamento (sem rótulo novo na lista Origens); alternativa: tirar os diâmetros da pior origem. Aprovada pelo usuário em 2026-11-02.
   - D7: as bitolas já existem (`05_VEHICLE` B7 e B8); os 1300 mm do T11 entram por commit `dados:`.
   - D8: aba nova `24_CURVA` depois da `23_LISTAS`.
   - D9: avisos da V4.3 na `14_DASHBOARD` A48:B48.
@@ -1662,7 +1663,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Affected_Artifacts:** `python/skidpad.py`; `tools/rodar_testes.py` (`TESTES`, `MODULOS`); `python/equilibrio.py`; `python/escada.py`; candidatos da 7b: `python/aba_equilibrio.py`, planilha V4.3.
 - **Affected_Tests:** TC-SKP-001, TC-SKP-002 (`tests/test_skidpad.py`).
 - **Dependencies:** EDR-052, EDR-057, EDR-059, EDR-064, EDR-066.
-- **Approval_Conditions:** D4, D5 e D6 pelo usuário antes da 7b; regulamento da FSAE Brasil conferido no inc. 9.
+- **Approval_Conditions:** D4, D5 e D6 aprovadas (usuário, 2026-11-02); falta conferir o regulamento da FSAE Brasil no inc. 9.
 - **Reopening_Criteria:** O regulamento da FSAE Brasil ou a figura do D.10.1 divergirem dos diâmetros ou do lado dos cones; o usuário rejeitar D4, D5 ou D6; a escada mostrar diferença relevante entre o centro único e o β real.
 - **Related_Decisions:** EDR-057, EDR-059, EDR-064, EDR-065, EDR-066, EDR-068.
 - **Source_Conversation_or_Document:** Spec do inc. 7 §3 e plano do inc. 7 (decisões D1 a D10), usuário, 2026-10-29 ("lista enxuta" de IDs; decisão U8).

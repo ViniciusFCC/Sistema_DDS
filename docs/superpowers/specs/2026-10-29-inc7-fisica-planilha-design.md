@@ -143,7 +143,7 @@ Saem três alternativas para o usuário decidir (a decisão volta ao EDR-065):
 2. faixa de Δ com e_F + e_R;
 3. refino do pico por parábola de 3 pontos na capacidade (Python e planilha), que tira o serrote; muda a fórmula da
    capacidade e só entra com aprovação.
-O ramo de um eixo só continua com o passo. O fator vira constante nomeada lida pela célula e pelo `mmm` (regra da folga
+O ramo de um eixo só continua com a `_resolucao` do código (o d1 do eixo que satura; o passo só quando ele satura numa grade e não na outra), com o mesmo fator (usuário, 2026-11-02; antes este texto dizia "continua com o passo"). O fator vira constante nomeada lida pela célula e pelo `mmm` (regra da folga
 das acopladas, EDR-064 1.3), uma fonte só.
 
 ## 5. Arquitetura
