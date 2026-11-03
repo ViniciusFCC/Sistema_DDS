@@ -429,6 +429,15 @@ def alteracoes_v4_3(wb, mapa: dict | None = None) -> list[dict]:
             ml = ae._mapa_linha(m20, j)
             cel20 = f"{ae.COL_BLOCO[j]}{ae.LINHA_BLOCO[f'dif_{e}']}"
             troca(ws20, cel20, novo.format_map(ml), REF_F, antes.format_map(ml))
+    # C-B11: status das linhas extras das 20a a 20d lê a 24_CURVA como último teste (a mesma troca da C-B8)
+    g_ant, ack11 = f"{{G_vf{ae.I_DEN - 1}}}", f"{{vf{ae.I_ACK}}}"
+    ant11 = f'=IF({g_ant}<>"-",{g_ant},IF({{vden}}<>"-",{{vden}},IF({ack11}<>"-",{ack11},"OK")))'
+    nov11 = (f'=IF({g_ant}<>"-",{g_ant},IF({{vden}}<>"-",{{vden}},IF({ack11}<>"-",{ack11},'
+             f'IF({{sit24}}<>"-",{{sit24}},"OK"))))')
+    for j in ae.EXTRAS20:
+        ml = ae._mapa_linha(m20, j)
+        cel20 = f"{ae.COL_BLOCO[j]}{ae.LINHA_BLOCO['status']}"
+        troca(ws20, cel20, nov11.format_map(ml), REF_B, ant11.format_map(ml))
     # C-D1 e C-D2: aviso na 14_DASHBOARD (linha vazia entre o equilíbrio e as metas)
     for col, novo in (("A", "Formas da V4.3 (24_CURVA)"), ("B", fmt(TEXTO_B48)), ("C", "-"), ("D", "EDR-066; EDR-069")):
         troca(ws14, f"{col}48", novo, REF_D, None)
