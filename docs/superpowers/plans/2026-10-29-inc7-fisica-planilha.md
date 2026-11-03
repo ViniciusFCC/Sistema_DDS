@@ -66,10 +66,12 @@ Nenhum outro ID é criado. A aprovação de um ID não valida a equação.
   planilha faz o mesmo (catálogo C-G4).
 - **D4 ★. O R continua no endereço de hoje.** `16_EQUILIBRIO!B9` (nome `ent_16_raio_do_skidpad_r`, lido por milhares de
   fórmulas) deixa de ser entrada e passa a ser a fórmula que escolhe o R pelo modo. O nome fica igual, para que nenhuma
-  fórmula que o cita mude de texto. O prefixo `ent_` fica errado até a reescrita para nomes do inc. 8, e a tabela de
-  nomes da V4.3 acrescenta o apelido `res_16_raio_do_skidpad_usado` para a mesma célula. O R digitado passa a ser a
-  entrada nova `24_CURVA` "R manual". A `E9` (origem) vira a fórmula da pior origem do R. O `migrar_viva` leva o valor
-  de B9 da viva V4.2, se houver, para o R manual, com o modo "Manual".
+  fórmula que o cita mude de texto. O prefixo `ent_` fica errado até a reescrita para nomes do inc. 8. **Sem apelido**
+  (decisão D do conselho, 2026-11-02): um segundo nome para a B9 quebraria o invariante "um nome por célula"
+  (`tests/test_v4_0.py:101-108`) e repetiria o `{rusado}` da 24_CURVA. Um nome `ent_`/`org_` cuja célula é fórmula não é
+  dado (`dados_planilha._destinos`, catálogo C-M1). O R digitado passa a ser a entrada nova `24_CURVA` "R manual". A `E9`
+  (origem) vira a fórmula da pior origem do R. O `migrar_viva` leva B9, E9 e F9 da viva V4.2 para 24_CURVA B8, E8 e F8 e,
+  com número em B9, põe o modo em "Manual" (C-M2, C-M3).
 - **D5 ★. Modo padrão "Linha central".** O R deixa de vir vazio: 9,125 m com a fonte do regulamento. Ele só entra no
   resultado com h2, h3, h8 ou h9 ligada (padrão 0), mas o tempo de volta passa a ter valor. A alternativa, "Manual" com
   o R vazio, mantém o comportamento da V4.2.
@@ -142,7 +144,9 @@ usuário.
 | `python/gerar_v4_3.py` (novo), `data/nomes_V4_3.csv` (novo) | gerador da tag `v4.2` |
 | `python/caso_planilha.py` | `caso_da_planilha_v43` (devolve o caso e as `Formas` lidas das chaves) |
 | `tests/test_v4_3.py`, `tests/test_workbook_v4_3.py`, `tests/mutation_planilha_v43.py` (novos) | TC-WB43 e mutação |
-| `tools/migrar_viva.py` | entradas novas com padrão; B9 → R manual |
+| `python/dados_planilha.py` | `_destinos`: nome de dado com fórmula não é destino (C-M1) |
+| `python/equilibrio_linear.py` | `formas=` repassado (C-E) |
+| `tools/migrar_viva.py` | entradas novas com padrão; B9, E9, F9 → 24_CURVA B8, E8, F8; modo "Manual" (C-M2, C-M3) |
 | `docs/registro-de-versoes-V4_3.md`, `docs/registro-de-versoes-V4_3-celulas.md` | registro |
 
 ---
@@ -407,7 +411,13 @@ num adendo antes da Task 11.
   - `Range.HasFormula` numa célula nomeada (B84) e numa não nomeada (17_EQ_PAR BP24).
   Registrar o resultado. Se a causa for do gerador, a correção vai para a Task 10 (C-B1). Se for do ambiente, vai para
   o LEIA-ME (Task 14). Se nada reproduzir, registrar "não reproduzido", com o que foi conferido, e levar ao usuário.
-- [ ] **Passo 3: commit** `docs(inc7): tempo de recálculo e diagnóstico da barra de fórmulas`.
+- [ ] **Passo 3: `MATCH/INDEX` no LibreOffice (ajuste 9 do conselho).** Recalcular uma cópia do protótipo também pelo
+  LibreOffice (EDR-044; nunca a referência nem a viva) e comparar, linha a linha, `j_F`, `j_R`, `aF` e `aR` com os do
+  Excel. Casos: requisito abaixo do primeiro ponto (j = 1), no meio da grade, acima do pico (`IFERROR` → 0) e a coluna
+  "-". Se o LibreOffice não avaliar a forma ou divergir, escolher uma forma sem matriz equivalente (por exemplo, colunas
+  auxiliares 0/1 por α), medir de novo o recálculo, registrar a escolha como adendo da C-G3 e levá-la ao usuário antes
+  da Task 11.
+- [ ] **Passo 4: commit** `docs(inc7): tempo de recálculo, diagnóstico da barra de fórmulas e MATCH/INDEX no LibreOffice`.
 
 ### Task 9: Faixa do NEUTRO decidida (TC-NEU-002)
 
@@ -415,9 +425,12 @@ num adendo antes da Task 11.
 (regra da folga das acopladas lendo a mesma constante), `tests/test_neutro.py`.
 
 - [ ] **Passo 1: TC-NEU-002**, com a regra escolhida pelo usuário: o veredito do `analise_par` e o do `mmm.limite`
-  (acoplado) usam a mesma `FATOR_NEUTRO` (uma fonte só, EDR-064 1.3), e o ramo de um eixo mantém a `_resolucao`, com o mesmo fator.
-  **Decisão do usuário (2026-11-02): alternativa 1 com `FATOR_NEUTRO = 4/3` fixo** (EDR-065 item 2). Casos: um NEUTRO na borda da
-  faixa nova e um PUSH logo fora dela.
+  (acoplado) usam a mesma `FATOR_NEUTRO` (uma fonte só, EDR-064 1.3).
+  **Decisão do usuário (2026-11-02): alternativa 1 com `FATOR_NEUTRO = 4/3` fixo, só no |S − S2|** (EDR-065 item 2;
+  decisão A do conselho). Em `_resolucao`, o fator multiplica a diferença |S − S2| de cada eixo que satura nas duas
+  grades; o passo (eixo que satura numa grade só) e o piso 1E-9 ficam sem o fator. O ramo de um eixo só (push1/loose1)
+  lê a mesma resolução. A planilha faz o mesmo (catálogo C-F2). Casos: um NEUTRO na borda da faixa nova; um PUSH logo
+  fora dela; um eixo que satura numa grade só (a resolução é o passo, igual à de hoje).
 - [ ] **Passo 2: implementar; regressões 28/18/11/3** (as que mudarem de veredito são listadas e justificadas, não
   afrouxadas).
 - [ ] **Passo 3: commit** `feat(equilibrio): faixa do NEUTRO (EDR-065 item 2 revisto)`.
@@ -431,9 +444,15 @@ num adendo antes da Task 11.
   `alteracoes_v4_3(wb) -> list[dict]` (C-B, C-D); `ENTRADAS24` (dataclass `aba_equilibrio.Entrada`);
   `celulas_de_entrada_v43() -> set[tuple[str, str]]` (as da V4.1 menos `("16_EQUILIBRIO", "B9")` mais as da 24).
 
-- [ ] **Passo 1:** células C-A1 a C-A20, C-B1 a C-B3 e C-D1 a C-D2 do catálogo, com nomes pelas regras do EDR-058
-  (`nomes_v4_0`, `_nome_ent` e `_nome_res` com o prefixo 24) e a pior origem do R por `aba_equilibrio._formula_pior`,
-  sobre as raízes (`python/raizes.py`) dos termos do C-A17.
+- [ ] **Passo 1:** células C-A1 a C-A22, C-B1 a C-B10, C-F1, C-F5 e C-D1 a C-D2 do catálogo, com nomes pelas regras do
+  EDR-058 (`nomes_v4_0`, `_nome_ent` e `_nome_res` com o prefixo 24) e a pior origem do R por
+  `aba_equilibrio._formula_pior`, sobre as raízes (`python/raizes.py`) dos termos do C-A17.
+- [ ] **Passo 1b (Python, só por adição):** `aba_equilibrio.VERIFICACOES_24` e `VERIFICACOES_V43` (a lista da 16 com o
+  item "num" do R trocado pelo tipo `num_r` da C-B4, mais as da 24); `motivo_das_entradas(x, verificacoes=VERIFICACOES)`
+  passa a tratar `""` como vazio (ajuste 5) e a receber `motivo_r`, `b` e `tF` em `x` quando a lista da V4.3 é usada.
+  Constantes novas com o texto do catálogo: `skidpad.MOTIVO_MODO_INVALIDO`, `MOTIVO_DIAMETROS`, `MOTIVO_VEICULO`,
+  `equilibrio.MSG_GEOMETRIA`, `MSG_FATOR`. `VERIFICACOES`, `_cond_verif` e o texto de `angulos_velocidade` não mudam
+  (a regeneração da V4.1 e da V4.2 fica igual).
 - [ ] **Passo 2:** o teste é o TC-WB43-001 (Task 12). Commit junto com a Task 12.
 
 ### Task 11: Colunas novas das grades, F3, F9 e F12 (aba_equilibrio, só funções novas)
@@ -442,8 +461,12 @@ num adendo antes da Task 11.
 da última de `_colunas`) e `linha_grade_v43(ctx, ws, cl, k, r, n_alfa)`; nenhuma função existente muda de
 comportamento.
 
-- [ ] **Passo 1:** células C-C1 a C-C3, C-G1 a C-G6 e C-F1 a C-F4 do catálogo, aplicadas pelo gerador da V4.3 nas abas
-  17, 18, 20a a 20d (pedida: linhas 24-64; fina: 94-174 nas 20a-d; 24-104 na 18).
+- [ ] **Passo 1:** células C-C1 a C-C3, C-G1 a C-G6 e C-F2 a C-F4 do catálogo, aplicadas pelo gerador da V4.3 nas abas
+  17, 18, 20a a 20d (pedida: linhas 24-64; fina: 94-174 nas 20a-d; 24-104 na 18) e na mini-grade da 19 (C-E2), com
+  `linha_grade_v43` sobre `CL_MINI`; `_linha_grade` não é editado no lugar (decisão C).
+- [ ] **Passo 1b (C-E, Python):** `equilibrio_linear` ganha `formas: Formas = FORMAS_V42` (só de palavra-chave) nas
+  funções listadas na C-E, repassado a `_fy_eixo_limitado`, `capacidade_eixo` e `deriva_total`. Regressão: os 18 testes
+  do equilíbrio linear e os 28 do equilíbrio sem mudança.
 - [ ] **Passo 2:** os endereços exatos de cada família saem do gerador no `docs/registro-de-versoes-V4_3-celulas.md`;
   o TC-WB43-001 confere que o diff de texto V4.2 → V4.3 é exatamente esse registro. Commit junto com a Task 12.
 
@@ -456,10 +479,13 @@ tuple[CasoEquilibrio, Formas]`).
 
 - [ ] **Passo 1: TC-WB43-001 (estrutura, sem motor, um check).** Abas na ordem (+ `24_CURVA` no fim); as fórmulas da
   V4.2 iguais fora do registro de células; o diff de texto é exatamente o registro; os nomes são os da V4.2 mais os do
-  CSV, mais o apelido D4; `ent_16_raio_do_skidpad_r` continua em B9; nenhuma aba tem `ProtectContents` e nenhuma célula
-  com fórmula tem `protection.hidden` (C-B1); A3 diz "V4.3"; a linha 23 do 15_CHANGELOG.
+  CSV, sem apelido (um nome por célula, D4); `ent_16_raio_do_skidpad_r` continua em B9, com estilo de resultado e sem
+  validação numérica (C-B2); as validações da C-A20 (chaves `"0,1"`); todo leitor de `{R}` está guardado por `raio`,
+  `h8`, `h9` ou `ok`, e nenhum usa `ISBLANK({R})` (lista do catálogo, refeita a partir do gerador); nenhuma aba tem
+  `ProtectContents` e nenhuma célula com fórmula tem `protection.hidden` (C-B1); A3 diz "V4.3"; a linha 23 do
+  15_CHANGELOG.
   **TC-WB43-002 (CA-07):** duas regenerações iguais, e iguais a `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` quando ele
-  existir.
+  existir; o texto de 24_CURVA B34 é `=4/3` e `equilibrio.FATOR_NEUTRO == 4/3`.
 - [ ] **Passo 2: rodar e ver falhar; implementar; rodar** (`2 PASS, 0 FAIL, de 2 testes`).
 - [ ] **Passo 3: commit** `feat(v4.3): gerador da V4.3 (24_CURVA, h2v, h9v, R; TC-WB43-001 e 002)`.
 
@@ -469,20 +495,47 @@ tuple[CasoEquilibrio, Formas]`).
 
 - [ ] **Passo 1: TC-WB43-003 (regressão por valor).** A V4.3 com h2v = h9v = 0, modo "Manual" e R manual = o B9 da
   V4.2, e a V4.2, recalculadas no Excel com as mesmas entradas (casos C1, C4b, ORG_TX do `test_workbook_v4_1`, com h2 e
-  h9 ligadas): mesmos valores fora das células novas (1e-9 relativo).
+  h9 ligadas): mesmos valores fora das células novas (1e-9 relativo). **Excluídas** (decisão B): 16 B137 a B139 e as
+  células que dependem delas (fecho transitivo pelo `raizes.Grafo`: B140 a B143, os textos de exibição do veredito, o
+  14_DASHBOARD do veredito e as mesmas linhas de `_regras_limite` na 20_EQ_TROCA), porque o 4/3 não tem chave. A lista
+  excluída sai do grafo e é impressa no log. Caso a mais: modo "Manual" com o R manual vazio e h2 = h3 = h8 = h9 = 0
+  contra a V4.2 com B9 vazio; mudam só os textos da B65 e da B173 (o motivo entre parênteses, C-B4/C-B7), listados como
+  mudança intencional.
 - [ ] **Passo 2: TC-WB43-004 (célula × Python, mudança intencional).** Com h2v = h9v = 1, nos dois sentidos de curva e
   nos três modos de R, as células novas e o veredito batem com `caso_da_planilha_v43` + `analise_par(formas=...)`
   (réplica de grade: 1e-9 relativo nos α e no Fx; o veredito igual). Inclui o caso `LOOSE_PICO` (força acima do pico)
-  e um caso com a dianteira descolada (motivo C-G6). Os testes da V4.2 que mudam de valor com o padrão 1 ficam
-  listados aqui como mudança intencional.
+  e um caso com a dianteira descolada (motivo C-G6). Casos novos do conselho, cada um com o `status`, o `ok` e o motivo
+  iguais aos de `motivo_das_entradas(..., verificacoes=VERIFICACOES_V43)` e aos do Python:
+  - geometria: R ≤ b e R_c ≤ t_f/2 com h2 = h2v = 1 (`MSG_GEOMETRIA`, `ok` = 0, B114 "N/A"); os mesmos com h2v = 0
+    (sem efeito);
+  - chaves: h2v = 2, h2v vazia e h9v = "1" (texto) → "chave h2v/h9v deve ser 0 ou 1";
+  - modo do R: "linha central" (caixa errada) e um texto qualquer → R `""` e `MOTIVO_MODO_INVALIDO`; com h2 = 1, o
+    `status` cita esse motivo na B65;
+  - diâmetros: D_int vazio e D_ext ≤ D_int → `MOTIVO_DIAMETROS`; R_in' ≤ L (C-A11b em texto, eixo "traseiro");
+  - Manual com o R manual vazio e h2 = 1 → B65 e B173 com "(R manual vazio: a confirmar)";
+  - fator: cópia com 24_CURVA B34 = 0,5 → `MSG_FATOR`, `ok` = 0;
+  - 4/3: um caso perto do neutro em que o veredito muda da V4.2 para a V4.3 (mesmo do TC-NEU-002) e um com um eixo
+    saturado numa grade só (resolução = passo, sem o fator);
+  - aba 19: K e a mini-grade com h2v = h9v = 1 contra `equilibrio_linear` com `formas=FORMAS_V43` (C-E);
+  - 14_DASHBOARD B48 nos três estados (padrão, h2v = 0, chave inválida) e o E173 com a pior origem do R.
+  Os testes da V4.2 que mudam de valor com o padrão 1 ficam listados aqui como mudança intencional.
 - [ ] **Passo 3: TC-WB43-005 (barra de fórmulas):** abre a V4.3 pelo Excel via COM e confere, em B84, B9 e 17_EQ_PAR
   BP24, `HasFormula` True, `FormulaHidden` False e a aba sem proteção.
-- [ ] **Passo 4: TC-WB43-006 (migração, sem motor; fica em `tests/test_v4_3.py`, que passa a ter 3 TCs):** uma viva V4.2 de teste com B9 = 8,3 →
-  `migrar_viva --para V4.3` dá R manual 8,3, modo "Manual", as entradas novas no padrão e 0 conflitos. Com B9 vazio: o
-  modo fica no padrão (D5).
+- [ ] **Passo 4: TC-WB43-006 (migração, sem motor; fica em `tests/test_v4_3.py`, que passa a ter 3 TCs):** implementar
+  antes C-M1 a C-M4 (`dados_planilha._destinos` e o redirecionamento V4.2 → V4.3 no `migrar_viva`). Casos, numa viva
+  V4.2 de teste:
+  - B9 = 8,3 → R manual (24_CURVA B8) 8,3, modo "Manual", as entradas novas no padrão, 0 conflitos, código 0;
+  - B9 vazio → o modo fica no padrão "Linha central" (D5), B8 vazio;
+  - E9 trocado pela equipe (por exemplo `◐ Dado de outro carro (TX, T09)`) → vai para 24_CURVA E8, e a E9 da V4.3
+    continua fórmula;
+  - F9 trocado pela equipe → vai para 24_CURVA F8, sem conflito;
+  - os nomes `ent_16_raio_do_skidpad_r` e `org_16_raio_do_skidpad_r` não aparecem como destino na V4.3 (C-M1);
+  - viva V4.3 de teste com B9 ou E9 sobrescritos por um número → código 2, "célula alterada fora dos nomes de dado"
+    (C-M4).
+  A regressão da migração V4.1 → V4.2 (`tests/test_v4_2.py`, TC-WB42-004) continua passando.
 - [ ] **Passo 5: `mutation_planilha_v43.py`** (padrão de `mutation_planilha_equilibrio.py`, com o executor da Task 1 e
-  o orçamento medido na Task 8): sinal de θ no C-F2; aF ↔ aR no C-G5; sem o limite no pico no C-G4; modo de R trocado
-  no C-A13. Esperado `4 / 4`.
+  o orçamento medido na Task 8): sinal de θ no C-C1; aF ↔ aR no C-G5; sem o limite no pico no C-G4; modo de R trocado
+  no C-A14. Esperado `4 / 4`. (Os endereços antigos, C-F2 e C-A13, eram os da versão do catálogo antes do conselho.)
 - [ ] **Passo 6: commits** `test(v4.3): ...`, `feat(viva): migração para a V4.3`.
 
 ### Task 15: Caso sintético para a tolerância do EDR-065 (usuário, 2026-11-02)
@@ -501,106 +554,170 @@ Commit `docs(inc6): escada num caso sintético que satura`.
 - [ ] **Passo 3: suíte inteira em segundo plano** (haiku/low resume a saída). Só depois disso o trabalho é dado como
   verificado.
 - [ ] **Passo 4:** revisão final (opus/high); PR da 7b, Drive (`conferir_viva`, `migrar_viva`, LEIA-ME e .docx) e tag,
-  cada um só com a confirmação do usuário.
+  cada um só com a confirmação do usuário. O LEIA-ME e os .docx do Drive avisam que a 16 B9 virou fórmula e que o R
+  digitado fica em 24_CURVA B8 (ajuste 10).
 
 ---
 
 # Catálogo das células da V4.3 (para a aprovação célula a célula)
 
-Notação: `{x}` é o nome definido gerado pelas regras do EDR-058 (o texto final da célula leva o nome, como na V4.2).
-"Antes" é o texto da V4.2 da tag. "Testes": TC que cobre a célula. "Dep." são as células que ela lê.
+Revisto em 2026-11-03 com os ajustes 1 a 10 e as decisões A a D de `docs/inc7/conselho-catalogo-v43.md`.
+
+Notação: `{x}` é o nome definido gerado pelas regras do EDR-058; o texto final da célula leva o nome, como na V4.2.
+"Antes" é o texto da V4.2 da tag. "Dep." são as células que ela lê. "Testes" é o TC que cobre a célula (003 = TC-WB43-003
+etc.; "mut." = `mutation_planilha_v43.py`).
+
+Nomes novos usados nas fórmulas (aba 24_CURVA, prefixo 24; o texto exato sai de `_nome_ent`/`_nome_res`): `{modo}` B4,
+`{dint}` B5, `{dext}` B6, `{w}` B7, `{rman}` B8, `{h2v}` B9, `{h9v}` B10, `{vh2v}` B11, `{vh9v}` B12, `{rlc}` B13, `{rin}` B14, `{lim_tras}` B15,
+`{lim_diant}` B16, `{rc}` B17, `{rrente}` B18, `{eixo}` B19, `{rusado}` B20, `{motivo_r}` B21, `{rcc}` B22, `{pior_r}` B23,
+`{thFL}` B25, `{thFR}` B26, `{thm}` B27, `{vgeo}` B28, `{fator}` B34, `{vfat}` B35, `{sit24}` B37. Nomes que já existem:
+`{R}` (16 B9, `ent_16_raio_do_skidpad_r`), `{L}`, `{b}`, `{tF}`, `{tR}`, `{h2}`…`{h9}`, `{ok}`, `{status}`.
+
+Textos fixos novos (constantes Python com o mesmo texto; nenhum ID novo): `skidpad.MOTIVO_MODO_INVALIDO` = "modo do R
+inválido (use Linha central, Rente aos cones ou Manual)"; `skidpad.MOTIVO_DIAMETROS` = "diâmetros do skidpad a confirmar
+(D_ext > D_int > 0)"; `skidpad.MOTIVO_VEICULO` = "L, b ou t_f a confirmar (05_VEHICLE)"; `equilibrio.MSG_GEOMETRIA` =
+"geometria do centro da curva inválida (R ≤ b ou R_c ≤ t_f/2)"; `equilibrio.MSG_FATOR` = "fator da faixa do NEUTRO
+(24_CURVA B34) deve ser número ≥ 1". As constantes que já existem (`MOTIVO_MANUAL_VAZIO`, `MOTIVO_BITOLA_TRASEIRA`,
+`MOTIVO_SEM_MEIA_LARGURA`) entram nas células com o mesmo texto.
+
+Leitores do R (16 B9) conferidos no gerador (`aba_equilibrio.py` 661, 662, 665, 698, 700, 753, 1092-1110, 1248, 1289): todos
+estão dentro de `raio = 1`, `h8 = 1` ou `h9 = 1` e de `ok`, e o `ok` exige R número > 0 quando `raio = 1` (B65, B66).
+Por isso o `""` que a B9 passa a ter com o R vazio não chega a nenhuma conta. As duas exceções são as que testavam
+`ISBLANK`, e elas mudam aqui (C-B4 e C-B7). O TC-WB43-001 refaz essa lista a partir do gerador e falha se aparecer um
+leitor novo sem guarda.
 
 ## C-A. Aba nova `24_CURVA` (todas novas; antes: não existe)
 
 Colunas como na 16: A rótulo, B valor, C unidade, D referência, E Origem, F Fonte. Linha 1: título; linha 3: cabeçalho.
+As entradas (B4 a B10) têm nomes `ent_`/`org_`/`fte_` (são dado e migram nas próximas versões). As demais linhas são
+resultados `res_`, com estilo de resultado.
 
 | # | Célula | Rótulo | Conteúdo novo | Dep. | Justificativa | Testes |
 |---|---|---|---|---|---|---|
-| C-A1 | B4 | Modo do raio R | entrada, lista "Linha central", "Rente aos cones", "Manual"; padrão "Linha central" (D5) | — | U2, U4 | 004, 006 |
-| C-A2 | B5 | Diâmetro do círculo interno | 15,25 m; E = `● Dado do T11` (D6); F = FSAE 2026 D.10.1.1 e D.10.1.2 | — | spec §3.2 | 004 |
+| C-A1 | B4 | Modo do raio R | entrada; lista `"Linha central,Rente aos cones,Manual"`; padrão "Linha central" (D5) | — | U2, U4 | 004, 006 |
+| C-A2 | B5 | Diâmetro do círculo interno | 15,25 m; E = `● Dado do T11` (D6); F = `skidpad.FONTE_DIAMETROS` (FSAE 2026 D.10.1.1) | — | spec §3.2 | 004 |
 | C-A3 | B6 | Diâmetro do círculo externo | 21,25 m; idem | — | idem | 004 |
 | C-A4 | B7 | Meia largura do pneu | 0,0889 m; E = `◐ Provisório (.tir TTC)`; F = WIDTH/2 do `Hoosier_R25B_13x7_TTC_provisional.tir` (SUS-1011) | — | spec §3.2 | 004 |
-| C-A5 | B8 | R manual | entrada vazia; E = `? A confirmar` | — | modo manual | 003, 006 |
-| C-A6 | B9 | Chave h2v: forma do Ackermann | 1; lista "1 = centro no eixo traseiro (V4.3)", "0 = velocidades paralelas (V4.2)"; F = `_FONTE_CHAVE` + EDR-066 | — | U6 | 003, 004 |
-| C-A7 | B10 | Chave h9v: forma do Fx exigido | 1; lista "1 = arrasto induzido (V4.3)", "0 = F_yf·tan(L/R) (V4.2)" | — | U6 | 003, 004 |
-| C-A8 | B11 | Verificação das chaves | `=IF(AND(OR({h2v}=0,{h2v}=1),OR({h9v}=0,{h9v}=1)),"-","chave h2v ou h9v deve ser 0 ou 1")` | A6, A7 | Review Focus 5 | 004 |
-| C-A9 | B13 | R da linha central | `=({dint}+{dext})/4` | A2, A3 | SUS-1009 | 004 |
-| C-A10 | B14 | R_in' | `={dint}/2+IF(ISNUMBER({w}),{w},0)` | A2, A4 | §3.2 | 004 |
-| C-A11 | B15 | R_c rente aos cones | `=IF(NOT(ISNUMBER({tR})),"",MAX({rin}+{tR}/2,IF({rin}>{L},{tF}/2+SQRT({rin}^2-{L}^2),-1E+300)))` | A10, 05 B6, B7, B8 | §3.2 | 004 |
-| C-A12 | B16 | R rente aos cones | `=IF(ISNUMBER({rc}),SQRT({b}^2+{rc}^2),"")` | A11, res_05 b | §3.2 | 004 |
-| C-A13 | B17 | Eixo que manda (SUS-1010) | `=IF(NOT(ISNUMBER({rc})),"-",IF(ABS(({rin}+{tR}/2)-IF({rin}>{L},{tF}/2+SQRT({rin}^2-{L}^2),-1E+300))<=1E-9,"empate",IF({rin}+{tR}/2>=IF({rin}>{L},{tF}/2+SQRT({rin}^2-{L}^2),-1E+300),"traseiro","dianteiro")))` | A10, A11 | §3.2 | 004 |
-| C-A14 | B18 | R usado | `=IF(EXACT({modo},"Manual"),IF(ISNUMBER({rman}),{rman},""),IF(EXACT({modo},"Linha central"),{rlc},{rrente}))` | A1, A5, A9, A12 | U4 | 003, 004 |
-| C-A15 | B19 | Motivo do R | `=IF(ISNUMBER({rusado}),IF(AND(EXACT({modo},"Rente aos cones"),NOT(ISNUMBER({w}))),"sem a meia largura do pneu (a confirmar)","-"),IF(EXACT({modo},"Manual"),"R manual vazio: a confirmar",IF(NOT(ISNUMBER({tR})),"bitola traseira vazia: R rente aos cones a confirmar","modo do R inválido")))` | A1, A4, A5, A14 | Review Focus 5 | 004 |
-| C-A16 | B20 | R_c do centro da curva | `=IF(AND(ISNUMBER({rusado}),{rusado}>{b}),SQRT({rusado}^2-{b}^2),"R ≤ b: a confirmar")` | A14 | §3.1 | 004 |
-| C-A17 | B21 | Pior origem do R | `_formula_pior` sobre: modo Linha central → A2, A3; Rente → A2, A4 e raízes de b, L, t_F, t_R; Manual → E8 | A1… | §3.2 | 004 |
-| C-A18 | B23:B25 | θ_FL, θ_FR, θ̄_F | `=IF(AND(ISNUMBER({rcc}),{h2v}=1),ATAN({L}/({rcc}-{tF}/2)),"-")`, idem com `+`, média | A16, A6 | §3.1, §4.1 | 004 |
-| C-A19 | A27:B29 | Texto: hipóteses só no Python (h7 `sentido` e as acopladas: `cos_delta`, `tracao`, `diferencial`, `transf_long`) e limitação do centro no eixo traseiro (α_R desloca o centro; medido pela escada) | texto | — | U6, §3.1 | 001 |
-| C-A20 | — | Validações de lista de B4, B9 e B10 | DataValidation | — | — | 001 |
+| C-A5 | B8 | R manual | entrada vazia; E = `? A confirmar`; F = "R digitado (modo Manual). Na migração da V4.2, recebe o B9 da viva." | — | modo manual; D4 | 003, 006 |
+| C-A6 | B9 | Chave h2v: forma do Ackermann | 1; lista `"0,1"` (como as chaves da 16, `aba_equilibrio.py:1121`); F = "1 = centro da curva no eixo traseiro (V4.3, EDR-066); 0 = velocidades paralelas (V4.2)" | — | U6; ajuste 1 | 003, 004 |
+| C-A7 | B10 | Chave h9v: forma do Fx exigido | 1; lista `"0,1"`; F = "1 = arrasto induzido (V4.3, EDR-066); 0 = F_yf·tan(L/R) (V4.2)" | — | U6; ajuste 1 | 003, 004 |
+| C-A8a | B11 | Verificação: chave h2v deve ser 0 ou 1 | `=IF(ISNUMBER({h2v}),IF(OR({h2v}=0,{h2v}=1),"-","chave h2v deve ser 0 ou 1"),"chave h2v deve ser 0 ou 1")` (o mesmo texto de `_cond_verif` tipo "chave") | A6 | ajuste 1: chave vazia ou texto não vira 0 em silêncio | 004 |
+| C-A8b | B12 | Verificação: chave h9v deve ser 0 ou 1 | idem com `{h9v}` | A7 | idem | 004 |
+| C-A9 | B13 | R da linha central | `=IF(AND(ISNUMBER({dint}),ISNUMBER({dext}),{dint}>0,{dext}>{dint}),({dint}+{dext})/4,"")` | A2, A3 | SUS-1009; ajuste 3 | 004 |
+| C-A10 | B14 | R_in' (raio interno + meia largura) | `=IF(AND(ISNUMBER({dint}),ISNUMBER({dext}),{dint}>0,{dext}>{dint}),{dint}/2+IF(ISNUMBER({w}),{w},0),"")` | A2, A3, A4 | §3.2; ajuste 3 | 004 |
+| C-A11a | B15 | Limite traseiro R_in' + t_r/2 | `=IF(AND(ISNUMBER({rin}),ISNUMBER({tR})),{rin}+{tR}/2,"")` | A10, 05 B8 | `skidpad.raio_rente_aos_cones` (`lim_tras`); ajuste 10 | 004 |
+| C-A11b | B16 | Limite dianteiro t_f/2 + √(R_in'² − L²) | `=IF(AND(ISNUMBER({rin}),ISNUMBER({L}),ISNUMBER({tF})),IF({rin}>{L},{tF}/2+SQRT({rin}^2-{L}^2),"- (R_in' ≤ L)"),"")` | A10, 05 B6, B7 | `lim_diant` (−∞ no Python vira texto: o MAX de referências ignora texto); ajuste 10 | 004 |
+| C-A11 | B17 | R_c rente aos cones | `=IF(AND(ISNUMBER({lim_tras}),{lim_diant}<>""),MAX({lim_tras},{lim_diant}),"")` | A11a, A11b | §3.2 | 004 |
+| C-A12 | B18 | R rente aos cones | `=IF(AND(ISNUMBER({rc}),ISNUMBER({b})),SQRT({b}^2+{rc}^2),"")` | A11, res_05 b | §3.2; ajuste 3 | 004 |
+| C-A13 | B19 | Eixo que manda (SUS-1010) | `=IF(NOT(ISNUMBER({rc})),"-",IF(NOT(ISNUMBER({lim_diant})),"traseiro",IF(ABS({lim_tras}-{lim_diant})<=1E-9,"empate",IF({lim_tras}>{lim_diant},"traseiro","dianteiro"))))` | A11a, A11b, A11 | §3.2 (`TOL_EMPATE_M`) | 004 |
+| C-A14 | B20 | R usado | `=IFERROR(IF(EXACT({modo},"Manual"),IF(ISNUMBER({rman}),{rman},""),IF(EXACT({modo},"Linha central"),{rlc},IF(EXACT({modo},"Rente aos cones"),{rrente},""))),"")` | A1, A5, A9, A12 | U4; ajustes 2 e 5: os três ramos explícitos, modo inválido dá `""`, nunca erro | 003, 004, mut. |
+| C-A15 | B21 | Motivo do R | `=IF(NOT(OR(EXACT({modo},"Linha central"),EXACT({modo},"Rente aos cones"),EXACT({modo},"Manual"))),MOTIVO_MODO_INVALIDO,IF(ISNUMBER({rusado}),IF(AND(EXACT({modo},"Rente aos cones"),NOT(ISNUMBER({w}))),MOTIVO_SEM_MEIA_LARGURA,"-"),IF(EXACT({modo},"Manual"),MOTIVO_MANUAL_VAZIO,IF(NOT(ISNUMBER({rin})),MOTIVO_DIAMETROS,IF(NOT(ISNUMBER({tR})),MOTIVO_BITOLA_TRASEIRA,MOTIVO_VEICULO)))))` (constantes = os textos entre aspas) | A1, A4, A5, A10, A14 | ajuste 2: o modo inválido é testado primeiro (o Python levanta ValueError, `skidpad.py:84`); ajuste 3 | 004 |
+| C-A16 | B22 | R_c do centro da curva | `=IF(NOT(ISNUMBER({rusado})),"-",IF(NOT(ISNUMBER({b})),"-",IF({rusado}<={b},"R ≤ b: a confirmar",SQRT({rusado}^2-{b}^2))))` | A14, res_05 b | §3.1; ajuste 3: R vazio dá "-", R ≤ b tem mensagem própria | 004 |
+| C-A17 | B23 | Pior origem do R | `_formula_pior` por modo: Linha central → E5, E6; Rente → E5, E6, E7 e as raízes de b, L, t_F, t_R; Manual → E8; modo inválido → `? A confirmar` | A1… | §3.2 | 004 |
+| C-A18 | B25, B26 | θ_FL, θ_FR | `=IF(AND({h2v}=1,ISNUMBER({rcc}),ISNUMBER({L}),ISNUMBER({tF})),IF({rcc}>{tF}/2,ATAN({L}/({rcc}-{tF}/2)),"-"),"-")`; a FR com `+{tF}/2` no denominador e a mesma guarda (`rcc > tF/2`, como `equilibrio.angulos_velocidade`) | A16, A6 | §3.1, §4.1; ajuste 4 | 004, mut. |
+| C-A18b | B27 | θ̄_F | `=IF(AND(ISNUMBER({thFL}),ISNUMBER({thFR})),({thFL}+{thFR})/2,"-")` | A18 | ajuste 4 (guarda na média) | 004 |
+| C-A21 | B28 | Verificação: geometria do centro da curva | `=IF(AND({h2}=1,{h2v}=1,ISNUMBER({R}),ISNUMBER({b}),ISNUMBER({tF})),IF({R}<={b},MSG_GEOMETRIA,IF(SQRT({R}^2-{b}^2)<={tF}/2,MSG_GEOMETRIA,"-")),"-")` | 16 B9, res_05 b, 05 B6, A6 | ajuste 4: R ≤ b ou R_c ≤ t_f/2 leva `ok` a 0 antes da B114; mesma condição do Python (`equilibrio.py:280-286`) | 004 |
+| C-A19 | A30:A32 | Texto: hipóteses só no Python (h7 `sentido` e as acopladas: `cos_delta`, `tracao`, `diferencial`, `transf_long`) e limitação do centro no eixo traseiro (α_R desloca o centro; medido pela escada) | texto | — | U6, §3.1 | 001 |
+| C-A22 | B37 | Situação da 24_CURVA (1ª falha) | `=IF({vh2v}<>"-",{vh2v},IF({vh9v}<>"-",{vh9v},IF({vfat}<>"-",{vfat},{vgeo})))` (B11, B12, B35, B28, nesta ordem) | A8a, A8b, F5, A21 | ajustes 1, 4 e 10: as verificações novas levam `ok` a 0 sem inserir linhas na 16 (D8) | 004 |
+| C-A20 | — | Validações | B4: lista dos três modos; B9, B10: lista `"0,1"`; B5, B6, B7, B8: decimal > 0 (ajuste 3; a B7 entra pela mesma razão); E4:E10: lista Origens | — | ajustes 1 e 3 | 001 |
+
+A ordem das verificações da 24 no Python é `VERIFICACOES_24 = (chave h2v, chave h9v, fator, geometria)`, lida depois das
+`VERIFICACOES` da 16 (`motivo_das_entradas(x, verificacoes=VERIFICACOES_V43)`). As listas e o `_cond_verif` da V4.1/V4.2
+não mudam (a regeneração da V4.1 e da V4.2 continua igual, CA-07).
 
 ## C-B. Células existentes fora das grades
 
 | # | Aba!Célula | Antes | Depois | Dep. | Justificativa | Testes |
 |---|---|---|---|---|---|---|
 | C-B1 | todas | (proteção a confirmar na Task 8) | sem `ProtectContents` e sem `protection.hidden` em célula com fórmula, se a Task 8 indicar o gerador | — | §7 barra de fórmulas | 001, 005 |
-| C-B2 | 16_EQUILIBRIO!B9 | entrada vazia (`None`) | `={rusado}` (D4) | C-A14 | U4; nenhuma fórmula que lê B9 muda | 003, 004 |
-| C-B3 | 16_EQUILIBRIO!E9 | `? A confirmar` | `={pior_r}` (fórmula; a validação de lista da E9 sai) | C-A17 | D16 e pior origem continuam pela E9 | 004 |
-| C-B4 | 16_EQUILIBRIO!B65 (verificação "num" do R) | `IF(ISBLANK({R}),"raio do skidpad R a confirmar",IF(ISNUMBER({R}),"-","raio do skidpad R não é número"))` dentro do `IF(OR(h2,h3,h8,h9),…)` | `IF({R}="","raio do skidpad R a confirmar ("&{motivo_r}&")",IF(ISNUMBER({R}),"-","raio do skidpad R não é número"))`, com a mesma condição | C-B2, C-A15 | B9 é fórmula: ISBLANK nunca é verdadeiro | 004 |
-| C-B5 | 16_EQUILIBRIO!F9 | texto "A confirmar (regulamento)…" | "Fórmula (V4.3): R escolhido na 24_CURVA pelo modo; o R digitado fica no R manual (24_CURVA B8)." | — | D4 | 001 |
+| C-B2 | 16_EQUILIBRIO!B9 | entrada vazia (`None`), estilo de entrada, validação "positivo" | `={rusado}` (D4); estilo de resultado; sem a validação numérica (`aba_equilibrio.py:1052`) | C-A14 | U4; ajuste 6; nenhuma fórmula que lê B9 muda de texto | 001, 003, 004 |
+| C-B3 | 16_EQUILIBRIO!E9 | `? A confirmar` (lista Origens) | `={pior_r}` (fórmula; a validação de lista sai) | C-A17 | D16 e a pior origem continuam pela E9 | 004 |
+| C-B9 | 16_EQUILIBRIO!A9 | "Raio do skidpad R" | "R usado (fórmula; ver 24_CURVA)" (o nome definido não muda) | — | ajuste 6: a B9 não pode parecer entrada | 001 |
+| C-B5 | 16_EQUILIBRIO!F9 | "A confirmar (regulamento). Vazio = sem dado. Exigido por h2, h3, h8 e h9 e pelo tempo de volta." | "Não digite aqui: o R manual fica em 24_CURVA B8 (modo em B4). Fórmula da V4.3 (EDR-069, D4); exigido por h2, h3, h8 e h9 e pelo tempo de volta." | — | D4; ajuste 6 | 001 |
+| C-B4 | 16_EQUILIBRIO!B65 (verificação "num" do R) | `=IF(OR({h2}=1,{h3}=1,{h8}=1,{h9}=1),IF(ISBLANK({R}),"raio do skidpad R a confirmar",IF(ISNUMBER({R}),"-","raio do skidpad R não é número")),"-")` | `=IF(OR({h2}=1,{h3}=1,{h8}=1,{h9}=1),IF(ISNUMBER({R}),"-",IF(ISERROR({R}),"raio do skidpad R com erro",IF({R}="","raio do skidpad R a confirmar ("&{motivo_r}&")","raio do skidpad R não é número"))),"-")` | C-B2, C-A15 | ajuste 5: a B9 é fórmula e o `ISBLANK` nunca seria verdadeiro; a ordem ISNUMBER, ISERROR, `=""` evita erro na comparação | 004 |
+| C-B7 | 16_EQUILIBRIO!B173 (`tvolta`, `aba_equilibrio.py:752-754`) | `=IF(ISNUMBER({aylim}),IF(ISBLANK({R}),"N/A: raio do skidpad R a confirmar",IF(ISNUMBER({R}),IF({R}>0,2*PI()*SQRT({R}/{aylim}),"N/A: raio do skidpad R deve ser > 0"),"N/A: raio do skidpad R não é número")),"N/A")` | `=IF(ISNUMBER({aylim}),IF(ISNUMBER({R}),IF({R}>0,2*PI()*SQRT({R}/{aylim}),"N/A: raio do skidpad R deve ser > 0"),IF(ISERROR({R}),"N/A: raio do skidpad R com erro",IF({R}="","N/A: raio do skidpad R a confirmar ("&{motivo_r}&")","N/A: raio do skidpad R não é número"))),"N/A")` | C-B2, C-A15, aylim | ajuste 5 (a mesma troca do `ISBLANK`) | 003, 004 |
+| C-B7b | 16_EQUILIBRIO!E173 | `={PIOR}` | `_formula_pior` sobre `{PIOR}` e `{pior_r}`, sem condição: o tempo de volta usa o R mesmo com h2, h3, h8 e h9 em 0 | C-A17 | risco do conselho: o tempo de volta passa a ter valor com o R do regulamento (D5), e a origem tem de aparecer | 004 |
+| C-B8 | 16_EQUILIBRIO!B78 (`status`) | `=IF({G_vfN}="-","OK",{G_vfN})` (N = última verificação da 16) | `=IF({G_vfN}="-",IF({sit24}="-","OK",{sit24}),{G_vfN})` | C-A22 | ajustes 1, 4 e 10: as verificações da 24 levam `ok` (B80) a 0; as da 16 continuam primeiro | 003, 004 |
+| C-B10 | 16_EQUILIBRIO!F142 (observação do veredito) | vazia | "NEUTRO: \|S_r − S_f\| ≤ resolução (B139); com o eixo saturado nas duas grades, a diferença entra multiplicada pelo fator 4/3 da 24_CURVA B34 (EDR-065 item 2)" | — | ajuste 10: o texto cita a faixa com o fator; a fórmula da B142 não muda | 001 |
 | C-B6 | 00_README!A3 e 15_CHANGELOG linha 23 | V4.2 | V4.3 (texto no gerador) | — | padrão das versões | 001 |
 
 ## C-C. F3: Ackermann (16_EQUILIBRIO)
 
-| # | Célula | Antes | Depois | Dep. | Testes |
-|---|---|---|---|---|---|
-| C-C1 | B114 (Δα FL) | `=IF(ok,IF(h2=1,-toe_FL+(-(di-dref)),-toe_FL),"N/A")` | `=IF(ok,IF(h2=1,-toe_FL+(-(di-dref))+IF({h2v}=1,{thFL}-{thm},0),-toe_FL),"N/A")` | C-A6, C-A18 | 003, 004 |
-| C-C2 | B115 (Δα FR) | idem com `toe_FR` e `do` | idem com `+IF({h2v}=1,{thFR}-{thm},0)` | idem | 003, 004 |
-| C-C3 | B116, B117 (traseiras) | sem mudança (θ = 0 atrás) | — | — | 003 |
+| # | Célula | Antes | Depois | Dep. | Justificativa | Testes |
+|---|---|---|---|---|---|---|
+| C-C1 | B114 (Δα FL) | `=IF(ok,IF(h2=1,-toe_FL+(-(di-dref)),-toe_FL),"N/A")` | `=IF(ok,IF(h2=1,-toe_FL+(-(di-dref))+IF({h2v}=1,{thFL}-{thm},0),-toe_FL),"N/A")` | C-A6, C-A18, C-A18b | spec §4.1 (EDR-066); com h2 = h2v = 1, o `ok` garante a geometria válida (C-A21) e θ numérico | 003, 004, mut. |
+| C-C2 | B115 (Δα FR) | idem com `toe_FR` e `do` | idem com `+IF({h2v}=1,{thFR}-{thm},0)` | idem | idem | 003, 004 |
+| C-C3 | B116, B117 (traseiras) | sem mudança (θ = 0 atrás) | — | — | — | 003 |
 
-Justificativa: spec §4.1 (EDR-066). Com h2v = 0, o valor é o da V4.2 (TC-WB43-003). A amplitude da grade (B118) muda
-de valor, não de texto.
+Com h2v = 0, o valor é o da V4.2 (TC-WB43-003). A amplitude da grade (B118) muda de valor, não de texto.
 
-## C-G. F9: Fx exigido nas grades (17, 18, 20a a 20d; uma família por coluna, em todas as linhas de dados)
+## C-G. F9: Fx exigido nas grades (17, 18, 20a a 20d e a mini-grade da 19; uma família por coluna, em todas as linhas de dados)
 
 Colunas novas depois da última da V4.2 (17 e as pedidas das 20a-d: a partir de FI; 18 e as finas das 20a-d: a partir
-de GO): `fy0_R_0 … fy0_R_{n−1}`, `cap0_R`, `idx0_R`, `j_F`, `j_R`, `aF`, `aR`. O α de cada coluna i é o da linha 17
-(α_ref) da mesma coluna de `fy_F_i`.
+de GO; mini-grade da 19: depois da última de `CL_MINI`): `fy0_R_0 … fy0_R_{n−1}`, `cap0_R`, `idx0_R`, `j_F`, `j_R`, `aF`,
+`aR`. O α de cada coluna i é o da linha 17 (α_ref) da mesma coluna de `fy_F_i`. Antes: as colunas novas não existem.
+Justificativa comum: spec §4.2 (EDR-066) e D3; α_R da curva sem a elipse (sem referência circular); α limitado ao pico.
 
-| # | Coluna | Conteúdo novo (linha r) | Dep. |
-|---|---|---|---|
-| C-G1 | `fy0_R_i` | `=IF(AND({h9}=1,{h9v}=1,ISNUMBER(Fz_RL),Fz_RL>0,ISNUMBER(Fz_RR),Fz_RR>0,{amp}>0),fyL_i+fyR_i,"-")`, com fyL_i e fyR_i as mesmas expressões da soma traseira de `_linha_grade`, sem `fat` | termos MF da linha |
-| C-G2 | `cap0_R`, `idx0_R` | `=IF(ISNUMBER(fy0_R_0),MAX(faixa),"-")`; `=IF(ISNUMBER(cap0_R),MATCH(cap0_R,faixa,0),"-")` | C-G1 |
-| C-G3 | `j_F`, `j_R` | `=IFERROR(MATCH(TRUE,INDEX(faixa_fy_F>=req_F,0),0),0)` (na traseira, `faixa_fy0_R` e `req_R`) | fy_F, C-G1 |
-| C-G4 | `aF` | `=IF(AND({h9}=1,{h9v}=1),IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F)),IF(j_F<=1,0,ABS(INDEX(alfa,j_F-1)+(INDEX(alfa,j_F)-INDEX(alfa,j_F-1))*(req_F-INDEX(fyF,j_F-1))/(INDEX(fyF,j_F)-INDEX(fyF,j_F-1)))))),"-")` | C-G3 |
-| C-G4b | `aR` | igual, com `cap0_R`, `idx0_R`, `j_R`, `req_R` e `fy0_R`, e o primeiro teste `NOT(ISNUMBER(cap0_R))` no lugar de `pre_F<>"-"` (o `pre_R` depende de `fat`, que depende de `aR`: usá-lo seria referência circular; com a traseira descolada, o `pre_R` já dá o descolamento antes do texto de tração) | C-G2, C-G3 |
-| C-G5 | `fxr` (BP, existente) | antes: `=IF(AND(ISNUMBER(phi),{h9}=1),0.5*rho*cda*ABS(ay)*R+crr*m*9.81+ABS(req_F)*{tanf},0)`; depois: `=IF(AND(ISNUMBER(phi),{h9}=1),IF(AND({h9v}=1,OR(aF="semF",aR="semF")),"semF",0.5*rho*cda*ABS(ay)*R+crr*m*9.81+IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})),0)` | C-G4 |
-| C-G6 | `fat_RL`, `fat_RR` (BW, CD; existentes) e `pre_R` (DL / EJ) | `fat`: acrescentar o primeiro teste `IF({C("fxr")}="semF","semF", <fórmula de hoje>)`; `pre_R`: no texto de tração, antes de "fora", `IF(OR(fat_RL="semF",fat_RR="semF"),"Fx exigido (h9v) indisponível: a curva dianteira é inválida nesta linha", …)` | C-G5 |
+| # | Coluna | Antes | Depois (linha r) | Dep. | Testes |
+|---|---|---|---|---|---|
+| C-G1 | `fy0_R_i` | nova | `=IF(AND({h9}=1,{h9v}=1,ISNUMBER(Fz_RL),Fz_RL>0,ISNUMBER(Fz_RR),Fz_RR>0,ISNUMBER({amp}),{amp}>0),fyL_i+fyR_i,"-")`, com fyL_i e fyR_i as mesmas expressões da soma traseira de `_linha_grade`, sem `fat` (ajuste 10: `ISNUMBER({amp})`) | termos MF da linha | 003, 004 |
+| C-G2 | `cap0_R`, `idx0_R` | nova | `=IF(ISNUMBER(fy0_R_0),MAX(faixa),"-")`; `=IF(ISNUMBER(cap0_R),MATCH(cap0_R,faixa,0),"-")` | C-G1 | 004 |
+| C-G3 | `j_F`, `j_R` | nova | `=IFERROR(MATCH(TRUE,INDEX(faixa_fy_F>=req_F,0),0),0)` (na traseira, `faixa_fy0_R` e `req_R`). **Condicionada à Task 8:** o protótipo roda no Excel e no LibreOffice (EDR-044); se o LibreOffice não avaliar a forma, a Task 8 escolhe uma forma sem matriz equivalente, registra-a aqui como adendo e a leva ao usuário (ajuste 9) | fy_F, C-G1 | 004, Task 8 |
+| C-G4 | `aF` | nova | `=IF(AND({h9}=1,{h9v}=1),IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F)),IF(j_F<=1,0,ABS(INDEX(alfa,j_F-1)+(INDEX(alfa,j_F)-INDEX(alfa,j_F-1))*(req_F-INDEX(fyF,j_F-1))/(INDEX(fyF,j_F)-INDEX(fyF,j_F-1)))))),"-")` | C-G3 | 004 (`LOOSE_PICO`) |
+| C-G4b | `aR` | nova | igual, com `cap0_R`, `idx0_R`, `j_R`, `req_R` e `fy0_R`, e o primeiro teste `NOT(ISNUMBER(cap0_R))` no lugar de `pre_F<>"-"` (o `pre_R` depende de `fat`, que depende de `aR`: usá-lo seria referência circular; com a traseira descolada, o `pre_R` já dá o descolamento antes do texto de tração) | C-G2, C-G3 | 004, mut. |
+| C-G5 | `fxr` (BP, existente) | `=IF(AND(ISNUMBER(phi),{h9}=1),0.5*rho*cda*ABS(ay)*R+crr*m*9.81+ABS(req_F)*{tanf},0)` | `=IF(AND(ISNUMBER(phi),{h9}=1),IF(AND({h9v}=1,OR(aF="semF",aR="semF")),"semF",0.5*rho*cda*ABS(ay)*R+crr*m*9.81+IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})),0)` | C-G4 | 003, 004, mut. |
+| C-G6 | `fat_RL`, `fat_RR` (BW, CD; existentes) e `pre_R` (DL / EJ) | `fat` e `pre_R` da V4.2 | `fat`: primeiro teste `IF({C("fxr")}="semF","semF", <fórmula de hoje>)`; `pre_R`: no texto de tração, antes de "fora", `IF(OR(fat_RL="semF",fat_RR="semF"),"Fx exigido (h9v) indisponível: a curva dianteira é inválida nesta linha", …)` (`MSG_FX_SEM_FRENTE`) | C-G5 | 003, 004 |
 
-Justificativa: spec §4.2 (EDR-066) e D3. α_R da curva sem a elipse (sem referência circular); α limitado ao pico.
-Testes: TC-WB43-003 (h9v = 0 dá o valor da V4.2), 004 (caso `LOOSE_PICO`, dianteira descolada) e a mutação.
-`16_EQUILIBRIO!B86` (tanf) não muda: continua sendo o termo da h9v = 0.
+`16_EQUILIBRIO!B86` (tanf) não muda: continua sendo o termo da h9v = 0. Na mini-grade da 19, as colunas novas saem de
+`linha_grade_v43` sobre `CL_MINI`, e as trocas C-G5 e C-G6 se aplicam às colunas `fxr`, `fat` e `pre_R` dela. O
+`_linha_grade` não é editado no lugar (decisão C).
 
-## C-F. F12: faixa do NEUTRO (16_EQUILIBRIO B137, B138, B139, B142 e as mesmas linhas de `_regras_limite` no bloco "cálculo por linha" da 20_EQ_TROCA)
+## C-E. Aba 19 (K linear): segue a V4.3 (decisão C)
 
-Decidido pelo usuário em 2026-11-02 (EDR-065 item 2): alternativa 1 com fator fixo 4/3. O fator multiplica só o
-|S − S2| de cada eixo (o d1 de Richardson, que o estudo mostrou subestimado); o passo, usado quando o eixo satura numa
-grade e não na outra, fica como está. O ramo de um eixo só lê o mesmo `dif` do eixo que satura (a `_resolucao`).
+| # | Célula | Antes | Depois | Dep. | Justificativa | Testes |
+|---|---|---|---|---|---|---|
+| C-E1 | 19_EQ_LINEAR, células que leem `{da_FL}`/`{da_FR}` (`aba_equilibrio.py:1418`) e as linhas K das 20 que repetem a `_linha19` | — | texto sem mudança; o valor muda com h2v = 1 (via C-C1/C-C2) | C-C1, C-C2 | a 19 acompanha o Ackermann da 16 | 003, 004 |
+| C-E2 | mini-grade da 19 (3 linhas a partir de `LINHA_MINI19`) | colunas de `_colunas(N_ALFA, False)` | as mesmas, mais as colunas C-G1 a C-G4b e as trocas C-G5/C-G6 | C-G | a capacidade nos pontos de Richardson usa o Fx da V4.3 | 003, 004 |
 
-| # | Célula | Antes | Depois | Dep. |
-|---|---|---|---|---|
-| C-F1 | 24_CURVA B31 (nova) | — | rótulo `Fator da faixa do NEUTRO`; valor `=4/3`; Origem `○ Estimativa`; Fonte "EDR-065 item 2; docs/inc7/estudo-neutro.md (casos sintéticos)"; lido também por `equilibrio.FATOR_NEUTRO` (teste de igualdade no TC-WB43-002) | — |
-| C-F2 | B137 / B138 (dif_F, dif_R) | `ABS(S−S2)` quando o eixo satura nas duas grades, o passo quando satura numa só | `{fator}*ABS(S−S2)` no primeiro ramo; o passo no segundo, sem mudança | C-F1 |
-| C-F3 | B139 (resol) | `MAX(dif_F, dif_R, 1E-9*9.81)` | sem mudança | — |
-| C-F4 | B142 (ver) | — | sem mudança de texto | — |
+No Python, `equilibrio_linear` ganha `formas: Formas = FORMAS_V42` (só de palavra-chave) em `tabela_linear`,
+`parcelas_k`, `angulos_necessarios`, `_rigidez_eixo`, `_rigidez_camber_eixo`, `_forca_deslocamento` e
+`_parcela_deslocamento`, repassado a `_eq._fy_eixo_limitado` (hoje sem `formas`, `equilibrio_linear.py:177-178`),
+`capacidade_eixo` e `deriva_total`. Com o padrão, os 18 testes do equilíbrio linear não mudam.
+
+## C-F. F12: faixa do NEUTRO (16_EQUILIBRIO B137, B138 e as mesmas linhas de `_regras_limite` no bloco "cálculo por linha" da 20_EQ_TROCA)
+
+Decidido pelo usuário em 2026-11-02 (EDR-065 item 2 e decisão A do conselho): fator fixo 4/3 **só no |S − S2|** de cada
+eixo (o d1 de Richardson, que o estudo mostrou subestimado). O passo (0,05 g), usado quando o eixo satura numa grade e
+não na outra, fica sem o fator. A resolução (B139) e o veredito (B142) não mudam de texto; o ramo de um eixo só (push1,
+loose1) lê a mesma resolução. O fator não tem chave (decisão B): por isso o TC-WB43-003 exclui B137 a B139 e o que
+depende delas, e o TC-WB43-004 e o TC-NEU-002 cobrem o 4/3.
+
+| # | Célula | Antes | Depois | Dep. | Justificativa | Testes |
+|---|---|---|---|---|---|---|
+| C-F1 | 24_CURVA B34 (nova) | não existe | rótulo "Fator da faixa do NEUTRO"; `=4/3`; nome `res_` (constante do modelo, não é dado e não migra); E = `○ Estimativa`; F = "EDR-065 item 2; docs/inc7/estudo-neutro.md (casos sintéticos)". Fica fora da pior origem, como o passo e o 1E-9 da resolução | — | igual a `equilibrio.FATOR_NEUTRO` (TC-WB43-002 confere o texto `=4/3` e a constante) | 002 |
+| C-F5 | 24_CURVA B35 (nova) | não existe | `=IF(ISNUMBER({fator}),IF({fator}>=1,"-",MSG_FATOR),MSG_FATOR)` (entra na C-A22) | C-F1 | ajuste 10: `ISNUMBER` e ≥ 1 | 004 |
+| C-F2 | B137 / B138 (dif_F, dif_R) | `=IF(AND(ISNUMBER({S_F}),ISNUMBER({S2_F})),ABS({S_F}-{S2_F}),IF(OR(ISNUMBER({S_F}),ISNUMBER({S2_F})),0.05*9.81,"-"))` (e o R) | `=IF(AND(ISNUMBER({S_F}),ISNUMBER({S2_F})),IF(ISNUMBER({fator}),{fator}*ABS({S_F}-{S2_F}),"-"),IF(OR(ISNUMBER({S_F}),ISNUMBER({S2_F})),0.05*9.81,"-"))` (e o R) | C-F1 | decisão A; com o fator inválido o `ok` já é 0 (C-F5) e a célula dá "-" em vez de #VALUE! | 004, mut. |
+| C-F3 | B139 (resol) | `MAX(dif_F, dif_R, 1E-9*9.81)` | sem mudança | — | — | 004 |
+| C-F4 | B142 (ver) | — | sem mudança de texto (a observação F142 é a C-B10) | — | — | 004 |
 
 Justificativa: `docs/inc7/estudo-neutro.md` (Tabela 8): única alternativa com margem faixa − erro de Δ positiva nos 7
-casos sintéticos perto do neutro. Testes: TC-NEU-002 (Python), TC-WB43-003/004 (planilha = Python), mutação.
+casos sintéticos perto do neutro.
 
 ## C-D. Avisos (14_DASHBOARD)
 
-| # | Célula | Antes | Depois | Testes |
-|---|---|---|---|---|
-| C-D1 | A48 / B48 | vazias | "Formas da V4.3" / `=IF(AND({h2v}=1,{h9v}=1),"padrão da V4.3 (h2v = 1, h9v = 1); hipóteses só no Python: ver 24_CURVA A27","resultado não comparável com a V4.3 padrão (chave h2v ou h9v em 0)")` | 004 |
-| C-D2 | C48 / D48 | vazias | "-" / "EDR-066; EDR-069" (padrão das linhas 41-47) | 001 |
+| # | Célula | Antes | Depois | Dep. | Justificativa | Testes |
+|---|---|---|---|---|---|---|
+| C-D1 | A48 / B48 | vazias | "Formas da V4.3 (24_CURVA)" / `=IF({sit24}<>"-","24_CURVA: "&{sit24},IF(AND({h2v}=1,{h9v}=1),"V4.3: Ackermann com o centro da curva no eixo traseiro e Fx por arrasto induzido (mudou em relação à V4.2; para voltar à V4.2, h2v = 0 e h9v = 0 em 24_CURVA B9 e B10)","forma da V4.2 em uso (h2v = "&{h2v}&", h9v = "&{h9v}&"): resultado não comparável com a V4.3 padrão"))&". R = "&IF(ISNUMBER({rusado}),SUBSTITUTE(FIXED({rusado},3,TRUE),".",",")&" m ("&IF(EXACT({modo},"Manual"),"manual",LOWER({modo})&", diâmetros do regulamento FSAE 2026 D.10.1.1")&")",{motivo_r})` | C-A1, A6, A7, A14, A15, A22 | ajuste 8: o que mudou, como voltar, chave inválida, modo do R inválido e o R do regulamento como tal | 004 |
+| C-D2 | C48 / D48 | vazias | "-" / "EDR-066; EDR-069" (padrão das linhas 41-47) | — | — | 001 |
+
+## C-M. Migração e nomes (`dados_planilha`, `migrar_viva`; sem célula nova)
+
+| # | Onde | Antes | Depois | Justificativa | Testes |
+|---|---|---|---|---|---|
+| C-M1 | `dados_planilha._destinos(wb)` (`dados_planilha.py:65-80`), usado por `ler_por_nome`, `injetar` e `migrar_viva` | todo nome `ent_`/`org_`/`fte_` é destino | um nome `ent_`/`org_`/`fte_` cuja célula, no workbook lido, é fórmula (texto que começa com "=" ou `ArrayFormula`) não é dado e sai dos destinos. `eh_dado(nome)` continua só pelo nome; a regra única fica no `_destinos`. Na V4.2 nenhum nome de dado tem fórmula, então nada muda para ela | ajuste 7: na V4.3, B9 (`ent_`) e E9 (`org_`) são fórmulas | 006 |
+| C-M2 | `migrar_viva` V4.2 → V4.3 | o nome vai para a mesma célula | redirecionamento fixo por par de versões: `ent_16_raio_do_skidpad_r` → R manual (24_CURVA B8); `org_16_…` (E9) → 24_CURVA E8; `fte_16_…` (F9) → 24_CURVA F8. Nos nomes redirecionados, a base da comparação é o padrão da V4.3 (a célula nova ainda não tem dado da equipe), então o valor da equipe é escrito sem conflito | ajuste 7; o F9 entra porque o F8 padrão difere do F9 da V4.2 e daria conflito falso | 006 |
+| C-M3 | `migrar_viva`, modo do R | — | se a viva tem número em B9, o modo (24_CURVA B4) recebe "Manual"; com B9 vazio, o modo fica no padrão "Linha central" (D5) | D4 | 006 |
+| C-M4 | viva V4.3 com B9 ou E9 sobrescritos à mão | — | a célula alterada não tem nome de dado (C-M1) e o `migrar_viva` sai com código 2, "célula alterada fora dos nomes de dado" | protege as fórmulas | 006 |
 
 ---
 
