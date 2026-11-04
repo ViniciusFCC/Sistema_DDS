@@ -70,6 +70,7 @@ TIR = _RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
 TOL_REL = 1e-9
 TOL_K = 1e-6        # °/g
 TOL_ANG = 1e-8      # relativo a max(|α|, 1e-3)
+TOL_ANG_ISOLADO = 2e-8   # teto do ponto isolado (FRENTE_DESCOLADA, ponto 8 α_R): mede 1,04e-8; regressão maior falha
 FORMULAS = 146373   # V4.3 (tools/comparar_planilhas.FORMULAS_ESPERADAS_V43)
 SUB = set(filter(None, os.environ.get("DDS_CASOS", "").split(",")))   # vazio = tudo
 results = []
@@ -516,7 +517,11 @@ def comparar_k43(nome, wb, caso, formas, falhas, isolados=()):
         for e, a_sh, a_py in (("F", sh[0], py[0]), ("R", sh[1], py[1])):
             if num(a_sh) and (p_i, e) in isolados:    # ponto isolado (só ele): números no log, não decide; o resto compara
                 print(f"   {nome} ponto {p_i} α_{e} ISOLADO: planilha {a_sh!r} Python {a_py!r}; |Δα| = {abs(a_sh - a_py):.3e} rad; "
-                      f"relativo a max(|α|, 1e-3) = {abs(a_sh - a_py) / max(abs(a_py), 1e-3):.3e} (limite do V4.1: {TOL_ANG:g})")
+                      f"relativo a max(|α|, 1e-3) = {abs(a_sh - a_py) / max(abs(a_py), 1e-3):.3e} (limite do V4.1: {TOL_ANG:g}; "
+                      f"teto do isolado: {TOL_ANG_ISOLADO:g})")
+                if abs(a_sh - a_py) / max(abs(a_py), 1e-3) > TOL_ANG_ISOLADO:
+                    falhas.append(f"{nome} 19 ponto {p_i} α_{e} (isolado): planilha {a_sh!r} Python {a_py!r} passa do teto "
+                                  f"{TOL_ANG_ISOLADO:g}")
                 continue
             if not num(a_sh) or abs(a_sh - a_py) / max(abs(a_py), 1e-3) > TOL_ANG:
                 falhas.append(f"{nome} 19 ponto {p_i} α_{e}: planilha {a_sh!r} Python {a_py!r}")
