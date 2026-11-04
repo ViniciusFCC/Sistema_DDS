@@ -70,7 +70,6 @@ TIR = _RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
 TOL_REL = 1e-9
 TOL_K = 1e-6        # °/g
 TOL_ANG = 1e-8      # relativo a max(|α|, 1e-3)
-TOL_ANG_ABS = 5e-11  # rad: piso absoluto (resolução do Newton da planilha e da bisseção do Python em α ~ 1e-3; só vale junto do relativo)
 FORMULAS = 146373   # V4.3 (tools/comparar_planilhas.FORMULAS_ESPERADAS_V43)
 SUB = set(filter(None, os.environ.get("DDS_CASOS", "").split(",")))   # vazio = tudo
 results = []
@@ -289,7 +288,10 @@ def tc_wb43_003(tmp: Path) -> None:
         alt = ac.alteracoes_v4_3(wb_alt, ac.mapa_v43())
     finally:
         wb_alt.close()
-    sementes20 = [(a["aba"], a["cel"]) for a in alt if a["aba"] == ae.ABA20]
+    # só as linhas dif (34 e 35, colunas B a E) da 20_EQ_TROCA entram (decisão B); B24:E24 (status, C-B11) ficam na comparação
+    sementes20 = [(a["aba"], a["cel"]) for a in alt if a["aba"] == ae.ABA20 and raizes.linha(a["cel"]) in (34, 35)]
+    if len(sementes20) != 8:
+        raise RuntimeError(f"esperadas 8 células dif na 20_EQ_TROCA (B34:E35), achei {sorted(c for _, c in sementes20)}")
     cop_formulas = g43.copia_v43(tmp, {}, "V4_3_formulas.xlsx")
     wbf = openpyxl.load_workbook(cop_formulas)
     try:
@@ -483,7 +485,7 @@ def comparar_grade(ws, linhas, n_alfa, pedida, caso, formas, falhas, rotulo, fla
                 falhas.append(f"{rotulo} k={k} fxr (forma V4.2 ou h9 desligada): planilha {fxs!r} Python {fx_py!r}")
 
 
-def comparar_k43(nome, wb, caso, formas, falhas):
+def comparar_k43(nome, wb, caso, formas, falhas, isolados=()):
     """O K da 19 (parcelas e K tangente por linha, K em °/g) e os ângulos do Newton contra `equilibrio_linear` com as formas
     da planilha (TC-WB41-005 com `formas=`)."""
     lin = [{q: valor(wb, ae.NOME19[(q, k)]) for q in ae.QTD19} for k in range(ae.N_LIN19)]
@@ -512,7 +514,11 @@ def comparar_k43(nome, wb, caso, formas, falhas):
                 falhas.append(f"{nome} 19 ponto {p_i}: Python sem ângulos, planilha {sh!r}")
             continue
         for e, a_sh, a_py in (("F", sh[0], py[0]), ("R", sh[1], py[1])):
-            if not num(a_sh) or (abs(a_sh - a_py) / max(abs(a_py), 1e-3) > TOL_ANG and abs(a_sh - a_py) > TOL_ANG_ABS):
+            if num(a_sh) and (p_i, e) in isolados:    # ponto isolado (só ele): números no log, não decide; o resto compara
+                print(f"   {nome} ponto {p_i} α_{e} ISOLADO: planilha {a_sh!r} Python {a_py!r}; |Δα| = {abs(a_sh - a_py):.3e} rad; "
+                      f"relativo a max(|α|, 1e-3) = {abs(a_sh - a_py) / max(abs(a_py), 1e-3):.3e} (limite do V4.1: {TOL_ANG:g})")
+                continue
+            if not num(a_sh) or abs(a_sh - a_py) / max(abs(a_py), 1e-3) > TOL_ANG:
                 falhas.append(f"{nome} 19 ponto {p_i} α_{e}: planilha {a_sh!r} Python {a_py!r}")
 
 
@@ -557,7 +563,7 @@ def comparar_troca43(nome, wb, copia, status, falhas):
             falhas.append(f"{onde} veredito/motivo: planilha {s['ver']!r}/{s['mot']!r} Python {r.veredito!r}/{r.motivo!r}")
 
 
-def comparar43(nome, copia, falhas, flags=None, com_k=True, com_troca=False, b48=None, esperado_status=None):
+def comparar43(nome, copia, falhas, flags=None, com_k=True, com_troca=False, b48=None, esperado_status=None, isolados=()):
     """Compara a cópia recalculada da V4.3 com o Python (caso lido por `caso_da_planilha_v43` + `analise_par(formas=)`).
     Devolve (resumo, dict com res/caso/formas/r16/r24)."""
     flags = flags if flags is not None else defaultdict(int)
@@ -682,7 +688,7 @@ def comparar43(nome, copia, falhas, flags=None, com_k=True, com_troca=False, b48
         if com_k:
             try:
                 caso1, formas1 = cp.caso_da_planilha_v43(copia, TIR, passo1=True)
-                comparar_k43(nome, wb, caso1, formas1, falhas)
+                comparar_k43(nome, wb, caso1, formas1, falhas, isolados=isolados)
             except ValueError as e:
                 flags["k_sem_roll_steer"] += 1
                 print(f"   ({nome}: K da 19 não comparado: {e})")
@@ -708,7 +714,7 @@ CASOS4 = {
     "LOOSE_PICO": ({**C3b, **H239, **MAN8}, dict(pico="R")),
     "PUSH_PICO": ({**C3, **H239, **MAN8}, dict(pico="F")),
     "FRENTE_DESCOLADA": ({**C2, "ent_05_fracao_de_peso_no_eixo_dianteiro_f": 0.3, "ent_05_altura_do_cg_total": 0.6, **H239,
-                          **MAN8}, dict(sem_frente=True, com_k=False)),
+                          **MAN8}, dict(sem_frente=True, angulo_isolado={(8, "R")})),
     # veículo padrão (a != b: nos casos simétricos req_F = req_R e a troca aF <-> aR no Fx é invisível, como a a <-> b da V4.1)
     "FX_ASSIM": ({**H239, **MAN8}, {}),
     "H2V_0": ({**BASE, **MAN8, N24["h2v"]: 0}, dict(b48=True)),
@@ -719,6 +725,10 @@ CASOS4 = {
     "GEO_RB": ({**BASE_SEM_DELTA, N24["modo"]: "Manual", N24["rman"]: 0.1}, dict(status=eq.MSG_GEOMETRIA, com_troca=True,
                                                                                 b48=True, b114="N/A")),
     "GEO_RC": ({**BASE_SEM_DELTA, N24["modo"]: "Manual", N24["rman"]: 0.84}, dict(status=eq.MSG_GEOMETRIA, b114="N/A")),
+    # com Ackermann % != 0 (ângulo interno do 07): o "L/R fora do alcance" (16) vem antes da situação da 24_CURVA, na planilha e no
+    # Python (ordem do catálogo: C-A, VERIFICACOES_24 depois das da 16; C-B8)
+    "GEO_RB_ACK": ({**BASE, N24["modo"]: "Manual", N24["rman"]: 0.1}, dict(status=ae.MSG_ACK, com_troca=True, b114="N/A")),
+    "GEO_RC_ACK": ({**BASE, N24["modo"]: "Manual", N24["rman"]: 0.84}, dict(status=ae.MSG_ACK, b114="N/A")),
     "GEO_RB_H2V0": ({**BASE, N24["modo"]: "Manual", N24["rman"]: 0.1, N24["h2v"]: 0}, {}),
     "GEO_RC_H2V0": ({**BASE, N24["modo"]: "Manual", N24["rman"]: 0.84, N24["h2v"]: 0}, {}),
     "MODO_ERRADO": ({**BASE, N24["modo"]: "linha central"}, dict(modo_invalido=True)),
@@ -840,7 +850,8 @@ def tc_wb43_004(tmp: Path) -> None:
         f0 = len(falhas)
         fl = defaultdict(int)
         resumo, dados = comparar43(nome, copia, falhas, fl, com_k=op.get("com_k", True), com_troca=op.get("com_troca", False),
-                                   b48=op.get("b48"), esperado_status=op.get("status"))
+                                   b48=op.get("b48"), esperado_status=op.get("status"),
+                                   isolados=op.get("angulo_isolado", ()))
         for k, v in fl.items():
             flags[k] += v
         resumos.append(resumo + (" [FALHA]" if len(falhas) > f0 else ""))
