@@ -176,7 +176,13 @@ def _caso_de_valores(x: dict, tir: Path, passo1: bool, verificacoes: tuple, font
     # Ordem do catálogo (C-A, C-B8): as verificações da 16, a instabilidade de rolagem e o alcance do Ackermann, e só depois as
     # da 24_CURVA (VERIFICACOES_24, no fim de VERIFICACOES_V43), como a situação das entradas da planilha.
     n24 = len(ae.VERIFICACOES_24)
-    v24 = verificacoes[-n24:] if tuple(verificacoes[-n24:]) == tuple(ae.VERIFICACOES_24) else ()
+    if tuple(verificacoes) == tuple(ae.VERIFICACOES):          # V4.1 e V4.2: sem as da 24_CURVA
+        v24 = ()
+    elif tuple(verificacoes[-n24:]) == tuple(ae.VERIFICACOES_24):   # V4.3: as da 24 no fim da lista
+        v24 = tuple(verificacoes[-n24:])
+    else:
+        raise ValueError("verificacoes não é VERIFICACOES (V4.1/V4.2) nem termina em VERIFICACOES_24 (V4.3): ordem do catálogo "
+                         "indeterminada")
     motivo = ae.motivo_das_entradas(x, verificacoes[:len(verificacoes) - len(v24)])
     if motivo is not None:
         raise ValueError(motivo)
