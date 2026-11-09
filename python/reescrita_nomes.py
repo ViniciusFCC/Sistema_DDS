@@ -1,8 +1,9 @@
 """Medição e regra da troca de endereço por nome nas abas 03 a 14 (incremento 8, parte 8b; spec §3.3 a §3.5; EDR-070).
 
 Regra (§3.3): numa fórmula das abas 03 a 14, cada operando que é referência a UMA célula (com ou sem aba, com ou sem `$`)
-e que é o destino exato de um nome definido é trocado por esse nome. Nada mais muda no texto da fórmula. Intervalo, coluna
-inteira e, na 03_TARGETS, a referência à própria linha da ficha (H:Q) não são tocados.
+e que é o destino exato de um nome definido é trocado por esse nome. Nada mais muda no texto da fórmula. Intervalo e coluna
+inteira não são tocados. Na 03_TARGETS, a referência à própria linha da ficha (H:Q) que não tem nome fica por endereço e o
+invariante (§3.5) a permite; a que é destino exato de um nome é trocada como qualquer outra célula.
 
 A troca é mecânica, sobre os tokens OPERAND/RANGE do `Tokenizer` do openpyxl: texto entre aspas, nomes de função e
 operadores nunca são tocados. Antes de trocar, a remontagem dos tokens originais tem de ser igual à fórmula original
@@ -57,8 +58,9 @@ def _celula_do_token(valor: str, aba: str):
 
 
 def trocar_formula(formula: str, aba: str, destinos: dict, cel: str = "") -> str:
-    """Troca por nome cada operando de célula única que é destino exato de um nome (spec §3.3). Texto que não é fórmula
-    volta igual. `cel` só serve para a mensagem de erro."""
+    """Troca por nome cada operando de célula única que é destino exato de um nome (spec §3.3), inclusive na própria linha
+    da ficha da 03_TARGETS quando há nome. Texto que não é fórmula
+    volta igual. `cel` (coordenada da célula da fórmula) é opcional e só serve à mensagem de erro."""
     if not (isinstance(formula, str) and formula.startswith("=")):
         return formula
     saida = []
