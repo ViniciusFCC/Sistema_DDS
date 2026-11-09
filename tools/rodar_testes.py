@@ -81,7 +81,7 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
 
 
 _X = "excel/FSAE_EV_Suspension_Fase1_"
-_TIR = "data/Hoosier_R25B_13x7_TTC_provisional.tir"
+# O .tir (data/Hoosier_R25B_13x7_TTC_provisional.tir) não é rastreado: declará-lo impediria todo pulo; fica fora da conferência.
 _HP = ("data/hardpoints_synthetic_V2.0.csv", "data/hardpoints_synthetic_V2.0.meta.json")
 # Entradas DECLARADAS de cada item para o --pular-recentes: o que o script abre por caminho (módulos que a mutação troca, testes que
 # ela dispara, planilhas .xlsx, dados) e que o ast não vê. Entram, com o script e os imports locais, no diff contra o commit.
@@ -112,16 +112,8 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
     "tests/test_v4_2.py": ("data/nomes_V4_2.csv", _X + "V4_2.xlsx", _X + "V3_0.xlsx", "docs/Engineering_Decision_Register.md",
                            "docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md"),
     "tests/test_v4_3.py": ("data/nomes_V4_3.csv", _X + "V4_3.xlsx", _X + "V4_2.xlsx",
-                           "docs/superpowers/plans/2026-10-29-inc7-fisica-planilha.md", "docs/registro-de-versoes-V4_3-celulas.md",
-                           _TIR),
-    "tests/test_equilibrio.py": (_X + "V4_0.xlsx", _X + "V3_0.xlsx", _TIR),
-    "tests/test_equilibrio_linear.py": (_TIR,),
-    "tests/test_mmm.py": (_TIR,),
-    "tests/test_escada.py": (_TIR,),
-    "tests/test_neutro.py": (_TIR,),
-    "tests/test_formas_v43.py": (_TIR,),
-    "tests/test_skidpad.py": (_TIR,),
-    "tests/test_tire_model.py": (_TIR,),
+                           "docs/superpowers/plans/2026-10-29-inc7-fisica-planilha.md", "docs/registro-de-versoes-V4_3-celulas.md"),
+    "tests/test_equilibrio.py": (_X + "V4_0.xlsx", _X + "V3_0.xlsx"),
     "tests/test_hardpoints.py": _HP,
     "tests/test_kinematics_model.py": _HP + ("data/hardpoints_synthetic_4cantos_V2.0.csv",
                                              "data/hardpoints_synthetic_4cantos_V2.0.meta.json"),
@@ -162,7 +154,7 @@ def bloco(titulo: str, texto: str) -> list[str]:
 def versao_planilhas() -> tuple[bool, list[str]]:
     """Fase B, passo 3: a versão da planilha fica no nome do arquivo (EDR-043) e no
     texto de 00_README!A3 ("Versão do workbook: V2.4 ..."). Confere que os dois batem
-    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0, a V4.0 (EDR-058) a V4.1 (EDR-060), a V4.2 e a V4.3 têm de estar entre elas."""
+    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0, a V4.0 (EDR-058), a V4.1 (EDR-060), a V4.2 e a V4.3 têm de estar entre elas."""
     linhas, ok = [], True
     arquivos = sorted((RAIZ / "excel").glob("FSAE_EV_Suspension_Fase1_V*.xlsx"))
     for f in arquivos:
