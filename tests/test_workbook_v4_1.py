@@ -524,7 +524,7 @@ def comparar_caso(nome, copia, esperado, prefixo, falhas):
                                                         cp.pior_origem_do_caso_v41(copia),
                                                         origem_do_carro=origens.TX_V41)}
         return f"{nome}: N/A pelas entradas ({e})"
-    res = eq.analise_par(caso)
+    res = eq.analise_par(caso, fator_neutro=1.0)   # a planilha V4.1 não tem o 4/3 (EDR-065 item 2 vale desde a V4.3)
     fina, sf2, sr2 = eq._varredura(caso, ae.AY_MAX_G, ae.PASSO_G / 2.0, 2 * ae.N_ALFA - 1)
     comparar_linhas(wb[ae.ABA17], res.linhas, ae.N_ALFA, True, caso, falhas, f"{nome} 17")
     comparar_linhas(wb[ae.ABA18], fina, 2 * ae.N_ALFA - 1, False, caso, falhas, f"{nome} 18")
@@ -775,7 +775,7 @@ def linha_troca_python(copia, fator):
         p0 = el.parcelas_k(caso, 0.0)
         m_rs = str(e)
         p = dataclasses.replace(p0, k_roll_steer=None, k_total=None, motivo="; ".join(m for m in (p0.motivo, m_rs) if m))
-    r = eq.analise_par(caso)
+    r = eq.analise_par(caso, fator_neutro=1.0)   # a planilha V4.1 não tem o 4/3 (EDR-065 item 2 vale desde a V4.3)
     kf, kr = caso.cfg.roll_stiffness_front, caso.cfg.roll_stiffness_rear
     return {"kphi": kf, "lam": kf / (kf + kr), "k": p.k_total, "kmot": p.motivo or "-", "sf": r.ay_sat_f, "sr": r.ay_sat_r,
             "aylim": r.ay_lim, "resol": r.resolucao_ms2, "ver": r.veredito, "cn": r.c_n, "mot": r.motivo or "-"}
@@ -1006,7 +1006,7 @@ def casos_origem():
 def esperado_origem(nome, copia, pior, falhas):
     """Textos esperados com a pior origem conhecida pela construção do caso (não pela fórmula): texto_veredito e texto_k
     com `pior`; a cópia tem de mostrar essa pior origem, sem prefixo com TX e com prefixo com T09."""
-    res = eq.analise_par(cp.caso_da_planilha_v41(copia, TIR, passo1=False))
+    res = eq.analise_par(cp.caso_da_planilha_v41(copia, TIR, passo1=False), fator_neutro=1.0)  # sem o 4/3 (V4.1)
     p = el.parcelas_k(cp.caso_da_planilha_v41(copia, TIR), 0.0)
     ESPERADO6[nome] = {"txt_ver": eq.texto_veredito(res, pior, origem_do_carro=origens.TX_V41),
                        "txt_k": el.texto_k(p, pior, origem_do_carro=origens.TX_V41)}
@@ -1226,7 +1226,7 @@ for nome, alt, esperado, prefixo in CASOS + [("RF3", None, None, None)]:
         conferir_fixos(copia, falhas6b)
     if nome == "RF3":
         caso = cp.caso_da_planilha_v41(copia, TIR, passo1=False)
-        r = eq.analise_par(caso)
+        r = eq.analise_par(caso, fator_neutro=1.0)   # a planilha V4.1 não tem o 4/3 (EDR-065 item 2 vale desde a V4.3)
         _, _, sr2 = eq._varredura(caso, ae.AY_MAX_G, ae.PASSO_G / 2.0, 2 * ae.N_ALFA - 1)
         if not (r.ay_sat_r is not None and sr2.ay_sat is None and r.resolucao_ms2 == ae.PASSO_G * G):
             falhas.append(f"RF3: o caso não ficou com a traseira saturando só na grade pedida (S_r {r.ay_sat_r}, "

@@ -1,0 +1,42 @@
+nome,aba,celula,papel,sus_id,rotulo
+ent_24_modo_do_raio_r,24_CURVA,B4,ent,,Modo do raio R
+org_24_modo_do_raio_r,24_CURVA,E4,org,,Modo do raio R
+fte_24_modo_do_raio_r,24_CURVA,F4,fte,,Modo do raio R
+ent_24_diametro_do_circulo_interno,24_CURVA,B5,ent,,Diâmetro do círculo interno
+org_24_diametro_do_circulo_interno,24_CURVA,E5,org,,Diâmetro do círculo interno
+fte_24_diametro_do_circulo_interno,24_CURVA,F5,fte,,Diâmetro do círculo interno
+ent_24_diametro_do_circulo_externo,24_CURVA,B6,ent,,Diâmetro do círculo externo
+org_24_diametro_do_circulo_externo,24_CURVA,E6,org,,Diâmetro do círculo externo
+fte_24_diametro_do_circulo_externo,24_CURVA,F6,fte,,Diâmetro do círculo externo
+ent_24_meia_largura_do_pneu,24_CURVA,B7,ent,,Meia largura do pneu
+org_24_meia_largura_do_pneu,24_CURVA,E7,org,,Meia largura do pneu
+fte_24_meia_largura_do_pneu,24_CURVA,F7,fte,,Meia largura do pneu
+ent_24_r_manual,24_CURVA,B8,ent,,R manual
+org_24_r_manual,24_CURVA,E8,org,,R manual
+fte_24_r_manual,24_CURVA,F8,fte,,R manual
+ent_24_chave_h2v_forma_do_ackermann,24_CURVA,B9,ent,,Chave h2v: forma do Ackermann
+org_24_chave_h2v_forma_do_ackermann,24_CURVA,E9,org,,Chave h2v: forma do Ackermann
+fte_24_chave_h2v_forma_do_ackermann,24_CURVA,F9,fte,,Chave h2v: forma do Ackermann
+ent_24_chave_h9v_forma_do_fx_exigido,24_CURVA,B10,ent,,Chave h9v: forma do Fx exigido
+org_24_chave_h9v_forma_do_fx_exigido,24_CURVA,E10,org,,Chave h9v: forma do Fx exigido
+fte_24_chave_h9v_forma_do_fx_exigido,24_CURVA,F10,fte,,Chave h9v: forma do Fx exigido
+res_24_verificacao_chave_h2v_deve_ser_0_ou_1,24_CURVA,B11,res,,Verificação: chave h2v deve ser 0 ou 1
+res_24_verificacao_chave_h9v_deve_ser_0_ou_1,24_CURVA,B12,res,,Verificação: chave h9v deve ser 0 ou 1
+res_24_r_da_linha_central,24_CURVA,B13,res,,R da linha central
+res_24_r_in_raio_interno_meia_largura,24_CURVA,B14,res,,R_in' (raio interno + meia largura)
+res_24_limite_traseiro_r_in_t_r_2,24_CURVA,B15,res,,Limite traseiro R_in' + t_r/2
+res_24_limite_dianteiro_t_f_2_r_in_2_l2,24_CURVA,B16,res,,Limite dianteiro t_f/2 + √(R_in'² − L²)
+res_24_r_c_rente_aos_cones,24_CURVA,B17,res,,R_c rente aos cones
+res_24_r_rente_aos_cones,24_CURVA,B18,res,,R rente aos cones
+res_24_eixo_que_manda_sus_1010,24_CURVA,B19,res,,Eixo que manda (SUS-1010)
+res_24_r_usado,24_CURVA,B20,res,,R usado
+res_24_motivo_do_r,24_CURVA,B21,res,,Motivo do R
+res_24_r_c_do_centro_da_curva,24_CURVA,B22,res,,R_c do centro da curva
+res_24_pior_origem_do_r,24_CURVA,B23,res,,Pior origem do R
+res_24_theta_fl,24_CURVA,B25,res,,θ_FL
+res_24_theta_fr,24_CURVA,B26,res,,θ_FR
+res_24_theta_f,24_CURVA,B27,res,,θ̄_F
+res_24_verificacao_geometria_do_centro_da_curva,24_CURVA,B28,res,,Verificação: geometria do centro da curva
+res_24_fator_da_faixa_do_neutro,24_CURVA,B34,res,,Fator da faixa do NEUTRO
+res_24_verificacao_fator_da_faixa_do_neutro,24_CURVA,B35,res,,Verificação: fator da faixa do NEUTRO
+res_24_situacao_da_24_curva,24_CURVA,B37,res,,Situação da 24_CURVA

@@ -62,8 +62,14 @@ def ler_por_endereco(xlsx_v30: Path, tabela: Iterable[Nome]) -> dict[str, object
         wb.close()
 
 
-def _destinos(wb) -> dict[str, tuple[str, str]]:
-    """nome de dado -> (aba, célula), dos nomes definidos no escopo do workbook (um destino por nome)."""
+def _destinos(wb, incluir_formulas: bool = False) -> dict[str, tuple[str, str]]:
+    """nome de dado -> (aba, célula), dos nomes definidos no escopo do workbook (um destino por nome).
+
+    Um nome `ent_`, `org_` ou `fte_` cuja célula, no workbook lido, é fórmula não é dado e fica fora dos destinos
+    (catálogo C-M1 da V4.3: 16_EQUILIBRIO B9 e E9 viraram fórmula e mantêm o nome por D4). Na V4.2 e antes nenhum nome
+    de dado tem fórmula, então nada muda para elas. `eh_dado` continua só pelo nome: a regra do conteúdo é esta.
+    `incluir_formulas=True` devolve também os que têm fórmula (a leitura da viva usa, para que uma fórmula digitada num dado
+    continue dando erro na migração: `injetar` recusa valor com fórmula)."""
     out = {}
     for nome, dn in wb.defined_names.items():
         if not eh_dado(nome):
@@ -75,15 +81,17 @@ def _destinos(wb) -> dict[str, tuple[str, str]]:
         cel = ref.replace("$", "")
         if ":" in cel:
             raise ValueError(f"nome {nome} aponta para um intervalo ({dn.attr_text}); esperado uma célula")
+        if not incluir_formulas and aba in wb.sheetnames and _eh_formula(wb[aba][cel].value):
+            continue
         out[nome] = (aba, cel)
     return out
 
 
-def ler_por_nome(xlsx_v40: Path) -> dict[str, object]:
+def ler_por_nome(xlsx_v40: Path, incluir_formulas: bool = False) -> dict[str, object]:
     """Valores das células `ent`, `org` e `fte` da V4.0 em `xlsx_v40`, por nome, resolvendo os nomes definidos dela."""
     wb = openpyxl.load_workbook(xlsx_v40)
     try:
-        return {nome: wb[aba][cel].value for nome, (aba, cel) in _destinos(wb).items()}
+        return {nome: wb[aba][cel].value for nome, (aba, cel) in _destinos(wb, incluir_formulas).items()}
     finally:
         wb.close()
 

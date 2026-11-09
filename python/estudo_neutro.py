@@ -218,7 +218,8 @@ def estudar(caso: eq.CasoEquilibrio, *, formas: eq.Formas = eq.FORMAS_V42, passo
 
     sf_h, sr_h = sats[0]
     sf_2, sr_2 = sats[1]
-    faixa_atual = eq._resolucao((sf_h.ay_sat, sr_h.ay_sat), (sf_2.ay_sat, sr_2.ay_sat), passo_ms2)
+    # "atual" é a regra histórica (sem o 4/3), a que o estudo avaliou: o 4/3 entrou depois, no analise_par (EDR-065 item 2)
+    faixa_atual = eq._resolucao((sf_h.ay_sat, sr_h.ay_sat), (sf_2.ay_sat, sr_2.ay_sat), passo_ms2, fator_neutro=1.0)
     faixas_ms2 = {"atual": faixa_atual, "alt1": None, "alt1_43": None, "alt2": None, "passo": passo_ms2}
     if ramo == "dois" and est_f is not None and est_r is not None:
         f_f, f_r = _fator(conv_f.p), _fator(conv_r.p)

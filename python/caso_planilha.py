@@ -20,7 +20,7 @@ import openpyxl
 
 import suspension_model as sm
 import tire_model as tm
-from equilibrio import CasoEquilibrio
+from equilibrio import CasoEquilibrio, Formas
 from raizes import Grafo, origem_da_raiz, PIOR_PRIMEIRO, SEM_ROTULO
 from atualizar_planilha import CONF
 from nomes_v4_0 import ler_tabela
@@ -156,16 +156,34 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path, passo1: bool = True)
     - Sentido "Direita": devolve equilibrio.espelhar do caso (a curva à direita do carro vista como curva à esquerda do
       carro espelhado), que é o que a planilha mostra (cantos no referencial espelhado; FL = roda interna).
     """
-    import math as _m
     import aba_equilibrio as ae
-    from equilibrio import espelhar, esterco_rodas
-    from kinematics_model import camber_gradient_from_body
     wb = openpyxl.load_workbook(xlsx_recalculado, data_only=True)
     try:
         x = valores_v41(wb)
     finally:
         wb.close()
-    motivo = ae.motivo_das_entradas(x)
+    return _caso_de_valores(x, tir, passo1, ae.VERIFICACOES, "caso da planilha V4.1")
+
+
+def _caso_de_valores(x: dict, tir: Path, passo1: bool, verificacoes: tuple, fonte: str) -> CasoEquilibrio:
+    """Corpo de `caso_da_planilha_v41` e `caso_da_planilha_v43` sobre os valores lidos `x` (`valores_v41`, e os da
+    24_CURVA na V4.3): verificações `verificacoes` (a mesma ordem e o mesmo texto da planilha), caso e espelho.
+    `fonte`: o rótulo do dataset."""
+    import math as _m
+    import aba_equilibrio as ae
+    from equilibrio import espelhar, esterco_rodas
+    from kinematics_model import camber_gradient_from_body
+    # Ordem do catálogo (C-A, C-B8): as verificações da 16, a instabilidade de rolagem e o alcance do Ackermann, e só depois as
+    # da 24_CURVA (VERIFICACOES_24, no fim de VERIFICACOES_V43), como a situação das entradas da planilha.
+    n24 = len(ae.VERIFICACOES_24)
+    if tuple(verificacoes) == tuple(ae.VERIFICACOES):          # V4.1 e V4.2: sem as da 24_CURVA
+        v24 = ()
+    elif tuple(verificacoes[-n24:]) == tuple(ae.VERIFICACOES_24):   # V4.3: as da 24 no fim da lista
+        v24 = tuple(verificacoes[-n24:])
+    else:
+        raise ValueError("verificacoes não é VERIFICACOES (V4.1/V4.2) nem termina em VERIFICACOES_24 (V4.3): ordem do catálogo "
+                         "indeterminada")
+    motivo = ae.motivo_das_entradas(x, verificacoes[:len(verificacoes) - len(v24)])
     if motivo is not None:
         raise ValueError(motivo)
     h = {k: x[k] == 1 for k in ("h2", "h3", "h7", "h8", "h9")}
@@ -176,7 +194,7 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path, passo1: bool = True)
         sm.lateral_dfz(cfg, 1.0)
     except ValueError:
         raise ValueError(ae.MSG_DEN) from None
-    ds = tm.load_dataset(str(tir), source="caso da planilha V4.1", source_axis_system=x["eixos"])
+    ds = tm.load_dataset(str(tir), source=fonte, source_axis_system=x["eixos"])
     for k, v in x["coef_nomes"].items():
         if k in ds.p:
             ds.p[k] = float(v)
@@ -205,7 +223,57 @@ def caso_da_planilha_v41(xlsx_recalculado: Path, tir: Path, passo1: bool = True)
             esterco_rodas(caso)
         except ValueError:
             raise ValueError(ae.MSG_ACK) from None
+    motivo24 = ae.motivo_das_entradas(x, v24) if v24 else None
+    if motivo24 is not None:
+        raise ValueError(motivo24)
     return espelhar(caso) if x["sentido"] == "Direita" else caso
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# V4.3 (incremento 7, parte 7b): o caso que a 16_EQUILIBRIO calcula com o R usado e as formas da 24_CURVA
+# ---------------------------------------------------------------------------------------------------------------------
+def valores_v43(wb) -> dict:
+    """`valores_v41` mais os da 24_CURVA que as verificações da V4.3 leem: "h2v", "h9v" (chaves B9 e B10), "fator"
+    (B34) e "motivo_r" (B21), pelos nomes definidos (`aba_curva.NOME24`). "R" (16_EQUILIBRIO B9) já vem de
+    `valores_v41`: na V4.3 é fórmula (o R usado), e vazio dá "" (com o motivo em "motivo_r")."""
+    import aba_curva
+    x = valores_v41(wb)
+    x.update({k: _valor_por_nome(wb, aba_curva.NOME24[k]) for k in ("h2v", "h9v", "fator", "motivo_r")})
+    return x
+
+
+def caso_da_planilha_v43(xlsx_recalculado: Path, tir: Path, passo1: bool = True) -> tuple[CasoEquilibrio, Formas]:
+    """(caso, formas) que a 16_EQUILIBRIO da V4.3 calcula, lidos por nomes de uma cópia recalculada.
+
+    Como `caso_da_planilha_v41`, com três diferenças: as verificações são as da V4.3
+    (`aba_equilibrio.VERIFICACOES_V43`: o R vazio vem com o motivo da 24_CURVA B21, e entram as chaves h2v e h9v, o
+    fator da faixa do NEUTRO e a geometria do centro da curva); o R é o R usado (16_EQUILIBRIO B9, fórmula; o caso só
+    o usa com h2, h3, h8 ou h9 ligada, como na V4.1); e as formas saem das chaves h2v e h9v (24_CURVA B9 e B10):
+    `Formas(ackermann, fx)` com "v43" para 1 e "v42" para 0, que o chamador passa a `analise_par(..., formas=formas)`.
+    O fator da faixa do NEUTRO (24_CURVA B34) não é do caso nem das formas: `fator_neutro_da_planilha` o lê, para
+    `analise_par(..., fator_neutro=...)` (o TC-WB43-004 replica o caso com B34 = 0,5 por ele)."""
+    import aba_equilibrio as ae
+    wb = openpyxl.load_workbook(xlsx_recalculado, data_only=True)
+    try:
+        x = valores_v43(wb)
+    finally:
+        wb.close()
+    caso = _caso_de_valores(x, tir, passo1, ae.VERIFICACOES_V43, "caso da planilha V4.3")
+    return caso, Formas("v43" if x["h2v"] == 1 else "v42", "v43" if x["h9v"] == 1 else "v42")
+
+
+def fator_neutro_da_planilha(xlsx_recalculado: Path) -> float:
+    """Fator da faixa do NEUTRO (24_CURVA B34) de uma cópia recalculada da V4.3, para `analise_par(fator_neutro=...)`.
+    ValueError se a célula não for número >= 1 (a planilha dá a mensagem `equilibrio.MSG_FATOR` e `ok` = 0)."""
+    import aba_curva
+    wb = openpyxl.load_workbook(xlsx_recalculado, data_only=True)
+    try:
+        v = _valor_por_nome(wb, aba_curva.NOME24["fator"])
+    finally:
+        wb.close()
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or v < 1:
+        raise ValueError(f"24_CURVA B34 não é um número >= 1: {v!r}")
+    return float(v)
 
 
 def pior_origem_do_caso_v41(xlsx_formulas: Path, linear: bool = False) -> str:
