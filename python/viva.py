@@ -163,7 +163,7 @@ def _entradas_v43() -> set:
     return celulas_de_entrada_v43()
 
 
-# O número de fórmulas vem de tools/comparar_planilhas (FORMULAS_ESPERADAS_V41, _V42 e _V43): uma constante só.
+# O número de fórmulas vem de tools/comparar_planilhas (FORMULAS_ESPERADAS_V41, _V42, _V43 e _V44): uma constante só.
 REFERENCIAS: dict[str, Referencia] = {
     "V4.1": Referencia("V4.1", "v4.1", "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx", _entradas_v41,
                        (origens.TX_V41, origens.T09_V41, *origens.ORIGENS_V42[2:]), _cp.FORMULAS_ESPERADAS_V41),

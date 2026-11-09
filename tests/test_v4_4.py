@@ -227,6 +227,14 @@ def tokens(v):
     return Tokenizer(f).items
 
 
+def rodar(tc: str, fn) -> None:
+    """Roda um TC; qualquer exceção (inclusive SystemExit) vira FAIL com o tipo e a mensagem, nunca aborta o script."""
+    try:
+        fn()
+    except BaseException as e:   # falha ruidosa, nunca silenciosa
+        check(f"TC-WB44-{tc}", False, f"exceção {type(e).__name__}: {str(e)[:300]}")
+
+
 def main():
     if not V44.exists():
         for n in ("001", "002", "003", "004"):
@@ -234,21 +242,45 @@ def main():
         return
     with tempfile.TemporaryDirectory(prefix="dds_t44_") as tmp:
         tmp = Path(tmp)
-        v43 = g.extrair_v43(tmp)
-        wb43 = openpyxl.load_workbook(v43)
-        wb44 = openpyxl.load_workbook(V44)
+        est = {}
+
+        def abrir():
+            est["v43"] = g.extrair_v43(tmp)
+            est["wb43"] = openpyxl.load_workbook(est["v43"])
+            est["wb44"] = openpyxl.load_workbook(V44)
+            est["c43"], est["c44"] = conteudos(est["wb43"]), conteudos(est["wb44"])
+            est["nomes44"] = destinos_nomes(est["wb44"])
+
         try:
-            tc_001(tmp, wb44)
-            c43, c44 = conteudos(wb43), conteudos(wb44)
-            tc_002(c43, c44, destinos_nomes(wb44))
-            tc_003(wb44, c44)
-            tc_004(tmp, v43, wb43, wb44)
+            rodar("001", lambda: tc_001(tmp, openpyxl_44()))
+            try:
+                abrir()
+            except BaseException as e:
+                for n in ("002", "003", "004"):
+                    check(f"TC-WB44-{n}", False, f"não abriu as planilhas: {type(e).__name__}: {str(e)[:300]}")
+                return
+            rodar("002", lambda: tc_002(est["c43"], est["c44"], est["nomes44"]))
+            rodar("003", lambda: tc_003(est["wb44"], est["c44"]))
+            rodar("004", lambda: tc_004(tmp, est["v43"], est["wb43"], est["wb44"]))
         finally:
-            wb43.close()
-            wb44.close()
+            for k in ("wb43", "wb44"):
+                if k in est:
+                    est[k].close()
+
+
+def openpyxl_44():
+    """Abre a V4.4 de excel/ só para o TC-001 (nomes e A3); fecha ao sair do TC."""
+    return openpyxl.load_workbook(V44)
 
 
 def tc_001(tmp: Path, wb44) -> None:
+    try:
+        _tc_001(tmp, wb44)
+    finally:
+        wb44.close()
+
+
+def _tc_001(tmp: Path, wb44) -> None:
     regen = tmp / "V4_4_regen.xlsx"
     g.gerar(None, regen)
     ok_cmp, rel = cp.comparar_xlsx(regen, V44, cp.FORMULAS_ESPERADAS_V44, estrutura=True)
@@ -357,7 +389,7 @@ def tc_004(tmp: Path, v43: Path, wb43, wb44) -> None:
         if isinstance(v, (int, float)):
             sint[nome] = round(v + 1.5, 4)   # arredondado: o openpyxl grava 15 algarismos
         elif nome.startswith("org_"):
-            sint[nome] = origens.OUTRO_CARRO
+            sint[nome] = next(o for o in origens.ORIGENS_V42 if o != v)   # opção válida diferente: o dado muda de fato
         else:
             sint[nome] = f"{v} (teste sintético)"
     viva = g.copia_v43(tmp, sint, nome="viva_sintetica_V4_3.xlsx")
@@ -368,13 +400,19 @@ def tc_004(tmp: Path, v43: Path, wb43, wb44) -> None:
     txt = rel.read_text(encoding="utf-8") if rel.exists() else ""
     escritos = dp.ler_por_nome(saida) if saida.exists() else {}
     levados = sum(1 for k, v in sint.items() if k in escritos and dp.iguais(escritos[k], v))
-    mig_ok = cod == 0 and "| Conflitos (não escritos) | 0 |" in txt and levados == len(sint) and len(sint) > 100
+    sem_mudanca = sum(1 for k, v in sint.items() if dp.iguais(v, base[k]))   # sintético igual ao da V4.3: não provaria nada
+    intocados = [k for k in base if k not in sint]
+    intocados_ok = bool(escritos) and set(base) <= set(escritos) and all(
+        k in escritos and dp.iguais(escritos[k], base[k]) for k in intocados)
+    # tudo o que não foi perturbado fica igual à V4.3 (igual_ao_padrao): nomes de dado fora do conjunto sintético
+    mig_ok = cod == 0 and "| Conflitos (não escritos) | 0 |" in txt and "| Faltando na versão nova | 0 |" in txt         and "Resultado: **PASS**" in txt and levados == len(sint) and sem_mudanca == 0 and intocados_ok and len(sint) > 100
     check("TC-WB44-004: migração por nome: os nomes da V4.3 existem na V4.4 com o mesmo destino e os 24 novos não existem na "
           "V4.3; viva V4.3 com valores SINTÉTICOS DE TESTE em todos os nomes de dado migra para a V4.4 com código 0, "
-          "0 conflito e todos os dados levados",
+          "0 conflito, Faltando 0, Resultado PASS, todos os dados levados e os intocados iguais aos da V4.3",
           nomes_ok and mig_ok,
           f"nomes={nomes_ok} (perdidos/alterados {len(perdidos)}) migração código={cod} dados sintéticos levados="
-          f"{levados}/{len(sint)} (valores de teste, não do carro)")
+          f"{levados}/{len(sint)} (sem mudança: {sem_mudanca}; intocados iguais a V4.3: {len(intocados)}={intocados_ok}; "
+          "valores de teste, não do carro)")
 
 
 if __name__ == "__main__":
