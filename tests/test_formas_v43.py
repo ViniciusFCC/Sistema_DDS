@@ -500,16 +500,21 @@ def tc_ack_002() -> tuple[bool, str]:
                f"ok={ok_j}{'' if mot_j is None else ', ' + mot_j}; V4.2: {lim42.veredito}; sat v43 "
                f"({par.ay_sat_f}, {par.ay_sat_r}) × v42 ({par42.ay_sat_f}, {par42.ay_sat_r})")
 
-    # (e) a escada: sem incluir_v43 as 12 linhas de hoje; com ele, a linha "planilha V4.3" em 2º, referência "planilha"
-    ln = escada.degrau_2(caso, ay_max_g=1.0, incluir_v43=True)
-    sem = escada.degrau_2(caso, ay_max_g=1.0)
-    nomes = tuple(x.nome for x in ln)
-    partes["e"] = (escada.NOME_PLANILHA_V43 == "planilha V4.3" and len(sem) == 12 and len(ln) == 13
-                   and nomes[:3] == ("planilha", "planilha V4.3", "planilha (acoplado, sem rotação)")
-                   and nomes[2:] == tuple(x.nome for x in sem)[1:]
-                   and ln[1].referencia == "planilha" and ln[1].hipoteses == ()
-                   and all(x.referencia == y.referencia for x, y in zip(ln[2:], sem[1:])))
-    det.append(f"(e) nomes={nomes[:4]}…, referência da V4.3={ln[1].referencia!r}")
+    # (e) a escada: sem incluir_v43 as 12 linhas de hoje; com ele, a linha "planilha V4.3" em 2º, referência "planilha";
+    # o mesmo critério a 0,5 g, 1 g e 1,5 g (o teto da varredura em A_Y)
+    ok_e, nomes_e = escada.NOME_PLANILHA_V43 == "planilha V4.3", ()
+    for g_e in (0.5, 1.0, 1.5):
+        ln = escada.degrau_2(caso, ay_max_g=g_e, incluir_v43=True)
+        sem = escada.degrau_2(caso, ay_max_g=g_e)
+        nomes = tuple(x.nome for x in ln)
+        nomes_e = nomes_e or nomes
+        ok_e = ok_e and (len(sem) == 12 and len(ln) == 13
+                         and nomes[:3] == ("planilha", "planilha V4.3", "planilha (acoplado, sem rotação)")
+                         and nomes[2:] == tuple(x.nome for x in sem)[1:]
+                         and ln[1].referencia == "planilha" and ln[1].hipoteses == ()
+                         and all(x.referencia == y.referencia for x, y in zip(ln[2:], sem[1:])))
+    partes["e"] = ok_e
+    det.append(f"(e) nomes={nomes_e[:4]}…, referência da V4.3={ln[1].referencia!r}, a 0,5 g, 1 g e 1,5 g")
     return all(partes.values()), "; ".join(det) + f" | partes={partes}"
 
 
