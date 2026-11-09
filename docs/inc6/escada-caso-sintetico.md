@@ -12,7 +12,7 @@ Gerado por `tools/relatorio_escada.py`. Não edite à mão: rode o script de nov
 | `rho_kg_m3` | 1,200 | kg/m³ | sintético (Task 15, sem fonte) | pré-requisito de cda_m2 | densidade do ar, ordem de grandeza |
 | `cda_m2` | 1,000 | m² | sintético (Task 15, sem fonte) | liga a h9 (arrasto no Fx exigido) | ordem de grandeza de um monoposto de Fórmula SAE; só precisa ser > 0 para a h9 ficar ligada |
 | `crr` | 0,015 | - | sintético (Task 15, sem fonte) | liga a h9 (rolamento no Fx exigido) | ordem de grandeza de pneu de competição em asfalto; só precisa ser > 0 |
-| `mass_total` | 500,000 | kg | sintético (Task 15, sem fonte) | faz um eixo saturar antes de 2 g | com a massa da planilha (316,5 kg) nenhum eixo satura até 3 g, nem com o CG mais alto (até 0,9 m), nem com o CG deslocado para frente (a = 0,75 e 0,90 m), nem sem a downforce fixa de 400 N; a massa, com o resto do caso intacto, foi a menor intervenção que saturou. Com 360, 400 e 450 kg a linha `todas` ainda dá N/A; com 500 kg as três linhas de referência (`planilha`, `planilha V4.3`, `todas`) saturam |
+| `mass_total` | 500,000 | kg | sintético (Task 15, sem fonte) | faz um eixo saturar antes de 2 g | com a massa da planilha (316,5 kg) nenhum eixo satura até 3 g, nem com o CG mais alto (até 0,9 m), nem com o CG deslocado para frente (a = 0,75 e 0,90 m), nem sem a downforce fixa de 400 N; a massa, com o resto do caso intacto, foi a primeira testada que satura as três linhas de referência. Com 360, 400 e 450 kg a linha `todas` ainda dá N/A; com 500 kg as três linhas de referência (`planilha`, `planilha V4.3`, `todas`) saturam |
 
 **Pior origem do caso: ? A confirmar. Geometria sintética** (não há hardpoints do CAD). O pneu é o `.tir` provisório do TTC (R25B); mola, MR, barra e RC são valores demonstrativos (T09/E03). **Nenhum número deste relatório é resultado do carro** nem validação física (Validation = NOT_VALIDATED, EDR-022). O raio R do skidpad é entrada "a confirmar" (diâmetros e bitola provisórios), e cada rodada traz o R usado e a origem dele. "? A confirmar" na pior origem quer dizer que pelo menos uma entrada do caso (ou o pneu) não tem origem registrada na planilha: a célula de origem está vazia ou fora da lista.
 
@@ -22,10 +22,10 @@ Faixa de busca da saturação: 0 a 2,00 g (parâmetro `--ay-max-g`, rótulo de v
 
 ## 1. Origem
 
-- Data: 2026-11-09T05:31:25
-- Commit: `2d3797b3d01bd6d2dc1f4dad6f838e1d7fa09f51` (ramo `claude/inc7-7b-v43-0c2266`; com mudanças não commitadas em arquivos versionados)
+- Data: 2026-11-09T08:41:42
+- Commit: `ae9d1891fbc82435ea9a5cf9a947078a8203d68d` (ramo `claude/inc7-7b-v43-0c2266`; árvore sem mudanças pendentes)
 - Planilha: `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx` (SHA-256 antes `0d979440f8db788700900526bce60c7df3202fb93e24c41ca6bf46c59c9ccde0`; depois igual: só uma cópia temporária foi recalculada). O caso é lido com o leitor da V4.1 (`caso_da_planilha_v41`, `passo1=False`), porque a V4.2 contém todos os nomes da V4.1.
-- Motor de recálculo da cópia: excel (Excel 16.0 via COM, PID 54704); 117627 fórmulas, 0 erros, 21,4 s
+- Motor de recálculo da cópia: excel (Excel 16.0 via COM, PID 31404); 117627 fórmulas, 0 erros, 20,9 s
 - Pneu: `data/Hoosier_R25B_13x7_TTC_provisional.tir` (SHA-256 `f3bc80fda4145d53da06f69c8c0fcffbddfbbf73f4aab4149e1caa386c77c796`), em ISO_TYDEX (EDR-039)
 - Python 3.13.17, numpy 2.5.4; rodadas: 1 (uma por R, abaixo)
 
@@ -40,7 +40,7 @@ Origem dos coeficientes combinados do .tir (REX1, RBX*, RCX1, RBY*, RCY1, RVY*):
 - R = 9,125 m (origem: skidpad, linha central: R = (D_int + D_ext)/4 com D_int = 15,25 m e D_ext = 21,25 m (Formula SAE Rules 2026 v1.0 (10/09/2025), D.10.1.1; entrada provisória, a confirmar com o regulamento da prova); bitolas do caso da planilha (dados demonstrativos, não do carro): t_f = 1,277 m, t_r = 1,271 m (não entra no R da linha central))
 - O caso da planilha não tem R (R vazio); o valor do método foi aplicado só ao caso deste relatório. A planilha não foi alterada.
 - Caso: massa 500,0 kg, L = 1,594 m, bitola dianteira 1,277 m, Ackermann 100,0 %, CG lateral 0,000 m, aero downforce fixa, arrasto ligado (CdA, Crr).
-- Tempos desta rodada: degrau 1 41,9 s, degrau 2 36,7 s, sensibilidades 30,4 s
+- Tempos desta rodada: degrau 1 41,0 s, degrau 2 35,6 s, sensibilidades 30,8 s
 
 **Aviso: a base "planilha" deste relatório não é a planilha de hoje.** A planilha com R vazio tem a hipótese 3 (cos δ_ref) desligada, e no Python o raio liga o cos δ_ref na dianteira (a Fy dianteira leva cos(L/R)). Com o R informado, a linha `planilha` já tem a hipótese 3 ligada, e o Δ da linha `3` mede só o cos δ do trim contra esse cos δ_ref, não contra a falta dele. Preencha o R na planilha (e ligue a chave da hipótese 3) para a base ser a da planilha.
 
@@ -133,10 +133,10 @@ Nada foi ajustado para bater. Cada efeito vale para este R e para o caso sintét
 
 - Geometria sintética, pneu provisório do TTC e dados demonstrativos: os números mostram o tamanho relativo de cada hipótese neste caso, não o do carro.
 - A tolerância da escada (EDR-065) está pendente; nada aqui é "dentro" nem "fora".
-- **Caso sintético (Task 15):** ackermann_pct, rho_kg_m3, cda_m2, crr e mass_total são sintéticos e sem fonte (tabela no topo). O relatório existe para o usuário decidir a tolerância do EDR-065 (item 3) a partir das diferenças; ele não propõe valor, e os números não são do carro. Uma tolerância tirada deste caso vale tanto quanto o caso representa o carro, e a massa de 500 kg não é uma estimativa dele.
+- **Caso sintético (Task 15):** ackermann_pct, rho_kg_m3, cda_m2, crr e mass_total são sintéticos e sem fonte (tabela no topo). O relatório existe para o usuário decidir a tolerância do EDR-065 (item 3) a partir das diferenças; ele não propõe valor, e os números não são do carro. Uma tolerância tirada deste caso vale tanto quanto o caso representa o carro, e a massa de 500 kg não é uma estimativa dele. Nas linhas saturadas o pneu fica nos limites CAMMAX, CAMMIN e FZMAX do .tir; na linha `todas` a folga é de 0,79 % no outro eixo; as massas não suspensas ficam fixas.
 - O raio R é entrada a confirmar; os resultados dependem dele (ver a primeira linha).
 - Passou nos critérios do degrau 1 = os dois códigos concordam; não é validação física.
 - O arrasto entra inteiro no eixo x do carro; a componente lateral D·sen β (a velocidade faz o ângulo β com o carro) fica fora do balanço lateral. É de 2ª ordem em β e D é uma fração pequena de m·A.
 - A precisão de T nas linhas acopladas é da ordem da resolução do limite (0,01 m/s²), e não a da bisseção: a dobra do Newton pode cair até essa distância antes do pico do eixo.
-- A cota do degrau 1 (1,5 × a resolução, igual a 2 × |S − S2|) é empírica: o |S − S2| que o `analise_par` mede subestima o erro de interpolação dele (EDR-064, item 2.9; o 4/3 já está na resolução, EDR-065, item 2).
+- A cota do degrau 1 (1,5 × a resolução, igual a 2 × |S − S2| só no caso de dois eixos; nos casos de passo e piso ela caiu de 2× para 1,5×) é empírica: o |S − S2| que o `analise_par` mede subestima o erro de interpolação dele (EDR-064, item 2.9; o 4/3 já está na resolução, EDR-065, item 2).
 
