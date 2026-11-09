@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 69 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 7 · IMPLEMENTED: 4 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2; em 2026-11-02, EDR-067 (modelo estático de pneu, PR #25, vindo da main) entrou como APPROVED_WITH_CONDITIONS, e o EDR-067 desta branch, do raio do skidpad, foi renumerado para EDR-069; ainda em 2026-11-02, no passo do usuário entre a 7a e a 7b, EDR-069 passou de PROPOSED a APPROVED e o item 2 do EDR-065 foi decidido; em 2026-11-09, com o item 3, o EDR-065 passou de AWAITING_DECISION a APPROVED)
+Total: 69 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 6 · IMPLEMENTED: 5 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 16 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2; em 2026-11-02, EDR-067 (modelo estático de pneu, PR #25, vindo da main) entrou como APPROVED_WITH_CONDITIONS, e o EDR-067 desta branch, do raio do skidpad, foi renumerado para EDR-069; ainda em 2026-11-02, no passo do usuário entre a 7a e a 7b, EDR-069 passou de PROPOSED a APPROVED e o item 2 do EDR-065 foi decidido; em 2026-11-09, com o item 3, o EDR-065 passou de AWAITING_DECISION a APPROVED, e o EDR-066 (aprovado em 2026-11-03, implementado na V4.3) passou a IMPLEMENTED no índice)
 
 | ID | Título | Status |
 |---|---|---|
@@ -102,7 +102,7 @@ Total: 69 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DE
 | EDR-063 | Viva da equipe no Drive: conferência, retrato por nome e troca a cada versão | APPROVED |
 | EDR-064 | Método do MMM em raio fixo e da escada de hipóteses no Python | AWAITING_DECISION |
 | EDR-065 | Tolerância da escada e regra do NEUTRO | APPROVED |
-| EDR-066 | Achados da escada sobre fórmulas da planilha | AWAITING_DECISION |
+| EDR-066 | Achados da escada sobre fórmulas da planilha | IMPLEMENTED |
 | EDR-067 | Modelo estático de pneu (família de pressões e momentos PAC2002): correções de Mx e Mz | APPROVED_WITH_CONDITIONS |
 | EDR-068 | Executor dos testes: tempo-limite que encerra a árvore de processos | IMPLEMENTED |
 | EDR-069 | Centro de curva único, raio do skidpad e decomposição do inc. 7 | APPROVED |
@@ -118,7 +118,7 @@ Total: 69 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DE
 - **EDR-040** (AWAITING_DECISION): Formato do dataset de pneu e origem (OptimumTire 2)
 - **EDR-064** (AWAITING_DECISION): Método do MMM em raio fixo e da escada de hipóteses no Python (implementado; as decisões do controlador aguardam o usuário no PR)
 - **EDR-065** (APPROVED): Tolerância da escada de hipóteses e regra do NEUTRO (valor e regra são do usuário)
-- **EDR-066** (AWAITING_DECISION): Achados da escada sobre as fórmulas de Ackermann e de Fx exigido da planilha
+- **EDR-066** (IMPLEMENTED): Achados da escada sobre as fórmulas de Ackermann e de Fx exigido da planilha
 - **EDR-069** (APPROVED): Centro de curva único e raio do skidpad; D4, D5 e D6 aprovadas pelo usuário em 2026-11-02
 
 ## 4. Proposta de IDs para camber/toe estáticos (Decisão C — NÃO criados)
