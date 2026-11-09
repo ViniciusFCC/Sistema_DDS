@@ -80,6 +80,32 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
              ("tests/test_workbook_v4_3.py", 3, "V4.3 (TC-WB43-003 a 005); plano do inc. 7")]
 
 
+_X = "excel/FSAE_EV_Suspension_Fase1_"
+# Entradas DECLARADAS de cada item para o --pular-recentes: o que o script abre por caminho (módulos que a mutação troca, testes que
+# ela dispara, planilhas .xlsx, dados) e que o ast não vê. Entram, com o script e os imports locais, no diff contra o commit.
+# Os imports de cada arquivo declarado também são seguidos. Planilhas lidas da tag Git (imutáveis) não precisam constar. O .tir do
+# TTC não é versionado (termos do TTC), então não pode constar: mudança nele não é vista.
+DEPENDENCIAS: dict[str, tuple[str, ...]] = {
+    "tests/mutation_tire.py": ("python/tire_model.py", "tests/test_tire_model.py"),
+    "tests/mutation_equilibrio.py": ("python/equilibrio.py", "tests/test_equilibrio.py", "tests/test_equilibrio_linear.py"),
+    "tests/mutation_planilha_equilibrio.py": ("python/aba_equilibrio.py", "tests/test_workbook_v4_1.py", _X + "V4_1.xlsx",
+                                              _X + "V4_0.xlsx", "data/nomes_V4_1.csv"),
+    "tests/mutation_mmm.py": ("python/mmm.py", "tests/test_mmm.py", "tests/test_escada.py"),
+    "tests/mutation_inc7.py": ("python/equilibrio.py", "python/skidpad.py", "python/estudo_neutro.py", "tests/test_formas_v43.py",
+                               "tests/test_skidpad.py", "tests/test_neutro.py"),
+    "tests/mutation_planilha_v43.py": ("python/aba_curva.py", "python/aba_equilibrio.py", "tests/test_workbook_v4_3.py",
+                                       _X + "V4_2.xlsx", _X + "V4_3.xlsx", "data/nomes_V4_3.csv"),
+    "tests/test_workbook.py": ("python/atualizar_planilha.py", "python/build_workbook.py", _X + "V3_0.xlsx", _X + "V2.1.xlsx",
+                               "data/layout_V2_4.json"),
+    "tests/test_workbook_suspensao.py": (_X + "V3_0.xlsx",),
+    "tests/test_workbook_v4_0.py": ("python/gerar_v4_0.py", _X + "V4_0.xlsx", _X + "V3_0.xlsx", "data/nomes_V4_0.csv"),
+    "tests/test_workbook_v4_1.py": ("python/gerar_v4_1.py", _X + "V4_1.xlsx", _X + "V4_0.xlsx", "data/nomes_V4_1.csv"),
+    "tests/test_workbook_v4_2.py": ("python/gerar_v4_2.py", _X + "V4_2.xlsx", _X + "V4_1.xlsx", "data/nomes_V4_2.csv"),
+    "tests/test_workbook_v4_3.py": ("python/gerar_v4_3.py", "python/aba_curva.py", _X + "V4_3.xlsx", _X + "V4_2.xlsx",
+                                    "data/nomes_V4_3.csv"),
+}
+
+
 def rodar(args: list[str], timeout: int = 1800) -> Execucao:
     """Roda um script com o executor dos testes (EDR-068): no tempo-limite encerra a árvore inteira (código 124).
     O item recebe DDS_ORCAMENTO_S = timeout - 200, para que a soma dos tempos internos fique abaixo do limite externo."""
@@ -153,7 +179,9 @@ def _arquivo_local(nome: str, raiz: Path) -> str | None:
 
 def modulos_locais(script: str, raiz: Path = RAIZ) -> list[str]:
     """Os .py locais (python/, tests/, tools/) que `script` importa, de forma transitiva, ordenados. Só lê a árvore
-    sintática (ast); não executa nada. Importação dinâmica (importlib, subprocess) não aparece aqui."""
+    sintática (ast); não executa nada. Não resolve import relativo (`from . import x`), pacote (`pasta/__init__.py`,
+    `from python import mod`) nem importação dinâmica (importlib, caminho aberto por `open`/subprocess): o que o script abre
+    por caminho tem de ser declarado em DEPENDENCIAS."""
     raiz = Path(raiz)
     achados: set[str] = set()
     fila = [script]
@@ -164,8 +192,7 @@ def modulos_locais(script: str, raiz: Path = RAIZ) -> list[str]:
         except (OSError, SyntaxError, UnicodeDecodeError):
             continue
         for no in ast.walk(arvore):
-            nomes = [a.name for a in no.names] if isinstance(no, ast.Import) else \
-                [no.module] if isinstance(no, ast.ImportFrom) and no.level == 0 and no.module else []
+            nomes = [a.name for a in no.names] if isinstance(no, ast.Import) else                 [no.module] if isinstance(no, ast.ImportFrom) and no.level == 0 and no.module else []
             for nome in nomes:
                 rel = _arquivo_local(nome.split(".")[0], raiz)
                 if rel and rel != script and rel not in achados:
@@ -174,16 +201,45 @@ def modulos_locais(script: str, raiz: Path = RAIZ) -> list[str]:
     return sorted(achados)
 
 
-def pode_pular(script: str, commit: str, raiz: Path = RAIZ) -> bool:
-    """True só se o script e os módulos locais dele não têm diff entre `commit` e HEAD nem mudança na árvore de trabalho.
-    Qualquer dúvida (commit desconhecido, git indisponível) dá False: o teste roda. Dados e planilhas de entrada não entram."""
+def conjunto_conferido(script: str, raiz: Path = RAIZ, declaradas: tuple[str, ...] = ()) -> list[str]:
+    """O script, os imports locais transitivos dele e as entradas declaradas (com os imports locais dos .py declarados)."""
     raiz = Path(raiz)
-    arquivos = [script, *modulos_locais(script, raiz)]
+    conjunto = {script, *modulos_locais(script, raiz), *declaradas}
+    for d in declaradas:
+        if d.endswith(".py"):
+            conjunto.update(modulos_locais(d, raiz))
+    return sorted(conjunto)
+
+
+def _rastreado_no(commit: str, caminho: str, raiz: Path) -> bool:
+    """O caminho existe na árvore de trabalho, está rastreado e existe no `commit`."""
+    if not (raiz / caminho).is_file():
+        return False
+    for args in (["ls-files", "--error-unmatch", "--", caminho], ["cat-file", "-e", f"{commit}:{caminho}"]):
+        if subprocess.run(["git", *args], cwd=raiz, capture_output=True).returncode != 0:
+            return False
+    return True
+
+
+def pode_pular(script: str, commit: str, raiz: Path = RAIZ, declaradas: tuple[str, ...] = ()) -> bool:
+    """True só se o conjunto conferido (`conjunto_conferido`) não tem diff entre `commit` e HEAD nem mudança na árvore de
+    trabalho. Arquivo do conjunto novo, não rastreado, ausente ou inexistente no commit impede o pulo. Qualquer dúvida
+    (commit desconhecido, git indisponível) dá False: o teste roda. Dados e planilhas que ninguém declarou não entram."""
+    raiz = Path(raiz)
+    arquivos = conjunto_conferido(script, raiz, declaradas)
+    if not all(_rastreado_no(commit, f, raiz) for f in arquivos):
+        return False
     for alvo in ([commit, "HEAD"], ["HEAD"]):
         r = subprocess.run(["git", "diff", "--quiet", *alvo, "--", *arquivos], cwd=raiz, capture_output=True)
         if r.returncode != 0:
             return False
     return True
+
+
+def chaves_desconhecidas(recentes: dict[str, str]) -> list[str]:
+    """Chaves do JSON do --pular-recentes que não são script de nenhum item da suíte (viram aviso no log)."""
+    conhecidos = {t[1] for t in TESTES} | {m[0] for m in MUTACAO} | {p[0] for p in PLANILHAS}
+    return sorted(set(recentes) - conhecidos)
 
 
 def ler_recentes(caminho: Path | str) -> dict[str, str]:
@@ -197,7 +253,6 @@ CAMINHO_V30 = "excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx"
 CAMINHO_V40 = "excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx"
 CAMINHO_V41 = "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 CAMINHO_V42 = "excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx"
-CAMINHO_V43 = "excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx"
 
 
 def referencia_v30(pasta: Path) -> tuple[Path, str]:
@@ -283,15 +338,17 @@ def main() -> None:
     ap.add_argument("--titulo", default="Verificação da V3.0 nesta máquina")
     ap.add_argument("--pular-recentes", type=Path, metavar="ARQ",
                     help='JSON {"tests/x.py": "<commit>"}: pula o teste que passou naquele commit e cujo script e '
-                         "módulos locais não mudaram desde então (dados e planilhas de entrada não entram na conferência)")
+                         "módulos locais (ast; sem import relativo, de pacote ou dinâmico) mais as entradas declaradas em DEPENDENCIAS não mudaram "
+                         "desde então; arquivo novo ou não rastreado impede o pulo; o que não está declarado não entra na conferência")
     a = ap.parse_args()
     recentes = ler_recentes(a.pular_recentes) if a.pular_recentes else {}
     pulados: list[tuple[str, str]] = []
+    chaves_sem_item = chaves_desconhecidas(recentes)
 
     def pulavel(script: str) -> str | None:
         """Commit em que `script` passou, se ele pode ser pulado agora; senão None."""
         c = recentes.get(script)
-        return c if c and pode_pular(script, c) else None
+        return c if c and pode_pular(script, c, declaradas=DEPENDENCIAS.get(script, ())) else None
 
     md: list[str] = []
     resumo: list[tuple[str, str, str]] = []  # (CA, item, status)
@@ -478,7 +535,11 @@ def main() -> None:
             "## Pulados (`--pular-recentes`)", "",
             f"{len(pulados)} item(ns) pulado(s). **PULADO nunca conta como PASS**: está fora da contagem de aprovados e vale só "
             "como o resultado de um commit anterior. A conferência olha o script e os módulos locais que ele importa "
-            "(`python/`, `tests/`, `tools/`, via ast); os dados e as planilhas de entrada não entram nela.", "",
+            "(`python/`, `tests/`, `tools/`, via ast) mais as entradas declaradas do item (`DEPENDENCIAS`: módulos e testes que o "
+            "script abre por caminho, planilhas e dados). Fora da conferência: import relativo ou de pacote, importação dinâmica, "
+            "o que o script lê sem estar declarado, o .tir do TTC (não versionado), planilhas lidas da tag Git (imutáveis) e o ambiente (`uv.lock`, motor Excel). "
+            "Arquivo do conjunto novo, não rastreado ou ausente do commit impede o pulo.", "",
+            *[f"- AVISO: a chave `{k}` do arquivo não bate com nenhum item da suíte (ignorada)" for k in chaves_sem_item],
             *[f"- `{s}`: PULADO (passou em {c}; código sem mudança)" for s, c in pulados], "",
         ]
     a.saida.parent.mkdir(parents=True, exist_ok=True)
