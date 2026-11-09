@@ -51,18 +51,20 @@ TESTES = [
     ("executor dos testes", "tests/test_executor.py", 1, "plano do inc. 7 (TC-RUN-001)"),
     ("raio do skidpad", "tests/test_skidpad.py", 2, "plano do inc. 7 (TC-SKP-001 e 002)"),
     ("formas v43", "tests/test_formas_v43.py", 4, "plano do inc. 7 (TC-ACK-001, TC-FXI-001 e 002, TC-ACK-002)"),
-    ("estudo do NEUTRO", "tests/test_neutro.py", 1, "plano do inc. 7 (TC-NEU-001; TC-NEU-002 na Task 9)"),
+    ("estudo do NEUTRO", "tests/test_neutro.py", 2, "plano do inc. 7 (TC-NEU-001 e 002)"),
+    ("V4.3 (estrutura, CA-07, migração e verificações)", "tests/test_v4_3.py", 3, "plano do inc. 7 (TC-WB43-001, 002 e 006)"),
 ]
 MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
            "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada", "executor_testes", "skidpad",
+           "aba_curva", "gerar_v4_3",
            "estudo_neutro"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
            ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5),
-           ("tests/mutation_inc7.py", 5)]
+           ("tests/mutation_inc7.py", 5), ("tests/mutation_planilha_v43.py", 4)]
 # A mutação da planilha recalcula cópias pelo Excel (6 execuções do teste, de minutos cada): o limite de 1800 s dos outros não basta.
 TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200, "tests/mutation_mmm.py": 3600,
-                   "tests/mutation_inc7.py": 3600}
+                   "tests/mutation_inc7.py": 3600, "tests/mutation_planilha_v43.py": 10200}
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
@@ -72,7 +74,8 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
              ("tests/test_workbook_suspensao.py", 15, "suspensão da V3.0 (15 com a 2ª rodada da revisão metodológica); registro-de-versoes-V3_0.md"),
              ("tests/test_workbook_v4_0.py", 2, "V4.0; plano do incremento 3"),
              ("tests/test_workbook_v4_1.py", 5, "V4.1 (TC-WB41-003 a 006, parte 1 e 2 do 006); plano do incremento 4"),
-             ("tests/test_workbook_v4_2.py", 2, "V4.2 (TC-WB42-005 e 006); plano do incremento 5")]
+             ("tests/test_workbook_v4_2.py", 2, "V4.2 (TC-WB42-005 e 006); plano do incremento 5"),
+             ("tests/test_workbook_v4_3.py", 3, "V4.3 (TC-WB43-003 a 005); plano do inc. 7")]
 
 
 def rodar(args: list[str], timeout: int = 1800) -> Execucao:
@@ -125,7 +128,7 @@ def versao_planilhas() -> tuple[bool, list[str]]:
         linhas.append(f"- `excel/{f.name}`: A3 diz {lido}: **{'PASS' if bate else 'FAIL'}**")
     if not arquivos:
         ok, linhas = False, ["- nenhuma planilha encontrada em `excel/`: **FAIL**"]
-    for obrigatoria in (CAMINHO_V30, CAMINHO_V40, CAMINHO_V41):
+    for obrigatoria in (CAMINHO_V30, CAMINHO_V40, CAMINHO_V41, CAMINHO_V42):
         if RAIZ / obrigatoria not in arquivos:
             ok = False
             linhas.append(f"- `{obrigatoria}` não encontrada: **FAIL**")
@@ -142,6 +145,7 @@ CAMINHO_V30 = "excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx"
 CAMINHO_V40 = "excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx"
 CAMINHO_V41 = "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 CAMINHO_V42 = "excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx"
+CAMINHO_V43 = "excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx"
 
 
 def referencia_v30(pasta: Path) -> tuple[Path, str]:
@@ -357,7 +361,7 @@ def main() -> None:
     # --- Teste da planilha, Excel x Python (CA-09, EDR-044) ---
     md += ["## Teste da planilha (CA-09)", ""]
     for script, esperado, fonte in PLANILHAS:
-        args = [str(REF30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith(("_v4_1.py", "_v4_2.py")) else [
+        args = [str(REF30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith(("_v4_1.py", "_v4_2.py", "_v4_3.py")) else [
             str(REF30), str(RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"), str(RAIZ / "data" / "layout_V2_4.json"),
             str(RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir")]
         r = rodar([script, *args])
