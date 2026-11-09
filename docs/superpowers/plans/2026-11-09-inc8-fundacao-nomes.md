@@ -23,6 +23,9 @@ reserva (EDR-044), testes em script com `check()` (não pytest).
 O plano só é executado depois que o usuário aprova os itens A1 a A5. Os itens D1 a D6 são decisões do controlador,
 registradas para ele saber; qualquer uma pode ser revertida na aprovação.
 
+**Aprovação (usuário, 2026-11-09): A1 a A5 aprovados como estão.** D1 a D6 não foram revertidas. Continuam pendentes: a
+lista de ramos não cobertos (Task 16, Step 4) e os passos do fechamento (Task 20).
+
 ### A1. Nomes novos: 23, não 9 (`data/nomes_V4_4.csv`)
 
 A medição refeita (2026-11-09, `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx`, SHA `b3da017f…`) achou um erro na §3.1 da
