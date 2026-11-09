@@ -154,6 +154,19 @@ Perguntas que fecham o diagnóstico: em que programa e de que jeito a planilha f
 e em qual célula se clicou. Se a resposta apontar para o ambiente, o texto vai para o LEIA-ME (Task 14). Se apontar
 para o arquivo, o diagnóstico precisa ser refeito com o caso relatado.
 
+### 3.1 Resposta do usuário (2026-11-03) e encaminhamento
+
+O usuário respondeu que a fórmula não apareceu no Excel da área de trabalho, com a planilha aberta direto do H:
+(Google Drive para desktop). Isso descarta as hipóteses 1 e 2: o volume H: não guarda a marca da internet, então o
+arquivo não cai no Modo de Exibição Protegido por esse motivo, e não se tratava do navegador nem do celular. Resta a
+hipótese 3 (barra de fórmulas desligada ou outra configuração do Excel de quem abriu), que **não foi verificada**: a
+interface do Excel do usuário não foi vista.
+
+Encaminhamento (C-B1): o gerador não muda, porque nada no arquivo esconde a fórmula (§3). O LEIA-ME do Drive, na
+atualização da V4.3, ensina a reativar a barra: guia **Exibir > Barra de Fórmulas**, ou **Arquivo > Opções > Avançado >
+Exibir > Mostrar barra de fórmulas**. Se o sintoma voltar com a barra ligada, o diagnóstico é refeito com a célula
+exata e uma captura de tela.
+
 ## 4. MATCH/INDEX no LibreOffice (ajuste 9 do conselho)
 
 Cada cópia do protótipo foi recalculada duas vezes: pelo Excel via COM e pelo LibreOffice 26.8.1.1 headless
