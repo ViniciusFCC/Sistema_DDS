@@ -14,6 +14,8 @@ M = 0, N = T = esperado e código de saída 0. A planilha é gerada numa pasta
 temporária, nunca por cima da entregue. Não modifica os scripts que verifica (R7).
 """
 import argparse
+import ast
+import json
 import datetime as dt
 import os
 import platform
@@ -140,6 +142,56 @@ def git(*args: str) -> str:
     return r.stdout.strip() if r.returncode == 0 else f"indisponível ({r.stderr.strip()})"
 
 
+def _arquivo_local(nome: str, raiz: Path) -> str | None:
+    """Caminho relativo (com /) do módulo local `nome` em python/, tests/ ou tools/, ou None se não for local."""
+    raiz = Path(raiz)
+    for pasta in ("python", "tests", "tools"):
+        if (raiz / pasta / f"{nome}.py").is_file():
+            return f"{pasta}/{nome}.py"
+    return None
+
+
+def modulos_locais(script: str, raiz: Path = RAIZ) -> list[str]:
+    """Os .py locais (python/, tests/, tools/) que `script` importa, de forma transitiva, ordenados. Só lê a árvore
+    sintática (ast); não executa nada. Importação dinâmica (importlib, subprocess) não aparece aqui."""
+    raiz = Path(raiz)
+    achados: set[str] = set()
+    fila = [script]
+    while fila:
+        atual = fila.pop()
+        try:
+            arvore = ast.parse((raiz / atual).read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            continue
+        for no in ast.walk(arvore):
+            nomes = [a.name for a in no.names] if isinstance(no, ast.Import) else \
+                [no.module] if isinstance(no, ast.ImportFrom) and no.level == 0 and no.module else []
+            for nome in nomes:
+                rel = _arquivo_local(nome.split(".")[0], raiz)
+                if rel and rel != script and rel not in achados:
+                    achados.add(rel)
+                    fila.append(rel)
+    return sorted(achados)
+
+
+def pode_pular(script: str, commit: str, raiz: Path = RAIZ) -> bool:
+    """True só se o script e os módulos locais dele não têm diff entre `commit` e HEAD nem mudança na árvore de trabalho.
+    Qualquer dúvida (commit desconhecido, git indisponível) dá False: o teste roda. Dados e planilhas de entrada não entram."""
+    raiz = Path(raiz)
+    arquivos = [script, *modulos_locais(script, raiz)]
+    for alvo in ([commit, "HEAD"], ["HEAD"]):
+        r = subprocess.run(["git", "diff", "--quiet", *alvo, "--", *arquivos], cwd=raiz, capture_output=True)
+        if r.returncode != 0:
+            return False
+    return True
+
+
+def ler_recentes(caminho: Path | str) -> dict[str, str]:
+    """JSON {"tests/x.py": "<commit>"} da opção --pular-recentes."""
+    dados = json.loads(Path(caminho).read_text(encoding="utf-8"))
+    return {str(k): str(v) for k, v in dados.items()}
+
+
 TAG_V30 = "v3.0"
 CAMINHO_V30 = "excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx"
 CAMINHO_V40 = "excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx"
@@ -195,7 +247,17 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--saida", type=Path, default=RAIZ / "build" / "verificacao-ultima.md")
     ap.add_argument("--titulo", default="Verificação da V3.0 nesta máquina")
+    ap.add_argument("--pular-recentes", type=Path, metavar="ARQ",
+                    help='JSON {"tests/x.py": "<commit>"}: pula o teste que passou naquele commit e cujo script e '
+                         "módulos locais não mudaram desde então (dados e planilhas de entrada não entram na conferência)")
     a = ap.parse_args()
+    recentes = ler_recentes(a.pular_recentes) if a.pular_recentes else {}
+    pulados: list[tuple[str, str]] = []
+
+    def pulavel(script: str) -> str | None:
+        """Commit em que `script` passou, se ele pode ser pulado agora; senão None."""
+        c = recentes.get(script)
+        return c if c and pode_pular(script, c) else None
 
     md: list[str] = []
     resumo: list[tuple[str, str, str]] = []  # (CA, item, status)
@@ -224,6 +286,12 @@ def main() -> None:
     ]
     detalhes: list[str] = []
     for nome, script, esperado, fonte in TESTES:
+        c_ok = pulavel(script)
+        if c_ok:
+            pulados.append((script, c_ok))
+            resumo.append(("CA-05", nome, "PULADO"))
+            md.append(f"| {nome} | `{script}` | {esperado} | PULADO (passou em {c_ok}; código sem mudança) | - | **PULADO** | {fonte} |")
+            continue
         r = rodar([script])
         resumos = [m for m in map(RE_RESUMO.match, r.stdout.splitlines()) if m]
         # Script sem os dados externos (ex.: .tir do TTC fora do Git) sai com código 3 e "NÃO EXECUTÁVEL:": nunca é aprovado.
@@ -249,6 +317,12 @@ def main() -> None:
     # --- Mutação (CA-06) ---
     md += ["## Mutação (CA-06)", ""]
     for script, esperado in MUTACAO:
+        c_ok = pulavel(script)
+        if c_ok:
+            pulados.append((script, c_ok))
+            resumo.append(("CA-06", f"mutação ({Path(script).name})", "PULADO"))
+            md += [f"### `{script}`", "", f"- PULADO (passou em {c_ok}; código sem mudança)", ""]
+            continue
         r = rodar([script], timeout=TIMEOUT_MUTACAO.get(script, 1800))
         linhas = r.stdout.splitlines()
         pre = [l for l in linhas if l.startswith("PRE-CHECAGEM")]
@@ -361,6 +435,12 @@ def main() -> None:
     # --- Teste da planilha, Excel x Python (CA-09, EDR-044) ---
     md += ["## Teste da planilha (CA-09)", ""]
     for script, esperado, fonte in PLANILHAS:
+        c_ok = pulavel(script)
+        if c_ok:
+            pulados.append((script, c_ok))
+            resumo.append(("CA-09", f"planilha Excel x Python ({Path(script).stem})", "PULADO"))
+            md += [f"- `{script}`: esperado {esperado} ({fonte}): PULADO (passou em {c_ok}; código sem mudança)", ""]
+            continue
         args = [str(REF30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith(("_v4_1.py", "_v4_2.py", "_v4_3.py")) else [
             str(REF30), str(RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"), str(RAIZ / "data" / "layout_V2_4.json"),
             str(RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir")]
@@ -386,10 +466,20 @@ def main() -> None:
         "## Resumo", "", "| CA | Item | Status |", "|---|---|---|",
         *[f"| {ca} | {item} | **{st}** |" for ca, item, st in resumo], "",
     ]
+    if a.pular_recentes:
+        md[md.index("## Resumo"):md.index("## Resumo")] = [
+            "## Pulados (`--pular-recentes`)", "",
+            f"{len(pulados)} item(ns) pulado(s). **PULADO nunca conta como PASS**: está fora da contagem de aprovados e vale só "
+            "como o resultado de um commit anterior. A conferência olha o script e os módulos locais que ele importa "
+            "(`python/`, `tests/`, `tools/`, via ast); os dados e as planilhas de entrada não entram nela.", "",
+            *[f"- `{s}`: PULADO (passou em {c}; código sem mudança)" for s, c in pulados], "",
+        ]
     a.saida.parent.mkdir(parents=True, exist_ok=True)
     a.saida.write_text("\n".join(md) + "\n", encoding="utf-8", newline="\n")
     for ca, item, st in resumo:
         print(f"{ca}  {st:15s} {item}")
+    if a.pular_recentes:
+        print(f"PULADOS (fora da contagem de PASS): {len(pulados)}")
     print(f"log: {a.saida}")
     falhou = any(st == "FAIL" for _, _, st in resumo)
     sys.exit(1 if falhou else 0)
