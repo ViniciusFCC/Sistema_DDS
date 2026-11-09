@@ -10,7 +10,7 @@ Roda como script: uv run python -X utf8 tests/mutation_inc7.py
 """
 import os, re, shutil, sys, tempfile, time
 
-from executor_testes import executar
+from executor_testes import CODIGO_TEMPO, executar
 
 TIMEOUT_SONDA = 120      # s
 TIMEOUT_TESTE = 1800     # s por teste
@@ -46,7 +46,7 @@ def rodar_teste(env, t):
 
 
 def pegou(o):
-    return o.returncode != 0 and '[FAIL]' in o.stdout
+    return o.returncode not in (0, CODIGO_TEMPO) and '[FAIL]' in o.stdout
 
 
 def rodar(modulo, fonte):
@@ -70,7 +70,7 @@ muts = {
         ('equilibrio', "saida[c] += th[c] - th_med", "saida[c] += th_med - th[c]"),
     "fx_exigido_traseira v43: α_F e α_R trocados":
         ('equilibrio', "fx += req_f * alfas[0] + req_r * alfas[1]", "fx += req_f * alfas[1] + req_r * alfas[0]"),
-    "alfas_de_arrasto: sem o limite no pico (réplica de grade)":
+    "_alfa_na_grade: sem o limite no pico (réplica de grade)":
         ('equilibrio',
          "    if req >= fys[i_pico]:\n        return abs(alfas[i_pico])\n    j = next(",
          "    j = next("),
@@ -104,8 +104,10 @@ for nome, (m, a, b) in muts.items():
     ok = bool(pegos)
     det += ok
     falhas = [l.split('  ')[0] for t, o in res if pegou(o) for l in o.stdout.splitlines() if l.startswith('[FAIL]')]
+    tempo = [os.path.basename(t) for t, o in res if o.returncode == CODIGO_TEMPO]   # estourou o tempo: não é detecção
     print(('DETECTADO     ' if ok else 'NÃO DETECTADO '), nome, '->',
           '; '.join(falhas) if falhas else 'nenhum FAIL',
+          f"(tempo esgotado em {', '.join(tempo)})" if tempo else '',
           f"[{', '.join(os.path.basename(t) for t in pegos) or '-'}; {time.time() - ti:.0f} s]", flush=True)
 print(f"{det}/{len(muts)} mutantes mortos" if det == len(muts) else f"{det}/{len(muts)} mutantes mortos (SOBREVIVENTES)")
 print(det, '/', len(muts))  # linha de resumo no formato que tools/rodar_testes.py (RE_MUTACAO) lê

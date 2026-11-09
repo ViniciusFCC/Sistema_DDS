@@ -7,10 +7,16 @@ L, b e as bitolas abaixo são entradas SINTÉTICAS de teste, não do carro; o ú
 (WIDTH/2 = 0,0889 m, .tir TTC provisório) e os diâmetros do regulamento (FSAE Rules 2026 v1.0, D.10.1.1).
 """
 import math
+import os
+import sys
+from types import SimpleNamespace
 
 import atualizar_planilha as ap
 import skidpad as sk
 import tire_model as tm
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+import relatorio_escada as rel   # noqa: E402  (o ramo da bitola provisória mora em _raio_do_metodo)
 
 results = []
 
@@ -73,12 +79,28 @@ modos = (sk.raio("manual", r_manual=None, **args) == (None, "R manual vazio: a c
          and sk.raio("manual", r_manual=8.0, **args) == (8.0, None)
          and sk.raio("linha_central", r_manual=None, **args) == (9.125, None)
          and sk.raio("rente_aos_cones", r_manual=None, **args)[0] == r.raio_m)
+# Ramo da bitola provisória do relatório (tools/relatorio_escada._raio_do_metodo; U3 do plano do inc. 7). O VehicleConfig
+# recusa bitola <= 0, então o caso é um stand-in com a bitola traseira ausente (SINTÉTICO de teste; L, b e t_f como acima).
+# Sem a bitola traseira entra a provisória do argumento (1,25 m de teste, rotulada), o R é o do skidpad com ela, e o texto a cita;
+# com as duas bitolas no caso a provisória não entra (rótulos vazios).
+caso_sem_tr = SimpleNamespace(cfg=SimpleNamespace(track_front=TF, track_rear=None, wheelbase=L, cg_to_rear=B),
+                              ds=ds, raio_m=None)
+caso_com_tr = SimpleNamespace(cfg=SimpleNamespace(track_front=TF, track_rear=TR, wheelbase=L, cg_to_rear=B),
+                              ds=ds, raio_m=None)
+R_pv, txt_pv, _, rot_pv = rel._raio_do_metodo(caso_sem_tr, "rente_aos_cones", 1.25)
+R_esp = sk.raio("rente_aos_cones", d_int=D_INT, d_ext=sk.D_EXTERNO_M, L=L, b=B, t_f=TF, t_r=1.25, meia_largura=w_tir,
+                r_manual=None)[0]
+R_cd, _, _, rot_cd = rel._raio_do_metodo(caso_com_tr, "rente_aos_cones", 1.25)
+bitola_pv = (R_pv == R_esp and rot_pv == ["t_r"] and "bitola provisória do T11 (t_r = 1,250 m" in txt_pv
+             and rot_cd == [] and R_cd != R_pv)
 ok2 = (vazio.raio_m is None and vazio.motivo == "bitola traseira vazia: R rente aos cones a confirmar"
        and sem_w.sem_meia_largura is True and sem_w.raio_m == com_0.raio_m
        and abs(w_tir - 0.0889) < 1e-12 and sem_width and invalido and modos
-       and sk.ORIGEM_MEIA_LARGURA == "◐ Provisório (.tir TTC)" and sk.FONTE_DIAMETROS.endswith("D.10.1.1"))
+       and sk.ORIGEM_MEIA_LARGURA == "◐ Provisório (.tir TTC)" and sk.FONTE_DIAMETROS.endswith("D.10.1.1")
+       and bitola_pv)
 check("TC-SKP-002 entradas vazias, meia largura do .tir e modos",
-      ok2, f"WIDTH/2={w_tir}; sem meia largura R={sem_w.raio_m}; modo inválido levanta={invalido}")
+      ok2, f"WIDTH/2={w_tir}; sem meia largura R={sem_w.raio_m}; modo inválido levanta={invalido}; bitola provisória: "
+      f"R={R_pv:.4f} m (esperado {R_esp:.4f}), rótulos={rot_pv}, com a bitola no caso R={R_cd:.4f} m")
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")
