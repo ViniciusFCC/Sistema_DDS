@@ -372,6 +372,11 @@ def tabela_margens(perto: dict, titulo: str) -> str:
     return "\n".join(L) + "\n"
 
 
+def _d3(c: Convergencia) -> float | None:
+    """d3 = |S_h/4 − S_h/8| [g] do eixo, ou None se faltar uma das duas saturações."""
+    return None if c.s[2] is None or c.s[3] is None else abs(c.s[2] - c.s[3])
+
+
 def tabela_perto(perto: dict, titulo: str = "### Tabela 7. Varredura de λ_f perto do neutro, sem refino [g] "
                  "(sintético)", xs: list | None = None) -> str:
     """Tabela 7: varredura de λ_f perto do neutro (sem refino), com a classe de cada veredito contra o sinal da h/8.
@@ -383,8 +388,8 @@ def tabela_perto(perto: dict, titulo: str = "### Tabela 7. Varredura de λ_f per
          "Classe: NEUTRO; \"certo\" ou \"ERRADO\" contra o sinal de Δ_h/8 (a h/8 não convergiu por completo). "
          "A alternativa 3 (refino) não foi calculada nesta varredura.\n",
          "| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) "
-         "| Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R |",
-         "|---|---|---|---|---|---|---|---|---|"]
+         "| Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R | d3_F / d3_R |",
+         "|---|---|---|---|---|---|---|---|---|---|"]
     erradas = {k: 0 for k in _ALTS}
     neutros = dict(erradas)
     for nome, r in perto.items():
@@ -400,7 +405,8 @@ def tabela_perto(perto: dict, titulo: str = "### Tabela 7. Varredura de λ_f per
             neutros[k] += c == "NEUTRO"
             return f"{_e(r['faixas'][k])} / {v} / {c}"
         L.append(f"| {nome} | {_f(r['delta'][0])} | {_f(d_ref)} | {real} | {cel('atual')} | {cel('alt1')} "
-                 f"| {cel('alt1_43')} | {cel('alt2')} | {_f(r['F'].p, '.2f')} / {_f(r['R'].p, '.2f')} |")
+                 f"| {cel('alt1_43')} | {cel('alt2')} | {_f(r['F'].p, '.2f')} / {_f(r['R'].p, '.2f')} "
+                 f"| {_e(_d3(r['F']))} / {_e(_d3(r['R']))} |")
     xs = [4.0 + 0.5 * k for k in range(len(perto))] if xs is None else xs
     rs = list(perto.values())
     x_h = _cruzamento(xs, [r["delta"][0] for r in rs])

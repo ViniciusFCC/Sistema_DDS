@@ -16,6 +16,7 @@ import time
 
 import equilibrio as eq
 import escada
+import estudo_neutro
 import mmm
 import tire_model as tm
 from suspension_model import VehicleConfig
@@ -63,7 +64,7 @@ TOE = {"FL": 0.003, "FR": 0.003, "RL": 0.002, "RR": 0.002}   # sintético de tes
 AERO = dict(downforce_N=400.0, aero_balance_front=0.45)      # sintético de teste
 
 casos = {
-    "base": eq.CasoEquilibrio(cfg=cfg, ds=ds_teste, raio_m=R_TESTE, **AERO),
+    "base": estudo_neutro.caso_base_sintetico(),   # a mesma função do test_neutro (R = 8,5 m, AERO, LMUY 0,5)
     "simétrico": eq.CasoEquilibrio(cfg=veiculo_simetrico(0.5), ds=ds_teste, raio_m=R_TESTE),
     "com toe": eq.CasoEquilibrio(cfg=cfg, ds=ds_teste, raio_m=R_TESTE, toe_rad=TOE, **AERO),
     "com Ackermann 50 %": eq.CasoEquilibrio(cfg=cfg, ds=ds_teste, raio_m=R_TESTE, ackermann_pct=50.0, **AERO),
