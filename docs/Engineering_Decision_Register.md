@@ -1562,7 +1562,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Rationale:** A mesma regra estrita já vale para a robustez ao pneu; usar outra na escada daria dois critérios para a mesma pergunta.
 - **Evidence:** Adendo §5.3; EDR-060 item 8. A tabela da escada marca esses casos como "NEUTRO ↔ PUSH" ou "NEUTRO ↔ LOOSE", sem classificá-los. Como evidência do item 2 (sem decidi-lo): `docs/inc7/estudo-neutro.md` e o TC-NEU-001 (`tests/test_neutro.py`), do incremento 7. A rodada da 7a do relatório `docs/inc6/escada-hipoteses.md` (R = 9,125 e 8,385 m) dá N/A em todas as linhas: nenhum eixo satura até 2 g, e o Ackermann e a h9 estão desligados no caso. Por isso ela não dá base para a tolerância do item 3, que precisa de outro caso (Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.
 - **Assumptions:** A tabela do relatório (com raio informado) é a base da decisão.
-- **Consequences:** Até a decisão, nenhuma linha da escada tem campo de veredito de tolerância (testado no TC-ESC-002).
+- **Consequences:** A escada não tem campo de veredito de tolerância (testado no TC-ESC-002): o item 3 foi decidido em 2026-11-09 como só não inverter PUSH/LOOSE, com os valores a confirmar com dados do T11, e a coluna "Inverte" é o critério. O item 2 (`FATOR_NEUTRO`) está implementado na V4.3.
 - **Affected_Artifacts:** `python/escada.py`; `tools/relatorio_escada.py`; `docs/inc6/escada-hipoteses.md`; item 2: `python/equilibrio.py` (`FATOR_NEUTRO`, `fator_neutro`), `python/estudo_neutro.py`, `docs/inc7/estudo-neutro.md`, planilha V4.3 (24_CURVA B34; 16_EQUILIBRIO B137 e B138; 20_EQ_TROCA, F12).
 - **Affected_Tests:** TC-ESC-002; item 2: TC-NEU-001, TC-NEU-002, TC-WB43-004.
 - **Dependencies:** EDR-060, EDR-064.
@@ -1590,7 +1590,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Evidence:** Adendo §7; `python/equilibrio.py` (`deriva_ackermann`, `fx_exigido_traseira`).
 - **Assumptions:** Os achados valem para a cinemática de curva em regime com raio fixo.
 - **Consequences:** Se aprovada a troca, entra numa planilha nova com aba, célula, fórmula anterior e nova, dependências, justificativa e teste.
-- **Affected_Artifacts:** a 7a do incremento 7 implementa as formas v43 (Ackermann com centro único e Fx exigido por arrasto induzido) só no Python: `python/equilibrio.py`, `python/mmm.py` e `python/escada.py` (commits ae7d8bb, a41f0e0, 50018f8 e b8d622d). A planilha continua sem mudança; as candidatas a mudar são a planilha V4.3 e `python/aba_equilibrio.py` (7b).
+- **Affected_Artifacts:** a 7a do incremento 7 implementa as formas v43 (Ackermann com centro único e Fx exigido por arrasto induzido) só no Python: `python/equilibrio.py`, `python/mmm.py` e `python/escada.py` (commits ae7d8bb, a41f0e0, 50018f8 e b8d622d). A 7b levou as duas formas à planilha V4.3 (24_CURVA e chaves `h2v` e `h9v`; item 4), por `python/gerar_v4_3.py`, `python/aba_curva.py` e `python/aba_equilibrio.py`; `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` é a referência.
 - **Affected_Tests:** TC-ACK-001, TC-ACK-002, TC-FXI-001 e TC-FXI-002 (`tests/test_formas_v43.py`); efeito medido no degrau 2: TC-ESC-002; planilha V4.3: TC-WB43-001 a 006 (`tests/test_v4_3.py`, `tests/test_workbook_v4_3.py`) e a mutação da planilha V4.3.
 - **Dependencies:** EDR-052, EDR-057, EDR-064.
 - **Approval_Conditions:** —
