@@ -312,12 +312,14 @@ def casos_perturbados(caso: eq.CasoEquilibrio) -> dict:
 # Tabelas do estudo (Markdown)
 # ---------------------------------------------------------------------------
 
-def caso_base_sintetico():
+def caso_base_sintetico(raiz: Path | None = None):
     """Caso V4.2 SINTÉTICO do estudo: veiculo_base de tests/test_escada.py, pneu provisório do TTC com LMUY = 0,5
-    (escala de teste), R = 8,5 m, downforce 400 N com 45 % na frente. Nada disto é dado do carro."""
+    (escala de teste), R = 8,5 m, downforce 400 N com 45 % na frente. Nada disto é dado do carro. Único caso-base
+    do estudo e dos testes (test_neutro e test_escada o importam). raiz: raiz do repositório, de onde sai o .tir
+    (padrão: a deste arquivo; os testes de mutação rodam uma cópia do módulo fora do repositório e passam a raiz)."""
     import tire_model as tm
     from suspension_model import VehicleConfig
-    raiz = Path(__file__).resolve().parent.parent
+    raiz = Path(__file__).resolve().parent.parent if raiz is None else Path(raiz)
     cfg = VehicleConfig(mass_total=250.0, cg_height=0.300, wheelbase=1.550, track_front=1.200, track_rear=1.150,
                         cg_to_front=0.837, cg_to_rear=0.713, unsprung_mass_front=15.0, unsprung_mass_rear=18.0,
                         unsprung_cg_height_front=0.230, unsprung_cg_height_rear=0.230, roll_center_front=0.030,
