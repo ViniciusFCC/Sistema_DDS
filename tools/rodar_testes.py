@@ -97,10 +97,11 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
                                        _X + "V4_2.xlsx", _X + "V4_3.xlsx", "data/nomes_V4_3.csv"),
     "tests/test_workbook.py": ("python/atualizar_planilha.py", "python/build_workbook.py", _X + "V3_0.xlsx", _X + "V2.1.xlsx",
                                "data/layout_V2_4.json"),
-    "tests/test_workbook_suspensao.py": (_X + "V3_0.xlsx",),
+    "tests/test_workbook_suspensao.py": (_X + "V3_0.xlsx", "data/placeholder-dependency-map-V2.1.csv"),
     "tests/test_workbook_v4_0.py": ("python/gerar_v4_0.py", _X + "V4_0.xlsx", _X + "V3_0.xlsx", "data/nomes_V4_0.csv"),
     "tests/test_workbook_v4_1.py": ("python/gerar_v4_1.py", _X + "V4_1.xlsx", _X + "V4_0.xlsx", "data/nomes_V4_1.csv"),
-    "tests/test_workbook_v4_2.py": ("python/gerar_v4_2.py", _X + "V4_2.xlsx", _X + "V4_1.xlsx", "data/nomes_V4_2.csv"),
+    "tests/test_workbook_v4_2.py": ("python/gerar_v4_2.py", _X + "V4_2.xlsx", _X + "V4_1.xlsx", "data/nomes_V4_2.csv",
+                                    "data/nomes_V4_0.csv", "data/nomes_V4_1.csv"),
     "tests/test_workbook_v4_3.py": ("python/gerar_v4_3.py", "python/aba_curva.py", _X + "V4_3.xlsx", _X + "V4_2.xlsx",
                                     "data/nomes_V4_3.csv"),
 }
