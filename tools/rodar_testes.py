@@ -81,6 +81,8 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
 
 
 _X = "excel/FSAE_EV_Suspension_Fase1_"
+_TIR = "data/Hoosier_R25B_13x7_TTC_provisional.tir"
+_HP = ("data/hardpoints_synthetic_V2.0.csv", "data/hardpoints_synthetic_V2.0.meta.json")
 # Entradas DECLARADAS de cada item para o --pular-recentes: o que o script abre por caminho (módulos que a mutação troca, testes que
 # ela dispara, planilhas .xlsx, dados) e que o ast não vê. Entram, com o script e os imports locais, no diff contra o commit.
 # Os imports de cada arquivo declarado também são seguidos. Planilhas lidas da tag Git (imutáveis) não precisam constar. O .tir do
@@ -104,6 +106,26 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
                                     "data/nomes_V4_0.csv", "data/nomes_V4_1.csv"),
     "tests/test_workbook_v4_3.py": ("python/gerar_v4_3.py", "python/aba_curva.py", _X + "V4_3.xlsx", _X + "V4_2.xlsx",
                                     "data/nomes_V4_3.csv"),
+    # Testes de estrutura e dados: o que cada um abre por caminho (CA-05; revisão final da 7b, Important 2).
+    "tests/test_v4_0.py": ("data/nomes_V4_0.csv", _X + "V4_0.xlsx"),
+    "tests/test_v4_1.py": ("data/nomes_V4_1.csv", _X + "V4_1.xlsx", _X + "V3_0.xlsx"),
+    "tests/test_v4_2.py": ("data/nomes_V4_2.csv", _X + "V4_2.xlsx", _X + "V3_0.xlsx", "docs/Engineering_Decision_Register.md",
+                           "docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md"),
+    "tests/test_v4_3.py": ("data/nomes_V4_3.csv", _X + "V4_3.xlsx", _X + "V4_2.xlsx",
+                           "docs/superpowers/plans/2026-10-29-inc7-fisica-planilha.md", "docs/registro-de-versoes-V4_3-celulas.md",
+                           _TIR),
+    "tests/test_equilibrio.py": (_X + "V4_0.xlsx", _X + "V3_0.xlsx", _TIR),
+    "tests/test_equilibrio_linear.py": (_TIR,),
+    "tests/test_mmm.py": (_TIR,),
+    "tests/test_escada.py": (_TIR,),
+    "tests/test_neutro.py": (_TIR,),
+    "tests/test_formas_v43.py": (_TIR,),
+    "tests/test_skidpad.py": (_TIR,),
+    "tests/test_tire_model.py": (_TIR,),
+    "tests/test_hardpoints.py": _HP,
+    "tests/test_kinematics_model.py": _HP + ("data/hardpoints_synthetic_4cantos_V2.0.csv",
+                                             "data/hardpoints_synthetic_4cantos_V2.0.meta.json"),
+    "tests/test_suspension_model.py": _HP,
 }
 
 
