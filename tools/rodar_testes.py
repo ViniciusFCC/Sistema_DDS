@@ -30,6 +30,7 @@ import comparar_planilhas  # noqa: E402
 import conferir_viva  # noqa: E402  (acrescenta python/ ao caminho)
 import openpyxl  # noqa: E402
 import viva  # noqa: E402
+from executor_testes import Execucao, executar  # noqa: E402  (EDR-068)
 
 # Contagens esperadas e fonte (SPEC §6)
 TESTES = [
@@ -45,14 +46,23 @@ TESTES = [
     ("V4.1 (estrutura e CA-07)", "tests/test_v4_1.py", 2, "plano do incremento 4 da V4.1 (TC-WB41-001 e 002)"),
     ("V4.2 (estrutura, CA-07, oráculo das metas e fluxo da viva)", "tests/test_v4_2.py", 4,
      "plano do incremento 5 da V4.2 (TC-WB42-001 a 004)"),
+    ("MMM em raio fixo", "tests/test_mmm.py", 11, "plano do incremento 6 (TC-MMM-001 a 011)"),
+    ("escada de hipóteses", "tests/test_escada.py", 3, "plano do incremento 6 (TC-ESC-001 a 003)"),
+    ("executor dos testes", "tests/test_executor.py", 1, "plano do inc. 7 (TC-RUN-001)"),
+    ("raio do skidpad", "tests/test_skidpad.py", 2, "plano do inc. 7 (TC-SKP-001 e 002)"),
+    ("formas v43", "tests/test_formas_v43.py", 4, "plano do inc. 7 (TC-ACK-001, TC-FXI-001 e 002, TC-ACK-002)"),
+    ("estudo do NEUTRO", "tests/test_neutro.py", 1, "plano do inc. 7 (TC-NEU-001; TC-NEU-002 na Task 9)"),
 ]
 MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
-           "origens", "gerar_v4_2", "metas", "aba_metas", "viva"]
+           "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada", "executor_testes", "skidpad",
+           "estudo_neutro"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
-           ("tests/mutation_planilha_equilibrio.py", 5)]
+           ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5),
+           ("tests/mutation_inc7.py", 5)]
 # A mutação da planilha recalcula cópias pelo Excel (6 execuções do teste, de minutos cada): o limite de 1800 s dos outros não basta.
-TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200}
+TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200, "tests/mutation_mmm.py": 3600,
+                   "tests/mutation_inc7.py": 3600}
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
@@ -65,17 +75,11 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
              ("tests/test_workbook_v4_2.py", 2, "V4.2 (TC-WB42-005 e 006); plano do incremento 5")]
 
 
-def rodar(args: list[str], timeout: int = 1800) -> subprocess.CompletedProcess:
-    env = dict(os.environ, PYTHONUTF8="1")
-    cmd = [sys.executable, "-X", "utf8", *args]
-    try:
-        return subprocess.run(
-            cmd, cwd=RAIZ, env=env, capture_output=True,
-            text=True, encoding="utf-8", errors="replace", timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as e:
-        saida = e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
-        return subprocess.CompletedProcess(cmd, 124, saida, f"TIMEOUT depois de {timeout} s")
+def rodar(args: list[str], timeout: int = 1800) -> Execucao:
+    """Roda um script com o executor dos testes (EDR-068): no tempo-limite encerra a árvore inteira (código 124).
+    O item recebe DDS_ORCAMENTO_S = timeout - 200, para que a soma dos tempos internos fique abaixo do limite externo."""
+    env = dict(os.environ, PYTHONUTF8="1", DDS_ORCAMENTO_S=str(max(1, timeout - 200)))
+    return executar([sys.executable, "-X", "utf8", *args], cwd=RAIZ, env=env, timeout_s=timeout)
 
 
 def origens_modulos() -> tuple[bool, list[str]]:
