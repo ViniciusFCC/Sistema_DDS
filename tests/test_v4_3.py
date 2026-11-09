@@ -256,10 +256,10 @@ def main() -> None:
              'MOTIVO_DIAMETROS,IF(NOT(ISNUMBER({tR})),MOTIVO_BITOLA_TRASEIRA,MOTIVO_VEICULO)))))', s24_["B21"], None),
             ("=4/3", s24_["B34"], None),
         ]
-        cat_ok = cat is not None
+        cat_ok = True
         cat_det = []
         for tpl, cel_, extra in lit:
-            ok_c = cel_.value == sub(tpl, extra) and (cat is None or tpl in cat)
+            ok_c = cel_.value == sub(tpl, extra) and tpl in cat
             cat_ok &= ok_c
             if not ok_c:
                 cat_det.append(cel_.coordinate)
@@ -273,7 +273,7 @@ def main() -> None:
             exp11 = tpl11.format_map({"G_vf_den_ant": gvf_ant, "vf_ack": ml_[f"vf{ae.I_ACK}"],
                                       "vden": ml_["vden"], "sit24": ml_["sit24"]})
             cel11 = wb43[ae.ABA20][f"{ae.COL_BLOCO[j_]}{ae.LINHA_BLOCO['status']}"]
-            ok_c = cel11.value == exp11 and (cat is None or tpl11 in cat)
+            ok_c = cel11.value == exp11 and tpl11 in cat
             cat_ok &= ok_c
             if not ok_c:
                 cat_det.append(f"20 status linha {j_}: {cel11.value[:80]} != {exp11[:80]}")
@@ -282,7 +282,7 @@ def main() -> None:
         ack = "(-(" + nm["di"] + "-" + nm["dref"] + "))"
         antes_da = wb42["16_EQUILIBRIO"][da].value
         ok_c = s16_[da].value == antes_da.replace(ack, ack + sub("+IF({h2v}=1,{thFL}-{thm},0)")) \
-            and (cat is None or "+IF({h2v}=1,{thFL}-{thm},0)" in cat)
+            and "+IF({h2v}=1,{thFL}-{thm},0)" in cat
         cat_ok &= ok_c
         if not ok_c:
             cat_det.append(da)
@@ -312,9 +312,9 @@ def main() -> None:
             cat_ok &= ok_c
             if not ok_c:
                 cat_det.append(f"17 {nome_c}: {alvo_c[:80]} != {esperado_c[:80]}")
-        if cat is not None:   # as fórmulas de aF e de fxr, no texto do catálogo
-            cat_ok &= 'IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F))' in cat \
-                and "IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})" in cat
+        # as fórmulas de aF e de fxr, no texto do catálogo
+        cat_ok &= 'IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F))' in cat \
+            and "IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})" in cat
         # proteção (C-B1)
         protegidas = [ws.title for ws in wb43.worksheets if ws.protection.sheet]
         ocultas = [k for k, v in c43.items() if formula(v) is not None and wb43[k[0]][k[1]].protection.hidden]
