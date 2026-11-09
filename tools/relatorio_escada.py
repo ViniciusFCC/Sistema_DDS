@@ -54,6 +54,7 @@ from suspension_model import G  # noqa: E402
 XLSX = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_2.xlsx"
 TIR = RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
 SAIDA_PADRAO = RAIZ / "docs" / "inc6" / "escada-hipoteses.md"
+SAIDA_SINTETICO = RAIZ / "docs" / "inc6" / "escada-caso-sintetico.md"
 BITOLA_PROVISORIA_M = 1.3   # provisória do T11 (U3 do plano do inc. 7): sem dado do carro; só onde o caso não tem bitola
 NOME_METODO = {"linha_central": "linha central", "rente_aos_cones": "rente aos cones"}
 
@@ -71,6 +72,32 @@ NOTA_TIR = (
     "não como referência melhor que a elipse."
 )
 CONCLUSAO_TIR = "não determinado"
+
+
+# Caso sintético da Task 15 (EDR-065, item 3): o caso da planilha com a h2 (Ackermann), a h9 (tração) e uma massa maior que
+# faz um eixo saturar antes de 2 g. Nenhum valor é dado do carro; cada um é rotulado "sintético (Task 15, sem fonte)".
+# (campo, valor, unidade, o que liga, por que este valor)
+CASO_SINTETICO = (
+    ("ackermann_pct", 100.0, "%", "liga a h2 (SUS-414); 100 % = Ackermann exato",
+     "sem dado de geometria, o Ackermann exato é o único valor que não escolhe um desvio"),
+    ("rho_kg_m3", 1.2, "kg/m³", "pré-requisito de cda_m2", "densidade do ar, ordem de grandeza"),
+    ("cda_m2", 1.0, "m²", "liga a h9 (arrasto no Fx exigido)",
+     "ordem de grandeza de um monoposto de Fórmula SAE; só precisa ser > 0 para a h9 ficar ligada"),
+    ("crr", 0.015, "-", "liga a h9 (rolamento no Fx exigido)",
+     "ordem de grandeza de pneu de competição em asfalto; só precisa ser > 0"),
+    ("mass_total", 500.0, "kg", "faz um eixo saturar antes de 2 g",
+     "com a massa da planilha (316,5 kg) nenhum eixo satura até 3 g, nem com o CG mais alto (até 0,9 m), nem com o CG "
+     "deslocado para frente (a = 0,75 e 0,90 m), nem sem a downforce fixa de 400 N; a massa, com o resto do caso intacto, "
+     "foi a menor intervenção que saturou. Com 360, 400 e 450 kg a linha `todas` ainda dá N/A; com 500 kg as três "
+     "linhas de referência (`planilha`, `planilha V4.3`, `todas`) saturam"),
+)
+
+
+def aplicar_caso_sintetico(caso):
+    """Caso da planilha + os valores de CASO_SINTETICO (só neste relatório; a planilha não muda)."""
+    campos = {k: v for k, v, *_ in CASO_SINTETICO if k != "mass_total"}
+    massa = next(v for k, v, *_ in CASO_SINTETICO if k == "mass_total")
+    return replace(caso, cfg=replace(caso.cfg, mass_total=massa), **campos)
 
 
 def sha256(p: Path) -> str:
@@ -206,7 +233,7 @@ def _rodada(caso, a, nome: str, texto_raio: str, obs_raio: str, aviso_raio) -> t
     w("")
     w(f"- {texto_raio}")
     w(f"- {obs_raio}")
-    w(f"- Caso: L = {n(caso.cfg.wheelbase, 3)} m, bitola dianteira {n(caso.cfg.track_front, 3)} m, "
+    w(f"- Caso: massa {n(caso.cfg.mass_total, 1)} kg, L = {n(caso.cfg.wheelbase, 3)} m, bitola dianteira {n(caso.cfg.track_front, 3)} m, "
       f"Ackermann {'desligado' if caso.ackermann_pct is None else n(caso.ackermann_pct, 1) + ' %'}, "
       f"CG lateral {n(caso.cg_lateral_m, 3)} m, "
       f"aero {'CzA/ρ' if caso.cza_m2 is not None else 'downforce fixa'}, "
@@ -372,6 +399,10 @@ def main() -> int:
                     help="método do R do skidpad (skidpad.raio); repita para mais de uma rodada")
     ap.add_argument("--bitola-m", type=float, default=BITOLA_PROVISORIA_M,
                     help="bitola provisória do T11 [m], só onde o caso não tem bitola (padrão 1,3)")
+    ap.add_argument("--caso-sintetico", action="store_true",
+                    help="Task 15: aplica o caso sintético (h2 e h9 ligadas, massa que satura; tabela no topo) e rotula "
+                         "tudo como sintético; exige R explícito; a saída padrão passa a ser "
+                         "docs/inc6/escada-caso-sintetico.md")
     ap.add_argument("--ay-max-g", type=float, default=2.0,
                     help="faixa de busca da saturação [g] (rotulada no relatório; padrão 2,0; não é dado do carro)")
     a = ap.parse_args()
@@ -400,6 +431,12 @@ def main() -> int:
     elif a.origem_raio:
         print("RECUSADO: --origem-raio sem --raio", file=sys.stderr)
         return 2
+    if a.caso_sintetico:
+        if not a.metodo_raio and a.raio is None:
+            print("RECUSADO: --caso-sintetico exige um R explícito (--metodo-raio ou --raio)", file=sys.stderr)
+            return 2
+        if a.saida == SAIDA_PADRAO:
+            a.saida = SAIDA_SINTETICO
     saida = a.saida if a.saida.is_absolute() else Path.cwd() / a.saida
     if saida.exists() and not a.sobrescrever:
         print(f"RECUSADO: {saida} já existe (use --sobrescrever)", file=sys.stderr)
@@ -466,6 +503,9 @@ def main() -> int:
               "--origem-raio TEXTO ou --metodo-raio. O script não escolhe um R.", file=sys.stderr)
         return 3
 
+    if a.caso_sintetico:
+        rodadas = [(f"{nome} (caso sintético)", aplicar_caso_sintetico(c), t, o, av) for nome, c, t, o, av in rodadas]
+
     blocos = []
     for nome, caso_r, texto, obs, aviso in rodadas:
         print(f"Rodada: {nome} ({texto[:60]}...)", flush=True)
@@ -477,10 +517,22 @@ def main() -> int:
     w(" | ".join(f"R = {n(r[1].raio_m, 3)} m ({r[0]})" for r in rodadas)
       + " (a origem de cada R está na rodada correspondente)")
     w("")
-    w("# Incremento 6: MMM em raio fixo e escada de hipóteses")
+    w("# Incremento 6: MMM em raio fixo e escada de hipóteses" + (" (caso sintético, Task 15)" if a.caso_sintetico else ""))
     w("")
     w("Gerado por `tools/relatorio_escada.py`. Não edite à mão: rode o script de novo (`--sobrescrever`).")
     w("")
+    if a.caso_sintetico:
+        w("**CASO SINTÉTICO (Task 15, EDR-065 item 3).** O caso é o da planilha V4.2 mais os valores da tabela abaixo, "
+          "aplicados só neste relatório; a planilha não foi alterada. **Nenhum valor da tabela é dado do carro**: todos são "
+          "\"sintético (Task 15, sem fonte)\" e foram escolhidos para ligar a h2 (Ackermann) e a h9 (tração) e fazer um "
+          "eixo saturar antes de 2 g, de modo que a escada tenha números e não N/A. O objetivo é dar ao usuário uma "
+          "tabela de diferenças para decidir a tolerância; o resultado não vale para o carro. As demais entradas são as "
+          "da planilha (ver a pior origem abaixo).")
+        w("")
+        md.extend(tabela(["Campo", "Valor", "Unidade", "Origem", "O que liga ou muda", "Por que este valor"],
+                         [[f"`{k}`", n(v, 3), u, "sintético (Task 15, sem fonte)", ef, pq]
+                          for k, v, u, ef, pq in CASO_SINTETICO]))
+        w("")
     w(f"**Pior origem do caso: {pior_caso}. Geometria sintética** (não há hardpoints do CAD). O pneu é o `.tir` provisório "
       "do TTC (R25B); mola, MR, barra e RC são valores demonstrativos (T09/E03). **Nenhum número deste relatório é "
       "resultado do carro** nem validação física (Validation = NOT_VALIDATED, EDR-022). O raio R do skidpad é entrada "
@@ -521,9 +573,15 @@ def main() -> int:
     w("- Geometria sintética, pneu provisório do TTC e dados demonstrativos: os números mostram o tamanho relativo de cada "
       "hipótese neste caso, não o do carro.")
     w("- A tolerância da escada (EDR-065) está pendente; nada aqui é \"dentro\" nem \"fora\".")
-    w("- Este relatório não dá base para fixar a tolerância do EDR-065: nos dois R (9,125 e 8,385 m) todas as linhas dão N/A, "
-      "porque nenhum eixo satura até 2 g e o Ackermann e a h9 estão desligados. A tolerância precisa de outro caso "
-      "(Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.")
+    if a.caso_sintetico:
+        w("- **Caso sintético (Task 15):** ackermann_pct, rho_kg_m3, cda_m2, crr e mass_total são sintéticos e sem fonte "
+          "(tabela no topo). O relatório existe para o usuário decidir a tolerância do EDR-065 (item 3) a partir das "
+          "diferenças; ele não propõe valor, e os números não são do carro. Uma tolerância tirada deste caso vale tanto "
+          "quanto o caso representa o carro, e a massa de 500 kg não é uma estimativa dele.")
+    else:
+        w("- Este relatório não dá base para fixar a tolerância do EDR-065: nos dois R (9,125 e 8,385 m) todas as linhas dão "
+          "N/A, porque nenhum eixo satura até 2 g e o Ackermann e a h9 estão desligados. A tolerância precisa de outro caso "
+          "(Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.")
     w("- O raio R é entrada a confirmar; os resultados dependem dele (ver a primeira linha).")
     w("- Passou nos critérios do degrau 1 = os dois códigos concordam; não é validação física.")
     w("- O arrasto entra inteiro no eixo x do carro; a componente lateral D·sen β (a velocidade faz o ângulo β com o carro) "
