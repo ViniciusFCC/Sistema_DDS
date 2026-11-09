@@ -12,6 +12,8 @@ from openpyxl.workbook.defined_name import DefinedName
 import reescrita_nomes as rn
 
 results = []
+V43 = "excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx"   # só leitura
+CSV = "data/nomes_V4_4.csv"
 
 
 def check(name, condition, detail=""):
@@ -76,12 +78,54 @@ def pre_checagem() -> bool:
     return ok
 
 
+def pre_checagem_nomes() -> bool:
+    """Pré-checagem da tabela dos 24 nomes novos (A1), fora da contagem. Devolve True se tudo bate."""
+    import nomes_v4_4 as n44
+    from nomes_v4_0 import ler_tabela
+    from raizes import nomes_definidos
+
+    wb = openpyxl.load_workbook(V43)
+    ok = True
+    derivada = n44.tabela_v44(wb)
+    if derivada != n44.NOMES_V44:
+        ok = False
+        print("  nomes: tabela_v44(V4.3) difere de NOMES_V44:", [n.nome for n in set(derivada) ^ set(n44.NOMES_V44)][:6])
+    if len(n44.NOMES_V44) != 24 or len(n44.CELULAS_V44) != 24:
+        ok = False
+        print("  nomes: esperados 24 nomes e 24 células")
+    if set(nomes_definidos(wb)) & {n.nome for n in n44.NOMES_V44}:
+        ok = False
+        print("  nomes: algum nome novo já existe na V4.3")
+    med = rn.medir(wb, rn.destinos_unicos(wb))
+    if set(n44.CELULAS_V44) != set(med.soltas):
+        ok = False
+        print("  nomes: CELULAS_V44 difere das soltas medidas")
+    if tuple((n.aba, n.celula) for n in n44.NOMES_V44) != n44.CELULAS_V44:
+        ok = False
+        print("  nomes: CELULAS_V44 fora da ordem de NOMES_V44")
+    if ler_tabela(CSV) != n44.NOMES_V44:
+        ok = False
+        print("  nomes: data/nomes_V4_4.csv difere de NOMES_V44")
+    if not raises(lambda: n44.conferir_tabela(list(n44.NOMES_V44[:-1])), ValueError):
+        ok = False
+        print("  nomes: conferir_tabela aceitou tabela diferente")
+    n44.conferir_tabela(ler_tabela(CSV))
+    return ok
+
+
 def main():
     pass
 
 
 if __name__ == "__main__":
     ok_pre = pre_checagem()
+    try:
+        ok_nomes = pre_checagem_nomes()
+    except Exception as e:   # falha ruidosa, nunca silenciosa
+        ok_nomes = False
+        print(f"  nomes: {type(e).__name__}: {e}")
+    print(f"Pré-checagem dos 24 nomes novos (fora da contagem): {'OK' if ok_nomes else 'FALHOU'}")
+    ok_pre = ok_pre and ok_nomes
     print(f"Pré-checagem da regra da troca (fora da contagem): {'OK' if ok_pre else 'FALHOU'}")
     main()
     n_pass = sum(1 for _, s, _ in results if s == "PASS")
