@@ -47,7 +47,7 @@ Foco declarado: completar a planilha (EDR-019).
   `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`): `python/mmm.py` (MMM em raio fixo), `python/escada.py`
   (escada de hipóteses) e `tools/relatorio_escada.py`. Código e testes prontos; o relatório `docs/inc6/escada-hipoteses.md`
   agora roda com os dois R provisórios da 7a (9,125 m na linha central e 8,385 m rente aos cones). Nos dois, nenhum eixo satura até 2 g e todas as linhas dão N/A, com o Ackermann e a h9 desligados; por isso ele não dá base para a tolerância do EDR-065, que precisa de outro caso (Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.
-  EDR-064 IMPLEMENTED (VERIFIED depois da suíte inteira); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
+  EDR-064 APPROVED (VERIFIED depois da suíte única do inc. 8); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
   (item 3: só não inverter o veredito; o valor da tolerância fica a confirmar com o T11) e EDR-066 (achados sobre Ackermann e
   Fx exigido) está APPROVED e IMPLEMENTED na V4.3.
 - V4.3 (incremento 7, partes 7a e 7b; PRs #32 e #34 mesclados em 2026-11-09; tag `v4.3` no merge f7862de; EDR-065 itens 2 e 3,
@@ -112,6 +112,12 @@ Foco declarado: completar a planilha (EDR-019).
   `tools/migrar_viva.py VIVA --para REF_NOVA.xlsx` (leva os dados à versão nova por nome; conflito listado, nunca
   sobrescrito); `tools/medir_recalculo.py` (tempo de recálculo da V4.1 no Excel, em cópia). A viva do Drive é seção informativa
   do log da suíte, fora do resumo.
+- V4.3 (EDR-065 itens 2 e 3, EDR-066, EDR-068 e EDR-069): `python/gerar_v4_3.py` gera a V4.3 da tag `v4.2` em `build/` (nunca em
+  `excel/`; a cópia para `excel/` é um commit próprio). A aba `24_CURVA` sai de `python/aba_curva.py`. Testes: `tests/test_v4_3.py`
+  (TC-WB43-001, 002 e 006) e `tests/test_workbook_v4_3.py` (TC-WB43-003 a 005, Excel via COM ou LibreOffice). V4.3 regenerada da tag
+  `v4.2` com 146373 fórmulas e 1266 nomes, 0 diferença contra `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx`. A troca da viva segue o
+  fluxo da V4.2: `tools/conferir_viva.py` (código 0) antes de tudo e `tools/migrar_viva.py VIVA --para REF_NOVA.xlsx` para levar os
+  dados por nome (conflito listado, nunca sobrescrito); a viva do Drive só é lida por cópia.
 - `tools/rodar_testes.py --pular-recentes ARQ` (ARQ é um JSON `{"tests/x.py": "<commit>"}`, com o commit em que o teste passou): pula o item cujo conjunto conferido não mudou desde esse commit, nem na árvore de trabalho: o script, os imports locais transitivos (python/, tests/ e tools/, por ast; sem import relativo, de pacote ou dinâmico) e as entradas declaradas do item em `DEPENDENCIAS` (módulos e testes que a mutação abre por caminho, planilhas de `excel/` e dados). Arquivo novo ou não rastreado no conjunto impede o pulo; chave do JSON sem item gera aviso. O item aparece como `PULADO (passou em <commit>; código sem mudança)`, nunca conta como PASS e tem contagem própria; ficam fora da conferência o `.tir` do TTC (não versionado), o que o script lê sem declarar e o ambiente. Sem a opção, nada muda. Para valer como verificação, rode a suíte inteira sem a opção.
 - Rode os testes afetados antes de dizer que uma tarefa terminou.
 

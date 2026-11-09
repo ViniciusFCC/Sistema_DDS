@@ -110,7 +110,7 @@ Nova (chave 1): Δα_i = toe_i + (δ_i − δ̄_F) − (θ_i − θ̄_F) nas dia
 seção 3.1, R_c = √(R² − b²) e θ̄_F a média de θ_FL e θ_FR. Forma fechada por roda, sem iteração.
 Consequências: com 100 % de Ackermann o Δα relativo das dianteiras é zero (a menos da diferença entre a média de δ,
 amarrada a δ_ref = L/R pela bisseção atual, e a média de θ, de 2ª ordem; o plano mede e justifica a cota); com 0 %
-(paralelo) sobra −(θ_i − θ̄_F) ≈ ∓L·t_f/(2R_c²), o termo que a planilha de hoje zera (aproximação que só fica em 1 % com R ≳ 15 m; a forma exata é atan(L·t_f/(R_c² + L² − t_f²/4)) para a diferença entre as duas rodas).
+(paralelo) sobra −(θ_i − θ̄_F), o termo que a planilha de hoje zera. A forma exata, a usada pela V4.3, é θ_FL − θ_FR = atan(L·t_f/(R_c² + L² − t_f²/4)), e θ_i − θ̄_F = ±(θ_FL − θ_FR)/2. A aproximação ≈ ∓L·t_f/(2R_c²) só vale com R ≳ 15 m (desvio de 1 %).
 
 ### 4.2 Fx exigido na traseira (hipótese 9, EDR-057, família F9)
 
