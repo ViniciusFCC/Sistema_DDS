@@ -38,11 +38,11 @@ Foco declarado: completar a planilha (EDR-019).
   `docs/registro-de-versoes-V4_2.md`; EDR-061 a EDR-063, EDR-034 decidido): fichas de meta na 03_TARGETS (H:Q), TARGET-006 e
   007, aba `23_LISTAS`, bloco de metas no 14_DASHBOARD (linhas 49 a 51), Origens do T11 e a viva no Drive. Fichas completas e
   processo em `docs/metas/`. A planilha sai de `python/gerar_v4_2.py` em `build/`; a cópia para `excel/` é um commit próprio
-  (feita no commit 9cb19cf). Desde 2026-10-27 a **planilha viva da equipe é a cópia da V4.2** no Drive
+  (feita no commit 9cb19cf). De 2026-10-27 a 2026-11-09 a planilha viva da equipe foi a cópia da V4.2 no Drive
   (`Planilha DDS\FSAE_EV_Suspension_Fase1_V4_2.xlsx`, SHA igual ao da tag `v4.2`; `conferir_viva` código 0). A V4.1 do Drive
   não tinha dados da equipe (SHA igual ao da tag `v4.1`; `migrar_viva` com 0 dados e 0 conflitos) e foi movida para
   `Planilha DDS\_anteriores\`. Diretriz do usuário (2026-10-23): a cada versão terminada, a viva vira a versão nova com os
-  dados mantidos. Os LEIA-ME e .docx de `Documentacao\` no Drive ainda são os da V4.1.
+  dados mantidos. Em 2026-11-09 a V4.2 da viva (sem dados da equipe: `migrar_viva` com 0 dados e 0 conflitos) foi para `Planilha DDS\_anteriores\`.
 - Incremento 6 (branch `feat/inc6-mmm-escada`, só Python, sem planilha nova; EDR-064 a EDR-066, adendo
   `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`): `python/mmm.py` (MMM em raio fixo), `python/escada.py`
   (escada de hipóteses) e `tools/relatorio_escada.py`. Código e testes prontos; o relatório `docs/inc6/escada-hipoteses.md`
@@ -50,10 +50,12 @@ Foco declarado: completar a planilha (EDR-019).
   EDR-064 IMPLEMENTED (VERIFIED depois da suíte inteira); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
   (item 3: só não inverter o veredito; o valor da tolerância fica a confirmar com o T11) e EDR-066 (achados sobre Ackermann e
   Fx exigido) está APPROVED e IMPLEMENTED na V4.3.
-- V4.3 (parte 7b do incremento 7, branch `claude/inc7-7b-v43-0c2266`; EDR-065 itens 2 e 3, EDR-066, EDR-068 e EDR-069): a 7b está
-  concluída no código. A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
-  aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Suíte inteira no Excel em 2026-11-09 (commit e94abf0): todos PASS, 2 PULADO (`test_escada`, `test_v4_3`). Falta a revisão final e, só com a confirmação do usuário,
-  o PR, a troca da viva no Drive e a tag.
+- V4.3 (incremento 7, partes 7a e 7b; PRs #32 e #34 mesclados em 2026-11-09; tag `v4.3` no merge f7862de; EDR-065 itens 2 e 3,
+  EDR-066, EDR-068 e EDR-069). Desde 2026-11-09 a **planilha viva da equipe é a cópia da V4.3** no Drive
+  (`Planilha DDS\FSAE_EV_Suspension_Fase1_V4_3.xlsx`, SHA igual ao da tag `v4.3`; `conferir_viva` código 0), com o LEIA-ME, os
+  registros de versões V4.2 e V4.3 e o EDR em .docx de 2026-11-09 em `Documentacao\` (os da V4.1 em `Documentacao\_anteriores\`). A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
+  aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Suíte inteira no Excel em 2026-11-09 (commit e94abf0): todos PASS, 2 PULADO (`test_escada`, `test_v4_3`). Revisão final feita
+  (pronta para PR); minors adiados no PR #34 (pendências).
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
