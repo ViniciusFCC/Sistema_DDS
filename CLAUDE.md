@@ -49,7 +49,7 @@ Foco declarado: completar a planilha (EDR-019).
   agora roda com os dois R provisórios da 7a (9,125 m na linha central e 8,385 m rente aos cones). Nos dois, nenhum eixo satura até 2 g e todas as linhas dão N/A, com o Ackermann e a h9 desligados; por isso ele não dá base para a tolerância do EDR-065, que precisa de outro caso (Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.
   EDR-064 IMPLEMENTED (VERIFIED depois da suíte inteira); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
   (item 3: só não inverter o veredito; o valor da tolerância fica a confirmar com o T11) e EDR-066 (achados sobre Ackermann e
-  Fx exigido) está APPROVED e IMPLEMENTED na V4.3 (a linha do índice do registro ainda diz AWAITING_DECISION).
+  Fx exigido) está APPROVED e IMPLEMENTED na V4.3.
 - V4.3 (parte 7b do incremento 7, branch `claude/inc7-7b-v43-0c2266`; EDR-065 itens 2 e 3, EDR-066, EDR-068 e EDR-069): a 7b está
   concluída no código. A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
   aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Falta a suíte inteira, a revisão final e, só com a confirmação do usuário,
