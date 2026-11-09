@@ -49,6 +49,15 @@ def pre_checagem() -> bool:
         if got != esperado:
             ok = False
             print(f"  pré-checagem {i}: obtido {got!r}, esperado {esperado!r}")
+    # linha própria da 03 (EDR-070, §3.3/§3.5): com nome é trocada como qualquer célula; sem nome fica por endereço
+    d03 = {("03_TARGETS", "A5"): "nome_a5"}
+    if (rn.trocar_formula("=A5*2", "03_TARGETS", d03, "H5") != "=nome_a5*2"          # com nome: trocada
+            or rn.trocar_formula("=A5*2", "03_TARGETS", {}, "H5") != "=A5*2"            # sem nome: fica por endereço
+            or not rn.eh_linha_propria_03("03_TARGETS", "H5", "A5")
+            or rn.eh_linha_propria_03("03_TARGETS", "H5", "A6")                         # outra linha: não
+            or rn.eh_linha_propria_03("03_TARGETS", "B5", "A5")):                       # fora de H:Q: não
+        ok = False
+        print("  pré-checagem: linha própria da 03 (A5 em H5, com e sem nome)")
     f = '=IF(A1>0,"B7",1) + SUM(A1:B2)'
     if rn.trocar_formula(f, "09_LOADS", d) != f:
         ok = False
