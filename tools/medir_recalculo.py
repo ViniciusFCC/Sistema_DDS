@@ -8,7 +8,7 @@ ARQ vem como posicional ou por --arquivo, com o mesmo efeito (a opção entrou n
 contra a V4.2 da tag, extraída antes para uma pasta local). Sem ARQ, extrai `excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx`
 da tag `v4.1` (git show). O arquivo medido é sempre uma CÓPIA em pasta temporária: a planilha de excel/ e a viva do
 Drive nunca são abertas (EDR-044, EDR-063); ARQ dentro de excel/ ou da pasta do Drive é recusado (passe uma cópia
-local), assim como --saida nesses lugares.
+local), assim como --saida nesses lugares. Com ARQ, --saida é obrigatório (o padrão é o log commitado da V4.1).
 
 Dois cenários, cada execução sobre uma cópia NOVA do arquivo de origem do cenário e numa instância nova do Excel
 (DispatchEx, no Job Object de tests/recalculo_planilha.py):
@@ -191,6 +191,9 @@ def main() -> int:
             return 2
         a.arq = a.arquivo
 
+    if a.arq and a.saida == str(SAIDA_PADRAO):
+        print("recusado: com ARQ, passe --saida (o padrão é o log commitado da V4.1 e seria sobrescrito)", file=sys.stderr)
+        return 2
     msg = viva.recusa_de_saida(Path(a.saida), [])
     if msg:
         print(f"recusado: {msg}", file=sys.stderr)
