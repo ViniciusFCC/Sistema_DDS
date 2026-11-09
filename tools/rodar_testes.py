@@ -162,7 +162,7 @@ def bloco(titulo: str, texto: str) -> list[str]:
 def versao_planilhas() -> tuple[bool, list[str]]:
     """Fase B, passo 3: a versão da planilha fica no nome do arquivo (EDR-043) e no
     texto de 00_README!A3 ("Versão do workbook: V2.4 ..."). Confere que os dois batem
-    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0, a V4.0 (EDR-058) e a V4.1 (EDR-060) têm de estar entre elas."""
+    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0, a V4.0 (EDR-058) a V4.1 (EDR-060), a V4.2 e a V4.3 têm de estar entre elas."""
     linhas, ok = [], True
     arquivos = sorted((RAIZ / "excel").glob("FSAE_EV_Suspension_Fase1_V*.xlsx"))
     for f in arquivos:
@@ -179,7 +179,7 @@ def versao_planilhas() -> tuple[bool, list[str]]:
         linhas.append(f"- `excel/{f.name}`: A3 diz {lido}: **{'PASS' if bate else 'FAIL'}**")
     if not arquivos:
         ok, linhas = False, ["- nenhuma planilha encontrada em `excel/`: **FAIL**"]
-    for obrigatoria in (CAMINHO_V30, CAMINHO_V40, CAMINHO_V41, CAMINHO_V42):
+    for obrigatoria in (CAMINHO_V30, CAMINHO_V40, CAMINHO_V41, CAMINHO_V42, CAMINHO_V43):
         if RAIZ / obrigatoria not in arquivos:
             ok = False
             linhas.append(f"- `{obrigatoria}` não encontrada: **FAIL**")
@@ -276,6 +276,7 @@ CAMINHO_V30 = "excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx"
 CAMINHO_V40 = "excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx"
 CAMINHO_V41 = "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 CAMINHO_V42 = "excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx"
+CAMINHO_V43 = "excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx"
 
 
 def referencia_v30(pasta: Path) -> tuple[Path, str]:
@@ -503,11 +504,24 @@ def main() -> None:
                    "mas a comparação com a de excel/ não pôde ser feita"]
     resumo.append(("CA-07", "planilha vs V4.2 de referência (metas e coerência)",
                    "NÃO EXECUTÁVEL" if ok7e is None else "PASS" if ok7e else "FAIL"))
+    # V4.3 = V4.2 da tag v4.2 + python/gerar_v4_3.py (centro da curva, R do skidpad e Fx por arrasto induzido), comparada com a de excel/
+    with tempfile.TemporaryDirectory(prefix="dds_build43_") as tmp43:
+        out43 = Path(tmp43) / "FSAE_EV_Suspension_Fase1_V4_3.xlsx"
+        r43 = rodar(["python/gerar_v4_3.py", "--saida", str(out43)])
+        md.append(f"- V4.3: `python/gerar_v4_3.py --saida <tmp>/V4_3.xlsx` (a V4.2 sai da tag `v4.2`), código {r43.returncode}")
+        if r43.returncode != 0 or not out43.exists():
+            ok7f, r7f = False, ["CA-07 FAIL: gerar_v4_3 não gerou a V4.3", cauda(r43.stderr)]
+        elif (RAIZ / CAMINHO_V43).exists():
+            ok7f, r7f = comparar_planilhas.comparar_xlsx(out43, RAIZ / CAMINHO_V43, comparar_planilhas.FORMULAS_ESPERADAS_V43,
+                                                         estrutura=True)
+        else:
+            ok7f, r7f = False, [f"CA-07 FAIL: falta {CAMINHO_V43}"]
+    resumo.append(("CA-07", "planilha vs V4.3 de referência (centro da curva, R e arrasto induzido)", "PASS" if ok7f else "FAIL"))
     md += [f"- Referência da V3.0: {ORIGEM_REF30}. A regeneração e os testes CA-09 usam a referência; a V3.0 de excel/ tem de ser "
            "igual ao arquivo da tag (a viva da equipe é outro arquivo, no Drive).", "",
            "```text", *r7, *r8, "--- V3.0 (regeneração vs referência) ---", *r7b, f"--- V3.0 de excel/ = tag v3.0 --- {r7v}",
            "--- V4.0 (regeneração vs excel/) ---", *r7c, "--- V4.1 (regeneração vs excel/) ---", *r7d,
-           "--- V4.2 (regeneração vs excel/) ---", *r7e, "```", ""]
+           "--- V4.2 (regeneração vs excel/) ---", *r7e, "--- V4.3 (regeneração vs excel/) ---", *r7f, "```", ""]
 
     # --- Viva da equipe (informativo; fora do resumo) ---
     md += secao_viva()
