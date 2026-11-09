@@ -88,7 +88,7 @@ CASO_SINTETICO = (
     ("mass_total", 500.0, "kg", "faz um eixo saturar antes de 2 g",
      "com a massa da planilha (316,5 kg) nenhum eixo satura até 3 g, nem com o CG mais alto (até 0,9 m), nem com o CG "
      "deslocado para frente (a = 0,75 e 0,90 m), nem sem a downforce fixa de 400 N; a massa, com o resto do caso intacto, "
-     "foi a menor intervenção que saturou. Com 360, 400 e 450 kg a linha `todas` ainda dá N/A; com 500 kg as três "
+     "foi a primeira testada que satura as três linhas de referência. Com 360, 400 e 450 kg a linha `todas` ainda dá N/A; com 500 kg as três "
      "linhas de referência (`planilha`, `planilha V4.3`, `todas`) saturam"),
 )
 
@@ -577,7 +577,9 @@ def main() -> int:
         w("- **Caso sintético (Task 15):** ackermann_pct, rho_kg_m3, cda_m2, crr e mass_total são sintéticos e sem fonte "
           "(tabela no topo). O relatório existe para o usuário decidir a tolerância do EDR-065 (item 3) a partir das "
           "diferenças; ele não propõe valor, e os números não são do carro. Uma tolerância tirada deste caso vale tanto "
-          "quanto o caso representa o carro, e a massa de 500 kg não é uma estimativa dele.")
+          "quanto o caso representa o carro, e a massa de 500 kg não é uma estimativa dele. Nas linhas saturadas o pneu fica "
+          "nos limites CAMMAX, CAMMIN e FZMAX do .tir; na linha `todas` a folga é de 0,79 % no outro eixo; as massas não "
+          "suspensas ficam fixas.")
     else:
         w("- Este relatório não dá base para fixar a tolerância do EDR-065: nos dois R (9,125 e 8,385 m) todas as linhas dão "
           "N/A, porque nenhum eixo satura até 2 g e o Ackermann e a h9 estão desligados. A tolerância precisa de outro caso "
@@ -588,7 +590,8 @@ def main() -> int:
       "fica fora do balanço lateral. É de 2ª ordem em β e D é uma fração pequena de m·A.")
     w("- A precisão de T nas linhas acopladas é da ordem da resolução do limite (0,01 m/s²), e não a da bisseção: a dobra "
       "do Newton pode cair até essa distância antes do pico do eixo.")
-    w("- A cota do degrau 1 (1,5 × a resolução, igual a 2 × |S − S2|) é empírica: o |S − S2| que o `analise_par` mede "
+    w("- A cota do degrau 1 (1,5 × a resolução, igual a 2 × |S − S2| só no caso de dois eixos; nos casos de passo e piso ela "
+      "caiu de 2× para 1,5×) é empírica: o |S − S2| que o `analise_par` mede "
       "subestima o erro de interpolação dele (EDR-064, item 2.9; o 4/3 já está na resolução, EDR-065, item 2).")
     w("")
 
