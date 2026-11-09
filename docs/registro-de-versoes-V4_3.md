@@ -54,5 +54,3 @@ NOT_VALIDATED, EDR-022).
 - **Pneu e T11:** o equilíbrio continua usando o `.tir` provisório do TTC (EDR-038, EDR-055); a planilha ainda não tem dado do
   T11. Os diâmetros do skidpad (FSAE 2026 D.10.1.1) e a meia largura do pneu são provisórios e rotulados como tal.
 - **Limitações** da escada e do centro da curva no eixo traseiro (α_R desloca o centro; texto em 24_CURVA A30:A32) continuam.
-- **Registro de EDRs:** a linha do EDR-066 no índice de `docs/Engineering_Decision_Register.md` ainda diz AWAITING_DECISION,
-  e a entrada do corpo diz APPROVED/IMPLEMENTED; a conciliação fica para o controlador.
