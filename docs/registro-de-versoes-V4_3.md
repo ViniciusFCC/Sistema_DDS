@@ -38,8 +38,12 @@ fórmula alterada foi aprovada célula a célula em 2026-11-03.
 
 ## Testes (`tools/rodar_testes.py`)
 
-A suíte inteira da V4.3 **ainda não foi rodada**: o resultado é a confirmar e entra aqui depois da execução pelo
-controlador (Task 14, passo 3). Contagens esperadas: executor 1, skidpad 2, formas 4, NEUTRO 2, `test_v4_3` 3
+Suíte inteira de 2026-11-09 (06:15 a 08:30) sobre o commit e94abf0, com `--pular-recentes` (`build/verificacao-ultima.md`,
+motor Excel 16.0 via COM): todos os itens PASS, 0 FAIL, código 0. Dois itens PULADO, que não contam como PASS:
+`test_escada` (3/3 em 7b7db2e) e `test_v4_3` (3/3 em c122c47), sem mudança de código desde então. Mutações 25/25, 6/6,
+5/5, 5/5, 5/5 do inc. 7 e 4/4 da planilha V4.3; `test_workbook_v4_3` 3/3; regenerações V2.4 a V4.2 com 0 diferença. A
+regeneração da V4.3 contra `excel/` é coberta pelo TC-WB43-002 (no `test_v4_3`). O LibreOffice não rodou nesta suíte.
+Contagens: executor 1, skidpad 2, formas 4, NEUTRO 2, `test_v4_3` 3
 (TC-WB43-001, 002 e 006), `test_workbook_v4_3` 3 (TC-WB43-003 a 005), mutação do inc. 7 5/5 e da planilha V4.3 4/4. Nesta
 parte rodaram só `tests/test_executor.py` (1/1, com o caso novo da opção `--pular-recentes`) e `tests/test_v4_3.py` (3/3).
 "Passou" é a planilha reproduzir o oráculo em Python nos casos de teste; não é validação física (Validation =
@@ -47,7 +51,7 @@ NOT_VALIDATED, EDR-022).
 
 ## Pendências
 
-- **Suíte inteira** da V4.3 (Excel e LibreOffice) e revisão final: a confirmar.
+- **Suíte no LibreOffice** e revisão final: a confirmar (a suíte no Excel passou em 2026-11-09).
 - **Tolerância do NEUTRO** (EDR-065 item 3): valor a confirmar com o T11.
 - **Drive:** a viva continua a V4.2 até a troca (`conferir_viva`, `migrar_viva`); LEIA-ME e .docx do Drive precisam avisar que
   a 16 B9 virou fórmula e que o R digitado fica em 24_CURVA B8. Cada passo só com a confirmação do usuário.

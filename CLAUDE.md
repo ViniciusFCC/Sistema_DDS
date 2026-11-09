@@ -52,7 +52,7 @@ Foco declarado: completar a planilha (EDR-019).
   Fx exigido) está APPROVED e IMPLEMENTED na V4.3.
 - V4.3 (parte 7b do incremento 7, branch `claude/inc7-7b-v43-0c2266`; EDR-065 itens 2 e 3, EDR-066, EDR-068 e EDR-069): a 7b está
   concluída no código. A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
-  aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Falta a suíte inteira, a revisão final e, só com a confirmação do usuário,
+  aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Suíte inteira no Excel em 2026-11-09 (commit e94abf0): todos PASS, 2 PULADO (`test_escada`, `test_v4_3`). Falta a revisão final e, só com a confirmação do usuário,
   o PR, a troca da viva no Drive e a tag.
 
 ## Comandos
