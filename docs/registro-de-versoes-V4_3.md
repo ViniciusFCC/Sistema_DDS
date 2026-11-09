@@ -45,7 +45,10 @@ motor Excel 16.0 via COM): todos os itens PASS, 0 FAIL, código 0. Dois itens PU
 regeneração da V4.3 contra `excel/` é coberta pelo TC-WB43-002 (no `test_v4_3`). O LibreOffice não rodou nesta suíte.
 Contagens: executor 1, skidpad 2, formas 4, NEUTRO 2, `test_v4_3` 3
 (TC-WB43-001, 002 e 006), `test_workbook_v4_3` 3 (TC-WB43-003 a 005), mutação do inc. 7 5/5 e da planilha V4.3 4/4. Nesta
-parte rodaram só `tests/test_executor.py` (1/1, com o caso novo da opção `--pular-recentes`) e `tests/test_v4_3.py` (3/3).
+parte rodaram `tests/test_executor.py` (1/1, com o caso novo da opção `--pular-recentes`) e `tests/test_v4_3.py` (3/3). O 3/3 de
+c122c47 citado acima é de fora da suíte, que pulou o item; na rodada de correção da revisão final (2026-11-09), sem pular,
+`test_v4_3` deu 3/3, `test_executor` 1/1 e `test_escada` 3/3. A suíte inteira não foi repetida depois dessa rodada, e o item
+"planilha vs V4.3 de referência" que a suíte ganhou nela (regeneração da V4.3 contra `excel/`, 0 diferença) foi conferido à parte.
 "Passou" é a planilha reproduzir o oráculo em Python nos casos de teste; não é validação física (Validation =
 NOT_VALIDATED, EDR-022).
 
