@@ -216,7 +216,8 @@ def tc_neu_002() -> tuple[bool, str]:
         # os dois lados estão colados à borda (|Δ|/faixa perto de 1; medido 1,0000, e 16 passos de bisseção dão margem de 1e-3)
         if not (abs(d_b / f_b - 1.0) < 1e-3 and abs(d_a / f_a - 1.0) < 1e-3):
             falhas.append(f"(b) {rotulo}: |Δ|/faixa = {d_b / f_b:.5f} (dentro) e {d_a / f_a:.5f} (fora), longe da borda")
-        det_b.append(f"{rotulo}: λ_f x{b:.7f} NEUTRO |Δ|/faixa = {d_b / f_b:.4f}; x{a:.7f} {r_a.veredito} {d_a / f_a:.4f}")
+        det_b.append(f"{rotulo}: λ_f x{b:.7f} NEUTRO |Δ|/faixa = {d_b / f_b:.4f}; "
+                     f"x{a:.7f} {r_a.veredito} {d_a / f_a:.4f}")
 
     # (c) eixo que satura numa grade só: a faixa é o passo da grade pedida, como hoje, sem o fator. ay_max = 1,475 g
     # deixa a última linha da grade pedida em 1,45 g (antes das saturações, em ~1,47 g) e a da refinada em 1,475 g

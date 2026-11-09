@@ -208,7 +208,12 @@ def modulos_locais(script: str, raiz: Path = RAIZ) -> list[str]:
         except (OSError, SyntaxError, UnicodeDecodeError):
             continue
         for no in ast.walk(arvore):
-            nomes = [a.name for a in no.names] if isinstance(no, ast.Import) else                 [no.module] if isinstance(no, ast.ImportFrom) and no.level == 0 and no.module else []
+            if isinstance(no, ast.Import):
+                nomes = [a.name for a in no.names]
+            elif isinstance(no, ast.ImportFrom) and no.level == 0 and no.module:
+                nomes = [no.module]
+            else:
+                nomes = []
             for nome in nomes:
                 rel = _arquivo_local(nome.split(".")[0], raiz)
                 if rel and rel != script and rel not in achados:
