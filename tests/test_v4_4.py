@@ -1,17 +1,45 @@
 """Testes da V4.4 (incremento 8, parte 8b: fórmulas das abas 03 a 14 por nome, valores iguais aos da V4.3).
 Uso: uv run python -X utf8 tests/test_v4_4.py
-Namespace TC-WB44-xxx (IDs autorizados: 001 a 006). Neste momento só há o esqueleto e a pré-checagem pura da regra da
-troca (`reescrita_nomes.trocar_formula`, `destinos_unicos`), impressa fora da contagem; os TC entram no Task 14.
-"Passou" = estrutura e regeneração conferidas; não é validação física.
+Namespace TC-WB44-xxx (IDs autorizados: 001 a 006; este script tem o 001 a 004; o 005 e o 006 (equivalência por valor e
+cobertura de ramos, com recálculo) ficam em tests/test_workbook_v4_4.py). As pré-checagens (regra da troca, tabela de nomes
+e gerador) saem fora da contagem. O 002 e o 003 têm a própria leitura dos tokens (openpyxl `Tokenizer`) e NÃO usam
+`reescrita_nomes`, para não repetir um erro do gerador. A V4.3 de partida é o arquivo da tag v4.3, extraído para pasta
+temporária; nada é gravado em excel/.
+
+TC-WB44-001 (regeneração, CA-07): `gerar(None, tmp)` bate com excel/…V4_4.xlsx por conteúdo (`comparar_xlsx`, com estrutura;
+o arquivo de excel/ não é reproduzível byte a byte), 1290 nomes, data/nomes_V4_4.csv = NOMES_V44, 00_README A3 da V4.4.
+TC-WB44-002 (regra da troca): V4.3 da tag x V4.4 de excel/, célula a célula. Nas abas 03 a 14, mesmos tokens, cada par igual
+ou (referência a uma célula na V4.3, nome da V4.4 cujo destino é essa célula); fora delas, valor idêntico; as exceções X2 a X5
+(`alteracoes()`) têm o `novo` na V4.4 e o `antes` na V4.3. Esperado: 2787 trocas e nenhuma diferença fora da regra.
+TC-WB44-003 (invariante): nas abas 03 a 14 da V4.4, todo operando de célula única é nome ou linha própria da ficha da 03.
+TC-WB44-004 (migração por nome): nomes da V4.3 com o mesmo destino na V4.4, os 24 novos ausentes da V4.3; viva V4.3 com
+valores SINTÉTICOS DE TESTE em todos os nomes de dado migra para a V4.4 com código 0, 0 conflito e todos os dados levados.
+"Passou" = estrutura, regra e migração conferidas; não é validação física.
 """
+import re
 import sys
+import tempfile
+from pathlib import Path
 
 import openpyxl
+from openpyxl.formula import Tokenizer
 from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.worksheet.formula import ArrayFormula
 
-import reescrita_nomes as rn
+import reescrita_nomes as rn   # só nas pré-checagens; o 002 e o 003 não o usam
+import dados_planilha as dp
+import gerar_v4_4 as g
+import origens
+from nomes_v4_0 import ler_tabela
+from nomes_v4_4 import NOMES_V44
+
+RAIZ = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(RAIZ / "tools"))
+import comparar_planilhas as cp  # noqa: E402
+import migrar_viva as migr_viva  # noqa: E402
 
 results = []
+V44 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_4.xlsx"   # só leitura
 V43 = "excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx"   # só leitura
 CSV = "data/nomes_V4_4.csv"
 
@@ -154,8 +182,199 @@ def pre_checagem_gerador() -> bool:
     return ok
 
 
+# --- leitura própria dos tokens (independente de reescrita_nomes) ---
+ABAS_03_A_14 = ("03_TARGETS", "04_DECISION_REGISTER", "05_VEHICLE", "06_SUSPENSION", "07_KINEMATICS", "08_VEHICLE_STATE",
+                "09_LOADS", "10_TIRE", "11_DESIGN", "12_COMPARISON", "13_VALIDATION", "14_DASHBOARD")
+RE_CEL = re.compile(r"^(?:(?P<aba>'[^']+'|[^!']+)!)?\$?(?P<c>[A-Z]{1,3})\$?(?P<r>\d+)$")
+RE_INTERVALO = re.compile(r"^(?:(?:'[^']+'|[^!']+)!)?\$?[A-Z]{1,3}\$?\d+:\$?[A-Z]{1,3}\$?\d+$")
+RE_COLUNA = re.compile(r"^(?:(?:'[^']+'|[^!']+)!)?\$?[A-Z]{1,3}:\$?[A-Z]{1,3}$")
+
+
+def cel_unica(valor: str, aba: str):
+    """(aba, célula) se o operando é referência a uma célula só (com ou sem aba e `$`); senão None."""
+    m = RE_CEL.match(valor)
+    if not m:
+        return None
+    return (m["aba"] or aba).strip("'"), f"{m['c']}{m['r']}"
+
+
+def destinos_nomes(wb) -> dict:
+    """nome -> (aba, célula) dos nomes cujo destino é uma célula só (aspas e `$` normalizados)."""
+    out = {}
+    for n, d in wb.defined_names.items():
+        alvo = cel_unica(d.attr_text, "")
+        if alvo is not None and alvo[0]:
+            out[n] = alvo
+    return out
+
+
+def texto(v):
+    """Forma comparável do conteúdo de uma célula (fórmula matricial com o intervalo; None = vazia)."""
+    if isinstance(v, ArrayFormula):
+        return ("array", v.ref, v.text)
+    return v if v is None else (type(v).__name__, v)
+
+
+def conteudos(wb) -> dict:
+    return {(ws.title, c.coordinate): c.value for ws in wb.worksheets for lin in ws.iter_rows() for c in lin
+            if c.value is not None}
+
+
+def tokens(v):
+    f = v.text if isinstance(v, ArrayFormula) else v
+    if not (isinstance(f, str) and f.startswith("=")):
+        return None
+    return Tokenizer(f).items
+
+
 def main():
-    pass
+    if not V44.exists():
+        for n in ("001", "002", "003", "004"):
+            check(f"TC-WB44-{n}", False, "falta a cópia excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx (Task 13, Step 6)")
+        return
+    with tempfile.TemporaryDirectory(prefix="dds_t44_") as tmp:
+        tmp = Path(tmp)
+        v43 = g.extrair_v43(tmp)
+        wb43 = openpyxl.load_workbook(v43)
+        wb44 = openpyxl.load_workbook(V44)
+        try:
+            tc_001(tmp, wb44)
+            c43, c44 = conteudos(wb43), conteudos(wb44)
+            tc_002(c43, c44, destinos_nomes(wb44))
+            tc_003(wb44, c44)
+            tc_004(tmp, v43, wb43, wb44)
+        finally:
+            wb43.close()
+            wb44.close()
+
+
+def tc_001(tmp: Path, wb44) -> None:
+    regen = tmp / "V4_4_regen.xlsx"
+    g.gerar(None, regen)
+    ok_cmp, rel = cp.comparar_xlsx(regen, V44, cp.FORMULAS_ESPERADAS_V44, estrutura=True)
+    n_nomes = len(wb44.defined_names)
+    csv_ok = ler_tabela(RAIZ / "data" / "nomes_V4_4.csv") == NOMES_V44
+    a3 = wb44["00_README"]["A3"].value
+    a3_ok = isinstance(a3, str) and a3.startswith("Versão do workbook: V4.4")
+    check("TC-WB44-001: regeneração da V4.4 da tag v4.3 igual a excel/…V4_4.xlsx por conteúdo "
+          f"({cp.FORMULAS_ESPERADAS_V44} fórmulas, com estrutura); 1290 nomes; data/nomes_V4_4.csv = NOMES_V44; "
+          "00_README A3 da V4.4",
+          ok_cmp and n_nomes == 1290 and csv_ok and a3_ok,
+          f"comparação={ok_cmp} nomes={n_nomes} csv={csv_ok} A3={a3_ok} | "
+          + " ; ".join(r for r in rel if not r.startswith("  DIF"))[:300] + ("" if ok_cmp else " | " + " ; ".join(rel[:6])))
+
+
+def tc_002(c43: dict, c44: dict, nomes44: dict) -> None:
+    exc = {(a["aba"], a["cel"]): a for a in g.alteracoes()}
+    trocas, erros, n_exc_ok, n_form = 0, [], 0, 0
+    for chave in sorted(set(c43) | set(c44)):
+        aba, cel = chave
+        a, b = c43.get(chave), c44.get(chave)
+        if chave in exc:
+            e = exc[chave]
+            if texto(b) == texto(e["novo"]) and texto(a) == texto(e["antes"]):
+                n_exc_ok += 1
+            else:
+                erros.append(f"exceção {aba}!{cel} fora do antes/novo")
+            continue
+        if texto(a) == texto(b):
+            continue
+        ta, tb = (tokens(a), tokens(b)) if aba in ABAS_03_A_14 else (None, None)
+        if ta is None or tb is None or len(ta) != len(tb):
+            erros.append(f"{aba}!{cel}: difere fora da regra ({str(a)[:40]!r} -> {str(b)[:40]!r})")
+            continue
+        if isinstance(a, ArrayFormula) != isinstance(b, ArrayFormula) or (isinstance(a, ArrayFormula) and a.ref != b.ref):
+            erros.append(f"{aba}!{cel}: fórmula matricial mudou")
+            continue
+        n_form += 1
+        for x, y in zip(ta, tb):
+            if (x.type, x.subtype) != (y.type, y.subtype):
+                erros.append(f"{aba}!{cel}: tipo de token mudou ({x.value!r} -> {y.value!r})")
+            elif x.value != y.value:
+                alvo = cel_unica(x.value, aba) if x.type == "OPERAND" and x.subtype == "RANGE" else None
+                if alvo is not None and nomes44.get(y.value) == alvo:
+                    trocas += 1
+                else:
+                    erros.append(f"{aba}!{cel}: {x.value!r} -> {y.value!r} fora da regra")
+    check("TC-WB44-002: V4.3 (tag) x V4.4 (excel/): nas abas 03 a 14 só operando de célula única vira o nome cujo destino é "
+          "essa célula; fora delas e fora das exceções X2 a X5, valor idêntico; as exceções têm o antes e o novo; "
+          "2787 trocas e nenhuma diferença fora da regra",
+          not erros and trocas == 2787 and n_exc_ok == len(exc),
+          f"trocas={trocas} (esperado 2787) fórmulas alteradas={n_form} exceções={n_exc_ok}/{len(exc)} "
+          f"fora da regra={len(erros)} {erros[:4]}")
+
+
+def tc_003(wb44, c44: dict) -> None:
+    nomes = set(wb44.defined_names)
+    n = {"nome": 0, "propria": 0, "intervalo": 0, "coluna": 0, "solta": 0, "outro": 0}
+    soltas = []
+    for (aba, cel), v in c44.items():
+        if aba not in ABAS_03_A_14:
+            continue
+        toks = tokens(v)
+        if toks is None:
+            continue
+        for t in toks:
+            if not (t.type == "OPERAND" and t.subtype == "RANGE"):
+                continue
+            x = t.value
+            if x in nomes:
+                n["nome"] += 1
+            elif RE_COLUNA.match(x):
+                n["coluna"] += 1
+            elif RE_INTERVALO.match(x):
+                n["intervalo"] += 1
+            elif RE_CEL.match(x):
+                m, mf = RE_CEL.match(x), RE_CEL.match(cel)
+                # linha própria (spec §3.5): sem aba, mesma linha da célula, que está em H:Q da 03_TARGETS
+                if aba == "03_TARGETS" and not m["aba"] and m["r"] == mf["r"] and len(mf["c"]) == 1 and "H" <= mf["c"] <= "Q":
+                    n["propria"] += 1
+                else:
+                    n["solta"] += 1
+                    soltas.append(f"{aba}!{cel}:{x}")
+            else:
+                n["outro"] += 1
+                soltas.append(f"{aba}!{cel}:{x}?")
+    ok = n["solta"] == 0 and n["outro"] == 0 and (n["propria"], n["intervalo"], n["coluna"]) == (35, 36, 4)
+    check("TC-WB44-003: invariante dos nomes: nas abas 03 a 14 da V4.4, todo operando de célula única é nome (ou, na 03, a "
+          "própria linha da ficha); por endereço só intervalo e coluna inteira",
+          ok, f"linha própria={n['propria']} (esperado 35) intervalos={n['intervalo']} (36) colunas={n['coluna']} (4) "
+              f"células soltas={n['solta']} (0) outros={n['outro']} já nome={n['nome']} {soltas[:4]}")
+
+
+def tc_004(tmp: Path, v43: Path, wb43, wb44) -> None:
+    n43 = {k: d.attr_text for k, d in wb43.defined_names.items()}
+    n44 = {k: d.attr_text for k, d in wb44.defined_names.items()}
+    perdidos = [k for k in n43 if n44.get(k) != n43[k]]
+    novos = {n.nome for n in NOMES_V44}
+    nomes_ok = not perdidos and not (novos & set(n43)) and novos <= set(n44) and len(n44) == len(n43) + len(novos)
+    # SINTÉTICO DE TESTE: perturba todo nome de dado da V4.3 (nunca dado do carro) e migra para a V4.4 de excel/
+    base = dp.ler_por_nome(v43)
+    sint = {}
+    for nome, v in base.items():
+        if isinstance(v, bool) or v is None:
+            continue
+        if isinstance(v, (int, float)):
+            sint[nome] = round(v + 1.5, 4)   # arredondado: o openpyxl grava 15 algarismos
+        elif nome.startswith("org_"):
+            sint[nome] = origens.OUTRO_CARRO
+        else:
+            sint[nome] = f"{v} (teste sintético)"
+    viva = g.copia_v43(tmp, sint, nome="viva_sintetica_V4_3.xlsx")
+    pasta = tmp / "mig"
+    pasta.mkdir()
+    saida, rel = pasta / "saida.xlsx", pasta / "relatorio.md"
+    cod = migr_viva.migrar(viva, V44, saida, rel, pasta / "cp", referencia_antiga=v43)
+    txt = rel.read_text(encoding="utf-8") if rel.exists() else ""
+    escritos = dp.ler_por_nome(saida) if saida.exists() else {}
+    levados = sum(1 for k, v in sint.items() if k in escritos and dp.iguais(escritos[k], v))
+    mig_ok = cod == 0 and "| Conflitos (não escritos) | 0 |" in txt and levados == len(sint) and len(sint) > 100
+    check("TC-WB44-004: migração por nome: os nomes da V4.3 existem na V4.4 com o mesmo destino e os 24 novos não existem na "
+          "V4.3; viva V4.3 com valores SINTÉTICOS DE TESTE em todos os nomes de dado migra para a V4.4 com código 0, "
+          "0 conflito e todos os dados levados",
+          nomes_ok and mig_ok,
+          f"nomes={nomes_ok} (perdidos/alterados {len(perdidos)}) migração código={cod} dados sintéticos levados="
+          f"{levados}/{len(sint)} (valores de teste, não do carro)")
 
 
 if __name__ == "__main__":
