@@ -18,8 +18,12 @@ casos não rodam): leva minutos por mutante. O motor é o Excel (DDS_RECALC=exce
 só é pega pelo C1 (os casos C2 a C4 têm a = b).
 Roda como script: uv run python -X utf8 tests/mutation_planilha_equilibrio.py
 Código de saída: 0 = todos detectados; 1 = algum mutante escapou; 2 = pré-checagem falhou; 3 = sem motor de recálculo.
+Tempo (EDR-068): o script inteiro cabe em um orçamento (DDS_ORCAMENTO_S, padrão 7000 s); cada rodada tem min(TIMEOUT, restante);
+a 2ª tentativa só ocorre se couber um TIMEOUT inteiro; tempo esgotado = mutante NÃO DETECTADO (tempo), e na pré-checagem, código 2.
 """
-import os, re, shutil, subprocess, sys, tempfile
+import os, re, shutil, sys, tempfile
+
+from executor_testes import CODIGO_TEMPO, Execucao, executar, orcamento_do_ambiente
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 TESTE = os.path.join('tests', 'test_workbook_v4_1.py')
@@ -27,14 +31,21 @@ src = open(os.path.join(ROOT, 'python', 'aba_equilibrio.py'), encoding='utf-8').
 RE_RESUMO = re.compile(r'^(\d+) PASS, 0 FAIL, de (\d+) testes$')
 RE_FAIL_004_006 = re.compile(r'^\[FAIL\] (TC-WB41-00[456][^ ]*)')
 RAIZ_ORIG = "RAIZ = Path(__file__).resolve().parent.parent"
-TIMEOUT = 1500   # uma rodada com 5 casos leva ~5 min; mais que isso é o Excel travado: mata e repete uma vez
+TIMEOUT = 1500   # uma rodada com 5 casos leva ~5 min; mais que isso é o Excel travado: mata a árvore e repete uma vez, se couber
+ORCAMENTO = orcamento_do_ambiente(7000)
 # Menor conjunto de casos que torna os cinco mutantes observáveis (DDS_CASOS; o TC-WB41-003 e os demais casos não rodam):
 # C1 (a ≠ b: nos casos simétricos a troca a↔b é invisível), C3 (ganho de camber), C4b (R, cos δ, Ackermann com % > 0), ORG_TX e ORG_T09 (pior origem, prefixo D16)
 CASOS = 'C1,C3,C4b,ORG_TX,ORG_T09'
 
 
-def rodar(fonte):
-    """Roda o teste da planilha com a cópia `fonte` de aba_equilibrio.py na frente do caminho de import."""
+def tempo_esgotado():
+    return Execucao(CODIGO_TEMPO, '', '', 0.0, True)
+
+
+def rodar(fonte, teste=TESTE, orcamento=None):
+    """Roda o teste da planilha com a cópia `fonte` de aba_equilibrio.py na frente do caminho de import.
+    Devolve Execucao; estourou=True quando o tempo (rodada ou orçamento) acabou."""
+    orcamento = orcamento or ORCAMENTO
     assert fonte.count(RAIZ_ORIG) == 1
     # a cópia fica fora de python/: RAIZ tem de continuar apontando o repositório (data/, excel/, tag v4.0)
     fonte = fonte.replace(RAIZ_ORIG, f"RAIZ = Path({ROOT!r})")
@@ -44,21 +55,38 @@ def rodar(fonte):
             fh.write(fonte)
         env = dict(os.environ, PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1', DDS_RECALC='excel', DDS_CASOS=CASOS,
                    PYTHONPATH=d + os.pathsep + os.environ.get('PYTHONPATH', ''))
-        sonda = subprocess.run([sys.executable, '-X', 'utf8', '-c', 'import aba_equilibrio; print(aba_equilibrio.__file__)'],
-                               cwd=ROOT, env=env, capture_output=True, text=True)
+        sonda = executar([sys.executable, '-X', 'utf8', '-c', 'import aba_equilibrio; print(aba_equilibrio.__file__)'],
+                         cwd=ROOT, env=env, timeout_s=max(1.0, min(120, orcamento.restante())))
         alvo = os.path.normcase(os.path.abspath(os.path.join(d, 'aba_equilibrio.py')))
-        if sonda.returncode != 0 or os.path.normcase(os.path.abspath(sonda.stdout.strip())) != alvo:
+        if sonda.estourou or sonda.returncode != 0 or os.path.normcase(os.path.abspath(sonda.stdout.strip())) != alvo:
             print('ERRO: o aba_equilibrio importado não é a cópia temporária ->', sonda.stdout.strip() or sonda.stderr[-500:])
             sys.exit(2)
+        out = tempo_esgotado()
         for tentativa in (1, 2):
-            try:
-                return subprocess.run([sys.executable, '-X', 'utf8', TESTE], cwd=ROOT, env=env, capture_output=True,
-                                      text=True, encoding='utf-8', errors='replace', timeout=TIMEOUT)
-            except subprocess.TimeoutExpired:
-                print('  (tempo esgotado na tentativa', tentativa, ')', flush=True)
-        print('ERRO: o teste travou duas vezes'); sys.exit(2)
+            if orcamento.restante() <= 0:
+                break
+            out = executar([sys.executable, '-X', 'utf8', teste], cwd=ROOT, env=env,
+                           timeout_s=min(TIMEOUT, orcamento.restante()))
+            print(f'  tempo por rodada: {out.tempo_s:.0f} s (tentativa {tentativa}, orçamento restante {orcamento.restante():.0f} s)', flush=True)
+            if not out.estourou:
+                return out
+            print('  (tempo esgotado na tentativa', tentativa, ')', flush=True)
+            if tentativa == 1 and not orcamento.cabe(TIMEOUT):
+                break      # a 2ª tentativa não cabe no orçamento
+        return out
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+
+def detectado(out, falhas=None):
+    """Mutante detectado = o teste terminou (sem estourar o tempo), saiu com código != 0 e tem [FAIL] de 004 a 006."""
+    if falhas is None:
+        falhas = falhas_004_006(out)
+    return (not out.estourou) and out.returncode != 0 and bool(falhas)
+
+
+def falhas_004_006(out):
+    return [mm.group(1) for mm in (RE_FAIL_004_006.match(l) for l in out.stdout.splitlines()) if mm]
 
 
 muts = {
@@ -79,24 +107,34 @@ def resumo(out):
     return (out.stdout.strip().splitlines() or [''])[-1]
 
 
-for nome, (a, b) in muts.items():
-    assert src.count(a) == 1, (nome, src.count(a))   # cada mutação mira exatamente um ponto do gerador
+def main():
+    for nome, (a, b) in muts.items():
+        assert src.count(a) == 1, (nome, src.count(a))   # cada mutação mira exatamente um ponto do gerador
 
-out = rodar(src)
-if out.stdout.startswith('NÃO EXECUTÁVEL'):
-    print(out.stdout.strip().splitlines()[0]); sys.exit(3)
-m = RE_RESUMO.match(resumo(out))
-if out.returncode != 0 or not m or m.group(1) != m.group(2) or int(m.group(1)) == 0:
-    print('PRE-CHECAGEM FALHOU: original ->', resumo(out), '| código', out.returncode); print(out.stdout[-3000:], out.stderr[-2000:])
-    sys.exit(2)
-print('PRE-CHECAGEM OK: original ->', resumo(out), '|', next((l for l in out.stdout.splitlines() if l.startswith('MOTOR:')), 'MOTOR: ?'))
-det = 0
-for nome, (a, b) in muts.items():
-    out = rodar(src.replace(a, b, 1))
-    falhas = [mm.group(1) for mm in (RE_FAIL_004_006.match(l) for l in out.stdout.splitlines()) if mm]
-    ok = out.returncode != 0 and bool(falhas)
-    det += ok
-    extra = '' if ok or out.returncode == 0 else f' (código {out.returncode}, sem [FAIL] de 004-006: {resumo(out)}; {out.stderr[-300:].strip()})'
-    print(('DETECTADO     ' if ok else 'NÃO DETECTADO '), nome, '->', '; '.join(falhas) if falhas else 'nenhum FAIL de 004-006', extra)
-print(det, '/', len(muts))
-sys.exit(0 if det == len(muts) else 1)
+    out = rodar(src)
+    if out.estourou:
+        print('PRE-CHECAGEM FALHOU: tempo esgotado (orçamento de', ORCAMENTO.total_s, 's)'); sys.exit(2)
+    if out.stdout.startswith('NÃO EXECUTÁVEL'):
+        print(out.stdout.strip().splitlines()[0]); sys.exit(3)
+    m = RE_RESUMO.match(resumo(out))
+    if out.returncode != 0 or not m or m.group(1) != m.group(2) or int(m.group(1)) == 0:
+        print('PRE-CHECAGEM FALHOU: original ->', resumo(out), '| código', out.returncode); print(out.stdout[-3000:], out.stderr[-2000:])
+        sys.exit(2)
+    print('PRE-CHECAGEM OK: original ->', resumo(out), '|', next((l for l in out.stdout.splitlines() if l.startswith('MOTOR:')), 'MOTOR: ?'))
+    det = 0
+    for nome, (a, b) in muts.items():
+        out = rodar(src.replace(a, b, 1))
+        falhas = falhas_004_006(out)
+        ok = detectado(out, falhas)
+        det += ok
+        if out.estourou:
+            print('NÃO DETECTADO (tempo)', nome, '->', 'tempo esgotado, o mutante não foi avaliado')
+            continue
+        extra = '' if ok or out.returncode == 0 else f' (código {out.returncode}, sem [FAIL] de 004-006: {resumo(out)}; {out.stderr[-300:].strip()})'
+        print(('DETECTADO     ' if ok else 'NÃO DETECTADO '), nome, '->', '; '.join(falhas) if falhas else 'nenhum FAIL de 004-006', extra)
+    print(det, '/', len(muts))
+    sys.exit(0 if det == len(muts) else 1)
+
+
+if __name__ == '__main__':
+    main()
