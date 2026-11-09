@@ -17,7 +17,11 @@ Passos:
    (`viva.MAPAS_ROTULO`; V4.1 -> V4.2: `origens.MAPA_DADO_V41_V42`, EDR-062 decisão 1). O mapa vale para a viva e para a base
    antes da comparação: um `● Dado do TX` que a equipe manteve, ou trocou por `◐ Dado do T09`, vira `◐ Dado de outro carro`
    nos dois lados e não conta como dado da equipe;
-5. injeta o dado da equipe na cópia da versão nova (`dados_planilha.injetar`), com a base = a referência antiga mapeada. Se a
+5. (V4.2 -> V4.3, catálogo C-M2 e C-M3) leva o R digitado da viva: B9, E9 e F9 da 16_EQUILIBRIO (nomes `ent_`, `org_` e `fte_`
+   `16_raio_do_skidpad_r`, que na V4.3 são fórmula e texto de aviso, fora dos destinos: C-M1) passam ao R manual, à Origem e à
+   Fonte dele na 24_CURVA (B8, E8, F8); a base da comparação desses nomes é o padrão da V4.3, então a escrita não dá conflito; com
+   número em B9, o modo do R (24_CURVA B4) recebe "Manual" (com B9 vazio fica "Linha central", D5);
+6. injeta o dado da equipe na cópia da versão nova (`dados_planilha.injetar`), com a base = a referência antiga mapeada. Se a
    versão nova também mudou a célula em relação à base, é conflito: listado, nunca sobrescrito.
 O relatório (Markdown) lista contagens, conflitos (nome, base, destino, novo), faltas e escritas.
 
@@ -33,11 +37,17 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "python"))
+import aba_curva  # noqa: E402
 import dados_planilha as dp  # noqa: E402
 import viva as v  # noqa: E402
 
 PASTA_EXCEL = RAIZ / "excel"
 RELATORIO_PADRAO = RAIZ / "build" / "migracao-viva.md"
+# Redirecionamento fixo por par de versões (C-M2): nome da versão antiga -> nome da versão nova (a célula nova ainda não
+# tem dado da equipe, então a base da comparação é o padrão dela).
+REDIRECIONAMENTOS: dict[tuple[str, str], dict[str, str]] = {
+    ("V4.2", "V4.3"): {f"{p}_16_raio_do_skidpad_r": f"{p}_24_r_manual" for p in ("ent", "org", "fte")}}
+MODO_R_V43 = aba_curva.NOME24["modo"]
 
 
 def _recusar(viva: Path, para: Path, saida: Path, relatorio: Path, extras: list[Path]) -> str | None:
@@ -125,9 +135,21 @@ def migrar(viva: Path, para: Path, saida: Path, relatorio: Path, pasta: Path, re
             return _falhar(relatorio, 2, cab, f"viva com comentários, hiperlinks, imagens ou gráficos diferentes da referência "
                                               f"({len(objetos)}): " + "; ".join(f"{a}!{c} ({t})" for a, c, t in objetos)
                            + ". Estes objetos não são migrados por esta ferramenta: leve-os à mão ou obtenha aprovação para deixá-los de fora.")
-        viva_m = _mapear(dp.ler_por_nome(copia), mapa)
-        base_m = _mapear(dp.ler_por_nome(ref_antiga), mapa)
+        viva_m = _mapear(dp.ler_por_nome(copia, incluir_formulas=True), mapa)
+        base_m = _mapear(dp.ler_por_nome(ref_antiga, incluir_formulas=True), mapa)
         equipe = {n: x for n, x in viva_m.items() if not dp.iguais(x, base_m.get(n))}
+        redirecionar = REDIRECIONAMENTOS.get((ver, ver_nova), {})
+        if redirecionar:
+            padrao_novo = dp.ler_por_nome(para)
+            for antigo, novo in redirecionar.items():
+                if antigo in equipe:
+                    equipe[novo] = equipe.pop(antigo)
+                    base_m[novo] = padrao_novo.get(novo)
+                base_m.pop(antigo, None)
+            b9 = equipe.get(redirecionar["ent_16_raio_do_skidpad_r"])
+            if isinstance(b9, (int, float)) and not isinstance(b9, bool):   # C-M3: número em B9 = o R passa a ser manual
+                equipe[MODO_R_V43] = "Manual"
+                base_m[MODO_R_V43] = padrao_novo.get(MODO_R_V43)
         celula = {n: f"{a}!{c}" for n, (a, c) in _destinos_de(para).items()}
         rel = dp.injetar(para, equipe, saida, base=base_m)
     except ValueError as e:

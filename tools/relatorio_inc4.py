@@ -52,7 +52,7 @@ TIR = RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir"
 VARREDURA = RAIZ / "data" / "varredura_pneu_exploratoria.json"
 PORTAO = RAIZ / "docs" / "v4-1" / "inc4-viabilidade-tabela-de-troca.md"
 SAIDA_PADRAO = RAIZ / "docs" / "v4-1" / "inc4-equilibrio-na-planilha.md"
-GRADE = {"ay_max_g": 2.0, "passo_g": 0.05, "n_alfa": 25}   # a grade da 17 (analise_par e varredura_pneu)
+GRADE = {"ay_max_g": 2.0, "passo_g": 0.05, "n_alfa": 25, "fator_neutro": 1.0}   # a grade da 17 (analise_par e varredura_pneu)
 
 
 def sha256(p: Path) -> str:

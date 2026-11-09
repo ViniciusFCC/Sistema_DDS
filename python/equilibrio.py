@@ -472,6 +472,10 @@ def tracao_ativa(caso: CasoEquilibrio) -> bool:
 
 
 MSG_FX_SEM_FRENTE = "Fx exigido (h9v) indisponível: a curva dianteira é inválida nesta linha"
+# Verificações da 24_CURVA na V4.3 (catálogo C-A21 e C-F5; aba_equilibrio.VERIFICACOES_24): o texto da célula e o da
+# lista.
+MSG_GEOMETRIA = "geometria do centro da curva inválida (R ≤ b ou R_c ≤ t_f/2)"
+MSG_FATOR = "fator da faixa do NEUTRO (24_CURVA B34) deve ser número ≥ 1"
 
 
 def _curva_sem_elipse(caso: CasoEquilibrio, eixo: str, ay_ms2: float, *, formas: Formas):
@@ -904,16 +908,28 @@ def _varredura(caso: CasoEquilibrio, ay_max_g: float, passo_g: float, n_alfa: in
 _PISO_RESOLUCAO_MS2 = 1e-9 * G
 
 
-def _resolucao(pedida: tuple, refinada: tuple, passo_ms2: float) -> float | None:
-    """Resolução numérica das saturações (EDR-056, item 2): max|S − S_refinado| sobre os eixos.
+# Fator da faixa do NEUTRO (EDR-065, item 2, decisão do usuário de 2026-11-02): o |S − S2| entre a grade pedida e a
+# refinada subestima o erro de S em cerca de 4/3 (Richardson com p = 2: 2^p/(2^p − 1) = 4/3; ver
+# docs/inc7/estudo-neutro.md). Fonte única: o analise_par e a regra da folga do mmm.limite usam a faixa calculada
+# em _resolucao (o mmm a recebe pronta em resolucao_ms2, sem fator próprio), e a célula da planilha (família F12)
+# repete este valor.
+FATOR_NEUTRO = 4.0 / 3.0
 
-    Se um eixo satura numa grade e não na outra, a resolução é o passo da grade pedida. None quando
-    nenhum eixo satura em nenhuma das grades.
+
+def _resolucao(pedida: tuple, refinada: tuple, passo_ms2: float, fator_neutro: float = FATOR_NEUTRO) -> float | None:
+    """Faixa numérica do NEUTRO (EDR-056, item 2; fator do EDR-065, item 2): max sobre os eixos, no mínimo o piso.
+
+    Eixo que satura nas duas grades contribui FATOR_NEUTRO·|S − S_refinado|. Eixo que satura numa grade e não na
+    outra contribui o passo da grade pedida, sem o fator (o passo é um limite, não uma estimativa do |S − S2|). O
+    piso de 1e-9 g também fica sem o fator. O ramo de um eixo só (PUSH/LOOSE por um eixo, em analise_par) lê esta
+    mesma faixa. None quando nenhum eixo satura em nenhuma das grades.
+    fator_neutro (só para comparar com planilhas anteriores à V4.3, que não têm o 4/3): 1.0 devolve a regra
+    histórica.
     """
     difs = []
     for s, s_ref in zip(pedida, refinada):
         if s is not None and s_ref is not None:
-            difs.append(abs(s - s_ref))
+            difs.append(fator_neutro * abs(s - s_ref))
         elif s is not None or s_ref is not None:
             difs.append(passo_ms2)
     if not difs:
@@ -964,13 +980,15 @@ def limitacoes_detalhe(res: ResultadoPar, caso: CasoEquilibrio) -> list[dict]:
 
 
 def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.05,
-                n_alfa: int = 25, *, formas: Formas = FORMAS_V42) -> ResultadoPar:
+                n_alfa: int = 25, *, formas: Formas = FORMAS_V42,
+                fator_neutro: float = FATOR_NEUTRO) -> ResultadoPar:
     """Varre a_y_k = k·passo (k = 0…⌊ay_max/passo⌋) e decide PUSH/LOOSE/NEUTRO pelo eixo que satura antes.
 
     Milliken §7.1 (p. 283-286) e §8.6 (p. 320; EDR-056): o eixo que satura primeiro define o
     comportamento no limite (dianteiro = push, final understeer; traseiro = loose, final oversteer);
     o cruzamento das fronteiras sobre N = 0 é neutro. Regras (EDR-056, item 2 e 3), com S, V e a folga
-    da grade pedida e a resolução numérica R medida contra uma grade refinada (passo/2, 2·n_alfa − 1):
+    da grade pedida e a faixa numérica R (fator_neutro·|S − S2| contra uma grade refinada passo/2, 2·n_alfa − 1;
+    ver _resolucao):
     - os dois eixos saturam: Δ = S_r − S_f; |Δ| <= R -> NEUTRO; Δ > R -> PUSH; Δ < −R -> LOOSE;
     - só a frente satura: PUSH se a traseira segue válida até V_r >= S_f + R; senão N/A com o motivo
       da traseira (simétrico para LOOSE);
@@ -983,6 +1001,9 @@ def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.
     a busca do eixo para nela e o veredito sai N/A se ela impedir a decisão.
     formas (decisão D1 do plano do inc. 7): forma das fórmulas do EDR-066, repassada a capacidade_eixo; o padrão
     FORMAS_V42 é o comportamento de hoje.
+    fator_neutro (EDR-065 item 2): FATOR_NEUTRO = 4/3 desde a V4.3; quem compara com uma planilha V4.1 ou V4.2, que não
+    tem o fator, passa fator_neutro=1.0 (regra histórica). Vale também em analise_par_dois_sentidos e
+    varredura_pneu (**kw).
     """
     if not (isinstance(ay_max_g, (int, float)) and ay_max_g > 0 and math.isfinite(ay_max_g)):
         raise ValueError(f"ay_max_g deve ser > 0 e finito; recebido {ay_max_g!r}.")
@@ -997,7 +1018,7 @@ def analise_par(caso: CasoEquilibrio, ay_max_g: float = 2.0, passo_g: float = 0.
     S_f, S_r = sf.ay_sat, sr.ay_sat
     V_f = sf.ay_valido if sf.ay_valido is not None else -math.inf
     V_r = sr.ay_valido if sr.ay_valido is not None else -math.inf
-    res = _resolucao((S_f, S_r), (sf_ref.ay_sat, sr_ref.ay_sat), passo_ms2)
+    res = _resolucao((S_f, S_r), (sf_ref.ay_sat, sr_ref.ay_sat), passo_ms2, fator_neutro)
 
     motivo = None
     if S_f is not None and S_r is not None:
