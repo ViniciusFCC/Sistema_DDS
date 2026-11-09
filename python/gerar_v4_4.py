@@ -58,7 +58,7 @@ TEXTO_A3_V44 = ("Versão do workbook: V4.4 (incremento 8: fórmulas das abas 03 
                 "projeto T11) | Status: DRAFT — cross-check, ainda NÃO REFERENCE-validated")
 TEXTO_CHANGELOG = (
     "2026-11",
-    "V4.4, fundação parte 2 (incremento 8): as fórmulas das abas 03 a 14 leem por nome toda célula única (23 nomes "
+    "V4.4, fundação parte 2 (incremento 8): as fórmulas das abas 03 a 14 leem por nome toda célula única (24 nomes "
     "novos, data/nomes_V4_4.csv), com valores iguais aos da V4.3 (TC-WB44-005); aviso do R na 14_DASHBOARD B48 cita os "
     "diametros da 24_CURVA; limitacao do K na 16_EQUILIBRIO F188. Gerada da tag v4.3 por python/gerar_v4_4.py.",
     "EDR-070, EDR-066. Registro celula a celula: " + REGISTRO + ". NOT_VALIDATED fisicamente.")
