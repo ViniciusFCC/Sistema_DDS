@@ -69,6 +69,7 @@ TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200, "tests/mutatio
                    "tests/mutation_inc7.py": 3600, "tests/mutation_planilha_v43.py": 10200}
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
+TIMEOUT_PLANILHAS: dict[str, int] = {}   # tempo-limite por teste de planilha (padrão 1800 s)
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
@@ -348,6 +349,73 @@ def rodar_lista_testes(testes, pulavel, pulados, resumo, md) -> list[str]:
     return detalhes
 
 
+def rodar_lista_mutacao(mutacoes, pulavel, pulados, resumo, md) -> None:
+    """Laço do CA-06: roda cada script de mutação (ou o pula, se `pulavel(script)` der o commit) e acrescenta linhas a `md`
+    e `resumo`."""
+    for script, esperado in mutacoes:
+        c_ok = pulavel(script)
+        if c_ok:
+            pulados.append((script, c_ok))
+            resumo.append(("CA-06", f"mutação ({Path(script).name})", "PULADO"))
+            md += [f"### `{script}`", "", f"- PULADO (passou em {c_ok}; código sem mudança)", ""]
+            continue
+        r = rodar([script], timeout=TIMEOUT_MUTACAO.get(script, 1800))
+        linhas = r.stdout.splitlines()
+        pre = [l for l in linhas if l.startswith("PRE-CHECAGEM")]
+        pre_ok = any(l.startswith("PRE-CHECAGEM OK") for l in pre)
+        m = [x for x in map(RE_MUTACAO.match, linhas) if x]
+        det, tot = map(int, m[-1].groups()) if m else (None, None)
+        ok = pre_ok and det == tot == esperado and r.returncode == 0
+        resumo.append(("CA-06", f"mutação ({Path(script).name})", "PASS" if ok else "FAIL"))
+        md += [
+            f"### `{script}`", "",
+            f"- Esperado: {esperado}/{esperado} detectados, com a pré-checagem do original passando.",
+            f"- Pré-checagem: {pre[0] if pre else 'AUSENTE (o script não verifica o original)'}",
+            f"- Obtido: {det}/{tot} detectados; código de saída {r.returncode}",
+            f"- Status: **{'PASS' if ok else 'FAIL'}**",
+            "",
+        ]
+        md += bloco(f"{script}: saída", r.stdout.strip())
+        md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+
+
+def argumentos_planilha(script: str, ref30: Path | None = None) -> list[str]:
+    """Argumentos de cada teste da planilha (CA-09), conforme o nome do script; `ref30` é a V3.0 de referência."""
+    return [str(ref30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith(("_v4_1.py", "_v4_2.py", "_v4_3.py")) else [
+            str(ref30), str(RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"), str(RAIZ / "data" / "layout_V2_4.json"),
+            str(RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir")]
+
+
+def rodar_lista_planilhas(planilhas, pulavel, pulados, resumo, md, ref30: Path | None = None) -> None:
+    """Laço do CA-09: roda cada teste da planilha (ou o pula, se `pulavel(script)` der o commit) e acrescenta linhas a `md`
+    e `resumo`."""
+    for script, esperado, fonte in planilhas:
+        c_ok = pulavel(script)
+        if c_ok:
+            pulados.append((script, c_ok))
+            resumo.append(("CA-09", f"planilha Excel x Python ({Path(script).stem})", "PULADO"))
+            md += [f"- `{script}`: esperado {esperado} ({fonte}): PULADO (passou em {c_ok}; código sem mudança)", ""]
+            continue
+        args = argumentos_planilha(script, ref30)
+        r = rodar([script, *args], timeout=TIMEOUT_PLANILHAS.get(script, 1800))
+        linhas = r.stdout.splitlines()
+        motor = next((l for l in linhas if l.startswith(("MOTOR:", "NÃO EXECUTÁVEL:"))), "MOTOR: (não informado)")
+        resumos = [m for m in map(RE_RESUMO.match, linhas) if m]
+        if r.returncode == 3 and motor.startswith("NÃO EXECUTÁVEL"):
+            st, obtido = "NÃO EXECUTÁVEL", "não rodou"
+        elif resumos:
+            n_pass, n_fail, total = map(int, resumos[-1].groups())
+            obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
+            st = "PASS" if n_fail == 0 and n_pass == total == esperado and r.returncode == 0 else "FAIL"
+        else:
+            st, obtido = "FAIL", "sem linha de resumo"
+        resumo.append(("CA-09", f"planilha Excel x Python ({Path(script).stem})", st))
+        md += [f"- `{script}`: esperado {esperado} ({fonte}); obtido {obtido}; código {r.returncode}: **{st}**",
+               f"- {motor}", ""]
+        md += bloco(f"{script}: testes FAIL", "\n".join(l for l in linhas if l.startswith("[FAIL]")))
+        md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--saida", type=Path, default=RAIZ / "build" / "verificacao-ultima.md")
@@ -396,31 +464,7 @@ def main() -> None:
 
     # --- Mutação (CA-06) ---
     md += ["## Mutação (CA-06)", ""]
-    for script, esperado in MUTACAO:
-        c_ok = pulavel(script)
-        if c_ok:
-            pulados.append((script, c_ok))
-            resumo.append(("CA-06", f"mutação ({Path(script).name})", "PULADO"))
-            md += [f"### `{script}`", "", f"- PULADO (passou em {c_ok}; código sem mudança)", ""]
-            continue
-        r = rodar([script], timeout=TIMEOUT_MUTACAO.get(script, 1800))
-        linhas = r.stdout.splitlines()
-        pre = [l for l in linhas if l.startswith("PRE-CHECAGEM")]
-        pre_ok = any(l.startswith("PRE-CHECAGEM OK") for l in pre)
-        m = [x for x in map(RE_MUTACAO.match, linhas) if x]
-        det, tot = map(int, m[-1].groups()) if m else (None, None)
-        ok = pre_ok and det == tot == esperado and r.returncode == 0
-        resumo.append(("CA-06", f"mutação ({Path(script).name})", "PASS" if ok else "FAIL"))
-        md += [
-            f"### `{script}`", "",
-            f"- Esperado: {esperado}/{esperado} detectados, com a pré-checagem do original passando.",
-            f"- Pré-checagem: {pre[0] if pre else 'AUSENTE (o script não verifica o original)'}",
-            f"- Obtido: {det}/{tot} detectados; código de saída {r.returncode}",
-            f"- Status: **{'PASS' if ok else 'FAIL'}**",
-            "",
-        ]
-        md += bloco(f"{script}: saída", r.stdout.strip())
-        md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+    rodar_lista_mutacao(MUTACAO, pulavel, pulados, resumo, md)
 
     # --- Build e comparação (CA-07, CA-08) ---
     md += ["## Planilha regenerada (CA-07, CA-08)", ""]
@@ -527,33 +571,7 @@ def main() -> None:
 
     # --- Teste da planilha, Excel x Python (CA-09, EDR-044) ---
     md += ["## Teste da planilha (CA-09)", ""]
-    for script, esperado, fonte in PLANILHAS:
-        c_ok = pulavel(script)
-        if c_ok:
-            pulados.append((script, c_ok))
-            resumo.append(("CA-09", f"planilha Excel x Python ({Path(script).stem})", "PULADO"))
-            md += [f"- `{script}`: esperado {esperado} ({fonte}): PULADO (passou em {c_ok}; código sem mudança)", ""]
-            continue
-        args = [str(REF30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith(("_v4_1.py", "_v4_2.py", "_v4_3.py")) else [
-            str(REF30), str(RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"), str(RAIZ / "data" / "layout_V2_4.json"),
-            str(RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir")]
-        r = rodar([script, *args])
-        linhas = r.stdout.splitlines()
-        motor = next((l for l in linhas if l.startswith(("MOTOR:", "NÃO EXECUTÁVEL:"))), "MOTOR: (não informado)")
-        resumos = [m for m in map(RE_RESUMO.match, linhas) if m]
-        if r.returncode == 3 and motor.startswith("NÃO EXECUTÁVEL"):
-            st, obtido = "NÃO EXECUTÁVEL", "não rodou"
-        elif resumos:
-            n_pass, n_fail, total = map(int, resumos[-1].groups())
-            obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
-            st = "PASS" if n_fail == 0 and n_pass == total == esperado and r.returncode == 0 else "FAIL"
-        else:
-            st, obtido = "FAIL", "sem linha de resumo"
-        resumo.append(("CA-09", f"planilha Excel x Python ({Path(script).stem})", st))
-        md += [f"- `{script}`: esperado {esperado} ({fonte}); obtido {obtido}; código {r.returncode}: **{st}**",
-               f"- {motor}", ""]
-        md += bloco(f"{script}: testes FAIL", "\n".join(l for l in linhas if l.startswith("[FAIL]")))
-        md += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+    rodar_lista_planilhas(PLANILHAS, pulavel, pulados, resumo, md, REF30)
 
     md[md.index("## Testes (CA-05)"):md.index("## Testes (CA-05)")] = [
         "## Resumo", "", "| CA | Item | Status |", "|---|---|---|",
