@@ -17,12 +17,14 @@ Roda como script: uv run python -X utf8 tests/test_neutro.py
 Veículo, pneu de escala, R, downforce e balanço aero são entradas SINTÉTICAS de teste, não do carro.
 """
 import math
+import os
 
 import equilibrio as eq
 import estudo_neutro
 import mmm
 from suspension_model import G
 
+HERE = os.path.dirname(os.path.abspath(__file__))
 results = []
 
 
@@ -33,7 +35,7 @@ def check(name, condition, detail=""):
 
 
 # O caso-base sintético é uma só função, estudo_neutro.caso_base_sintetico (tests/test_escada.py usa a mesma).
-CASO = estudo_neutro.caso_base_sintetico()   # sintético de teste
+CASO = estudo_neutro.caso_base_sintetico(os.path.join(HERE, ".."))   # sintético de teste
 # Veredito do analise_par neste caso, medido no commit b8d622d (antes do estudo existir), com os padrões
 # ay_max_g = 2,0, passo_g = 0,05 e n_alfa = 25. O estudo não pode mudá-lo.
 VEREDITO_ANTES = eq.LOOSE
