@@ -201,13 +201,28 @@ def main() -> None:
         # guarda catalogada) e sem ISBLANK; o detector é exercitado em fórmulas mutadas
         nome_R = ae.NOME_ENT["R"]
         guardas = [ae.NOME_ENT["h8"], ae.NOME_ENT["h9"], ae.NOME16["raio"], ae.NOME16["ok"]]
-        excecoes = {("16_EQUILIBRIO", f"B{ae.LINHAS16['tvolta']}"), ("16_EQUILIBRIO", "B65"),
-                    ("24_CURVA", "B28")}   # B28 (C-A21): guardada por h2, h2v e ISNUMBER({R}); é a única só com h2
+        excecoes = {("16_EQUILIBRIO", f"B{ae.LINHAS16['tvolta']}"), ("16_EQUILIBRIO", "B65")}   # C-B4 e C-B7
+        chaves_ack = (ae.NOME_ENT["h2"], ac.NOME24["h2v"])
+
+        def guarda_h2_h2v(f: str) -> bool:
+            """C-A21 (B28 da 24_CURVA): ISNUMBER({R}) e as chaves h2 e h2v na mesma condição AND, por regra."""
+            i = f.find("AND(")
+            while i >= 0:
+                prof = 0
+                for j in range(i + 3, len(f)):
+                    prof += (f[j] == "(") - (f[j] == ")")
+                    if prof == 0:
+                        break
+                cond = f[i:j + 1]
+                if f"ISNUMBER({nome_R})" in cond and all(c in cond for c in chaves_ack):
+                    return True
+                i = f.find("AND(", i + 4)
+            return False
 
         def checar_leitores(formulas: dict):
             lei = [(k, f) for k, f in formulas.items() if nome_R in f and k != ("16_EQUILIBRIO", f"B{r9}")]
             sem = [k for k, f in lei if not any(g in f for g in guardas)
-                   and not (k in excecoes and f"ISNUMBER({nome_R})" in f)]
+                   and not (k in excecoes and f"ISNUMBER({nome_R})" in f) and not guarda_h2_h2v(f)]
             return lei, sem, [k for k, f in formulas.items() if f"ISBLANK({nome_R})" in f]
 
         f43 = {k: formula(v) for k, v in c43.items() if formula(v) is not None}
@@ -216,8 +231,10 @@ def main() -> None:
                              and not (a == "16_EQUILIBRIO" and c[0] in "IJKL")})
         x1 = ("X", "A1")
         mut = checar_leitores({x1: f"=IF(A1>0,{nome_R},0)", ("X", "A2"): f"=IF(ISBLANK({nome_R}),1,0)",
-                               ("X", "A3"): f"=IF({ae.NOME16['ok']}=1,{nome_R},0)"})
-        pega = mut[1] == [x1, ("X", "A2")] and mut[2] == [("X", "A2")]
+                               ("X", "A3"): f"=IF({ae.NOME16['ok']}=1,{nome_R},0)",
+                               ("X", "A4"): f"=IF(AND({chaves_ack[0]}=1,{chaves_ack[1]}=1,ISNUMBER({nome_R})),{nome_R},0)",
+                               ("X", "A5"): f"=IF(AND({chaves_ack[0]}=1,ISNUMBER({nome_R})),{nome_R},0)"})
+        pega = mut[1] == [x1, ("X", "A2"), ("X", "A5")] and mut[2] == [("X", "A2")]
         leitores_ok = len(leitores) > 100 and not sem_guarda and not isblank
         # texto literal do catálogo (catalogo-v43.md) em células-chave, com os {nomes} trocados pelos nomes reais
         plano = CATALOGO.read_text(encoding="utf-8")       # o catálogo é a seção "# Catálogo das células da V4.3"
@@ -291,23 +308,23 @@ def main() -> None:
         cel17 = lambda n: f"{cl17[n]}{r_}" if n in cl17 else f"{cn17[n]}{r_}"
         faixa = lambda n0, n1: f"{cel17(n0)}:{cel17(n1)}"
         alfa_ref = f"$B${ae.LINHA_ALFA + 1}:${get_column_letter(1 + ae.N_ALFA)}${ae.LINHA_ALFA + 1}"
-        af = ('=IF(AND({h9}=1,{h9v}=1),IF(pre_F<>"-","semF",IF(req_F>=cap_F,ABS(INDEX(alfa,idx_F)),IF(j_F<=1,0,'
-              'ABS(INDEX(alfa,j_F-1)+(INDEX(alfa,j_F)-INDEX(alfa,j_F-1))*(req_F-INDEX(fyF,j_F-1))/(INDEX(fyF,j_F)-'
-              'INDEX(fyF,j_F-1)))))),"-")')
-        ar = (af.replace('pre_F<>"-"', "NOT(ISNUMBER(cap0_R))").replace("cap_F", "cap0_R").replace("idx_F", "idx0_R")
-              .replace("j_F", "j_R").replace("req_F", "req_R").replace("fyF", "fy0R"))
-        fx = ('=IF(AND(ISNUMBER(phi),{h9}=1),IF(AND({h9v}=1,OR(aF="semF",aR="semF")),"semF",0.5*{rho}*{cda}*ABS(ay)*{R}'
-              '+'
-              '{crr}*{m}*9.81+IF({h9v}=1,req_F*aF+req_R*aR,ABS(req_F)*{tanf})),0)')
+        # as três fórmulas com os nomes das células entre chaves; `sub` troca tudo pelo dicionário, sem regex sobre o texto
+        af = ('=IF(AND({h9}=1,{h9v}=1),IF({pre_F}<>"-","semF",IF({req_F}>={cap_F},ABS(INDEX({alfa},{idx_F})),IF({j_F}<=1,0,'
+              'ABS(INDEX({alfa},{j_F}-1)+(INDEX({alfa},{j_F})-INDEX({alfa},{j_F}-1))*({req_F}-INDEX({fyF},{j_F}-1))/'
+              '(INDEX({fyF},{j_F})-INDEX({fyF},{j_F}-1)))))),"-")')
+        ar = ('=IF(AND({h9}=1,{h9v}=1),IF(NOT(ISNUMBER({cap0_R})),"semF",IF({req_R}>={cap0_R},ABS(INDEX({alfa},'
+              '{idx0_R})),IF({j_R}<=1,0,ABS(INDEX({alfa},{j_R}-1)+(INDEX({alfa},{j_R})-INDEX({alfa},{j_R}-1))*'
+              '({req_R}-INDEX({fy0R},{j_R}-1))/(INDEX({fy0R},{j_R})-INDEX({fy0R},{j_R}-1)))))),"-")')
+        fx = ('=IF(AND(ISNUMBER({phi}),{h9}=1),IF(AND({h9v}=1,OR({aF}="semF",{aR}="semF")),"semF",0.5*{rho}*{cda}*'
+              'ABS({ay})*{R}+{crr}*{m}*9.81+IF({h9v}=1,{req_F}*{aF}+{req_R}*{aR},ABS({req_F})*{tanf})),0)')
         cel_map = {"pre_F": cel17("pre_F"), "req_F": cel17("req_F"), "cap_F": cel17("cap_F"), "idx_F": cel17("idx_F"),
                    "j_F": cel17("j_F"), "j_R": cel17("j_R"), "cap0_R": cel17("cap0_R"), "idx0_R": cel17("idx0_R"),
                    "req_R": cel17("req_R"), "aF": cel17("aF"), "aR": cel17("aR"), "phi": cel17("phi"),
                    "ay": cel17("ay"), "alfa": alfa_ref, "fyF": faixa(("fy", "F", 0), ("fy", "F", ae.N_ALFA - 1)),
                    "fy0R": faixa(("fy0", "R", 0), ("fy0", "R", ae.N_ALFA - 1))}
-        tok = re.compile(r"\b(" + "|".join(sorted(cel_map, key=len, reverse=True)) + r")\b")
         for nome_c, tpl in (("aF", af), ("aR", ar), ("fxr", fx)):
             alvo_c = g17[cel17(nome_c)].value
-            esperado_c = sub(tok.sub(lambda m_: cel_map[m_.group(1)], tpl))
+            esperado_c = sub(tpl, cel_map)
             ok_c = alvo_c == esperado_c
             cat_ok &= ok_c
             if not ok_c:
