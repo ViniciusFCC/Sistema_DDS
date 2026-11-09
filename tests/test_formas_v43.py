@@ -315,10 +315,18 @@ def tc_fxi_001() -> tuple[bool, str]:
     cin = eq.cinematica_rigida(caso_tr, a_f, a_r)
     C = cin["C"]
     v_r = _vel((0.0, 0.0), C)
+    # perpendicularidade por cálculo independente (não pela construção ẑ × (P − C)): v_roda = v_CG + ω·ẑ × (P − CG),
+    # com v_CG de módulo V na direção do corpo girada por β e ω = V/R (V sintético de teste; curva à esquerda: ω > 0)
+    v_t = 5.0
+    w_t = v_t / R_TESTE
+    v_cg_i = (v_t * math.cos(cin["beta"]), v_t * math.sin(cin["beta"]))
+    v_r_i = (v_cg_i[0] - w_t * (0.0 - 0.0), v_cg_i[1] + w_t * (0.0 - B))
+    p_c = (0.0 - C[0], 0.0 - C[1])
+    perp_i = abs(v_r_i[0] * p_c[0] + v_r_i[1] * p_c[1]) <= 1e-9 * math.hypot(*v_r_i) * math.hypot(*p_c)
     v_cg = _vel((B, 0.0), C)
     v_f = _vel((L, 0.0), C)
     geo = (abs(math.hypot(C[0] - B, C[1]) - R_TESTE) <= 1e-12
-           and abs(v_r[0] * (0.0 - C[0]) + v_r[1] * (0.0 - C[1])) <= 1e-12
+           and perp_i
            and abs(math.atan2(v_r[1], v_r[0]) - (-a_r)) <= 1e-12
            and abs(math.atan2(v_cg[1], v_cg[0]) - cin["beta"]) <= 1e-12
            and abs(math.atan2(v_f[1], v_f[0]) + a_f - cin["delta"]) <= 1e-12)
