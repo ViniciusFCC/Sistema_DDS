@@ -113,6 +113,47 @@ def pre_checagem_nomes() -> bool:
     return ok
 
 
+def pre_checagem_gerador() -> bool:
+    """Pré-checagem do gerador (fora da contagem): nomes, fórmulas, catálogo e recusa de excel/. True se tudo bate."""
+    import tempfile
+    from pathlib import Path
+
+    import gerar_v4_4 as g
+    sys.path.insert(0, "tools")
+    import comparar_planilhas as cp
+    from raizes import nomes_definidos
+
+    ok = True
+    if not raises(lambda: g.gerar(None, Path("excel") / "x_V4_4.xlsx"), SystemExit):
+        ok = False
+        print("  gerador: saída em excel/ não deu SystemExit")
+    with tempfile.TemporaryDirectory() as tmp:
+        saida = Path(tmp) / "V4_4.xlsx"
+        catalogo, excecoes = g.gerar(None, saida, Path(tmp) / "reg.md")
+        wb = openpyxl.load_workbook(saida)
+        n_nomes = len(nomes_definidos(wb))
+        wb.close()
+        _, cel = cp.celulas(saida)
+        n_form = sum(1 for v in cel.values() if isinstance(v, str) and v.startswith("="))
+        exc = {(a["aba"], a["cel"]) for a in g.alteracoes()}
+        if n_nomes != 1290:
+            ok = False
+            print(f"  gerador: {n_nomes} nomes (esperado 1290)")
+        if n_form != 146373:
+            ok = False
+            print(f"  gerador: {n_form} fórmulas (esperado 146373)")
+        if len(catalogo) != 422:
+            ok = False
+            print(f"  gerador: catálogo com {len(catalogo)} linhas (esperado 422)")
+        if any((r["aba"], r["cel"]) in exc for r in catalogo) or len(excecoes) != len(exc):
+            ok = False
+            print("  gerador: exceção no catálogo ou registro de exceções incompleto")
+        if bytes([13]) in (Path(tmp) / "reg.md").read_bytes():
+            ok = False
+            print("  gerador: registro com CR")
+    return ok
+
+
 def main():
     pass
 
@@ -125,7 +166,13 @@ if __name__ == "__main__":
         ok_nomes = False
         print(f"  nomes: {type(e).__name__}: {e}")
     print(f"Pré-checagem dos 24 nomes novos (fora da contagem): {'OK' if ok_nomes else 'FALHOU'}")
-    ok_pre = ok_pre and ok_nomes
+    try:
+        ok_ger = pre_checagem_gerador()
+    except BaseException as e:   # falha ruidosa, nunca silenciosa
+        ok_ger = False
+        print(f"  gerador: {type(e).__name__}: {e}")
+    print(f"Pré-checagem do gerador da V4.4 (fora da contagem): {'OK' if ok_ger else 'FALHOU'}")
+    ok_pre = ok_pre and ok_nomes and ok_ger
     print(f"Pré-checagem da regra da troca (fora da contagem): {'OK' if ok_pre else 'FALHOU'}")
     main()
     n_pass = sum(1 for _, s, _ in results if s == "PASS")
