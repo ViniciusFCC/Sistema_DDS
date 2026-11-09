@@ -152,14 +152,34 @@ with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
     with open(arq, "w") as fh:
         fh.write('{"tests/outro.py": "%s"}' % c0)
     ok_f6 = rt.ler_recentes(arq) == {"tests/outro.py": c0}
-    ok_f = all((ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6))
+    
+
+    # (g) o laço do CA-05 com a opção: um teste que roda ANTES de um pulado não pode apagar a lista de pulados (defeito achado
+    # na revisão: a variável dos [SKIP] sobrescrevia a lista); o pulado nunca vira PASS
+    def script_pass(nome):
+        caminho = os.path.join(d, nome)
+        with open(caminho, "w", encoding="utf-8") as fh:
+            fh.write("print('[PASS] x')\nprint('1 PASS, 0 FAIL, de 1 testes')\n")
+        return caminho
+
+    sa, sb, sc = script_pass("ga.py"), script_pass("gb.py"), script_pass("gc.py")
+    fakes = [("a", sa, 1, "f"), ("b", sb, 1, "f"), ("c", sc, 1, "f")]
+    lista_p, resumo_g, md_g = [], [], []
+    try:
+        rt.rodar_lista_testes(fakes, lambda s: "abc1234" if s == sb else None, lista_p, resumo_g, md_g)
+        ok_g = (lista_p == [(sb, "abc1234")] and [x[2] for x in resumo_g] == ["PASS", "PULADO", "PASS"]
+                and sum("PULADO (passou em abc1234" in l for l in md_g) == 1)
+    except Exception as e:      # noqa: BLE001  (o defeito aparece aqui como AttributeError)
+        ok_g = False
+        print("  (g) exceção:", type(e).__name__, e)
+    ok_f = all((ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g))
 
     check("TC-RUN-001 executor: tempo-limite encerra a árvore, saída UTF-8, orçamento, regra da mutação e --pular-recentes",
           ok_a and ok_b and ok_c and ok_d and ok_e and ok_f,
           f"(a) estourou={a.estourou}, código={a.returncode}, {a.tempo_s:.1f} s, neto {neto} vivo={vivo}; "
           f"(b) {b.stdout.strip()!r}, código={b.returncode}; (c) {ok_c}; "
           f"(d) estourou={r.estourou}, {dur:.1f} s, detectado={mp.detectado(r)}, orçamento={orc.total_s:g}; (e) levantou={levantou}, neto {neto_e} vivo={vivo_e}; "
-          f"(f) {[ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6]}")
+          f"(f) {[ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g]}")
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")

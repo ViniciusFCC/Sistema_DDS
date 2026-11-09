@@ -243,6 +243,40 @@ def secao_viva() -> list[str]:
     return linhas + [f"- Status: **{status}**", "", "```text", *rel, "```", ""]
 
 
+def rodar_lista_testes(testes, pulavel, pulados, resumo, md) -> list[str]:
+    """Laço do CA-05: roda cada teste de `testes` (ou o pula, se `pulavel(script)` der o commit) e acrescenta linhas a `md` e
+    `resumo`. Devolve os blocos de detalhe."""
+    detalhes: list[str] = []
+    for nome, script, esperado, fonte in testes:
+        c_ok = pulavel(script)
+        if c_ok:
+            pulados.append((script, c_ok))
+            resumo.append(("CA-05", nome, "PULADO"))
+            md.append(f"| {nome} | `{script}` | {esperado} | PULADO (passou em {c_ok}; código sem mudança) | - | **PULADO** | {fonte} |")
+            continue
+        r = rodar([script])
+        resumos = [m for m in map(RE_RESUMO.match, r.stdout.splitlines()) if m]
+        # Script sem os dados externos (ex.: .tir do TTC fora do Git) sai com código 3 e "NÃO EXECUTÁVEL:": nunca é aprovado.
+        nao_executavel = r.returncode == 3 and any(l.startswith("NÃO EXECUTÁVEL") for l in r.stdout.splitlines())
+        if nao_executavel:
+            obtido, ok = "não rodou", False
+        elif resumos:
+            n_pass, n_fail, total = map(int, resumos[-1].groups())
+            obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
+            ok = n_fail == 0 and n_pass == total == esperado and r.returncode == 0
+        else:
+            obtido, ok = "sem linha de resumo", False
+        status = "NÃO EXECUTÁVEL" if nao_executavel else "PASS" if ok else "FAIL"
+        resumo.append(("CA-05", nome, status))
+        md.append(f"| {nome} | `{script}` | {esperado} | {obtido} | {r.returncode} | **{status}** | {fonte} |")
+        falhas = "\n".join(l for l in r.stdout.splitlines() if l.startswith("[FAIL]"))
+        skips = "\n".join(l for l in r.stdout.splitlines() if l.startswith("[SKIP]"))
+        detalhes += bloco(f"{script}: testes FAIL", falhas)
+        detalhes += bloco(f"{script}: testes SKIP (não contados)", skips)
+        detalhes += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+    return detalhes
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--saida", type=Path, default=RAIZ / "build" / "verificacao-ultima.md")
@@ -284,34 +318,7 @@ def main() -> None:
         "| Conjunto | Script | Esperado | Obtido | Código | Status | Fonte do esperado |",
         "|---|---|---|---|---|---|---|",
     ]
-    detalhes: list[str] = []
-    for nome, script, esperado, fonte in TESTES:
-        c_ok = pulavel(script)
-        if c_ok:
-            pulados.append((script, c_ok))
-            resumo.append(("CA-05", nome, "PULADO"))
-            md.append(f"| {nome} | `{script}` | {esperado} | PULADO (passou em {c_ok}; código sem mudança) | - | **PULADO** | {fonte} |")
-            continue
-        r = rodar([script])
-        resumos = [m for m in map(RE_RESUMO.match, r.stdout.splitlines()) if m]
-        # Script sem os dados externos (ex.: .tir do TTC fora do Git) sai com código 3 e "NÃO EXECUTÁVEL:": nunca é aprovado.
-        nao_executavel = r.returncode == 3 and any(l.startswith("NÃO EXECUTÁVEL") for l in r.stdout.splitlines())
-        if nao_executavel:
-            obtido, ok = "não rodou", False
-        elif resumos:
-            n_pass, n_fail, total = map(int, resumos[-1].groups())
-            obtido = f"{n_pass} PASS, {n_fail} FAIL, de {total}"
-            ok = n_fail == 0 and n_pass == total == esperado and r.returncode == 0
-        else:
-            obtido, ok = "sem linha de resumo", False
-        status = "NÃO EXECUTÁVEL" if nao_executavel else "PASS" if ok else "FAIL"
-        resumo.append(("CA-05", nome, status))
-        md.append(f"| {nome} | `{script}` | {esperado} | {obtido} | {r.returncode} | **{status}** | {fonte} |")
-        falhas = "\n".join(l for l in r.stdout.splitlines() if l.startswith("[FAIL]"))
-        pulados = "\n".join(l for l in r.stdout.splitlines() if l.startswith("[SKIP]"))
-        detalhes += bloco(f"{script}: testes FAIL", falhas)
-        detalhes += bloco(f"{script}: testes SKIP (não contados)", pulados)
-        detalhes += bloco(f"{script}: stderr (final)", cauda(r.stderr))
+    detalhes = rodar_lista_testes(TESTES, pulavel, pulados, resumo, md)
     md += [""] + detalhes
 
     # --- Mutação (CA-06) ---
