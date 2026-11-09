@@ -172,14 +172,30 @@ with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
     except Exception as e:      # noqa: BLE001  (o defeito aparece aqui como AttributeError)
         ok_g = False
         print("  (g) exceção:", type(e).__name__, e)
-    ok_f = all((ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g))
+    # (h) entradas declaradas, arquivo não rastreado e chave desconhecida
+    escreve("data.csv", "1\n")
+    escreve("tests/mut.py", "import folha\n")
+    g("add", "-A")
+    g("commit", "-q", "-m", "c")
+    c1 = g("rev-parse", "HEAD").stdout.strip()
+    dec = ("data.csv", "python/meio.py")
+    ok_h1 = rt.pode_pular("tests/mut.py", c1, rep, declaradas=dec) is True
+    escreve("data.csv", "2\n")                                  # declarado mudou na árvore: roda
+    ok_h2 = rt.pode_pular("tests/mut.py", c1, rep, declaradas=dec) is False
+    g("checkout", "--", "data.csv")
+    ok_h3 = rt.pode_pular("tests/mut.py", c1, rep, declaradas=("nao_existe.csv",)) is False   # declarado inexistente: roda
+    escreve("python/novo.py", "Y = 1\n")                        # módulo novo não rastreado no conjunto: roda
+    escreve("tests/mut.py", "import folha\nimport novo\n")
+    ok_h4 = rt.pode_pular("tests/mut.py", c1, rep) is False
+    ok_h5 = rt.chaves_desconhecidas({"tests/test_executor.py": "x", "tests/nada.py": "y"}) == ["tests/nada.py"]
+    ok_f = all((ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g, ok_h1, ok_h2, ok_h3, ok_h4, ok_h5))
 
     check("TC-RUN-001 executor: tempo-limite encerra a árvore, saída UTF-8, orçamento, regra da mutação e --pular-recentes",
           ok_a and ok_b and ok_c and ok_d and ok_e and ok_f,
           f"(a) estourou={a.estourou}, código={a.returncode}, {a.tempo_s:.1f} s, neto {neto} vivo={vivo}; "
           f"(b) {b.stdout.strip()!r}, código={b.returncode}; (c) {ok_c}; "
           f"(d) estourou={r.estourou}, {dur:.1f} s, detectado={mp.detectado(r)}, orçamento={orc.total_s:g}; (e) levantou={levantou}, neto {neto_e} vivo={vivo_e}; "
-          f"(f) {[ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g]}")
+          f"(f) {[ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g, ok_h1, ok_h2, ok_h3, ok_h4, ok_h5]}")
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")
