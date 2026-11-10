@@ -578,11 +578,11 @@ def main() -> int:
     else:
         pasta = saida.parent
         pasta.mkdir(parents=True, exist_ok=True)
-        ROT_FIG = ("R25B ≠ R60A; μ do TTC não transferível; pressão de ensaio ≠ fria (a confirmar); "
+        ROT_FIG = ("R25B ≠ R60A; μ do TTC não transferível; pressão de ensaio ≠ fria (a confirmar);\n"
                    "Validation = NOT_VALIDATED; caso demonstrativo T09/E03, não o T11")
 
         def salvar(fig, arq):
-            fig.tight_layout(rect=(0, 0.05, 1, 1))
+            fig.tight_layout(rect=(0, 0.08, 1, 1))
             fig.text(0.5, 0.01, ROT_FIG, ha="center", va="bottom", fontsize=6.5)
             fig.savefig(arq, dpi=130)
             plt.close(fig)
@@ -630,7 +630,7 @@ def main() -> int:
                     label=f"{ps(q)} psi (INTERPOLADO)")
             k = len(al) // 2
             ax.annotate(f"{ps(q)} psi INTERPOLADO", (np.degrees(al[k]), abs(av(fz_a2, al[k], g_a2, 0.0, 11.176).fy_n)),
-                        fontsize=6.5, color="0.2", xytext=(0, 6), textcoords="offset points")
+                        fontsize=6.5, color="0.2", xytext=(0, 6 + 9 * PRESSOES_A2.index(q)), textcoords="offset points")
         ax.set(xlabel="α [°]", ylabel="|Fy| [N]", title=f"Fy(α), Fz = {n(fz_a2, 0)} N, γ = {graus(g_a2)}; tracejado = INTERPOLADO")
         ax.legend(fontsize=8)
         salvar(fig, pasta / "pressao-fy-alfa.png")
