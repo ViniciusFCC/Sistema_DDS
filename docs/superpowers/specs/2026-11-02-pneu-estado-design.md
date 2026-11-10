@@ -157,7 +157,7 @@ Registrado em `tools/rodar_testes.py` com a contagem que o teste tiver.
 
 ## 11. IDs (autorizados pelo usuário em 2026-11-03: "Autorizo")
 
-- **EDR-070** (EDR-068 e EDR-069 já estão em uso em outras branches; 070 confirmado livre em `git log --all`): pressão
+- **EDR-071** (EDR-068 e EDR-069 já estão em uso em outras branches; o EDR-070 foi para o incremento 8, V4.4; o 071 foi autorizado pelo usuário em 2026-11-09 e confirmado livre em todas as branches): pressão
   com interpolação rotulada de saídas (emenda o item 6 do EDR-067), regra da banda e critérios do A1-escolha, guarda
   QPZ/QPX1, limitações e degraus futuros.
 - **TC-TIRE-011** em diante, para os testes da §10.
