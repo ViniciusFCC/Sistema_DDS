@@ -250,7 +250,7 @@ def _dif_sat(py, sh):
 
 
 def rodar_caso(nome: str, caso: eq.CasoEquilibrio, motor: str, tmp: Path) -> dict:
-    res = eq.analise_par(caso, AY_MAX_G, PASSO_G, N_ALFA)
+    res = eq.analise_par(caso, AY_MAX_G, PASSO_G, N_ALFA, fator_neutro=1.0)   # planilha V4.0, sem o 4/3
     alfas = eq.grade_alfa(caso, N_ALFA)
     base, cheia = tmp / f"{nome}_base.xlsx", tmp / f"{nome}.xlsx"
     gerar(base, caso, None)
