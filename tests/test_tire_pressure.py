@@ -589,13 +589,14 @@ RES_SAT = cp.comparar_carro(CASO_SAT, FAMILIA, **KW)
 direto_sat = pior_sentido(eq.analise_par_dois_sentidos(CASO_SAT, **KW))
 r12s = next(r for r in RES_SAT if abs(r.pressao_psi - 12.0) <= ts.PRESSURE_TOLERANCE_PSI)
 r14s = next(r for r in RES_SAT if abs(r.pressao_psi - 14.0) <= ts.PRESSURE_TOLERANCE_PSI)
-check("TC-TIRE-020b: âncora com a_y_lim numérico (grip reduzido): 12 psi == analise_par_dois_sentidos(caso) dentro de "
+check("TC-TIRE-020b (caso demonstrativo, grip reduzido LMUX = LMUY = 0,5; não é o T11): âncora com a_y_lim numérico: 12 psi == analise_par_dois_sentidos(caso) dentro de "
       "resolucao_ms2; veredito e eixo coerentes",
       direto_sat.ay_lim is not None and r12s.ay_lim_ms2 is not None
       and abs(r12s.ay_lim_ms2 - direto_sat.ay_lim) <= (direto_sat.resolucao_ms2 or 0.0)
       and r12s.veredito == direto_sat.veredito and r12s.eixo_satura == "R",
       f"direto = {direto_sat.ay_lim}; 12 psi = {r12s.ay_lim_ms2}; bit a bit: {direto_sat.ay_lim == r12s.ay_lim_ms2}")
-check("TC-TIRE-020b: a_y_lim de 8, 10 e 12 psi é numérico e diferente entre si; 14 psi é N/A com borda_alfa",
+check("TC-TIRE-020c (caso demonstrativo, grip reduzido LMUX = LMUY = 0,5; não é o T11): a_y_lim de 8, 10 e 12 psi é "
+      "numérico e diferente entre si; 14 psi é N/A com borda_alfa",
       all(r.ay_lim_ms2 is not None for r in RES_SAT if round(r.pressao_psi) != 14)
       and len({r.ay_lim_ms2 for r in RES_SAT if round(r.pressao_psi) != 14}) == 3
       and r14s.ay_lim_ms2 is None and r14s.borda_alfa and r14s.eixo_satura is None,
@@ -651,6 +652,12 @@ check("TC-TIRE-021f: eixo_satura, k_rad e rótulos fixos coerentes",
       and all(r.k_rad_ms2 is None or math.isfinite(r.k_rad_ms2) for r in RES)
       and all(any("roll steer 0 = sem dado" in x for x in r.rotulos) for r in RES),
       str([(round(r.pressao_psi), r.variante_kt, r.veredito, r.k_rad_ms2) for r in RES]))
+ROT_ROB = "hipótese: a perda TTC→pista é a mesma em todas as pressões"
+RES_ROB = cp.comparar_carro(CASO_SAT, FAMILIA, fatores_lambda={"LMUY": [0.9, 1.0]}, **KW)
+check("TC-TIRE-021g (caso demonstrativo, grip reduzido; não é o T11): robustez só com fatores_lambda",
+      len(RES_ROB) == 4 and all(isinstance(r.robustez, tuple) and ROT_ROB in r.rotulos for r in RES_ROB)
+      and all(r.robustez is None and ROT_ROB not in r.rotulos for r in RES_SAT),
+      str([(round(r.pressao_psi), r.robustez) for r in RES_ROB]))
 print(f"(tempo dos grupos 9 a 11: {time.perf_counter() - T_CARRO:.1f} s)")
 
 
