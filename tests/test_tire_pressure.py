@@ -404,5 +404,88 @@ check("TC-TIRE-017b: rigidez_vertical == VERTICAL_STIFFNESS do arquivo, com o r�
       kz == PERFIS[2].parameters["VERTICAL_STIFFNESS"] and rot_kz == "valor do arquivo, linear, origem não verificada")
 print(f"tempo dos grupos 4 a 7: {time.perf_counter() - _T_METRICAS:.1f} s")
 
+# ---------------------------------------------------------------------------------------------------------
+# Grupo 8 (TC-TIRE-018): indicadores de incerteza e reprodução dos achados do conselho
+# ---------------------------------------------------------------------------------------------------------
+NOS = (7.999992, 10.000062, 11.999987, 14.000058)   # as chaves reais
+lin = {p: 3.0 + 2.0 * p for p in NOS}
+quad = {p: 0.5 * p * p for p in NOS}
+
+loo_lin = tp.erro_loo(lin)
+check("TC-TIRE-018a: erro_loo(lin) só tem os dois nós internos e |erro| <= 1e-12",
+      set(loo_lin) == {NOS[1], NOS[2]} and all(abs(e.erro) <= 1e-12 for e in loo_lin.values()), str(loo_lin))
+
+loo_quad = tp.erro_loo(quad)
+dif_quad = []
+for k in (1, 2):
+    analitico = 0.5 * (NOS[k] - NOS[k - 1]) * (NOS[k + 1] - NOS[k])
+    dif_quad.append(abs(loo_quad[NOS[k]].erro - analitico))
+check("TC-TIRE-018b: erro_loo(quad)[p_k].erro == 0,5·(p_k − p_lo)·(p_hi − p_k) (1e-12)",
+      max(dif_quad) <= 1e-12, str(dif_quad))
+check("TC-TIRE-018b: erro_rel = erro/|real| e previsto − real = erro",
+      all(abs(e.erro_rel - e.erro / abs(e.real)) <= 1e-15 and e.erro == e.previsto - e.real
+          for e in loo_quad.values()))
+
+loo_none = tp.erro_loo({NOS[0]: 1.0, NOS[1]: 2.0, NOS[2]: None, NOS[3]: 4.0})
+check("TC-TIRE-018c: com o vizinho de 12 psi None, nenhum nó interno sobra (10 psi precisa do 12; 12 está None)",
+      loo_none == {}, str(loo_none))
+loo_none2 = tp.erro_loo({NOS[0]: 1.0, NOS[1]: 2.0, NOS[2]: 3.0, NOS[3]: None})
+check("TC-TIRE-018c: com 14 psi None só o nó de 12 psi sai; o de 10 psi continua",
+      set(loo_none2) == {NOS[1]}, str(set(loo_none2)))
+check("TC-TIRE-018c: real = 0 dá erro_rel None",
+      tp.erro_loo({NOS[0]: 1.0, NOS[1]: 0.0, NOS[2]: 1.0, NOS[3]: 2.0})[NOS[1]].erro_rel is None)
+
+check("TC-TIRE-018d: monotonicidade(lin) == 'crescente'", tp.monotonicidade(lin) == "crescente")
+check("TC-TIRE-018d: monotonicidade (3, 1, 2, 0) == 'não monotônica'",
+      tp.monotonicidade(dict(zip(NOS, (3.0, 1.0, 2.0, 0.0), strict=True))) == "não monotônica")
+check("TC-TIRE-018d: decrescente e constante",
+      tp.monotonicidade(dict(zip(NOS, (4.0, 3.0, 2.0, 1.0), strict=True))) == "decrescente"
+      and tp.monotonicidade(dict(zip(NOS, (2.0, 2.0, 2.0, 2.0), strict=True))) == "constante")
+check("TC-TIRE-018d: ordena por pressão, não pela ordem de inserção",
+      tp.monotonicidade({NOS[3]: 4.0, NOS[0]: 1.0, NOS[2]: 3.0, NOS[1]: 2.0}) == "crescente")
+
+M1054 = {q: tp.metricas_pneu(tp.avaliador_perfil(pr), tp.faixa_do_perfil(pr), fz_n=1054.0, camber_rad=0.0)
+         for q, pr in zip(P, PERFIS, strict=True)}
+loo_mu_y = tp.erro_loo({q: m.mu_y_pos.mu for q, m in M1054.items()})
+loo_ca = tp.erro_loo({q: m.c_alpha_n_rad for q, m in M1054.items()})
+loo_mx_t = tp.erro_loo({q: m.mu_x_tracao.mu for q, m in M1054.items()})
+loo_mx_f = tp.erro_loo({q: m.mu_x_frenagem.mu for q, m in M1054.items()})
+e_mu_y, e_ca = loo_mu_y[P[1]].erro_rel, loo_ca[P[1]].erro_rel
+e_mx_t, e_mx_f = loo_mx_t[P[2]].erro_rel, loo_mx_f[P[2]].erro_rel
+print(f"018e: erro_rel μy(10 psi) {e_mu_y:+.5f}; Cα(10 psi) {e_ca:+.5f}; μx tração(12 psi) {e_mx_t:+.5f}; "
+      f"μx frenagem(12 psi) {e_mx_f:+.5f}")
+print("018e: Cα [N/rad] 8/10/12/14 psi: " + " / ".join(f"{m.c_alpha_n_rad:.1f}" for m in M1054.values()))
+check("TC-TIRE-018e: erro_rel do μy (α > 0) a 10 psi em [−0,050, −0,044]", -0.050 <= e_mu_y <= -0.044, f"{e_mu_y:+.5f}")
+check("TC-TIRE-018e: erro_rel do Cα a 10 psi em [−0,068, −0,061]", -0.068 <= e_ca <= -0.061, f"{e_ca:+.5f}")
+check("TC-TIRE-018e: erro_rel do μx tração a 12 psi em [−0,099, −0,093]", -0.099 <= e_mx_t <= -0.093, f"{e_mx_t:+.5f}")
+check("TC-TIRE-018e: erro_rel do μx frenagem a 12 psi em [−0,109, −0,102]", -0.109 <= e_mx_f <= -0.102, f"{e_mx_f:+.5f}")
+check("TC-TIRE-018e: os quatro |erro_rel| em [0,04, 0,11] (o '4 a 11 %' do conselho)",
+      all(0.04 <= abs(x) <= 0.11 for x in (e_mu_y, e_ca, e_mx_t, e_mx_f)))
+
+pky2 = {q: pr.parameters["PKY2"] for q, pr in zip(P, PERFIS, strict=True)}
+ca_1054 = {q: m.c_alpha_n_rad for q, m in M1054.items()}
+check("TC-TIRE-018f: PKY2 cresce com a pressão", tp.monotonicidade(pky2) == "crescente", str(pky2))
+check("TC-TIRE-018f: Cα em 1054 N não é monotônico (registro: 46,6k / 53,2k / 53,0k / 49,6k N/rad)",
+      tp.monotonicidade(ca_1054) == "não monotônica", str(ca_1054))
+
+a12 = tp.assimetria_alfa(M1054[P[2]])
+check("TC-TIRE-018g: assimetria_alfa a 12 psi, 1054 N: dif_mu_pico >= 0 e fy_alpha0_n == metricas.fy_alpha0_n",
+      a12.dif_mu_pico >= 0 and a12.fy_alpha0_n == M1054[P[2]].fy_alpha0_n, str(a12))
+check("TC-TIRE-018g: dif_mu_pico = |μy+ − μy−|, dif_rel coerente e rótulo de origem física",
+      abs(a12.dif_mu_pico - abs(M1054[P[2]].mu_y_pos.mu - M1054[P[2]].mu_y_neg.mu)) <= 1e-15
+      and a12.rotulo == "em parte física: conicidade e ply-steer" and a12.dif_rel >= 0)
+
+ok_ck, det_ck = True, []
+for q, pr in zip(P, PERFIS, strict=True):
+    h = 1e-4
+    rp = ts.evaluate_static(pr, fz_n=1054.0, alpha_rad=0.0, camber_rad=0.0, kappa=+h, vx_mps=VX)
+    rm = ts.evaluate_static(pr, fz_n=1054.0, alpha_rad=0.0, camber_rad=0.0, kappa=-h, vx_mps=VX)
+    ref = (rp.fx_n - rm.fx_n) / (2 * h)
+    ck = M1054[q].c_kappa_n
+    ok_ck &= ck > 0 and abs(ck - ref) <= 1e-3 * abs(ref)
+    det_ck.append((round(q), ck, ref))
+check("TC-TIRE-018h: sinal e valor de Cκ (> 0 e igual à diferença central independente, tol. rel. 1e-3)",
+      ok_ck, str(det_ck))
+
 
 encerrar()

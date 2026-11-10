@@ -441,3 +441,66 @@ def intervalo_pico_mu_y(family: ts.StaticTireFamily, pressure_psi: float, *, fz_
     inferior = pico_mu_y(avaliador_interpolado(family, pressure_psi), faixa, **kw).mu
     superior = _mix(w, pico_mu_y(avaliador_perfil(lo), faixa, **kw).mu, pico_mu_y(avaliador_perfil(hi), faixa, **kw).mu)
     return inferior, superior
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Indicadores de incerteza (spec §6)
+# ---------------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ErroLOO:
+    psi: float
+    previsto: float
+    real: float
+    erro: float               # previsto − real
+    erro_rel: float | None    # erro/|real|; None se real = 0
+
+
+def erro_loo(valores: Mapping[float, float | None]) -> dict[float, ErroLOO]:
+    """Erro deixando um perfil de fora: o valor do nó interno p_k é previsto por interpolação linear entre os
+    nós vizinhos, (1−w)·v(p_lo) + w·v(p_hi), com w = (p_k − p_lo)/(p_hi − p_lo) calculado com as chaves reais.
+    Só nós internos entram: 8 e 14 psi (os extremos) nunca aparecem, porque não têm vizinho dos dois lados
+    (extrapolar não é LOO). Nó cujo valor ou cujo vizinho é None fica fora."""
+    ps = sorted(valores)
+    saida: dict[float, ErroLOO] = {}
+    for i in range(1, len(ps) - 1):
+        p_lo, p_k, p_hi = ps[i - 1], ps[i], ps[i + 1]
+        v_lo, v_k, v_hi = valores[p_lo], valores[p_k], valores[p_hi]
+        if v_lo is None or v_k is None or v_hi is None:
+            continue
+        w = (p_k - p_lo) / (p_hi - p_lo)
+        previsto = _mix(w, v_lo, v_hi)
+        erro = previsto - v_k
+        saida[p_k] = ErroLOO(p_k, previsto, v_k, erro, None if v_k == 0 else erro / abs(v_k))
+    return saida
+
+
+@dataclass(frozen=True)
+class Assimetria:
+    dif_mu_pico: float    # |μy(α>0) − μy(α<0)|
+    dif_rel: float        # dif_mu_pico dividida pela média dos dois picos
+    fy_alpha0_n: float    # Fy em α = 0
+    rotulo: str
+
+
+def assimetria_alfa(metricas: MetricasPneu) -> Assimetria:
+    """Assimetria ±α: diferença entre os picos de μy para α > 0 e α < 0, e Fy em α = 0 (já em `metricas`).
+    Em parte é física (conicidade e ply-steer), então não é só erro de ajuste."""
+    a, b = metricas.mu_y_pos.mu, metricas.mu_y_neg.mu
+    dif = abs(a - b)
+    media = 0.5 * (a + b)
+    return Assimetria(dif, dif / media if media else 0.0, metricas.fy_alpha0_n,
+                      "em parte física: conicidade e ply-steer")
+
+
+def monotonicidade(valores: Mapping[float, float]) -> str:
+    """'crescente' e 'decrescente' pedem diferenças estritas entre pressões consecutivas (ordenadas por
+    pressão); 'constante' vale só quando todas são exatamente zero; o resto é 'não monotônica'."""
+    seq = [valores[p] for p in sorted(valores)]
+    difs = [b - a for a, b in zip(seq, seq[1:], strict=False)]
+    if difs and all(d == 0 for d in difs):
+        return "constante"
+    if all(d > 0 for d in difs):
+        return "crescente"
+    if all(d < 0 for d in difs):
+        return "decrescente"
+    return "não monotônica"
