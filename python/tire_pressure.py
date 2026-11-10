@@ -20,7 +20,7 @@ Rótulos que valem para toda saída deste módulo (spec §5):
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 import tire_model as _base
@@ -159,6 +159,23 @@ def _loo_trecho(family, ps_viz, pt, avisos) -> dict[float, dict[str, float]]:
     return loo
 
 
+def _aviso_pico(family, p_lo, p_hi, fz_n, camber_rad) -> str:
+    """Aviso se um vizinho tem pico de μy interior e o outro não (máximo na borda ALPMAX), em algum sentido de α,
+    avaliado em (Fz, γ) do ponto pedido, κ = 0, na faixa comum dos vizinhos."""
+    lo, hi = family.profiles[p_lo], family.profiles[p_hi]
+    faixa = faixa_comum((lo, hi))
+    if not (faixa.fz_min_n <= fz_n <= faixa.fz_max_n and faixa.camber_min_rad <= camber_rad <= faixa.camber_max_rad):
+        return ""
+    for sinal in (1, -1):
+        b_lo = pico_mu_y(avaliador_perfil(lo), faixa, fz_n=fz_n, camber_rad=camber_rad, sinal=sinal).borda
+        b_hi = pico_mu_y(avaliador_perfil(hi), faixa, fz_n=fz_n, camber_rad=camber_rad, sinal=sinal).borda
+        if b_lo != b_hi:
+            interior, sem = (p_hi, p_lo) if b_lo else (p_lo, p_hi)
+            return (f"a mistura junta uma curva com pico interior ({interior:.3g} psi) e outra sem pico interior "
+                    f"({sem:.3g} psi)")
+    return ""
+
+
 def evaluate_interpolated(
     family: ts.StaticTireFamily,
     pressure_psi: float,
@@ -193,7 +210,12 @@ def evaluate_interpolated(
     r_lo, r_hi = ts.evaluate_static(lo, **kw), ts.evaluate_static(hi, **kw)
     fx, fy = _mix(w, r_lo.fx_n, r_hi.fx_n), _mix(w, r_lo.fy_n, r_hi.fy_n)
     avisos: list[str] = []
-    loo = _loo_trecho(family, (p_lo, p_hi), (fz_n, alpha_rad, camber_rad, kappa, vx_mps), avisos) if diagnostico else {}
+    loo = {}
+    if diagnostico:
+        loo = _loo_trecho(family, (p_lo, p_hi), (fz_n, alpha_rad, camber_rad, kappa, vx_mps), avisos)
+        aviso = _aviso_pico(family, p_lo, p_hi, fz_n, camber_rad)
+        if aviso:
+            avisos.append(aviso)
     limitations = list(r_lo.limitations)
     limitations += [x for x in r_hi.limitations if x not in limitations]
     limitations.append(_LIMITACAO_A2)
@@ -223,3 +245,199 @@ def avaliador_interpolado(family: ts.StaticTireFamily, pressure_psi: float) -> A
         return evaluate_interpolated(family, pressure_psi, fz_n=fz_n, alpha_rad=alpha_rad,
                                      camber_rad=camber_rad, kappa=kappa, vx_mps=vx_mps, diagnostico=False)
     return av
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Métricas do pneu por pressão (spec §6): o avaliador é passado como função, então valem para um perfil
+# (`avaliador_perfil`) e para a curva interpolada (`avaliador_interpolado`).
+# ---------------------------------------------------------------------------------------------------------
+_VX_PADRAO = 11.176          # m/s; Fx e Fy do PAC2002 não dependem de Vx, só o My
+_N_GRADE_PICO = 121          # pontos da grade grossa da busca de pico
+_XATOL_PICO = 1e-7
+_ROT_BORDA = "limitante inferior, sem pico interior"
+_ROT_T0 = "t0 e α do pico de Mz: anexo, pendentes do item 3 do EDR-067; fora do A1-escolha"
+
+
+@dataclass(frozen=True)
+class Pico:
+    """Máximo de uma curva. `argumento` é α [rad] ou κ. `borda=True`: o máximo está no limite da faixa, então
+    `mu` é só um limitante inferior do pico (rótulo "limitante inferior, sem pico interior")."""
+
+    mu: float
+    argumento: float
+    borda: bool
+
+
+def _buscar_pico(f: Callable[[float], float], a: float, b: float, *, extremo_distante: int) -> Pico:
+    """Máximo de f em [a, b]: grade grossa de 121 pontos e, se o máximo for interior, refino (bounded, xatol 1e-7)
+    entre os vizinhos do máximo. `extremo_distante` é o índice da grade (0 ou 120) do extremo oposto a zero, onde
+    a faixa termina: máximo da grade aí é `borda=True`, sem refino.
+    Limitação: um pico verdadeiro dentro do último passo da grade (faixa/120) também sai como borda."""
+    from scipy.optimize import minimize_scalar
+
+    xs = [a + (b - a) * i / (_N_GRADE_PICO - 1) for i in range(_N_GRADE_PICO)]
+    ys = [f(x) for x in xs]
+    i = max(range(_N_GRADE_PICO), key=ys.__getitem__)
+    if i == extremo_distante:
+        return Pico(mu=ys[i], argumento=xs[i], borda=True)
+    lo, hi = xs[max(i - 1, 0)], xs[min(i + 1, _N_GRADE_PICO - 1)]
+    res = minimize_scalar(lambda x: -f(x), bounds=(lo, hi), method="bounded", options={"xatol": _XATOL_PICO})
+    if -res.fun > ys[i]:
+        return Pico(mu=-float(res.fun), argumento=float(res.x), borda=False)
+    return Pico(mu=ys[i], argumento=xs[i], borda=False)
+
+
+def pico_mu_y(avaliador: Avaliador, faixa: Faixa, *, fz_n: float, camber_rad: float, sinal: int) -> Pico:
+    """Pico de |Fy|/Fz em κ = 0. sinal +1: α em [0, ALPMAX]; -1: α em [ALPMIN, 0]."""
+    if sinal not in (1, -1):
+        raise ValueError("sinal deve ser +1 ou -1.")
+
+    def mu(alfa: float) -> float:
+        return abs(avaliador(fz_n, alfa, camber_rad, 0.0, _VX_PADRAO).fy_n) / fz_n
+
+    if sinal > 0:
+        return _buscar_pico(mu, 0.0, faixa.alfa_max_rad, extremo_distante=_N_GRADE_PICO - 1)
+    return _buscar_pico(mu, faixa.alfa_min_rad, 0.0, extremo_distante=0)
+
+
+def pico_mu_x(avaliador: Avaliador, faixa: Faixa, *, fz_n: float, camber_rad: float, sinal: int) -> Pico:
+    """Pico de |Fx|/Fz em α = 0. sinal +1 (tração): κ em [0, KPUMAX]; -1 (frenagem): κ em [KPUMIN, 0]."""
+    if sinal not in (1, -1):
+        raise ValueError("sinal deve ser +1 ou -1.")
+
+    def mu(kappa: float) -> float:
+        return abs(avaliador(fz_n, 0.0, camber_rad, kappa, _VX_PADRAO).fx_n) / fz_n
+
+    if sinal > 0:
+        return _buscar_pico(mu, 0.0, faixa.kappa_max, extremo_distante=_N_GRADE_PICO - 1)
+    return _buscar_pico(mu, faixa.kappa_min, 0.0, extremo_distante=0)
+
+
+@dataclass(frozen=True)
+class MetricasPneu:
+    fz_n: float
+    camber_rad: float
+    c_alpha_n_rad: float
+    c_alpha_por_fz_1_rad: float
+    c_gamma_n_rad: float
+    c_kappa_n: float
+    mu_y_pos: Pico
+    mu_y_neg: Pico
+    mu_x_tracao: Pico
+    mu_x_frenagem: Pico
+    fy_alpha0_n: float
+    t0_m: float
+    alfa_pico_mz_rad: float
+    rotulos: tuple[str, ...]
+
+
+def metricas_pneu(avaliador: Avaliador, faixa: Faixa, *, fz_n: float, camber_rad: float,
+                  vx_mps: float = _VX_PADRAO) -> MetricasPneu:
+    """Métricas da spec §6 num ponto (Fz, γ). Derivadas por diferença central com o passo de `tire_model`
+    (`_H_RIGIDEZ` = 1e-6), em α = 0 e κ = 0, com γ = `camber_rad` (em γ = 0 coincidem com
+    `tire_model.rigidez_deriva` e `rigidez_camber`; ISO_TYDEX, roda FR).
+
+    Sinais: Cα = −∂Fy/∂α; Cγ = −∂Fy/∂γ (como `rigidez_camber`). Cκ = +∂Fx/∂κ em κ = 0: no `.tir` Fx > 0 para
+    κ > 0 (TC-TIRE-004b), então a rigidez longitudinal positiva é +∂Fx/∂κ. A spec §6 escreve "−∂Fx/∂κ", que dá
+    negativo com esta convenção; a troca de sinal é decisão do controlador, a confirmar com o usuário.
+    t0 = −(∂Mz/∂α)/(∂Fy/∂α) em α = 0 (spec §6, anexo)."""
+    h = _base._H_RIGIDEZ
+
+    def av(alfa: float, gama: float, kappa: float):
+        return avaliador(fz_n, alfa, gama, kappa, vx_mps)
+
+    r_ap, r_am = av(+h, camber_rad, 0.0), av(-h, camber_rad, 0.0)
+    fy_a = (r_ap.fy_n - r_am.fy_n) / (2.0 * h)
+    mz_a = (r_ap.mz_nm - r_am.mz_nm) / (2.0 * h)
+    fy_g = (av(0.0, camber_rad + h, 0.0).fy_n - av(0.0, camber_rad - h, 0.0).fy_n) / (2.0 * h)
+    fx_k = (av(0.0, camber_rad, +h).fx_n - av(0.0, camber_rad, -h).fx_n) / (2.0 * h)
+    c_alpha = -fy_a
+
+    kw = dict(fz_n=fz_n, camber_rad=camber_rad)
+    mu_y_pos, mu_y_neg = pico_mu_y(avaliador, faixa, sinal=1, **kw), pico_mu_y(avaliador, faixa, sinal=-1, **kw)
+    mu_x_tr, mu_x_fr = pico_mu_x(avaliador, faixa, sinal=1, **kw), pico_mu_x(avaliador, faixa, sinal=-1, **kw)
+    pico_mz = _buscar_pico(lambda alfa: abs(av(alfa, camber_rad, 0.0).mz_nm), 0.0, faixa.alfa_max_rad,
+                           extremo_distante=_N_GRADE_PICO - 1)
+
+    rotulos = [
+        "Cγ: μy(γ) sem informação de pressão (PDY3 = 2 nos quatro perfis)",
+        "Cκ e μx: ajuste longitudinal mal condicionado (PKX2/PKX3 instáveis)",
+    ]
+    na_borda = [nome for nome, pk in (("μy α>0", mu_y_pos), ("μy α<0", mu_y_neg), ("μx tração", mu_x_tr),
+                                      ("μx frenagem", mu_x_fr)) if pk.borda]
+    if na_borda:
+        rotulos += [_ROT_BORDA, "pico na borda da faixa em: " + ", ".join(na_borda)]
+    rotulos.append(_ROT_T0)
+    if pico_mz.borda:
+        rotulos.append("α do pico de Mz na borda da faixa (ALPMAX): limitante, sem pico interior")
+    rotulos.append("menor carga ensaiada a confirmar: FZMIN do .tir é o limite declarado, não a carga medida")
+
+    return MetricasPneu(
+        fz_n=fz_n, camber_rad=camber_rad,
+        c_alpha_n_rad=c_alpha, c_alpha_por_fz_1_rad=c_alpha / fz_n,
+        c_gamma_n_rad=-fy_g, c_kappa_n=fx_k,
+        mu_y_pos=mu_y_pos, mu_y_neg=mu_y_neg, mu_x_tracao=mu_x_tr, mu_x_frenagem=mu_x_fr,
+        fy_alpha0_n=av(0.0, camber_rad, 0.0).fy_n,
+        t0_m=-mz_a / fy_a, alfa_pico_mz_rad=pico_mz.argumento,
+        rotulos=tuple(rotulos),
+    )
+
+
+def penalidade_transferencia(avaliador: Avaliador, faixa: Faixa, *, fz0_n: float, dfz_n: float,
+                             camber_rad: float) -> dict[str, float]:
+    """Fy_max(Fz0+ΔFz) + Fy_max(Fz0−ΔFz) − 2·Fy_max(Fz0), por sentido de α, com Fy_max = μy pico · Fz.
+    Fz0 ± ΔFz fora de [FZMIN, FZMAX] da faixa: ValueError."""
+    for fz in (fz0_n + dfz_n, fz0_n - dfz_n):
+        if not (faixa.fz_min_n <= fz <= faixa.fz_max_n):
+            raise ValueError(f"Fz = {fz:g} N (Fz0 ± ΔFz) fora de [{faixa.fz_min_n:g}, {faixa.fz_max_n:g}] N.")
+
+    def fy_max(fz: float, sinal: int) -> float:
+        return pico_mu_y(avaliador, faixa, fz_n=fz, camber_rad=camber_rad, sinal=sinal).mu * fz
+
+    return {
+        chave: fy_max(fz0_n + dfz_n, s) + fy_max(fz0_n - dfz_n, s) - 2.0 * fy_max(fz0_n, s)
+        for chave, s in (("alfa_pos", 1), ("alfa_neg", -1))
+    }
+
+
+def teto_comum_fz(family: ts.StaticTireFamily) -> float:
+    """Menor FZMAX entre os perfis (1521 N com os .tir do TTC Round 6)."""
+    return min(float(p.parameters["FZMAX"]) for p in family.profiles.values())
+
+
+def grade_fz(family: ts.StaticTireFamily, fz_operacao: Sequence[float] = (),
+             n: int = 8) -> list[tuple[float, tuple[str, ...]]]:
+    """`n` valores igualmente espaçados de max(FZMIN) ao teto comum, mais as Fz de operação. Fz de operação acima
+    do teto entra como o teto, com rótulo; abaixo de max(FZMIN), idem no piso."""
+    piso = max(float(p.parameters["FZMIN"]) for p in family.profiles.values())
+    teto = teto_comum_fz(family)
+    grade: list[tuple[float, tuple[str, ...]]] = [(piso + (teto - piso) * i / (n - 1), ()) for i in range(n)]
+    for fz in fz_operacao:
+        if fz > teto:
+            grade.append((teto, (f"Fz de operação {fz:g} N acima do teto comum: avaliada em {teto:.0f} N",)))
+        elif fz < piso:
+            grade.append((piso, (f"Fz de operação {fz:g} N abaixo do piso comum: avaliada em {piso:.0f} N",)))
+        else:
+            grade.append((float(fz), (f"Fz de operação {fz:g} N",)))
+    return grade
+
+
+def rigidez_vertical(profile: ts.StaticTireProfile) -> tuple[float, str]:
+    return float(profile.parameters["VERTICAL_STIFFNESS"]), "valor do arquivo, linear, origem não verificada"
+
+
+def intervalo_pico_mu_y(family: ts.StaticTireFamily, pressure_psi: float, *, fz_n: float, camber_rad: float,
+                        sinal: int) -> tuple[float, float]:
+    """Pico de μy da curva interpolada como intervalo (inferior, superior) (spec §3):
+    inferior = max_α da mistura; superior = (1−w)·μ_lo + w·μ_hi (cota: o máximo da soma é no máximo a soma dos
+    máximos). Nos nós exatos os dois são o pico do perfil. A busca usa a faixa comum dos vizinhos."""
+    p_lo, p_hi, w = vizinhos(family, pressure_psi)
+    lo, hi = family.profiles[p_lo], family.profiles[p_hi]
+    kw = dict(fz_n=fz_n, camber_rad=camber_rad, sinal=sinal)
+    if p_lo == p_hi:
+        mu = pico_mu_y(avaliador_perfil(lo), faixa_do_perfil(lo), **kw).mu
+        return mu, mu
+    faixa = faixa_comum((lo, hi))
+    inferior = pico_mu_y(avaliador_interpolado(family, pressure_psi), faixa, **kw).mu
+    superior = _mix(w, pico_mu_y(avaliador_perfil(lo), faixa, **kw).mu, pico_mu_y(avaliador_perfil(hi), faixa, **kw).mu)
+    return inferior, superior
