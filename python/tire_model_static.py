@@ -11,7 +11,9 @@ Source for the moment equations: MSC Adams Tire User Guide 2022.3,
 parameter tables. In 4.1.0 the Mx (Eq. 109) and the sign of s*Fx in Mz (Eq. 100)
 were corrected (EDR-067); results and overlays produced before 4.1.0 are not valid. Forces and moments are returned in the explicitly declared
 tire-file axes. The four Round 6 profiles are separate fixed-pressure fits; their PP*
-coefficients are zero, so this module deliberately does not interpolate them.
+coefficients are zero, so coefficients are never interpolated. Only outputs are
+interpolated, and only in tire_pressure.py, with an explicit INTERPOLADO label (EDR-071).
+4.2.0 only added the refusal of nonzero QPZ1-2/QPX1; no equation changed from 4.1.0.
 
 Physical validation status: NOT_VALIDATED. The code must not be interpreted as
 validated for the team's R60A or as a measured vehicle result.
@@ -30,7 +32,12 @@ from types import MappingProxyType
 
 import tire_model as _base
 
-__version__ = "4.1.0-static"
+__version__ = "4.2.0-static"
+# As equações não mudaram da 4.1.0 para a 4.2.0, então um overlay da 4.1.0 continua válido (EDR-071).
+VERSOES_DE_OVERLAY_ACEITAS: tuple[str, ...] = ("4.1.0-static", "4.2.0-static")
+PRESSURE_CORRECTION_KEYS: tuple[str, ...] = (
+    "PPX1", "PPX2", "PPX3", "PPX4", "PPY1", "PPY2", "PPY3", "PPY4", "QPZ1", "QPZ2", "QPX1",
+)
 SUPPORTED_FORMATS = {"PAC2002"}
 PRESSURE_TOLERANCE_PSI = 1e-3
 MOMENT_COEFFICIENTS = (
@@ -133,7 +140,8 @@ class StaticTireFamily:
         raise StaticTireError(
             f"Pressão {pressure_psi:g} psi não tem perfil calibrado. "
             f"Perfis disponíveis: {', '.join(f'{p:g}' for p in self.pressures_psi)} psi. "
-            "Interpolação entre perfis não está habilitada."
+            "Interpolação entre perfis só pela rota rotulada tire_pressure.evaluate_interpolated "
+            "(saídas interpoladas, INTERPOLADO; EDR-071)."
         )
 
 
@@ -188,16 +196,15 @@ def load_profile(
         raise StaticTireError("O .tir precisa declarar IP e IP_NOM positivos em Pa.")
     if not math.isclose(p_raw["IP"], p_raw["IP_NOM"], rel_tol=0, abs_tol=1e-9):
         raise StaticTireError("Cada perfil desta versão deve estar avaliado na pressão nominal IP=IP_NOM.")
-    pp_keys = ("PPX1", "PPX2", "PPX3", "PPX4", "PPY1", "PPY2", "PPY3", "PPY4")
     missing_required = [k for k in REQUIRED_PARAMETERS if k not in p_raw]
     if missing_required:
         raise StaticTireError(
             f"O .tir não declara parâmetros obrigatórios: {', '.join(missing_required)}."
         )
-    nonzero = {k: p_raw[k] for k in pp_keys if p_raw.get(k, 0.0) != 0.0}
+    nonzero = {k: p_raw[k] for k in PRESSURE_CORRECTION_KEYS if p_raw.get(k, 0.0) != 0.0}
     if nonzero:
         raise StaticTireError(
-            f"Correções de pressão PP* não implementadas nesta versão estática: {nonzero}"
+            f"Correções de pressão PP*/QPZ1-2/QPX1 não implementadas nesta versão estática: {nonzero}"
         )
     _validate_parameter_ranges(p_raw)
     dataset = _base.load_dataset(
@@ -312,7 +319,7 @@ def load_revision(profile: StaticTireProfile, path: str | Path) -> StaticTirePro
         raise StaticTireError("O overlay JSON deve conter um objeto na raiz.")
     if payload.get("schema") != "Sistema_DDS.StaticTireRevision.v1":
         raise StaticTireError("Schema de revisão incompatível.")
-    if payload.get("model_version") != __version__:
+    if payload.get("model_version") not in VERSOES_DE_OVERLAY_ACEITAS:
         raise StaticTireError("A revisão foi criada por outra versão do modelo.")
     if payload.get("source_sha256") != profile.base_sha256:
         raise StaticTireError("O hash do .tir não corresponde ao da revisão; overlay recusado.")
