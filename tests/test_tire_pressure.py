@@ -488,4 +488,170 @@ check("TC-TIRE-018h: sinal e valor de Cκ (> 0 e igual à diferença central ind
       ok_ck, str(det_ck))
 
 
+# ---------------------------------------------------------------------------------------------------------
+# Grupos 9 a 11 (TC-TIRE-019 a 021): A1-carro, comparar_carro
+# ---------------------------------------------------------------------------------------------------------
+import dataclasses
+import time
+
+import comparacao_pressao as cp
+import equilibrio as eq
+from suspension_model import VehicleConfig, roll_stiffness_axle
+
+T_CARRO = time.perf_counter()
+
+
+def veiculo_base(**over) -> VehicleConfig:
+    """Veículo de teste (números plausíveis, NÃO é setup real)."""
+    base = dict(
+        mass_total=250.0,
+        cg_height=0.300,
+        wheelbase=1.550,
+        track_front=1.200,
+        track_rear=1.150,
+        cg_to_front=0.837,
+        cg_to_rear=0.713,
+        unsprung_mass_front=15.0,
+        unsprung_mass_rear=18.0,
+        unsprung_cg_height_front=0.230,
+        unsprung_cg_height_rear=0.230,
+        roll_center_front=0.030,
+        roll_center_rear=0.050,
+        roll_stiffness_front=20826.4,
+        roll_stiffness_rear=26450.0,
+    )
+    base.update(over)
+    return VehicleConfig(**base)
+
+
+KW = {"ay_max_g": 2.0, "passo_g": 0.1, "n_alfa": 13}
+KT_CASO = {"F": 90000.0, "R": 90000.0}
+TETO = tp.teto_comum_fz(FAMILIA)
+TIR_12 = FAMILIA.at_pressure(12.0).source_path
+DS12 = tm.load_dataset(TIR_12, source_axis_system="ISO_TYDEX")
+DS_CASO = eq.com_fatores(DS12, {"LMUY": 0.9, "LKY": 1.1})
+CASO = eq.CasoEquilibrio(cfg=veiculo_base(), ds=DS_CASO, downforce_N=400.0, aero_balance_front=0.45)
+
+
+def pior_sentido(par):
+    return par[par["pior"] if par["pior"] != "empate" else "esquerda"]
+
+
+RES = cp.comparar_carro(CASO, FAMILIA, kt_caso_n_m=KT_CASO, **KW)
+RA = [r for r in RES if r.variante_kt == "a"]
+RB = [r for r in RES if r.variante_kt == "b"]
+check("TC-TIRE-019: uma entrada por pressão (crescente) em cada variante",
+      [r.pressao_psi for r in RA] == list(P) and [r.pressao_psi for r in RB] == list(P) and len(RES) == 8)
+
+ok_direto, det_direto = True, []
+for r in RA:
+    ds_p, _ = cp.perfil_ajustado(CASO.ds, FAMILIA.profiles[r.pressao_psi], TETO)
+    direto = eq.analise_par_dois_sentidos(dataclasses.replace(CASO, ds=ds_p), **KW)
+    ok_direto &= r.par == direto
+    det_direto.append((round(r.pressao_psi), r.par["pior"], pior_sentido(r.par).ay_lim, pior_sentido(r.par).veredito))
+check("TC-TIRE-019a: r.par == analise_par_dois_sentidos(replace(caso, ds=ds_do_perfil), **kw), nas quatro pressões",
+      ok_direto, str(det_direto))
+
+fy_4 = [tm.wheel_forces(r.caso.ds, "FR", 1054.0, -0.1, 0.0, 0.0)[1] for r in RA]
+check("TC-TIRE-019b: os quatro ds dão Fy diferentes no mesmo ponto (Fz 1054, α −0,1, γ 0)",
+      len(set(fy_4)) == 4, str(fy_4))
+
+recusa("TC-TIRE-019c: comparar_carro com o caminho do .tir (str) -> TypeError com 10_TIRE",
+       lambda: cp.comparar_carro(CASO, str(TIR_12), **KW), TypeError, "10_TIRE")
+recusa("TC-TIRE-019c: comparar_carro com Path -> TypeError com 10_TIRE",
+       lambda: cp.comparar_carro(CASO, Path(TIR_12), **KW), TypeError, "10_TIRE")
+
+
+def borda_recalculada(r):
+    res = pior_sentido(r.par)
+    return any(c.motivo == "pico na borda da grade de α" for ln in res.linhas
+               if res.ay_lim is None or ln.ay_ms2 <= res.ay_lim for c in (ln.cap_f, ln.cap_r))
+
+
+r14 = next(r for r in RA if abs(r.pressao_psi - 14.0) <= ts.PRESSURE_TOLERANCE_PSI)
+check("TC-TIRE-019d: borda_alfa de 14 psi == recálculo no teste (valor registrado no detalhe)",
+      r14.borda_alfa == borda_recalculada(r14) and all(r.borda_alfa == borda_recalculada(r) for r in RA),
+      f"borda_alfa(14 psi) = {r14.borda_alfa}; ay_lim = {r14.ay_lim_ms2}; veredito = {r14.veredito}")
+
+direto12 = eq.analise_par_dois_sentidos(CASO, **KW)
+r12 = next(r for r in RA if abs(r.pressao_psi - 12.0) <= ts.PRESSURE_TOLERANCE_PSI)
+a_dir, a_r12 = pior_sentido(direto12).ay_lim, r12.ay_lim_ms2
+tol12 = pior_sentido(direto12).resolucao_ms2 or 0.0
+check("TC-TIRE-020a: âncora, 12 psi (variante a) == analise_par_dois_sentidos(caso) dentro de resolucao_ms2",
+      (a_dir is None) == (a_r12 is None) and (a_dir is None or abs(a_dir - a_r12) <= tol12)
+      and r12.veredito == pior_sentido(direto12).veredito,
+      f"caso direto = {a_dir}; 12 psi = {a_r12}; resolucao = {tol12}; bit a bit: {a_dir == a_r12}")
+
+# Com o caso acima nenhum eixo satura até 2 g (N/A nas quatro pressões; 14 psi com pico na borda), então a âncora
+# 020a compara None com None. O caso abaixo (grip reduzido, LMUX = LMUY = 0,5: demonstrativo) satura e dá a_y_lim numérico.
+CASO_SAT = dataclasses.replace(CASO, ds=eq.com_fatores(DS12, {"LMUY": 0.5, "LMUX": 0.5, "LKY": 1.1}))
+RES_SAT = cp.comparar_carro(CASO_SAT, FAMILIA, **KW)
+direto_sat = pior_sentido(eq.analise_par_dois_sentidos(CASO_SAT, **KW))
+r12s = next(r for r in RES_SAT if abs(r.pressao_psi - 12.0) <= ts.PRESSURE_TOLERANCE_PSI)
+r14s = next(r for r in RES_SAT if abs(r.pressao_psi - 14.0) <= ts.PRESSURE_TOLERANCE_PSI)
+check("TC-TIRE-020b: âncora com a_y_lim numérico (grip reduzido): 12 psi == analise_par_dois_sentidos(caso) dentro de "
+      "resolucao_ms2; veredito e eixo coerentes",
+      direto_sat.ay_lim is not None and r12s.ay_lim_ms2 is not None
+      and abs(r12s.ay_lim_ms2 - direto_sat.ay_lim) <= (direto_sat.resolucao_ms2 or 0.0)
+      and r12s.veredito == direto_sat.veredito and r12s.eixo_satura == "R",
+      f"direto = {direto_sat.ay_lim}; 12 psi = {r12s.ay_lim_ms2}; bit a bit: {direto_sat.ay_lim == r12s.ay_lim_ms2}")
+check("TC-TIRE-020b: a_y_lim de 8, 10 e 12 psi é numérico e diferente entre si; 14 psi é N/A com borda_alfa",
+      all(r.ay_lim_ms2 is not None for r in RES_SAT if round(r.pressao_psi) != 14)
+      and len({r.ay_lim_ms2 for r in RES_SAT if round(r.pressao_psi) != 14}) == 3
+      and r14s.ay_lim_ms2 is None and r14s.borda_alfa and r14s.eixo_satura is None,
+      str([(round(r.pressao_psi), r.ay_lim_ms2, r.borda_alfa) for r in RES_SAT]))
+
+prof_8 = FAMILIA.profiles[P[0]]
+ds8, rot8 = cp.perfil_ajustado(CASO.ds, prof_8, TETO)
+check("TC-TIRE-021a: o ds de 8 psi tem LMUY = 0,9 e LKY = 1,1 (λ do caso copiados); perfil e caso não são mutados",
+      ds8.p["LMUY"] == 0.9 and ds8.p["LKY"] == 1.1 and ds8 is not DS_CASO and isinstance(ds8.p, dict)
+      and prof_8.parameters["LMUY"] == 1.0 and DS_CASO.p["LMUY"] == 0.9, str(rot8))
+prof_sem_ltr = ts.StaticTireProfile(
+    dataset=dataclasses.replace(prof_8.dataset, p={k: v for k, v in prof_8.dataset.p.items() if k != "LTR"}),
+    source_path=prof_8.source_path, inflation_pa=prof_8.inflation_pa, inflation_psi=prof_8.inflation_psi,
+    base_sha256=prof_8.base_sha256)
+ds_ltr = dataclasses.replace(DS_CASO, p={**DS_CASO.p, "LTR": 0.9})
+recusa("TC-TIRE-021a: perfil sem LTR e caso com LTR = 0,9 -> ValueError com 'LTR'",
+       lambda: cp.perfil_ajustado(ds_ltr, prof_sem_ltr, TETO), ValueError, "LTR")
+
+fzmax = {round(r.pressao_psi): r.caso.ds.p["FZMAX"] for r in RA}
+check("TC-TIRE-021b: FZMAX do ds de 8, 10 e 14 psi == 1521 e o rótulo 'teto comum' está em rotulos",
+      all(fzmax[q] == 1521 for q in (8, 10, 14))
+      and all(any("teto comum" in x for x in r.rotulos) for r in RA if round(r.pressao_psi) != 12), str(fzmax))
+rot_fzmax_12 = [x for x in r12.rotulos if "FZMAX" in x]
+check("TC-TIRE-021b: o de 12 psi não ganha rótulo de FZMAX", rot_fzmax_12 == [] and fzmax[12] == 1521,
+      str(rot_fzmax_12))
+
+kw_, t_, karb_, kt1_, kt2_ = 18000.0, 1.2, 3000.0, 80000.0, 120000.0
+check("TC-TIRE-021c: kphi_com_kt(roll_stiffness_axle(kw, t, karb, kt1), t, kt1, kt2) == roll_stiffness_axle(.., kt2) (rel 1e-12)",
+      abs(cp.kphi_com_kt(roll_stiffness_axle(kw_, t_, karb_, kt1_), t_, kt1_, kt2_)
+          - roll_stiffness_axle(kw_, t_, karb_, kt2_)) <= 1e-12 * roll_stiffness_axle(kw_, t_, karb_, kt2_))
+
+rb8, ra8 = RB[0], RA[0]
+vs8 = prof_8.parameters["VERTICAL_STIFFNESS"]
+cfg_a, cfg_b = ra8.caso.cfg, rb8.caso.cfg
+check("TC-TIRE-021d: variante b de 8 psi: K_φ F e R diferentes da a e == kphi_com_kt(..., VERTICAL_STIFFNESS de 8 psi)",
+      cfg_b.roll_stiffness_front != cfg_a.roll_stiffness_front and cfg_b.roll_stiffness_rear != cfg_a.roll_stiffness_rear
+      and cfg_b.roll_stiffness_front == cp.kphi_com_kt(CASO.cfg.roll_stiffness_front, CASO.cfg.track_front, 90000.0, vs8)
+      and cfg_b.roll_stiffness_rear == cp.kphi_com_kt(CASO.cfg.roll_stiffness_rear, CASO.cfg.track_rear, 90000.0, vs8)
+      and cfg_a.roll_stiffness_front == CASO.cfg.roll_stiffness_front,
+      f"VS(8 psi) = {vs8}; K_φF {cfg_a.roll_stiffness_front:.1f} → {cfg_b.roll_stiffness_front:.1f}")
+
+ds_pdy = dataclasses.replace(DS_CASO, p={**DS_CASO.p, "PDY1": DS_CASO.p["PDY1"] * 1.05})
+caso_pdy = dataclasses.replace(CASO, ds=ds_pdy)
+res_pdy = cp.comparar_carro(caso_pdy, FAMILIA, **KW)
+check("TC-TIRE-021e: PDY1 do ds trocado (≠ .tir, não é λ): rotulos de todos os ResultadoCarro citam 'PDY1'",
+      len(res_pdy) == 4 and all(any("PDY1" in x for x in r.rotulos) for r in res_pdy)
+      and not any("PDY1" in x for r in RA for x in r.rotulos)
+      and set(cp.diferencas_fora_de_lambda(ds_pdy, FAMILIA.at_pressure(12.0), TETO)) == {"PDY1"})
+
+check("TC-TIRE-021f: eixo_satura, k_rad e rótulos fixos coerentes",
+      all(r.eixo_satura == {"PUSH": "F", "LOOSE": "R", "NEUTRO": "ambos"}.get(r.veredito) for r in RES)
+      and all(any("Validation = NOT_VALIDATED" in x for x in r.rotulos) for r in RES)
+      and all(r.k_rad_ms2 is None or math.isfinite(r.k_rad_ms2) for r in RES)
+      and all(any("roll steer 0 = sem dado" in x for x in r.rotulos) for r in RES),
+      str([(round(r.pressao_psi), r.variante_kt, r.veredito, r.k_rad_ms2) for r in RES]))
+print(f"(tempo dos grupos 9 a 11: {time.perf_counter() - T_CARRO:.1f} s)")
+
+
 encerrar()
