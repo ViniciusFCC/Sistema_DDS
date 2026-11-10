@@ -34,14 +34,14 @@ e feitas: 2664 + 123 = 2787.
 
 Esta medição substitui a da §3.1 da spec (2862 referências, 198 sem nome, 9 células soltas). A diferença foi achada na
 preparação do plano: as "9 células soltas" eram 9 referências a 6 células (13_VALIDATION B37:B39 e 16_EQUILIBRIO E188:E190),
-e das 118 referências da 10_TIRE, 114 apontam para 17 células únicas sem nome. O total de células sem nome é 24, e não 23 (o
+e das 118 referências da 10_TIRE, 114 apontam para 18 células únicas sem nome. O total de células sem nome é 24, e não 23 (o
 plano somou errado; a tabela A1 aprovada tem 24 linhas). O arquivo tem, portanto, 1290 nomes, e não 1289.
 
 ## Limitação do K (pendência 13)
 
 O K do gradiente de subesterço exibido na planilha (16_EQUILIBRIO B188, lido pelo 14_DASHBOARD B41) não inclui o arrasto, a
 resistência ao rolamento nem o Fx exigido pelo balanço completo (hipóteses 10 e 9b da escada). Num caso sintético, sem dado
-do carro, a diferença foi ΔK = +1,57 °/g (EDR-065 item 3, `docs/inc6/escada-caso-sintetico.md`). A frase foi acrescentada
+do carro, a diferença foi ΔK = +1,57 °/g, derivado (a coluna Δ K da tabela não traz esse número): em `docs/inc6/escada-caso-sintetico.md`, K da linha `planilha V4.3` (−0,235 °/g) menos K da linha `todas` (−1,803 °/g) = +1,568 ≈ +1,57 °/g (planilha menos Python completo). A frase foi acrescentada
 ao fim do texto da 16_EQUILIBRIO F188 (X2) e registrada no item 5 do EDR-066. O valor vale até haver dados do T11: a
 confirmar. Nenhuma física nova entrou; ela é escopo da V5.0.
 
@@ -118,4 +118,4 @@ equivalência por valor fica disponível para as versões em que a física muda,
 - **Diâmetros do skidpad:** a conferência com a FSAE Brasil fica para o incremento 9 (EDR-069).
 - **Pneu e T11:** o equilíbrio continua usando o `.tir` provisório do TTC (EDR-038, EDR-055); a planilha ainda não tem dado do
   T11.
-- **Minors adiados nas revisões:** ficam no ledger do incremento (`.superpowers/sdd/2026-11-09-inc8-fundacao-nomes/progress.md`).
+- **Minors adiados nas revisões:** listados na descrição do PR do incremento 8 (pendências).
