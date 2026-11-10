@@ -356,8 +356,87 @@ CONTAGEM_ESPERADA = {"IF": 462, "IFERROR": 350}   # medição da V4.3 nas ABAS_A
 PASTA_COBERTURA = RAIZ / "build" / "cobertura-v44-casos"
 RELATORIO_COBERTURA = RAIZ / "build" / "cobertura-v44.md"
 
-# (aba, cel, indice, lado) -> motivo. Lista aprovada pelo usuário (Step 4); vazia até a aprovação.
-NAO_COBERTOS: dict[tuple[str, str, int, str], str] = {}
+MOTIVO_A = "ID fixo da meta (coluna A, não é entrada) fora da relação da 23_LISTAS; só editando o ID"
+MOTIVO_B = "CONFLITO de META na alavanca: nas linhas 5, 6, 8 e 9 a alavanca é única, então só há uma META possível"
+MOTIVO_C = "coluna F da 10_TIRE é o caso VERIF de valor fixo (F22:F25), não é entrada; mesma família de fórmula das colunas B a E, que estão cobertas"
+MOTIVO_D = "impossível por aritmética: dentro de κ < KPUMIN (KPUMIN < 0) κ já é negativo; dentro de κ > KPUMAX (KPUMAX > 0) κ não é negativo; KPUMIN/KPUMAX < 0 só em .tir de faixa incoerente"
+MOTIVO_E = "identidade algébrica da soma das cargas (peso + aero); só falha se o modelo estiver errado"
+
+# (aba, cel, indice, lado) -> motivo. Aprovado pelo usuário em 2026-11-09 ("Aprovo como está"): 72 lados, motivos A a E.
+NAO_COBERTOS: dict[tuple[str, str, int, str], str] = {
+    ('03_TARGETS', 'I10', 0, 'ERRO'): MOTIVO_A,
+    ('03_TARGETS', 'I11', 0, 'ERRO'): MOTIVO_A,
+    ('03_TARGETS', 'I5', 0, 'ERRO'): MOTIVO_A,
+    ('03_TARGETS', 'I6', 0, 'ERRO'): MOTIVO_A,
+    ('03_TARGETS', 'I7', 0, 'ERRO'): MOTIVO_A,
+    ('03_TARGETS', 'I8', 0, 'ERRO'): MOTIVO_A,
+    ('03_TARGETS', 'I9', 0, 'ERRO'): MOTIVO_A,
+    ('03_TARGETS', 'U10', 0, 'V'): MOTIVO_A,
+    ('03_TARGETS', 'U11', 0, 'V'): MOTIVO_A,
+    ('03_TARGETS', 'U5', 0, 'V'): MOTIVO_A,
+    ('03_TARGETS', 'U6', 0, 'V'): MOTIVO_A,
+    ('03_TARGETS', 'U7', 0, 'V'): MOTIVO_A,
+    ('03_TARGETS', 'U8', 0, 'V'): MOTIVO_A,
+    ('03_TARGETS', 'U9', 0, 'V'): MOTIVO_A,
+    ('03_TARGETS', 'O5', 3, 'V'): MOTIVO_B,
+    ('03_TARGETS', 'O6', 3, 'V'): MOTIVO_B,
+    ('03_TARGETS', 'O8', 3, 'V'): MOTIVO_B,
+    ('03_TARGETS', 'O9', 3, 'V'): MOTIVO_B,
+    ('10_TIRE', 'F26', 0, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 2, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 4, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 5, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 6, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 7, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 7, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 8, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 8, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 9, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 10, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 10, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 11, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 11, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 12, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 13, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 13, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 14, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 14, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 15, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 16, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 16, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 17, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 17, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 18, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 19, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 19, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 20, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 20, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 21, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 22, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 22, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F26', 23, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F26', 23, 'V'): MOTIVO_C,
+    ('10_TIRE', 'F36', 0, 'F'): MOTIVO_C,
+    ('10_TIRE', 'F37', 0, 'F'): MOTIVO_C,
+    ('10_TIRE', 'B26', 19, 'F'): MOTIVO_D,
+    ('10_TIRE', 'B26', 20, 'F'): MOTIVO_D,
+    ('10_TIRE', 'B26', 22, 'V'): MOTIVO_D,
+    ('10_TIRE', 'B26', 23, 'V'): MOTIVO_D,
+    ('10_TIRE', 'C26', 19, 'F'): MOTIVO_D,
+    ('10_TIRE', 'C26', 20, 'F'): MOTIVO_D,
+    ('10_TIRE', 'C26', 22, 'V'): MOTIVO_D,
+    ('10_TIRE', 'C26', 23, 'V'): MOTIVO_D,
+    ('10_TIRE', 'D26', 19, 'F'): MOTIVO_D,
+    ('10_TIRE', 'D26', 20, 'F'): MOTIVO_D,
+    ('10_TIRE', 'D26', 22, 'V'): MOTIVO_D,
+    ('10_TIRE', 'D26', 23, 'V'): MOTIVO_D,
+    ('10_TIRE', 'E26', 19, 'F'): MOTIVO_D,
+    ('10_TIRE', 'E26', 20, 'F'): MOTIVO_D,
+    ('10_TIRE', 'E26', 22, 'V'): MOTIVO_D,
+    ('10_TIRE', 'E26', 23, 'V'): MOTIVO_D,
+    ('13_VALIDATION', 'B5', 0, 'F'): MOTIVO_E,
+    ('13_VALIDATION', 'B7', 0, 'F'): MOTIVO_E,
+}
 
 
 @dataclass(frozen=True)
