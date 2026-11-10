@@ -1,4 +1,7 @@
-import subprocess, shutil, os, tempfile, sys, re
+import shutil, os, tempfile, sys, re
+from executor_testes import executar
+TIMEOUT_SONDA=120   # s; EDR-068: o executor encerra a árvore do processo no tempo-limite
+TIMEOUT_TESTE=1800
 # Portabilidade (commit 1, SPEC R3): sys.executable no lugar de python3; pré-checagem
 # do original; "detectado" = a saída contém FAIL e o código de saída é != 0.
 HERE=os.path.dirname(os.path.abspath(__file__)); ROOT=os.path.dirname(HERE)
@@ -15,11 +18,11 @@ def rodar(fonte):
         shutil.copy(TEST,t); shutil.copy(TIR,os.path.join(d,'data'))
         open(os.path.join(t,'tire_model.py'),'w',encoding='utf-8').write(fonte)
         open(os.path.join(t,'_origem.py'),'w',encoding='utf-8').write('import tire_model; print(tire_model.__file__)\n')
-        sonda=subprocess.run([sys.executable,'-X','utf8','_origem.py'],cwd=t,capture_output=True,text=True)
+        sonda=executar([sys.executable,'-X','utf8','_origem.py'],cwd=t,timeout_s=TIMEOUT_SONDA)
         origem=sonda.stdout.strip()
         if sonda.returncode!=0 or os.path.normcase(os.path.dirname(os.path.abspath(origem)))!=os.path.normcase(os.path.abspath(t)):
             print('ERRO: o modelo importado não é a cópia temporária ->',origem or sonda.stderr[-500:]); sys.exit(2)
-        return subprocess.run([sys.executable,'-X','utf8','test_tire_model.py'],cwd=t,capture_output=True,text=True)
+        return executar([sys.executable,'-X','utf8','test_tire_model.py'],cwd=t,timeout_s=TIMEOUT_TESTE)
     finally:
         shutil.rmtree(d,ignore_errors=True)
 muts={

@@ -257,6 +257,19 @@ def _verificacoes() -> tuple[Verificacao, ...]:
 
 VERIFICACOES = _verificacoes()
 
+# V4.3 (incremento 7; catálogo C-A8, C-A21, C-B4 e C-F5): as verificações da 24_CURVA, lidas depois das da 16 pelo
+# status (16_EQUILIBRIO B78 lê a situação da 24_CURVA, B37). Tipos novos: "num_r" (o R da 16 B9, que passou a ser
+# fórmula: vazio é "" com o motivo da 24_CURVA B21, e não ISBLANK), "fator" (24_CURVA B34 número >= 1) e "geometria"
+# (R > b e R_c = √(R² − b²) > t_f/2 com h2 e h2v ligadas). As listas e o `_cond_verif` da V4.1 e da V4.2 não mudam.
+VERIFICACOES_24 = (
+    Verificacao("chave", "h2v", "chave h2v deve ser 0 ou 1"),
+    Verificacao("chave", "h9v", "chave h9v deve ser 0 ou 1"),
+    Verificacao("fator", "fator", _eq.MSG_FATOR),
+    Verificacao("geometria", None, _eq.MSG_GEOMETRIA),
+)
+VERIFICACOES_V43 = tuple(Verificacao("num_r", vf.nome, vf.texto, vf.cond) if (vf.tipo, vf.nome) == ("num", "R") else vf
+                         for vf in VERIFICACOES) + VERIFICACOES_24
+
 
 def _eh_numero(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and abs(v) != float("inf")
@@ -272,13 +285,15 @@ def motivo_roll_steer(x: dict) -> str | None:
     return None
 
 
-def motivo_das_entradas(x: dict) -> str | None:
+def motivo_das_entradas(x: dict, verificacoes: tuple = VERIFICACOES) -> str | None:
     """Primeira verificação que falha (a mesma ordem e o mesmo texto da planilha), sem as duas que dependem de conta
     (instabilidade de rolagem e alcance do Ackermann, que caso_planilha confere pelo Python). `x`: chave -> valor lido
     da cópia recalculada, para as chaves de ENTRADAS16 e de V40, mais "coef" (lista dos valores dos coeficientes) e
-    "eixos" (texto da 10_TIRE B11). None = entradas válidas."""
+    "eixos" (texto da 10_TIRE B11). None = entradas válidas. Texto vazio ("") conta como vazio, como `ISBLANK` na V4.1.
+    `verificacoes`: VERIFICACOES (V4.1 e V4.2) ou VERIFICACOES_V43; com a da V4.3, `x` também traz "motivo_r" (24_CURVA
+    B21), "h2v", "h9v" e "fator" (24_CURVA B9, B10 e B34), e "R", "b" e "tF" como números lidos das células."""
     from tire_model import AXIS_TRANSFORMS
-    for vf in VERIFICACOES:
+    for vf in verificacoes:
         if vf.cond is not None and not CONDICOES[vf.cond][1](x):
             continue
         val = x.get(vf.nome) if vf.nome else None
@@ -287,10 +302,22 @@ def motivo_das_entradas(x: dict) -> str | None:
         if vf.tipo == "chave" and not (_eh_numero(val) and val in (0, 1)):
             return vf.texto
         if vf.tipo == "num":
-            if val is None:
+            if val is None or val == "":
                 return f"{vf.texto} a confirmar"
             if not _eh_numero(val):
                 return f"{vf.texto} não é número"
+        if vf.tipo == "num_r" and not _eh_numero(val):   # a ordem da célula: ISNUMBER, ISERROR, ="", o resto
+            if isinstance(val, str) and val.startswith("#"):
+                return f"{vf.texto} com erro"
+            if val is None or val == "":
+                return f"{vf.texto} a confirmar ({x['motivo_r']})"
+            return f"{vf.texto} não é número"
+        if vf.tipo == "fator" and not (_eh_numero(val) and val >= 1):
+            return vf.texto
+        if vf.tipo == "geometria" and _um(x["h2"]) and _um(x["h2v"]) \
+                and all(_eh_numero(x.get(k)) for k in ("R", "b", "tF")):
+            if x["R"] <= x["b"] or (x["R"] ** 2 - x["b"] ** 2) ** 0.5 <= x["tF"] / 2:
+                return vf.texto
         if vf.tipo == "positivo" and _eh_numero(val) and not val > 0:
             return f"{vf.texto} deve ser > 0"
         if vf.tipo == "nao_negativo" and _eh_numero(val) and not val >= 0:
@@ -992,11 +1019,23 @@ class _Ctx:
     wb: object
     registro: list = field(default_factory=list)
     mapa: dict = field(default_factory=dict)
+    trocas: list = field(default_factory=list)      # V4.3: células existentes que a `troca` reescreve (com o antes)
 
     def put(self, ws, cel: str, familia: str, formula: str):
         texto = formula.format_map(self.mapa) if "{" in formula else formula
         ws[cel] = texto
         self.registro.append({"aba": ws.title, "cel": cel, "familia": familia, "formula": texto})
+
+    def troca(self, ws, cel: str, familia: str, formula: str, antes: str):
+        """V4.3: reescreve uma fórmula que já existe (V4.2). `antes` é a fórmula esperada da V4.2 (com {chaves}); se a
+        célula não tiver exatamente esse texto, ValueError (o gerador nunca troca o que não reconhece). Registra
+        {aba, cel, antes, novo, familia} em `trocas`."""
+        esperado = antes.format_map(self.mapa) if "{" in antes else antes
+        if ws[cel].value != esperado:
+            raise ValueError(f"{ws.title}!{cel}: a V4.2 não tem a fórmula esperada ({ws[cel].value!r} != {esperado!r})")
+        texto = formula.format_map(self.mapa) if "{" in formula else formula
+        ws[cel] = texto
+        self.trocas.append({"aba": ws.title, "cel": cel, "antes": esperado, "novo": texto, "familia": familia})
 
 
 def _mapa_base(cols17: dict, termos, termos_k) -> dict:
@@ -2157,3 +2196,107 @@ def copia_v41(tmp: Path, alteracoes: dict | None = None, nome: str = "V4_1_copia
     finally:
         wb.close()
     return saida
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# V4.3 (incremento 7, parte 7b; EDR-066 e EDR-069): colunas novas das grades (F9: Fx exigido por arrasto induzido) e
+# as trocas de `fxr`, `fat` e `pre_R`. Só funções novas: `_linha_grade` não é editado no lugar (decisão C do
+# catálogo); o gerador da V4.3 parte da V4.2 já escrita e acrescenta, em cada linha de dados, as colunas depois da
+# última de `_colunas`.
+# ---------------------------------------------------------------------------------------------------------------------
+def colunas_v43(n_alfa: int, pedida: bool) -> dict:
+    """Colunas novas de uma grade da V4.3, depois da última de `_colunas(n_alfa, pedida)` (pedida = com as colunas x,
+    só a 17_EQ_PAR; as pedidas das 20a-d e a mini-grade da 19 não têm x e as novas começam antes): `fy0_R_i` (Fy do
+    eixo traseiro em α_ref_i sem a elipse), `cap0_R`, `idx0_R` (máximo e posição), `j_F`, `j_R` (1ª posição com Fy
+    ≥ exigida), `aF`, `aR` (|α| em que cada eixo atinge a força exigida, ou "semF"/"-"). Catálogo C-G1 a C-G4b."""
+    ultima = len(_colunas(n_alfa, pedida))
+    nomes = [("fy0", "R", i) for i in range(n_alfa)] + ["cap0_R", "idx0_R", "j_F", "j_R", "aF", "aR"]
+    return {n: COL(ultima + 1 + j) for j, n in enumerate(nomes)}
+
+
+def _cond_verif_v43(vf: Verificacao) -> str:
+    """Fórmula (sem o "=") das verificações dos tipos novos da V4.3 (num_r, fator, geometria); as outras seguem em
+    `_cond_verif`, sem mudança. Catálogo C-B4, C-F5 e C-A21."""
+    if vf.tipo == "num_r":
+        n = f"{{{vf.nome}}}"
+        corpo = (f'IF(ISNUMBER({n}),"-",IF(ISERROR({n}),"{vf.texto} com erro",IF({n}="","{vf.texto} a confirmar ("&'
+                 f'{{motivo_r}}&")","{vf.texto} não é número")))')
+    elif vf.tipo == "fator":
+        corpo = f'IF(ISNUMBER({{fator}}),IF({{fator}}>=1,"-","{vf.texto}"),"{vf.texto}")'
+    elif vf.tipo == "geometria":
+        return (f'IF(AND({{h2}}=1,{{h2v}}=1,ISNUMBER({{R}}),ISNUMBER({{b}}),ISNUMBER({{tF}})),'
+                f'IF({{R}}<={{b}},"{vf.texto}",IF(SQRT({{R}}^2-{{b}}^2)<={{tF}}/2,"{vf.texto}","-")),"-")')
+    else:
+        return _cond_verif(vf)
+    if vf.cond is not None:
+        corpo = f'IF({CONDICOES[vf.cond][0]},{corpo},"-")'
+    return corpo
+
+
+def linha_grade_v43(ctx, ws, cl, k, r, n_alfa, alfa_arq, alfa_ref):
+    """Uma linha de dados de uma grade da V4.3 (F9, EDR-066): escreve as colunas de `colunas_v43` (células que têm de
+    estar vazias) e troca `fxr`, `fat_RL`, `fat_RR` e `pre_R` (catálogo C-G1 a C-G6) da linha `r`, da grade `cl` (o
+    dicionário de `_colunas`) com `ctx.put` e `ctx.troca`. `k`: índice da linha; `alfa_arq`: (roda, i) -> célula do
+    α no referencial do arquivo da roda (a mesma de `_linha_grade`); `alfa_ref`: faixa absoluta da linha de α_ref
+    (i = 0…n_alfa − 1), com a aba se for de outra (a mini-grade da 19 lê a 17_EQ_PAR).
+
+    O α_R de cada coluna usa a curva traseira sem a elipse (`fy0_R_i`: soma de Fy das duas rodas sem `fat`), para não
+    haver referência circular com `fxr`; o α é limitado ao pico (`cap0_R`, `idx0_R`) e interpolado entre a coluna `j −
+    1` e a `j`; o dianteiro é o `fy_F_i` já existente. Com `h9v = 0` as colunas novas valem "-" e `fxr` volta ao texto
+    da V4.2 (ABS(req_F)·tan δ_ref)."""
+    pedida = ("x", "FL", "FZMIN") in cl
+    cn = colunas_v43(n_alfa, pedida)
+    C = lambda n: f"{cl[n]}{r}"
+    N = lambda n: f"{cn[n]}{r}"
+
+    def nova(n, f):
+        if ws[N(n)].value is not None:
+            raise ValueError(f"{ws.title}!{N(n)} já preenchida; as colunas da V4.3 só usam células vazias")
+        ctx.put(ws, N(n), "F9", f)
+
+    fz_rl, fz_rr = C("Fz_RL"), C("Fz_RR")
+    TL = {t: C((t, "RL")) for t in TERMOS}
+    TR = {t: C((t, "RR")) for t in TERMOS}
+    cond = (f"AND({{h9}}=1,{{h9v}}=1,ISNUMBER({fz_rl}),{fz_rl}>0,ISNUMBER({fz_rr}),{fz_rr}>0,ISNUMBER({{amp}}),"
+            f"{{amp}}>0)")
+    for i in range(n_alfa):
+        xL, xR = f"({alfa_arq[('RL', i)]}+{TL['SHy']})", f"({alfa_arq[('RR', i)]}+{TR['SHy']})"
+        fyL, fyR = f"-({{s_f}}*({_mf(TL, xL)}))", f"{{s_f}}*({_mf(TR, xR)})"
+        nova(("fy0", "R", i), f'=IF({cond},{fyL}+{fyR},"-")')
+    faixa0 = f"{N(('fy0', 'R', 0))}:{N(('fy0', 'R', n_alfa - 1))}"
+    nova("cap0_R", f'=IF(ISNUMBER({N(("fy0", "R", 0))}),MAX({faixa0}),"-")')
+    nova("idx0_R", f'=IF(ISNUMBER({N("cap0_R")}),MATCH({N("cap0_R")},{faixa0},0),"-")')
+    for e, faixa_fy, req in (("F", f"{C(('fy', 'F', 0))}:{C(('fy', 'F', n_alfa - 1))}", C("req_F")),
+                             ("R", faixa0, C("req_R"))):
+        nova(f"j_{e}", f"=IFERROR(MATCH(TRUE,INDEX({faixa_fy}>={req},0),0),0)")
+    h = "{h9}=1,{h9v}=1"
+    for e, faixa_fy, cap, idx, j, req, sem in (
+            ("F", f"{C(('fy', 'F', 0))}:{C(('fy', 'F', n_alfa - 1))}", C("cap_F"), C("idx_F"), N("j_F"), C("req_F"),
+             f'{C("pre_F")}<>"-"'),
+            ("R", faixa0, N("cap0_R"), N("idx0_R"), N("j_R"), C("req_R"), f"NOT(ISNUMBER({N('cap0_R')}))")):
+        interp = (f"ABS(INDEX({alfa_ref},{j}-1)+(INDEX({alfa_ref},{j})-INDEX({alfa_ref},{j}-1))*"
+                  f"({req}-INDEX({faixa_fy},{j}-1))/(INDEX({faixa_fy},{j})-INDEX({faixa_fy},{j}-1)))")
+        nova(f"a{e}", f'=IF(AND({h}),IF({sem},"semF",IF({req}>={cap},ABS(INDEX({alfa_ref},{idx})),'
+                      f'IF({j}<=1,0,{interp}))),"-")')
+    # trocas (C-G5 e C-G6): o texto da V4.2 é o esperado; o novo só acrescenta o ramo da forma v43
+    phi, ay, req_f, req_r = C("phi"), C("ay"), C("req_F"), C("req_R")
+    aF, aR = N("aF"), N("aR")
+    base = f"0.5*{{rho}}*{{cda}}*ABS({ay})*{{R}}+{{crr}}*{{m}}*9.81"
+    ctx.troca(ws, C("fxr"), "F9",
+              f'=IF(AND(ISNUMBER({phi}),{{h9}}=1),IF(AND({{h9v}}=1,OR({aF}="semF",{aR}="semF")),"semF",{base}+IF({{h9v'
+              f'}}=1,'
+              f'{req_f}*{aF}+{req_r}*{aR},ABS({req_f})*{{tanf}})),0)',
+              f'=IF(AND(ISNUMBER({phi}),{{h9}}=1),{base}+ABS({req_f})*{{tanf}},0)')
+    for c in ("RL", "RR"):
+        antes = ws[C(("fat", c))].value
+        ctx.troca(ws, C(("fat", c)), "F9", f'=IF({C("fxr")}="semF","semF",{antes[1:]})', antes)
+    antes = ws[C("pre_R")].value
+    h9 = ctx.mapa["h9"]
+    fl, fr = C(("fat", "RL")), C(("fat", "RR"))
+    ini = f'IF({h9}=1,IF({fl}="fora",'
+    fim = '"tração excede o atrito longitudinal em RR","-")))),"-")'
+    if antes.count(ini) != 1 or antes.count(fim) != 1:
+        raise ValueError(f"{ws.title}!{C('pre_R')}: o texto da tração na V4.2 não é o esperado: {antes!r}")
+    novo = antes.replace(ini, f'IF({h9}=1,IF(OR({fl}="semF",{fr}="semF"),"{_eq.MSG_FX_SEM_FRENTE}",IF({fl}="fora",')
+    novo = novo.replace(fim, fim.replace('"-")))),', '"-"))))),'))
+    ctx.troca(ws, C("pre_R"), "F9", novo, antes)
