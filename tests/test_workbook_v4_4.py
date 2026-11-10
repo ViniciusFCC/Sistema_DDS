@@ -740,22 +740,27 @@ def main():
           + (f", casos com diferença: {fora_do_limite}" if fora_do_limite else "")
           + (f", casos sem efeito nas saídas (iguais ao NOMINAL): {sem_efeito}" if sem_efeito else ""))
 
-    # TC-WB44-006: união dos lados verdadeiros por caso (arquivos de casos anteriores valem se o layout da aba é o mesmo)
-    cobertos, faltam_caso = set(), []
-    for nome, _ in lista_casos:
-        arq = PASTA_COBERTURA / f"{nome}.json"
-        dados = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else None
-        if dados is None or dados["layout"] != assin:
-            faltam_caso.append(nome)
-        else:
-            cobertos |= set(dados["verdadeiros"])
-    antigos = len(lista_casos) - len(faltam_caso) - len(medidos_agora & {n for n, _ in lista_casos})
-    falta = relatorio_cobertura(cob, cobertos, bool(faltam_caso), matriz,
-                                f"{len(medidos_agora)} caso(s) nesta execução, {antigos} de execuções anteriores, mesmo layout {assin}")
-    check("TC-WB44-006", not falta and not faltam_caso,
-          f"{len(cob)} lados, {len(cobertos & set(cob))} cobertos, {len(falta)} descoberto(s) fora de NAO_COBERTOS "
-          f"({len(NAO_COBERTOS)} aprovados), {len(matriz)} ramo(s) em matriz; casos sem medição: {faltam_caso}; "
-          f"relatório {RELATORIO_COBERTURA.relative_to(RAIZ)}")
+    if os.environ.get("DDS_CASOS44", "").strip():
+        # Subconjunto de casos (a mutação usa NOMINAL,P01,P02,P03): a união dos lados verdadeiros não fecha, então o TC-WB44-006
+        # não é avaliado (nem conta como PASS ou FAIL). Sem DDS_CASOS44, a rodada completa o exige inteiro.
+        print(f"TC-WB44-006 PULADO: DDS_CASOS44 restringe os casos ({len(lista_casos)}); a cobertura só vale na rodada completa")
+    else:
+        # TC-WB44-006: união dos lados verdadeiros por caso (arquivos de casos anteriores valem se o layout da aba é o mesmo)
+        cobertos, faltam_caso = set(), []
+        for nome, _ in lista_casos:
+            arq = PASTA_COBERTURA / f"{nome}.json"
+            dados = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else None
+            if dados is None or dados["layout"] != assin:
+                faltam_caso.append(nome)
+            else:
+                cobertos |= set(dados["verdadeiros"])
+        antigos = len(lista_casos) - len(faltam_caso) - len(medidos_agora & {n for n, _ in lista_casos})
+        falta = relatorio_cobertura(cob, cobertos, bool(faltam_caso), matriz,
+                                    f"{len(medidos_agora)} caso(s) nesta execução, {antigos} de execuções anteriores, mesmo layout {assin}")
+        check("TC-WB44-006", not falta and not faltam_caso,
+              f"{len(cob)} lados, {len(cobertos & set(cob))} cobertos, {len(falta)} descoberto(s) fora de NAO_COBERTOS "
+              f"({len(NAO_COBERTOS)} aprovados), {len(matriz)} ramo(s) em matriz; casos sem medição: {faltam_caso}; "
+              f"relatório {RELATORIO_COBERTURA.relative_to(RAIZ)}")
     print(f"Tempo por caso: média {sum(tempos) / max(1, len(tempos)):.1f} s, máximo {max(tempos, default=0):.1f} s; "
           f"total {time.perf_counter() - t_ini:.0f} s")
 
