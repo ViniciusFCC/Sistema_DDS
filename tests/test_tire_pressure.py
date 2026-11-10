@@ -216,5 +216,193 @@ with tempfile.TemporaryDirectory() as tmp:
 
 check("TC-TIRE-023g: versão do módulo", ts.__version__ == "4.2.0-static")
 
+# ---------------------------------------------------------------------------------------------------------
+# Grupos 4 a 7 (TC-TIRE-014 a 017) e TC-TIRE-012e a 012g: métricas do pneu por pressão
+# ---------------------------------------------------------------------------------------------------------
+import time
+
+_T_METRICAS = time.perf_counter()
+PERFIS = [FAMILIA.profiles[p] for p in P]
+FZS = (300.0, 700.0, 1054.0, 1500.0)
+
+# TC-TIRE-014a/b: Cα e Cγ contra tire_model (mesmo passo 1e-6, mesma roda FR em ISO_TYDEX)
+ok_ca, ok_cg, ok_caz = True, True, True
+for pr in PERFIS:
+    av, fx_ = tp.avaliador_perfil(pr), tp.faixa_do_perfil(pr)
+    for fz in (300.0, 1054.0, 1500.0):
+        for g in (0.0, 0.03):
+            m = tp.metricas_pneu(av, fx_, fz_n=fz, camber_rad=g)
+            ref = tm.rigidez_deriva(pr.dataset, fz, g)
+            ok_ca &= abs(m.c_alpha_n_rad - ref) <= 1e-9 * abs(ref)
+            ok_caz &= abs(m.c_alpha_por_fz_1_rad - ref / fz) <= 1e-9 * abs(ref / fz)
+        m0 = tp.metricas_pneu(av, fx_, fz_n=fz, camber_rad=0.0)
+        refg = tm.rigidez_camber(pr.dataset, fz)
+        ok_cg &= abs(m0.c_gamma_n_rad - refg) <= 1e-9 * abs(refg)
+check("TC-TIRE-014a: c_alpha_n_rad == tire_model.rigidez_deriva (1e-9 relativo), 4 perfis, Fz 300/1054/1500, γ 0 e 0,03", ok_ca)
+check("TC-TIRE-014a: c_alpha_por_fz_1_rad == Cα/Fz", ok_caz)
+check("TC-TIRE-014b: c_gamma_n_rad em γ = 0 == tire_model.rigidez_camber (1e-9 relativo)", ok_cg)
+
+
+# TC-TIRE-015a/b: picos contra varredura fina independente (4001 pontos, sem refino)
+def varredura(pr, fz, g, eixo, sinal):
+    """(valor máximo, argumento) de |Fy|/Fz (eixo "a") ou |Fx|/Fz (eixo "k") em 4001 pontos, escrita aqui."""
+    f = tp.faixa_do_perfil(pr)
+    if eixo == "a":
+        lim = f.alfa_max_rad if sinal > 0 else f.alfa_min_rad
+    else:
+        lim = f.kappa_max if sinal > 0 else f.kappa_min
+    melhor = (-1.0, 0.0)
+    for i in range(4001):
+        x = lim * i / 4000.0
+        if eixo == "a":
+            r = ts.evaluate_static(pr, fz_n=fz, alpha_rad=x, camber_rad=g, kappa=0.0, vx_mps=VX)
+            v = abs(r.fy_n) / fz
+        else:
+            r = ts.evaluate_static(pr, fz_n=fz, alpha_rad=0.0, camber_rad=g, kappa=x, vx_mps=VX)
+            v = abs(r.fx_n) / fz
+        if v > melhor[0]:
+            melhor = (v, x)
+    return melhor
+
+
+ok_my, ok_mx, ok_ay, ok_kx = True, True, True, True
+dif_my, dif_ay = [], []
+for pr in PERFIS[:3]:  # 8, 10 e 12 psi
+    av, fx_ = tp.avaliador_perfil(pr), tp.faixa_do_perfil(pr)
+    for fz in (300.0, 1054.0, 1500.0):
+        for sinal in (+1, -1):
+            pk = tp.pico_mu_y(av, fx_, fz_n=fz, camber_rad=0.0, sinal=sinal)
+            mu_ref, a_ref = varredura(pr, fz, 0.0, "a", sinal)
+            ok_my &= abs(pk.mu - mu_ref) <= 1e-4 and not pk.borda
+            ok_ay &= abs(pk.argumento - a_ref) <= fx_.alfa_max_rad / 4000.0 + 1e-6
+            dif_my.append(abs(pk.mu - mu_ref))
+            dif_ay.append(abs(pk.argumento - a_ref))
+            pk = tp.pico_mu_x(av, fx_, fz_n=fz, camber_rad=0.0, sinal=sinal)
+            mu_ref, k_ref = varredura(pr, fz, 0.0, "k", sinal)
+            ok_mx &= abs(pk.mu - mu_ref) <= 1e-4 and not pk.borda
+            ok_kx &= abs(pk.argumento - k_ref) <= fx_.kappa_max / 4000.0 + 1e-6
+check("TC-TIRE-015a: μy pico (dois sentidos) contra varredura de 4001 pontos, |Δμ| <= 1e-4, 8/10/12 psi", ok_my,
+      f"máx |Δμ| = {max(dif_my):.2e}")
+check("TC-TIRE-015a: α do pico dentro de ALPMAX/4000 + 1e-6 da varredura", ok_ay, f"máx |Δα| = {max(dif_ay):.2e} rad")
+check("TC-TIRE-015b: μx pico (tração e frenagem) contra varredura de 4001 pontos, |Δμ| <= 1e-4", ok_mx)
+check("TC-TIRE-015b: κ do pico dentro de KPUMAX/4000 + 1e-6 da varredura", ok_kx)
+
+# TC-TIRE-015c: penalidade de transferência
+pr12 = FAMILIA.profiles[P[2]]
+av12, fx12 = tp.avaliador_perfil(pr12), tp.faixa_do_perfil(pr12)
+pen = tp.penalidade_transferencia(av12, fx12, fz0_n=1054.0, dfz_n=300.0, camber_rad=0.0)
+
+
+def fy_max(sinal, fz):
+    return tp.pico_mu_y(av12, fx12, fz_n=fz, camber_rad=0.0, sinal=sinal).mu * fz
+
+
+ok_pen = set(pen) == {"alfa_pos", "alfa_neg"} and all(
+    abs(pen[k] - (fy_max(s, 1354.0) + fy_max(s, 754.0) - 2.0 * fy_max(s, 1054.0))) <= 1e-9
+    for k, s in (("alfa_pos", +1), ("alfa_neg", -1)))
+check("TC-TIRE-015c: penalidade_transferencia == 3 chamadas a pico_mu_y (mesma definição), nos dois sentidos", ok_pen, str(pen))
+check("TC-TIRE-015c: a penalidade é negativa (Fy_max côncavo em Fz)", pen["alfa_pos"] < 0.0 and pen["alfa_neg"] < 0.0)
+recusa("TC-TIRE-015c: Fz0 + ΔFz > FZMAX -> ValueError",
+       lambda: tp.penalidade_transferencia(av12, fx12, fz0_n=1400.0, dfz_n=300.0, camber_rad=0.0), ValueError, "Fz")
+recusa("TC-TIRE-015c: Fz0 − ΔFz < FZMIN -> ValueError",
+       lambda: tp.penalidade_transferencia(av12, fx12, fz0_n=300.0, dfz_n=300.0, camber_rad=0.0), ValueError, "Fz")
+
+# TC-TIRE-015d: intervalo do pico interpolado
+ok_int, ok_nos = True, True
+for q in (9.0, 11.0, 13.0):
+    for sinal in (+1, -1):
+        inf, sup = tp.intervalo_pico_mu_y(FAMILIA, q, fz_n=1054.0, camber_rad=0.0, sinal=sinal)
+        ok_int &= inf <= sup + 1e-12 and inf > 0.0
+for q, pr in zip(P, PERFIS, strict=True):
+    for sinal in (+1, -1):
+        inf, sup = tp.intervalo_pico_mu_y(FAMILIA, q, fz_n=1054.0, camber_rad=0.0, sinal=sinal)
+        pk = tp.pico_mu_y(tp.avaliador_perfil(pr), tp.faixa_do_perfil(pr), fz_n=1054.0, camber_rad=0.0, sinal=sinal)
+        ok_nos &= inf == sup == pk.mu
+check("TC-TIRE-015d: intervalo_pico_mu_y em 9, 11 e 13 psi (dois sentidos): inferior <= superior + 1e-12", ok_int)
+check("TC-TIRE-015d: nos quatro nós exatos, inferior == superior == pico_mu_y do perfil", ok_nos)
+
+# TC-TIRE-012e: aviso de pico
+ROT_BORDA = "limitante inferior, sem pico interior"
+PT_E = (1054.0, 0.05, 0.0, 0.0)
+r13, r11 = interp(13.0, PT_E), interp(11.0, PT_E)
+check("TC-TIRE-012e: 13 psi (12 tem pico interior, 14 não): avisos contém 'pico interior'",
+      any("pico interior" in a for a in r13.avisos), str(r13.avisos))
+check("TC-TIRE-012e: o aviso nomeia as pressões (12 e 14 psi)",
+      any("12 psi" in a and "14 psi" in a for a in r13.avisos), str(r13.avisos))
+check("TC-TIRE-012e: 11 psi (10 e 12 com pico interior): nenhum aviso de pico",
+      not any("pico" in a for a in r11.avisos), str(r11.avisos))
+check("TC-TIRE-012e: diagnostico=False não calcula o aviso", interp(13.0, PT_E, diagnostico=False).avisos == ())
+
+# TC-TIRE-012f: valor e sinal do loo_trecho (recalculado no teste)
+pt_f = (1054.0, -0.1, 0.0, 0.0)
+r_f = interp(11.0, pt_f)
+a8, a10, a12 = (estatico(P[i], pt_f) for i in (0, 1, 2))
+w_f = (P[1] - P[0]) / (P[2] - P[0])
+esp = {"fx_n": (1 - w_f) * a8.fx_n + w_f * a12.fx_n - a10.fx_n,
+       "fy_n": (1 - w_f) * a8.fy_n + w_f * a12.fy_n - a10.fy_n,
+       "mz_n": (1 - w_f) * a8.mz_nm + w_f * a12.mz_nm - a10.mz_nm}
+no10 = next(v for k, v in r_f.loo_trecho.items() if abs(k - P[1]) <= ts.PRESSURE_TOLERANCE_PSI)
+check("TC-TIRE-012f: valor e sinal do loo_trecho do nó de 10 psi (1e-9 relativo, recalculado no teste)",
+      all(abs(no10[c] - esp[c]) <= 1e-9 * abs(esp[c]) for c in esp) and all(abs(esp[c]) > 1e-3 for c in esp),
+      f"{no10} vs {esp}")
+
+# TC-TIRE-012g: peso w independente
+check("TC-TIRE-012g: w(9,0) = 0,5 e w(12,5) = 0,25 (1e-4)",
+      abs(tp.vizinhos(FAMILIA, 9.0)[2] - 0.5) <= 1e-4 and abs(tp.vizinhos(FAMILIA, 12.5)[2] - 0.25) <= 1e-4,
+      f"{tp.vizinhos(FAMILIA, 9.0)[2]}, {tp.vizinhos(FAMILIA, 12.5)[2]}")
+
+# TC-TIRE-016: borda nos 14 psi
+m14 = {fz: tp.metricas_pneu(tp.avaliador_perfil(PERFIS[3]), tp.faixa_do_perfil(PERFIS[3]), fz_n=fz, camber_rad=0.0)
+       for fz in FZS}
+check("TC-TIRE-016a: a 14 psi, Fz 300/700/1054/1500, γ 0: mu_y_pos.borda e mu_y_neg.borda True",
+      all(m.mu_y_pos.borda and m.mu_y_neg.borda for m in m14.values()),
+      str({fz: (m.mu_y_pos.borda, m.mu_y_neg.borda) for fz, m in m14.items()}))
+check("TC-TIRE-016a: o rótulo 'limitante inferior, sem pico interior' está em rotulos",
+      all(ROT_BORDA in m.rotulos for m in m14.values()))
+bordas_outros = {}
+for pr, q in zip(PERFIS[:3], P[:3], strict=True):
+    for fz in FZS:
+        m = tp.metricas_pneu(tp.avaliador_perfil(pr), tp.faixa_do_perfil(pr), fz_n=fz, camber_rad=0.0)
+        bordas_outros[(round(q), fz)] = (m.mu_y_pos.borda, m.mu_y_neg.borda, m.mu_x_tracao.borda,
+                                         m.mu_x_frenagem.borda, ROT_BORDA in m.rotulos)
+check("TC-TIRE-016b: a 8, 10 e 12 psi, Fz 300/700/1054/1500: nenhuma borda em μy e μx, sem o rótulo",
+      not any(any(v) for v in bordas_outros.values()), str({k: v for k, v in bordas_outros.items() if any(v)}))
+check("TC-TIRE-016b: a 14 psi, μx sem borda",
+      all(not m.mu_x_tracao.borda and not m.mu_x_frenagem.borda for m in m14.values()))
+
+# TC-TIRE-017a: t0 contra diferença finita independente (passo 1e-4, evaluate_static direto)
+ok_t0, ok_t0_rot = True, True
+for pr in PERFIS:
+    for fz in (300.0, 1054.0, 1500.0):
+        h = 1e-4
+        rp = ts.evaluate_static(pr, fz_n=fz, alpha_rad=h, camber_rad=0.0, kappa=0.0, vx_mps=VX)
+        rm = ts.evaluate_static(pr, fz_n=fz, alpha_rad=-h, camber_rad=0.0, kappa=0.0, vx_mps=VX)
+        t0_ref = -((rp.mz_nm - rm.mz_nm) / (2 * h)) / ((rp.fy_n - rm.fy_n) / (2 * h))
+        m = tp.metricas_pneu(tp.avaliador_perfil(pr), tp.faixa_do_perfil(pr), fz_n=fz, camber_rad=0.0)
+        ok_t0 &= abs(m.t0_m - t0_ref) <= 1e-6
+        ok_t0_rot &= any("pendentes do item 3 do EDR-067" in r for r in m.rotulos)
+check("TC-TIRE-017a: t0 = −(∂Mz/∂α)/(∂Fy/∂α) contra diferença finita independente (1e-6 m)", ok_t0)
+check("TC-TIRE-017a: rótulo 'pendentes do item 3 do EDR-067' nas métricas", ok_t0_rot)
+
+# TC-TIRE-017b: grade de Fz e teto
+check("TC-TIRE-017b: teto_comum_fz == 1521 N", tp.teto_comum_fz(FAMILIA) == 1521.0)
+g0 = tp.grade_fz(FAMILIA)
+check("TC-TIRE-017b: grade_fz padrão tem 8 valores de 100 N a 1521 N, crescentes",
+      len(g0) == 8 and g0[0][0] == 100.0 and g0[-1][0] == 1521.0 and all(a[0] < b[0] for a, b in zip(g0, g0[1:], strict=False)))
+g1 = tp.grade_fz(FAMILIA, fz_operacao=[1600.0])
+fz_acima = [x for x in g1 if any("acima do teto comum" in r for r in x[1])]
+check("TC-TIRE-017b: grade_fz com fz_operacao = [1600] devolve 1521 com o rótulo de 'acima do teto'",
+      len(g1) == 9 and len(fz_acima) == 1 and fz_acima[0][0] == 1521.0
+      and "Fz de operação 1600 N acima do teto comum: avaliada em 1521 N" in fz_acima[0][1], str(g1[-1]))
+g2 = tp.grade_fz(FAMILIA, fz_operacao=[1054.0])
+check("TC-TIRE-017b: Fz de operação dentro do teto entra sem o rótulo de 'acima do teto'",
+      len(g2) == 9 and g2[-1][0] == 1054.0 and not any("acima do teto" in r for r in g2[-1][1]))
+
+# Rigidez vertical
+kz, rot_kz = tp.rigidez_vertical(PERFIS[2])
+check("TC-TIRE-017b: rigidez_vertical == VERTICAL_STIFFNESS do arquivo, com o rótulo de origem não verificada",
+      kz == PERFIS[2].parameters["VERTICAL_STIFFNESS"] and rot_kz == "valor do arquivo, linear, origem não verificada")
+print(f"tempo dos grupos 4 a 7: {time.perf_counter() - _T_METRICAS:.1f} s")
+
 
 encerrar()
