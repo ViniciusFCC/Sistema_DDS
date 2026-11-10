@@ -142,7 +142,7 @@ def main() -> int:
 
     data = dt.datetime.now().isoformat(timespec="seconds")
     commit, ramo = git("rev-parse", "HEAD"), git("rev-parse", "--abbrev-ref", "HEAD")
-    sujo = bool(git("status", "--porcelain", "--untracked-files=no"))
+    sujo = bool(git("status", "--porcelain", "--untracked-files=normal"))
     h_antes = sha256(planilha)
     var = json.loads(VARREDURA.read_text(encoding="utf-8"))
     fatores = var["fatores"]
@@ -358,18 +358,20 @@ def main() -> int:
                             "assimetria ±α (rel.)", "Fy(α=0) [N]"], linhas)))
         w("")
     # indicadores LOO e monotonicidade
-    w("### 2.x Indicadores de incerteza: |LOO| e monotonicidade")
+    w("### 2.x Indicadores de incerteza: erro LOO e monotonicidade")
     w("")
-    w("|LOO| = erro ao prever o perfil interno (10 e 12 psi) por interpolação linear dos vizinhos; 8 e 14 psi não têm "
+    w("Erro LOO = |erro| ao prever o perfil interno (10 e 12 psi) por interpolação linear dos vizinhos; 8 e 14 psi não têm "
       "LOO (extrapolar não é LOO), e isso é declarado, não preenchido. Entre parênteses, o erro relativo. "
       "Monotonicidade com a pressão (ordem crescente de pressão). Sem ranking.")
     w("")
     metricas_ind = [("Cα", lambda m: m.c_alpha_n_rad), ("Cγ", lambda m: m.c_gamma_n_rad),
                     ("Cκ", lambda m: m.c_kappa_n), ("μy α>0", lambda m: m.mu_y_pos.mu),
                     ("μx tração", lambda m: m.mu_x_tracao.mu)]
+    UNID_IND = {"Cα": "N/rad", "Cγ": "N/rad", "Cκ": "N", "μy α>0": "adim.", "μx tração": "adim."}
     cab = ["γ", "Fz [N]"]
     for nm, _ in metricas_ind:
-        cab += [f"{nm} |LOO| 10 psi", f"{nm} |LOO| 12 psi", f"{nm} monot."]
+        u = UNID_IND[nm]
+        cab += [f"{nm}: erro LOO 10 psi [{u}] (rel.)", f"{nm}: erro LOO 12 psi [{u}] (rel.)", f"{nm}: monot."]
     linhas = []
     for g in gamas:
         for fz, _ in pontos_fz:
@@ -576,6 +578,16 @@ def main() -> int:
     else:
         pasta = saida.parent
         pasta.mkdir(parents=True, exist_ok=True)
+        ROT_FIG = ("R25B ≠ R60A; μ do TTC não transferível; pressão de ensaio ≠ fria (a confirmar); "
+                   "Validation = NOT_VALIDATED; caso demonstrativo T09/E03, não o T11")
+
+        def salvar(fig, arq):
+            fig.tight_layout(rect=(0, 0.05, 1, 1))
+            fig.text(0.5, 0.01, ROT_FIG, ha="center", va="bottom", fontsize=6.5)
+            fig.savefig(arq, dpi=130)
+            plt.close(fig)
+            pngs.append(arq.name)
+
         cores = dict(zip(pressoes, ("#1b6ca8", "#2a9d8f", "#e9a100", "#c0392b")))
         g0 = g_a2
         # 1: Cα e Cα/Fz × Fz
@@ -587,12 +599,7 @@ def main() -> int:
         ax[0].set(xlabel="Fz [N]", ylabel="Cα [kN/rad]", title=f"Cα (γ = {graus(g0)})")
         ax[1].set(xlabel="Fz [N]", ylabel="Cα/Fz [1/rad]", title="Cα/Fz")
         ax[0].legend()
-        fig.suptitle("R25B, perfis do TTC (NOT_VALIDATED)", fontsize=9)
-        fig.tight_layout()
-        f1 = pasta / "pressao-calpha.png"
-        fig.savefig(f1, dpi=130)
-        plt.close(fig)
-        pngs.append(f1.name)
+        salvar(fig, pasta / "pressao-calpha.png")
         # 2: μy pico × Fz com marcador de borda
         fig, ax = plt.subplots(figsize=(6, 4))
         for q in pressoes:
@@ -603,11 +610,7 @@ def main() -> int:
             ax.plot(bx, [met[(q, fz, g0)].mu_y_pos.mu for fz in bx], "x", color=cores[q], ms=8)
         ax.set(xlabel="Fz [N]", ylabel="μy pico (α>0)", title="x = pico na borda (limitante inferior)")
         ax.legend()
-        fig.tight_layout()
-        f2 = pasta / "pressao-muy.png"
-        fig.savefig(f2, dpi=130)
-        plt.close(fig)
-        pngs.append(f2.name)
+        salvar(fig, pasta / "pressao-muy.png")
         # 3: Fy(α) nos 4 perfis + curvas interpoladas
         fig, ax = plt.subplots(figsize=(7, 4.5))
         for q in pressoes:
@@ -624,34 +627,35 @@ def main() -> int:
             al = np.linspace(0.0, fx.alfa_max_rad, 80)
             av = tp.avaliador_interpolado(fam, q)
             ax.plot(np.degrees(al), [abs(av(fz_a2, a_, g_a2, 0.0, 11.176).fy_n) for a_ in al], "--", color="0.35",
-                    label=f"{ps(q)} psi (INTERPOLADO)" if q == PRESSOES_A2[0] else None)
+                    label=f"{ps(q)} psi (INTERPOLADO)")
+            k = len(al) // 2
+            ax.annotate(f"{ps(q)} psi INTERPOLADO", (np.degrees(al[k]), abs(av(fz_a2, al[k], g_a2, 0.0, 11.176).fy_n)),
+                        fontsize=6.5, color="0.2", xytext=(0, 6), textcoords="offset points")
         ax.set(xlabel="α [°]", ylabel="|Fy| [N]", title=f"Fy(α), Fz = {n(fz_a2, 0)} N, γ = {graus(g_a2)}; tracejado = INTERPOLADO")
         ax.legend(fontsize=8)
-        fig.tight_layout()
-        f3 = pasta / "pressao-fy-alfa.png"
-        fig.savefig(f3, dpi=130)
-        plt.close(fig)
-        pngs.append(f3.name)
-        # 4: a_y_lim por pressão com banda
-        fig, ax = plt.subplots(figsize=(6, 4))
-        for var, marc in (("a", "o"), ("b", "s")):
-            rs = [r for r in res_carro if r.variante_kt == var]
-            bd = cmp.banda_carro(rs)
-            xs = [r.pressao_psi for r in rs if r.ay_lim_ms2 is not None]
-            ys = [r.ay_lim_ms2 / sm.G for r in rs if r.ay_lim_ms2 is not None]
-            er = [(bd[r.pressao_psi].valor or 0.0) / sm.G for r in rs if r.ay_lim_ms2 is not None]
-            ax.errorbar(xs, ys, yerr=er, fmt=marc, capsize=3, label=f"KT ({var}); barra = banda heurística")
-        ax.set(xlabel="pressão [psi]", ylabel="a_y limite [g]", title="a_y limite (demonstrativo T09/E03)")
-        ax.legend(fontsize=8)
-        fig.tight_layout()
-        f4 = pasta / "pressao-ay-lim.png"
-        fig.savefig(f4, dpi=130)
-        plt.close(fig)
-        pngs.append(f4.name)
+        salvar(fig, pasta / "pressao-fy-alfa.png")
+        # 4: a_y_lim por pressão com banda (só se alguma pressão tiver a_y limite)
+        tem_ay = any(r.ay_lim_ms2 is not None for r in res_carro)
+        if tem_ay:
+            fig, ax = plt.subplots(figsize=(6, 4))
+            for var, marc in (("a", "o"), ("b", "s")):
+                rs = [r for r in res_carro if r.variante_kt == var]
+                bd = cmp.banda_carro(rs)
+                xs = [r.pressao_psi for r in rs if r.ay_lim_ms2 is not None]
+                ys = [r.ay_lim_ms2 / sm.G for r in rs if r.ay_lim_ms2 is not None]
+                er = [(bd[r.pressao_psi].valor or 0.0) / sm.G for r in rs if r.ay_lim_ms2 is not None]
+                ax.errorbar(xs, ys, yerr=er, fmt=marc, capsize=3, label=f"KT ({var}); barra = banda heurística")
+            ax.set(xlabel="pressão [psi]", ylabel="a_y limite [g]", title="a_y limite (demonstrativo T09/E03)")
+            ax.legend(fontsize=8)
+            salvar(fig, pasta / "pressao-ay-lim.png")
+        else:
+            (pasta / "pressao-ay-lim.png").unlink(missing_ok=True)   # nada de figura velha
         w("## PNG")
         w("")
         for nm in pngs:
-            w(f"- `build/{nm}`")
+            w(f"- `{(pasta / nm).relative_to(RAIZ).as_posix() if pasta.is_relative_to(RAIZ) else pasta / nm}`")
+        if not tem_ay:
+            w("- PNG do a_y limite não gerado: a_y limite N/A em todas as pressões")
         w("")
 
     t_tot = time.perf_counter() - t_ini
