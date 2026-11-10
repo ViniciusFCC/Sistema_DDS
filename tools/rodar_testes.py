@@ -55,21 +55,25 @@ TESTES = [
     ("formas v43", "tests/test_formas_v43.py", 4, "plano do inc. 7 (TC-ACK-001, TC-FXI-001 e 002, TC-ACK-002)"),
     ("estudo do NEUTRO", "tests/test_neutro.py", 2, "plano do inc. 7 (TC-NEU-001 e 002)"),
     ("V4.3 (estrutura, CA-07, migração e verificações)", "tests/test_v4_3.py", 3, "plano do inc. 7 (TC-WB43-001, 002 e 006)"),
+    ("V4.4 (regeneração, regra, invariante e migração)", "tests/test_v4_4.py", 4, "plano do inc. 8 (TC-WB44-001 a 004)"),
 ]
 MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
            "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada", "executor_testes", "skidpad",
            "aba_curva", "gerar_v4_3",
-           "estudo_neutro"]
+           "estudo_neutro", "reescrita_nomes", "nomes_v4_4", "gerar_v4_4"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
            ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5),
-           ("tests/mutation_inc7.py", 5), ("tests/mutation_planilha_v43.py", 4)]
+           ("tests/mutation_inc7.py", 5), ("tests/mutation_planilha_v43.py", 4),
+           ("tests/mutation_planilha_v44.py", 4)]
 # A mutação da planilha recalcula cópias pelo Excel (6 execuções do teste, de minutos cada): o limite de 1800 s dos outros não basta.
 TIMEOUT_MUTACAO = {"tests/mutation_planilha_equilibrio.py": 7200, "tests/mutation_mmm.py": 3600,
-                   "tests/mutation_inc7.py": 3600, "tests/mutation_planilha_v43.py": 10200}
+                   "tests/mutation_inc7.py": 3600, "tests/mutation_planilha_v43.py": 10200, "tests/mutation_planilha_v44.py": 7200}
 AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
-TIMEOUT_PLANILHAS: dict[str, int] = {}   # tempo-limite por teste de planilha (padrão 1800 s)
+# Tempo-limite por teste de planilha (padrão 1800 s). O test_workbook_v4_4 roda 61 casos pelo Excel (média de 66,1 s por caso, máximo de
+# 89,0 s, medidos em 2026-11-09) e o LibreOffice é mais lento: 7200 s.
+TIMEOUT_PLANILHAS: dict[str, int] = {"tests/test_workbook_v4_4.py": 7200}
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
 # código 3 e conta como NÃO EXECUTÁVEL, nunca como aprovado (R6).
@@ -78,7 +82,8 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
              ("tests/test_workbook_v4_0.py", 2, "V4.0; plano do incremento 3"),
              ("tests/test_workbook_v4_1.py", 5, "V4.1 (TC-WB41-003 a 006, parte 1 e 2 do 006); plano do incremento 4"),
              ("tests/test_workbook_v4_2.py", 2, "V4.2 (TC-WB42-005 e 006); plano do incremento 5"),
-             ("tests/test_workbook_v4_3.py", 3, "V4.3 (TC-WB43-003 a 005); plano do inc. 7")]
+             ("tests/test_workbook_v4_3.py", 3, "V4.3 (TC-WB43-003 a 005); plano do inc. 7"),
+             ("tests/test_workbook_v4_4.py", 5, "V4.4 (TC-WB44-005 e 006 e 3 checagens de apoio); plano do inc. 8")]
 
 
 _X = "excel/FSAE_EV_Suspension_Fase1_"
@@ -96,6 +101,7 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
     "tests/mutation_mmm.py": ("python/mmm.py", "tests/test_mmm.py", "tests/test_escada.py"),
     "tests/mutation_inc7.py": ("python/equilibrio.py", "python/skidpad.py", "python/estudo_neutro.py", "tests/test_formas_v43.py",
                                "tests/test_skidpad.py", "tests/test_neutro.py"),
+    "tests/mutation_planilha_v44.py": ("tests/test_workbook_v4_4.py", _X + "V4_4.xlsx"),
     "tests/mutation_planilha_v43.py": ("python/aba_curva.py", "python/aba_equilibrio.py", "tests/test_workbook_v4_3.py",
                                        _X + "V4_2.xlsx", _X + "V4_3.xlsx", "data/nomes_V4_3.csv"),
     "tests/test_workbook.py": ("python/atualizar_planilha.py", "python/build_workbook.py", _X + "V3_0.xlsx", _X + "V2.1.xlsx",
@@ -107,6 +113,7 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
                                     "data/nomes_V4_0.csv", "data/nomes_V4_1.csv"),
     "tests/test_workbook_v4_3.py": ("python/gerar_v4_3.py", "python/aba_curva.py", _X + "V4_3.xlsx", _X + "V4_2.xlsx",
                                     "data/nomes_V4_3.csv"),
+    "tests/test_workbook_v4_4.py": ("python/gerar_v4_4.py", _X + "V4_4.xlsx", _X + "V4_3.xlsx", "data/nomes_V4_4.csv"),
     # Testes de estrutura e dados: o que cada um abre por caminho (CA-05; revisão final da 7b, Important 2).
     "tests/test_v4_0.py": ("data/nomes_V4_0.csv", _X + "V4_0.xlsx"),
     "tests/test_v4_1.py": ("data/nomes_V4_1.csv", _X + "V4_1.xlsx", _X + "V3_0.xlsx"),
@@ -114,6 +121,7 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
                            "docs/superpowers/specs/2026-10-20-v4-0-metas-equilibrio-design.md"),
     "tests/test_v4_3.py": ("data/nomes_V4_3.csv", _X + "V4_3.xlsx", _X + "V4_2.xlsx",
                            "docs/superpowers/plans/2026-10-29-inc7-fisica-planilha.md", "docs/registro-de-versoes-V4_3-celulas.md"),
+    "tests/test_v4_4.py": ("data/nomes_V4_4.csv", _X + "V4_4.xlsx", _X + "V4_3.xlsx", "docs/registro-de-versoes-V4_4-celulas.md"),
     "tests/test_equilibrio.py": (_X + "V4_0.xlsx", _X + "V3_0.xlsx"),
     "tests/test_hardpoints.py": _HP,
     "tests/test_kinematics_model.py": _HP + ("data/hardpoints_synthetic_4cantos_V2.0.csv",
@@ -155,7 +163,7 @@ def bloco(titulo: str, texto: str) -> list[str]:
 def versao_planilhas() -> tuple[bool, list[str]]:
     """Fase B, passo 3: a versão da planilha fica no nome do arquivo (EDR-043) e no
     texto de 00_README!A3 ("Versão do workbook: V2.4 ..."). Confere que os dois batem
-    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0, a V4.0 (EDR-058), a V4.1 (EDR-060), a V4.2 e a V4.3 têm de estar entre elas."""
+    em cada planilha de excel/, sem mudar a estrutura da planilha. A V3.0, a V4.0 (EDR-058), a V4.1 (EDR-060), a V4.2, a V4.3 e a V4.4 têm de estar entre elas."""
     linhas, ok = [], True
     arquivos = sorted((RAIZ / "excel").glob("FSAE_EV_Suspension_Fase1_V*.xlsx"))
     for f in arquivos:
@@ -172,7 +180,7 @@ def versao_planilhas() -> tuple[bool, list[str]]:
         linhas.append(f"- `excel/{f.name}`: A3 diz {lido}: **{'PASS' if bate else 'FAIL'}**")
     if not arquivos:
         ok, linhas = False, ["- nenhuma planilha encontrada em `excel/`: **FAIL**"]
-    for obrigatoria in (CAMINHO_V30, CAMINHO_V40, CAMINHO_V41, CAMINHO_V42, CAMINHO_V43):
+    for obrigatoria in (CAMINHO_V30, CAMINHO_V40, CAMINHO_V41, CAMINHO_V42, CAMINHO_V43, CAMINHO_V44):
         if RAIZ / obrigatoria not in arquivos:
             ok = False
             linhas.append(f"- `{obrigatoria}` não encontrada: **FAIL**")
@@ -275,6 +283,7 @@ CAMINHO_V40 = "excel/FSAE_EV_Suspension_Fase1_V4_0.xlsx"
 CAMINHO_V41 = "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx"
 CAMINHO_V42 = "excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx"
 CAMINHO_V43 = "excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx"
+CAMINHO_V44 = "excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx"
 
 
 def referencia_v30(pasta: Path) -> tuple[Path, str]:
@@ -386,7 +395,7 @@ def rodar_lista_mutacao(mutacoes, pulavel, pulados, resumo, md) -> None:
 
 def argumentos_planilha(script: str, ref30: Path | None = None) -> list[str]:
     """Argumentos de cada teste da planilha (CA-09), conforme o nome do script; `ref30` é a V3.0 de referência."""
-    return [str(ref30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith(("_v4_1.py", "_v4_2.py", "_v4_3.py")) else [
+    return [str(ref30)] if script.endswith("suspensao.py") else [str(RAIZ / CAMINHO_V40)] if script.endswith("_v4_0.py") else [] if script.endswith(("_v4_1.py", "_v4_2.py", "_v4_3.py", "_v4_4.py")) else [
             str(ref30), str(RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V2.1.xlsx"), str(RAIZ / "data" / "layout_V2_4.json"),
             str(RAIZ / "data" / "Hoosier_R25B_13x7_TTC_provisional.tir")]
 
@@ -558,11 +567,24 @@ def main() -> None:
         else:
             ok7f, r7f = False, [f"CA-07 FAIL: falta {CAMINHO_V43}"]
     resumo.append(("CA-07", "planilha vs V4.3 de referência (centro da curva, R e arrasto induzido)", "PASS" if ok7f else "FAIL"))
+    # V4.4 = V4.3 da tag v4.3 com as fórmulas das abas 03 a 14 por nome (python/gerar_v4_4.py), comparada com a de excel/
+    with tempfile.TemporaryDirectory(prefix="dds_build44_") as tmp44:
+        out44 = Path(tmp44) / "FSAE_EV_Suspension_Fase1_V4_4.xlsx"
+        r44 = rodar(["python/gerar_v4_4.py", "--saida", str(out44)])
+        md.append(f"- V4.4: `python/gerar_v4_4.py --saida <tmp>/V4_4.xlsx` (a V4.3 sai da tag `v4.3`), código {r44.returncode}")
+        if r44.returncode != 0 or not out44.exists():
+            ok7g, r7g = False, ["CA-07 FAIL: gerar_v4_4 não gerou a V4.4", cauda(r44.stderr)]
+        elif (RAIZ / CAMINHO_V44).exists():
+            ok7g, r7g = comparar_planilhas.comparar_xlsx(out44, RAIZ / CAMINHO_V44, comparar_planilhas.FORMULAS_ESPERADAS_V44,
+                                                         estrutura=True)
+        else:
+            ok7g, r7g = False, [f"CA-07 FAIL: falta {CAMINHO_V44}"]
+    resumo.append(("CA-07", "planilha vs V4.4 de referência (fórmulas por nome)", "PASS" if ok7g else "FAIL"))
     md += [f"- Referência da V3.0: {ORIGEM_REF30}. A regeneração e os testes CA-09 usam a referência; a V3.0 de excel/ tem de ser "
            "igual ao arquivo da tag (a viva da equipe é outro arquivo, no Drive).", "",
            "```text", *r7, *r8, "--- V3.0 (regeneração vs referência) ---", *r7b, f"--- V3.0 de excel/ = tag v3.0 --- {r7v}",
            "--- V4.0 (regeneração vs excel/) ---", *r7c, "--- V4.1 (regeneração vs excel/) ---", *r7d,
-           "--- V4.2 (regeneração vs excel/) ---", *r7e, "--- V4.3 (regeneração vs excel/) ---", *r7f, "```", ""]
+           "--- V4.2 (regeneração vs excel/) ---", *r7e, "--- V4.3 (regeneração vs excel/) ---", *r7f, "--- V4.4 (regeneração vs excel/) ---", *r7g, "```", ""]
 
     # --- Viva da equipe (informativo; fora do resumo) ---
     md += secao_viva()
