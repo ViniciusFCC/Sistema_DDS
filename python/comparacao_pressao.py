@@ -198,20 +198,19 @@ class Banda:
     rotulo: str
 
 
-def _bandas_com_extremos(internas: Mapping[float, Banda], loo: Mapping[float, tp.ErroLOO],
-                         chaves: Sequence[float]) -> dict[float, Banda]:
-    """`internas` tem uma Banda por nó interno (valor None se o LOO não existe); os dois extremos recebem o
-    maior |LOO| interno disponível, com medida=False, ou valor None se nenhum nó interno tem LOO."""
+def _bandas_com_extremos(internas: Mapping[float, Banda], chaves: Sequence[float]) -> dict[float, Banda]:
+    """`internas` tem uma Banda por nó interno (valor None se o LOO não existe); os dois extremos recebem a maior
+    banda interna disponível (inclui resolução ou piso), com medida=False, ou valor None se nenhuma existe."""
     ps = sorted(chaves)
     saida: dict[float, Banda] = {}
-    maior = max((abs(e.erro) for e in loo.values()), default=None)
+    maior = max((b.valor for b in internas.values() if b.valor is not None), default=None)
     for i, p in enumerate(ps):
         if 0 < i < len(ps) - 1:
             saida[p] = internas[p]
         elif maior is None:
             saida[p] = Banda(None, False, {}, _ROT_INDISP)
         else:
-            saida[p] = Banda(maior, False, {"loo_max_interno": maior}, _ROT_EXTREMO)
+            saida[p] = Banda(maior, False, {"banda_interna_max": maior}, _ROT_EXTREMO)
     return saida
 
 
@@ -236,7 +235,7 @@ def banda_carro(resultados: Sequence[ResultadoCarro], grandeza: str = "ay_lim_ms
                                 {"loo": abs(loo[p].erro), "resolucao_ms2": res}, _ROT_BANDA)
         else:
             internas[p] = Banda(None, True, {}, _ROT_INDISP)
-    return _bandas_com_extremos(internas, loo, list(por_p))
+    return _bandas_com_extremos(internas, list(por_p))
 
 
 def banda_pneu(valores: Mapping[float, float], assimetria: Mapping[float, float] | None) -> dict[float, Banda]:
@@ -254,7 +253,7 @@ def banda_pneu(valores: Mapping[float, float], assimetria: Mapping[float, float]
         elif p in assimetria:
             comp["assimetria"] = abs(assimetria[p])
         internas[p] = Banda(max(comp.values()), True, comp, rot)
-    return _bandas_com_extremos(internas, loo, list(valores))
+    return _bandas_com_extremos(internas, list(valores))
 
 
 @dataclass(frozen=True)
@@ -324,10 +323,10 @@ class Escolha:
 
 def _motivo_na(r: ResultadoCarro) -> str:
     par = r.par or {}
-    if par.get("pior") is not None:
-        res = par[par["pior"] if par["pior"] != "empate" else "esquerda"]
-        if getattr(res, "motivo", None):
-            return res.motivo
+    pior = par.get("pior")
+    res = par.get("esquerda" if pior == "empate" else pior)
+    if getattr(res, "motivo", None):
+        return res.motivo
     return f"a_y_lim N/A ({r.veredito})"
 
 
@@ -343,8 +342,8 @@ def escolher_pressao(criterio: str, *, resultados_carro: Sequence[ResultadoCarro
 
     `a_y_lim`: um Veredito por variante de KT presente ("KT (a)", "KT (b)"), e `veredito_muda_com_kt` quando as
     duas existem (muda se o melhor, o conjunto indistinguível ou o conjunto não decidível diferem).
-    `C_alpha_operacao`: um por eixo ("eixo F", "eixo R"), Cα de `metricas_pneu` na Fz estática do eixo (limitada ao
-    teto comum, com rótulo) e no camber estático do eixo; `veredito_muda_com_kt` = None.
+    `C_alpha_operacao`: um por eixo ("eixo F", "eixo R"), Cα de `metricas_pneu` na Fz estática do eixo
+    (`fz_estatica_eixo_n` é a Fz estática por pneu do eixo, em N; limitada ao teto comum, com rótulo) e no camber estático do eixo; `veredito_muda_com_kt` = None.
     """
     if criterio in CRITERIOS_TBD:
         raise ValueError(f"critério {criterio!r}: meta TBD (sem alvo definido na ficha); só se escolhe por "
