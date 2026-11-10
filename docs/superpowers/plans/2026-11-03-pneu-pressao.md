@@ -26,7 +26,7 @@ a spec e este plano.
   com código 3, que nunca conta como aprovado. Não versione `*.tir`.
 - As chaves de `StaticTireFamily.profiles` não são inteiras: 7.999992, 10.000062, 11.999987 e 14.000058 psi. Toda
   comparação de pressão usa `ts.PRESSURE_TOLERANCE_PSI` (1e-3), e os pesos da interpolação usam as chaves reais.
-- IDs autorizados (usuário, 2026-11-03): **EDR-070** e **TC-TIRE-011** em diante. Nenhum outro ID novo. EDR-068 e
+- IDs autorizados (usuário, 2026-11-03): **EDR-071** e **TC-TIRE-011** em diante. Nenhum outro ID novo. EDR-068 e
   EDR-069 estão em uso em outras branches.
 - Rótulos em toda saída do A (spec §5): R25B ≠ R60A (nem a tendência se transfere com certeza); μ absoluto do TTC não
   transferível; pressão de ensaio ≠ pressão fria (a confirmar); Validation = NOT_VALIDATED; INTERPOLADO quando for o
@@ -61,7 +61,7 @@ Cada uma ganhou um teste na tarefa dona do código:
 
 | Arquivo | Ação | Responsabilidade |
 |---|---|---|
-| `docs/Engineering_Decision_Register.md` | Modificar | EDR-070 (índice, §5, §6), emenda do item 6 do EDR-067 |
+| `docs/Engineering_Decision_Register.md` | Modificar | EDR-071 (índice, §5, §6), emenda do item 6 do EDR-067 |
 | `python/tire_model_static.py` | Modificar | `__version__` 4.2.0, guarda QPZ1-2/QPX1, mensagem do `at_pressure`, overlays da 4.1.0 aceitos |
 | `python/tire_pressure.py` | Criar | `evaluate_interpolated` (A2), faixas, métricas do pneu, LOO, assimetria, monotonicidade |
 | `python/comparacao_pressao.py` | Criar | `perfil_ajustado`, `kphi_com_kt`, `comparar_carro`, bandas, `escolher_pressao` |
@@ -75,7 +75,7 @@ Correspondência entre grupo da §10 e ID: grupo *n* → `TC-TIRE-0(10+n)`, com 
 
 ---
 
-### Tarefa 1: EDR-070 (decisão registrada antes do código)
+### Tarefa 1: EDR-071 (decisão registrada antes do código)
 
 O CLAUDE.md manda registrar a decisão antes ou durante a implementação; por isso o EDR vem primeiro, como APPROVED,
 e a Tarefa 9 o passa a VERIFIED com a evidência.
@@ -84,7 +84,7 @@ e a Tarefa 9 o passa a VERIFIED com a evidência.
 - Modificar: `docs/Engineering_Decision_Register.md` (linha 3, cabeçalho; linha 36, contagem; índice após a linha
   103; nova seção após o EDR-067, antes de `## 6.`; linha nova na tabela §6 após a 1563; EDR-067 linha 1494 em diante)
 
-- [ ] **Passo 1: Escrever o EDR-070 no formato do EDR-067** (mesmos campos, na mesma ordem: Date, Status, Context,
+- [ ] **Passo 1: Escrever o EDR-071 no formato do EDR-067** (mesmos campos, na mesma ordem: Date, Status, Context,
   Question, Alternatives, Decision, Rationale, Evidence, Assumptions, Consequences, Affected_Artifacts,
   Affected_Tests, Dependencies, Approval_Conditions, Reopening_Criteria, Related_Decisions,
   Source_Conversation_or_Document). Título: "Pneu com variação de pressão: interpolação rotulada de saídas,
@@ -106,14 +106,14 @@ e a Tarefa 9 o passa a VERIFIED com a evidência.
   - Source: spec, commits b889db9 e 9aa73d3; conversa de 2026-11-02 a 2026-11-03 com dois conselhos.
 
 - [ ] **Passo 2: Ajustar as partes que dependem do registro**
-  - Linha 36: "Total: 65 registros. APPROVED: 28 · …" e acrescentar "; em 2026-11-03, EDR-070 entrou como APPROVED"
-    ao parêntese. Linha 3: acrescentar "EDR-070 acrescentado em 2026-11-03, pneu com variação de pressão; os IDs
+  - Linha 36: "Total: 65 registros. APPROVED: 28 · …" e acrescentar "; em 2026-11-03, EDR-071 entrou como APPROVED"
+    ao parêntese. Linha 3: acrescentar "EDR-071 acrescentado em 2026-11-03, pneu com variação de pressão; os IDs
     EDR-068 e EDR-069 estão em uso em outras branches".
-  - Índice: `| EDR-070 | Pneu com variação de pressão: interpolação rotulada de saídas, comparação e escolha | APPROVED |`
+  - Índice: `| EDR-071 | Pneu com variação de pressão: interpolação rotulada de saídas, comparação e escolha | APPROVED |`
     logo após a linha do EDR-067.
-  - §6: `| EDR-070 | — | python/tire_pressure.py; python/comparacao_pressao.py; python/tire_model_static.py; tools/relatorio_pressao.py; tools/rodar_testes.py. | TC-TIRE-011 a TC-TIRE-023 (tests/test_tire_pressure.py) |`.
-  - EDR-067: no item 6 da Decision, acrescentar ao fim "(emendado pelo EDR-070, 2026-11-03: saídas interpoladas só
-    pela rota rotulada)"; em Related_Decisions, acrescentar EDR-070.
+  - §6: `| EDR-071 | — | python/tire_pressure.py; python/comparacao_pressao.py; python/tire_model_static.py; tools/relatorio_pressao.py; tools/rodar_testes.py. | TC-TIRE-011 a TC-TIRE-023 (tests/test_tire_pressure.py) |`.
+  - EDR-067: no item 6 da Decision, acrescentar ao fim "(emendado pelo EDR-071, 2026-11-03: saídas interpoladas só
+    pela rota rotulada)"; em Related_Decisions, acrescentar EDR-071.
 
 - [ ] **Passo 3: Conferir a contagem**
 
@@ -124,7 +124,7 @@ Run: `grep -c "^| EDR-" docs/Engineering_Decision_Register.md` antes e depois. E
 
 ```bash
 git add docs/Engineering_Decision_Register.md
-git commit -m "docs: EDR-070, pneu com variação de pressão (emenda o item 6 do EDR-067)"
+git commit -m "docs: EDR-071, pneu com variação de pressão (emenda o item 6 do EDR-067)"
 ```
 
 ---
@@ -176,12 +176,12 @@ Esperado: FAIL em 023a-c (carrega sem recusar), 023e (mensagem antiga), 023f (ve
     PP*/QPZ1-2/QPX1 não implementadas nesta versão estática: {nonzero}" (o dicionário mantém o nome da chave, que o
     teste procura).
   - `at_pressure`: mantenha as duas primeiras frases e troque a última por "Interpolação entre perfis só pela rota
-    rotulada tire_pressure.evaluate_interpolated (saídas interpoladas, INTERPOLADO; EDR-070)." A palavra
+    rotulada tire_pressure.evaluate_interpolated (saídas interpoladas, INTERPOLADO; EDR-071)." A palavra
     "Interpolação" tem de continuar (`tests/test_tire_static.py:231`).
   - `load_revision`: `payload.get("model_version") not in VERSOES_DE_OVERLAY_ACEITAS`. `save_revision` continua
     gravando `__version__`.
   - Docstring do módulo: a frase "this module deliberately does not interpolate them" passa a dizer que as saídas
-    só se interpolam em `tire_pressure.py` (EDR-070) e que os coeficientes nunca se interpolam; cite que a 4.2.0 só
+    só se interpolam em `tire_pressure.py` (EDR-071) e que os coeficientes nunca se interpolam; cite que a 4.2.0 só
     acrescentou a recusa de QPZ1-2/QPX1, sem mudar equação.
   - Não mude o texto "Pressão suportada somente nos perfis nominais disponíveis; sem interpolação." de
     `evaluate_static`: ele descreve o resultado exato, que continua sem interpolação.
@@ -196,7 +196,7 @@ Run: `uv run python -X utf8 tests/test_tire_model.py` → `43 PASS, 0 FAIL, de 4
 
 ```bash
 git add python/tire_model_static.py tests/test_tire_pressure.py
-git commit -m "feat: tire_model_static 4.2.0 recusa QPZ1-2/QPX1 e aponta a rota interpolada (EDR-070)"
+git commit -m "feat: tire_model_static 4.2.0 recusa QPZ1-2/QPX1 e aponta a rota interpolada (EDR-071)"
 ```
 
 ---
@@ -247,7 +247,7 @@ PONTOS = [(fz, a, g, k) for fz in (300.0, 1054.0, 1500.0) for a in (-0.15, 0.0, 
 - [ ] **Passo 2: Rodar e ver falhar** (`ModuleNotFoundError: tire_pressure`).
 
 - [ ] **Passo 3: Implementar `python/tire_pressure.py`**
-  - Docstring de módulo com os rótulos da spec §5 e a §3 (A2 não estima parâmetro, EDR-015 e EDR-070).
+  - Docstring de módulo com os rótulos da spec §5 e a §3 (A2 não estima parâmetro, EDR-015 e EDR-071).
   - `vizinhos`: pressão fora de `[min − tol, max + tol]` → `TireInterpolationError("... fora de [8, 14] psi ...")`
     citando as chaves reais; nó dentro da tolerância → nó exato.
   - Recusas na ordem: faixa de pressão; `revision_id` diferentes entre vizinhos; ponto fora de
@@ -259,7 +259,7 @@ PONTOS = [(fz, a, g, k) for fz in (300.0, 1054.0, 1500.0) for a in (-0.15, 0.0, 
     calculado: ponto fora da faixa de Y psi".
   - O aviso de pico não entra nesta tarefa (depende da busca de pico da Tarefa 4).
   - `limitations`: as do `evaluate_static` dos vizinhos (sem repetir) mais "Saídas interpoladas linearmente entre
-    perfis independentes (EDR-070); não é medição nem ajuste".
+    perfis independentes (EDR-071); não é medição nem ajuste".
 
 - [ ] **Passo 4: Rodar** → grupos 1 a 3 e 13 PASS.
 
@@ -267,7 +267,7 @@ PONTOS = [(fz, a, g, k) for fz in (300.0, 1054.0, 1500.0) for a in (-0.15, 0.0, 
 
 ```bash
 git add python/tire_pressure.py tests/test_tire_pressure.py
-git commit -m "feat: tire_pressure.evaluate_interpolated, A2 rotulado (EDR-070)"
+git commit -m "feat: tire_pressure.evaluate_interpolated, A2 rotulado (EDR-071)"
 ```
 
 ---
@@ -542,7 +542,7 @@ P8, P10, P12, P14 = NOS
 
 ```bash
 git add python/comparacao_pressao.py tests/test_tire_pressure.py
-git commit -m "feat: escolher_pressao com banda heurística e regra simétrica (EDR-070)"
+git commit -m "feat: escolher_pressao com banda heurística e regra simétrica (EDR-071)"
 ```
 
 ---
@@ -592,15 +592,15 @@ git commit -m "feat: relatorio_pressao (A1, A1-escolha e A2 em build/, nada vers
 
 ---
 
-### Tarefa 9: registro na suíte, EDR-070 VERIFIED e verificação final
+### Tarefa 9: registro na suíte, EDR-071 VERIFIED e verificação final
 
 **Arquivos:**
 - Modificar: `tools/rodar_testes.py:38` (nova linha em `TESTES`), `CLAUDE.md` (linha "Esperado na V4.2"),
-  `docs/Engineering_Decision_Register.md` (EDR-070: Status, Evidence, Affected_Tests; contagem da linha 36)
+  `docs/Engineering_Decision_Register.md` (EDR-071: Status, Evidence, Affected_Tests; contagem da linha 36)
 
 - [ ] **Passo 1: Registrar o teste**, logo após o "pneu estático":
-  `("pneu com pressão", "tests/test_tire_pressure.py", N, "EDR-070 (precisa dos .tir do TTC Round 6, fora do Git)")`,
-  com o N da Tarefa 7. No `CLAUDE.md`, acrescente "pneu com pressão N (`tests/test_tire_pressure.py`, EDR-070; mesmos
+  `("pneu com pressão", "tests/test_tire_pressure.py", N, "EDR-071 (precisa dos .tir do TTC Round 6, fora do Git)")`,
+  com o N da Tarefa 7. No `CLAUDE.md`, acrescente "pneu com pressão N (`tests/test_tire_pressure.py`, EDR-071; mesmos
   `.tir`)" depois do "pneu estático 87".
 
 - [ ] **Passo 2: Rodar a suíte**
@@ -613,16 +613,16 @@ Esperado: "pneu com pressão" N/N PASS, "pneu estático" 87/87, "pneu" 43/43 e o
 
 ```bash
 git add tools/rodar_testes.py CLAUDE.md
-git commit -m "test: registra tests/test_tire_pressure.py na suíte (EDR-070)"
+git commit -m "test: registra tests/test_tire_pressure.py na suíte (EDR-071)"
 ```
 
-- [ ] **Passo 4: EDR-070 para VERIFIED**: Status "VERIFIED (data; implementado e verificado; não implica validação
+- [ ] **Passo 4: EDR-071 para VERIFIED**: Status "VERIFIED (data; implementado e verificado; não implica validação
   física)"; Evidence com N/N, a suíte, os números reproduzidos do TC-TIRE-018e e a borda do TC-TIRE-016a;
   Affected_Tests "TC-TIRE-011 a TC-TIRE-023"; linha 36: APPROVED 27, VERIFIED 17.
 
 ```bash
 git add docs/Engineering_Decision_Register.md
-git commit -m "docs: EDR-070 VERIFIED com a evidência de tests/test_tire_pressure.py"
+git commit -m "docs: EDR-071 VERIFIED com a evidência de tests/test_tire_pressure.py"
 ```
 
 ---
