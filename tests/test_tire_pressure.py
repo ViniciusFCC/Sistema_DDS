@@ -81,6 +81,85 @@ def encerrar():
 
 
 # ---------------------------------------------------------------------------------------------------------
+# Grupos 1 a 3 (TC-TIRE-011 a 013): A2, evaluate_interpolated
+# ---------------------------------------------------------------------------------------------------------
+import tire_model as tm
+import tire_pressure as tp
+
+VX = 11.176
+PONTOS = [(fz, a, g, k) for fz in (300.0, 1054.0, 1500.0) for a in (-0.15, 0.0, 0.08) for g in (0.0, 0.03)
+          for k in (-0.05, 0.0, 0.1)]
+
+
+def interp(p, pt, **extra):
+    fz, a, g, k = pt
+    return tp.evaluate_interpolated(FAMILIA, p, fz_n=fz, alpha_rad=a, camber_rad=g, kappa=k, vx_mps=VX, **extra)
+
+
+def estatico(p, pt):
+    fz, a, g, k = pt
+    return ts.evaluate_static(FAMILIA.at_pressure(p), fz_n=fz, alpha_rad=a, camber_rad=g, kappa=k, vx_mps=VX)
+
+
+check("TC-TIRE-011a: nó exato (chaves reais) == evaluate_static, dataclass igual, sem tolerância",
+      all(interp(p, pt) == estatico(p, pt) for p in P for pt in PONTOS))
+check("TC-TIRE-011b: pedir 8, 10, 12 e 14 inteiros cai no nó exato (bit a bit) e 14.0 não é recusado",
+      all(interp(float(q), pt) == estatico(float(q), pt) and type(interp(float(q), pt)) is ts.StaticTireResult
+          for q in (8, 10, 12, 14) for pt in PONTOS))
+
+ok_mix, ok_entre, ok_mu, ok_rot, ok_viz = True, True, True, True, True
+ok_loo = {}
+for q in (9.0, 11.0, 13.0, 12.5):
+    lo, hi, w = tp.vizinhos(FAMILIA, q)
+    for pt in PONTOS:
+        r, rl, rh = interp(q, pt), estatico(lo, pt), estatico(hi, pt)
+        for c in ("fx_n", "fy_n", "mx_nm", "my_nm", "mz_nm"):
+            xl, xh, x = getattr(rl, c), getattr(rh, c), getattr(r, c)
+            tol = 1e-9 * max(1.0, abs(xl), abs(xh))
+            ok_mix &= abs(x - ((1 - w) * xl + w * xh)) <= tol
+            ok_entre &= min(xl, xh) - tol <= x <= max(xl, xh) + tol
+        ok_mu &= r.mu_effective <= (1 - w) * rl.mu_effective + w * rh.mu_effective + 1e-12
+        ok_mu &= abs(r.mu_effective - tm.mu_effective(r.fx_n, r.fy_n, r.fz_n)) <= 1e-12
+        ok_rot &= r.rotulo == "INTERPOLADO" and abs(sum(r.pesos) - 1.0) <= 1e-15 and r.pesos == (1 - w, w)
+        ok_viz &= (r.vizinhos_psi == (lo, hi)
+                   and r.sha256 == (FAMILIA.profiles[lo].base_sha256, FAMILIA.profiles[hi].base_sha256)
+                   and r.pressure_psi == q)
+    ok_loo[q] = sorted(interp(q, PONTOS[13]).loo_trecho)
+check("TC-TIRE-012a: componentes = (1-w)·X_lo + w·X_hi (1e-9 relativo) em 9, 11, 13 e 12,5 psi", ok_mix)
+check("TC-TIRE-012a: componentes entre o mínimo e o máximo dos vizinhos", ok_entre)
+check("TC-TIRE-012b: mu_effective <= mistura dos mu dos vizinhos (+1e-12) e = mu_effective(Fx, Fy, Fz)", ok_mu)
+check("TC-TIRE-012c: rotulo INTERPOLADO e pesos somam 1", ok_rot)
+check("TC-TIRE-012c: vizinhos_psi e sha256 batem com os perfis vizinhos", ok_viz)
+
+
+def chaves_aprox(ks, alvos):
+    return len(ks) == len(alvos) and all(abs(k - a) <= ts.PRESSURE_TOLERANCE_PSI for k, a in zip(ks, alvos, strict=True))
+
+
+check("TC-TIRE-012d: loo_trecho em 9 psi só tem o nó de 10", chaves_aprox(ok_loo[9.0], [10.0]), str(ok_loo[9.0]))
+check("TC-TIRE-012d: loo_trecho em 11 psi tem os nós de 10 e 12", chaves_aprox(ok_loo[11.0], [10.0, 12.0]), str(ok_loo[11.0]))
+check("TC-TIRE-012d: loo_trecho em 13 psi só tem o nó de 12", chaves_aprox(ok_loo[13.0], [12.0]), str(ok_loo[13.0]))
+r_dg = interp(11.0, PONTOS[13])
+check("TC-TIRE-012d: loo_trecho tem fx_n, fy_n e mz_n finitos; diagnostico=False o deixa vazio",
+      all(set(v) == {"fx_n", "fy_n", "mz_n"} and all(math.isfinite(x) for x in v.values()) for v in r_dg.loo_trecho.values())
+      and interp(11.0, PONTOS[13], diagnostico=False).loo_trecho == {})
+
+PT0 = (1054.0, 0.05, 0.0, 0.0)
+recusa("TC-TIRE-013a: 7,5 psi -> TireInterpolationError com [8, 14]", lambda: interp(7.5, PT0),
+       tp.TireInterpolationError, "[8, 14]")
+recusa("TC-TIRE-013a: 14,5 psi -> TireInterpolationError com [8, 14]", lambda: interp(14.5, PT0),
+       tp.TireInterpolationError, "[8, 14]")
+recusa("TC-TIRE-013b: 13 psi com Fz = 1530 N (fora do FZMAX do 12 psi) -> interseção",
+       lambda: interp(13.0, (1530.0, 0.05, 0.0, 0.0)), tp.TireInterpolationError, "interseção")
+rev12 = ts.revise_profile(FAMILIA.at_pressure(12.0), {"PDY1": FAMILIA.at_pressure(12.0).parameters["PDY1"] * 0.99},
+                          reason="teste de revisões diferentes", revision_id="R-TESTE")
+fam_rev = ts.StaticTireFamily(profiles={**{p: FAMILIA.profiles[p] for p in P}, P[2]: rev12})
+recusa("TC-TIRE-013c: 12 psi revisado e 13 psi -> TireInterpolationError com revision_id",
+       lambda: tp.evaluate_interpolated(fam_rev, 13.0, fz_n=1054.0, alpha_rad=0.05, camber_rad=0.0, kappa=0.0, vx_mps=VX),
+       tp.TireInterpolationError, "revision_id")
+
+
+# ---------------------------------------------------------------------------------------------------------
 # Grupo 13 (TC-TIRE-023): guarda QPZ1-2/QPX1, mensagem do at_pressure, versão 4.2.0 e overlays da 4.1.0
 # ---------------------------------------------------------------------------------------------------------
 P12 = FAMILIA.at_pressure(12.0)
