@@ -661,4 +661,119 @@ check("TC-TIRE-021g (caso demonstrativo, grip reduzido; não é o T11): robustez
 print(f"(tempo dos grupos 9 a 11: {time.perf_counter() - T_CARRO:.1f} s)")
 
 
+# ---------------------------------------------------------------------------------------------------------
+# Grupo 12 (spec §10 item 12): escolher_pressao e a regra simétrica, TC-TIRE-022a-k
+# ---------------------------------------------------------------------------------------------------------
+P8, P10, P12, P14 = NOS
+
+
+def B(v, medida=True):
+    return cp.Banda(v, medida, {"loo": v}, "")
+
+
+def bandas_todas(v_int, v_ext=1.0):
+    return {P8: B(v_ext, False), P10: B(v_int), P12: B(v_int), P14: B(v_ext, False)}
+
+
+def rc(p, var, ay, borda=False, veredito="PUSH", res=0.01):
+    """ResultadoCarro sintético: par={} e caso=None (escolher_pressao só lê par se ay_lim_ms2 for None)."""
+    return cp.ResultadoCarro(pressao_psi=p, variante_kt=var, ay_lim_ms2=ay, sentido_pior="esquerda",
+                             eixo_satura=None, veredito=veredito, k_rad_ms2=None, k_motivo=None,
+                             resolucao_ms2=res, borda_alfa=borda, robustez=None, rotulos=(), par={}, caso=None)
+
+
+def serie(var, ays, bordas=()):
+    return [rc(p, var, a, borda=(p in bordas)) for p, a in zip(NOS, ays, strict=True)]
+
+
+v_a = cp.decidir({P8: 10.0, P10: 20.0, P12: 12.0, P14: 11.0}, bandas_todas(1.0), {})
+check("TC-TIRE-022a: veredito: máximo isolado em nó interno com banda medida -> melhor == P10, desfecho 'melhor'",
+      v_a.melhor == P10 and v_a.indistinguiveis == (P10,) and not v_a.nao_decidiveis
+      and v_a.desfecho.startswith("melhor"), v_a.desfecho)
+
+v_b = cp.decidir({P8: 5.0, P10: 20.0, P12: 19.5, P14: 5.0}, bandas_todas(1.0), {})
+check("TC-TIRE-022b: empate parcial -> melhor None, indistinguiveis == (P10, P12)",
+      v_b.melhor is None and v_b.indistinguiveis == (P10, P12) and v_b.desfecho.startswith("indistinguíveis"),
+      v_b.desfecho)
+
+v_c = cp.decidir({P8: 10.0, P10: 10.5, P12: 10.2, P14: 10.4}, bandas_todas(1.0), {})
+check("TC-TIRE-022c: empate total -> 'todas indistinguíveis', melhor None, os quatro no conjunto",
+      v_c.melhor is None and v_c.indistinguiveis == NOS and v_c.desfecho == "todas indistinguíveis", v_c.desfecho)
+
+val_d = {P8: 5.0, P10: 20.0, P12: 19.5, P14: 5.0}
+d1 = cp.decidir(val_d, {**bandas_todas(1.0), P10: B(0.2), P12: B(1.0)}, {})
+d2 = cp.decidir(val_d, {**bandas_todas(1.0), P10: B(1.0), P12: B(0.2)}, {})
+d3 = cp.decidir(val_d, {**bandas_todas(1.0), P10: B(0.2), P12: B(0.2)}, {})   # |20 - 19.5| > 0.2: distinguíveis
+check("TC-TIRE-022d: simetria: trocar as bandas de 10 e 12 (0,2 e 1 vs 1 e 0,2) não muda o conjunto (usa o max)",
+      d1.indistinguiveis == d2.indistinguiveis == (P10, P12) and d1.melhor == d2.melhor is None
+      and d3.indistinguiveis == (P10,) and d3.melhor == P10,
+      f"{d1.indistinguiveis} {d2.indistinguiveis} {d3.indistinguiveis}")
+
+# borda montada por escolher_pressao (ay linear em p: o LOO é ~0 e a banda é a resolução, 0,01)
+esc_e = cp.escolher_pressao("a_y_lim", resultados_carro=serie("a", [10.0, 12.0, 14.0, 16.0], bordas=(P14,)))
+ve = esc_e.vereditos["KT (a)"]
+v_e2 = cp.decidir({P8: 10.0, P10: 12.0, P12: 14.0, P14: 30.0}, bandas_todas(0.5), {P14: "pico na borda"})
+check("TC-TIRE-022e: borda: 14 psi com borda_alfa vai a nao_decidiveis com o motivo; melhor None, 'veredito suspenso'",
+      set(ve.nao_decidiveis) == {P14} and "limitante inferior" in ve.nao_decidiveis[P14] and ve.melhor is None
+      and ve.desfecho.startswith("veredito suspenso") and ve.valores[P14] == 16.0
+      and set(v_e2.nao_decidiveis) == {P14} and v_e2.melhor is None
+      and v_e2.desfecho.startswith("veredito suspenso") and v_e2.valores[P14] == 30.0,
+      f"{ve.desfecho} | {v_e2.desfecho}")
+
+v_f = cp.decidir({P8: 20.0, P10: 10.0, P12: 9.0, P14: 8.0}, bandas_todas(1.0), {})
+check("TC-TIRE-022f: extremo (8 psi) com o maior valor, isolado, banda medida=False -> melhor None, "
+      "'extremo sem banda medida'",
+      v_f.melhor is None and v_f.indistinguiveis == (P8,) and v_f.desfecho.startswith("extremo sem banda medida"),
+      v_f.desfecho)
+
+recusa("TC-TIRE-022g: escolher_pressao('K') -> ValueError 'meta TBD'",
+       lambda: cp.escolher_pressao("K"), ValueError, "meta TBD")
+recusa("TC-TIRE-022g: escolher_pressao('TARGET-007') -> ValueError 'meta TBD'",
+       lambda: cp.escolher_pressao("TARGET-007"), ValueError, "meta TBD")
+recusa("TC-TIRE-022g: critério desconhecido -> ValueError com a lista de CRITERIOS",
+       lambda: cp.escolher_pressao("sei_la"), ValueError, ", ".join(cp.CRITERIOS))
+
+res_h = serie("a", [10.0, 12.0, 14.0, 16.0])
+res_h[2] = rc(P12, "a", None, veredito="N/A")
+esc_h = cp.escolher_pressao("a_y_lim", resultados_carro=res_h)
+vh = esc_h.vereditos["KT (a)"]
+check("TC-TIRE-022h: ay_lim None em 12 psi -> 12 em nao_decidiveis com o motivo (veredito); nada quebra; "
+      "N/A não vira valor",
+      P12 in vh.nao_decidiveis and "N/A" in vh.nao_decidiveis[P12] and vh.valores[P12] is None
+      and vh.melhor is None, str(dict(vh.nao_decidiveis)))
+
+res_i = serie("a", [10.0, 12.0, 14.0, 16.0])
+res_i[0] = rc(P8, "a", None, veredito="N/A")
+bi = cp.banda_carro(res_i)
+vi = cp.escolher_pressao("a_y_lim", resultados_carro=res_i).vereditos["KT (a)"]
+check("TC-TIRE-022i: banda indisponível: 8 psi N/A -> banda de 10 psi None, 10 em nao_decidiveis, nunca o melhor; "
+      "extremo 14 com banda do LOO de 12 e medida=False",
+      bi[P10].valor is None and P10 in vi.nao_decidiveis and "banda indisponível" in vi.nao_decidiveis[P10]
+      and vi.melhor != P10 and bi[P12].valor is not None
+      and bi[P14].valor is not None and bi[P14].medida is False and bi[P8].medida is False,
+      str({round(p): b.valor for p, b in bi.items()}))
+recusa("TC-TIRE-022i: banda_carro recusa variantes misturadas",
+       lambda: cp.banda_carro(serie("a", [1.0, 2.0, 3.0, 4.0])[:2] + serie("b", [1.0, 2.0, 3.0, 4.0])[2:]),
+       ValueError, "variante")
+
+res_j = serie("a", [10.0, 12.0, 14.0, 16.0], bordas=(P14,)) + serie("b", [10.0, 12.0, 14.0, 16.0])
+esc_j = cp.escolher_pressao("a_y_lim", resultados_carro=res_j)
+res_j2 = serie("a", [10.0, 12.0, 14.0, 16.0]) + serie("b", [10.0, 12.0, 14.0, 16.0])
+esc_j2 = cp.escolher_pressao("a_y_lim", resultados_carro=res_j2)
+check("TC-TIRE-022j: variantes a e b com vereditos diferentes -> veredito_muda_com_kt is True; iguais -> False; "
+      "uma variante só -> None",
+      set(esc_j.vereditos) == {"KT (a)", "KT (b)"} and esc_j.veredito_muda_com_kt is True
+      and esc_j2.veredito_muda_com_kt is False and esc_e.veredito_muda_com_kt is None,
+      f"{esc_j.vereditos['KT (a)'].desfecho} | {esc_j.vereditos['KT (b)'].desfecho}")
+
+esc_k = cp.escolher_pressao("C_alpha_operacao", family=FAMILIA, fz_estatica_eixo_n={"F": 700.0, "R": 800.0},
+                            camber_eixo_rad={"F": 0.0, "R": 0.0})
+bk = [esc_k.vereditos[e].bandas for e in ("eixo F", "eixo R")]
+check("TC-TIRE-022k: pneu real (Cα, Fz estática 700/800 N, γ 0): chaves 'eixo F'/'eixo R', sem exceção, bandas de "
+      "8 e 14 psi com medida=False e as internas medidas; veredito_muda_com_kt None",
+      set(esc_k.vereditos) == {"eixo F", "eixo R"} and esc_k.veredito_muda_com_kt is None
+      and all(b[P8].medida is False and b[P14].medida is False and b[P10].medida and b[P12].medida for b in bk),
+      " | ".join(f"{e}: {esc_k.vereditos[e].desfecho}" for e in ("eixo F", "eixo R")))
+
+
 encerrar()
