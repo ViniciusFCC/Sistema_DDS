@@ -775,5 +775,15 @@ check("TC-TIRE-022k: pneu real (Cα, Fz estática 700/800 N, γ 0): chaves 'eixo
       and all(b[P8].medida is False and b[P14].medida is False and b[P10].medida and b[P12].medida for b in bk),
       " | ".join(f"{e}: {esc_k.vereditos[e].desfecho}" for e in ("eixo F", "eixo R")))
 
+res_l = serie("a", [10.0, 12.0, 14.0, 16.0])
+res_l[1] = rc(P10, "a", 12.0, res=0.02)
+bl = cp.banda_carro(res_l)
+maior_int = max(bl[P10].valor, bl[P12].valor)
+check("TC-TIRE-022l: banda do extremo = maior banda interna (inclui resolucao_ms2), num caso com LOO < resolução",
+      bl[P10].componentes["loo"] < bl[P10].componentes["resolucao_ms2"] and maior_int == 0.02
+      and bl[P8].valor == bl[P14].valor == maior_int and not bl[P8].medida and not bl[P14].medida
+      and bl[P8].rotulo == "limite inferior (banda não medida)",
+      str({round(p): b.valor for p, b in bl.items()}))
+
 
 encerrar()
