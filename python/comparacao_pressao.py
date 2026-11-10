@@ -172,3 +172,217 @@ def comparar_carro(caso: eq.CasoEquilibrio, family: ts.StaticTireFamily, *,
                 robustez=robustez, rotulos=ROTULOS_FIXOS + (rot_rs,) + rot_kt + rot_p + rot_difs + rot_rob,
                 par=par, caso=caso_p))
     return saida
+
+
+# ---------------------------------------------------------------------------------------------------------
+# A1-escolha (spec §8): bandas heurísticas e regra simétrica
+# ---------------------------------------------------------------------------------------------------------
+CRITERIOS = {"a_y_lim": "máximo", "C_alpha_operacao": "máximo"}
+CRITERIOS_TBD = ("K", "TARGET-006", "TARGET-007")
+# Piso da banda do pneu, relativo ao valor: escolha heurística declarada, dominada pelo LOO.
+PISO_NUMERICO_REL = 1e-6
+_ROT_EXTREMO = "limite inferior (banda não medida)"
+_ROT_INDISP = "banda indisponível"
+_ROT_BANDA = "banda heurística, não intervalo de confiança"
+_ROT_SEM_ASSIM = "assimetria não se aplica ao Cα: a derivada em α = 0 não tem lado"
+_MOTIVO_BORDA = "pico na borda da grade de α: valor é limitante inferior"
+
+
+@dataclass(frozen=True)
+class Banda:
+    """Faixa heurística (nunca intervalo de confiança). `valor` None = banda indisponível; `medida` False nos
+    extremos (8 e 14 psi), onde o valor é o maior |LOO| interno (limite inferior)."""
+    valor: float | None
+    medida: bool
+    componentes: Mapping[str, float]
+    rotulo: str
+
+
+def _bandas_com_extremos(internas: Mapping[float, Banda], loo: Mapping[float, tp.ErroLOO],
+                         chaves: Sequence[float]) -> dict[float, Banda]:
+    """`internas` tem uma Banda por nó interno (valor None se o LOO não existe); os dois extremos recebem o
+    maior |LOO| interno disponível, com medida=False, ou valor None se nenhum nó interno tem LOO."""
+    ps = sorted(chaves)
+    saida: dict[float, Banda] = {}
+    maior = max((abs(e.erro) for e in loo.values()), default=None)
+    for i, p in enumerate(ps):
+        if 0 < i < len(ps) - 1:
+            saida[p] = internas[p]
+        elif maior is None:
+            saida[p] = Banda(None, False, {}, _ROT_INDISP)
+        else:
+            saida[p] = Banda(maior, False, {"loo_max_interno": maior}, _ROT_EXTREMO)
+    return saida
+
+
+def banda_carro(resultados: Sequence[ResultadoCarro], grandeza: str = "ay_lim_ms2") -> dict[float, Banda]:
+    """Banda por pressão, de uma variante de KT só: nó interno = max(|LOO|, resolucao_ms2), com o LOO do carro
+    obtido interpolando as saídas `grandeza` dos vizinhos (`tire_pressure.erro_loo`). A assimetria fica fora
+    (já está no "sentido pior")."""
+    if not resultados:
+        return {}
+    if len({r.variante_kt for r in resultados}) > 1:
+        raise ValueError("banda_carro recebe uma variante de KT só; separe 'a' e 'b' antes "
+                         "(escolher_pressao faz isso)")
+    if len({r.pressao_psi for r in resultados}) != len(resultados):
+        raise ValueError("pressões repetidas nos resultados")
+    por_p = {r.pressao_psi: r for r in resultados}
+    loo = tp.erro_loo({p: getattr(r, grandeza) for p, r in por_p.items()})
+    internas: dict[float, Banda] = {}
+    for p, r in por_p.items():
+        if p in loo:
+            res = r.resolucao_ms2 or 0.0
+            internas[p] = Banda(max(abs(loo[p].erro), res), True,
+                                {"loo": abs(loo[p].erro), "resolucao_ms2": res}, _ROT_BANDA)
+        else:
+            internas[p] = Banda(None, True, {}, _ROT_INDISP)
+    return _bandas_com_extremos(internas, loo, list(por_p))
+
+
+def banda_pneu(valores: Mapping[float, float], assimetria: Mapping[float, float] | None) -> dict[float, Banda]:
+    """Banda por pressão de uma métrica do pneu: nó interno = max(|LOO|, assimetria ±α, PISO_NUMERICO_REL·|X|).
+    `assimetria` None = componente ausente e declarado (não se aplica ao Cα)."""
+    loo = tp.erro_loo(valores)
+    internas: dict[float, Banda] = {}
+    for p, x in valores.items():
+        if p not in loo:
+            continue
+        comp = {"loo": abs(loo[p].erro), "piso_numerico": PISO_NUMERICO_REL * abs(x)}
+        rot = _ROT_BANDA
+        if assimetria is None:
+            rot += "; " + _ROT_SEM_ASSIM
+        elif p in assimetria:
+            comp["assimetria"] = abs(assimetria[p])
+        internas[p] = Banda(max(comp.values()), True, comp, rot)
+    return _bandas_com_extremos(internas, loo, list(valores))
+
+
+@dataclass(frozen=True)
+class Veredito:
+    melhor: float | None
+    indistinguiveis: tuple[float, ...]
+    nao_decidiveis: Mapping[float, str]
+    desfecho: str
+    valores: Mapping[float, float | None]
+    bandas: Mapping[float, Banda]
+
+
+def _ps(ps: Sequence[float]) -> str:
+    return ", ".join(f"{p:.3g}" for p in ps)
+
+
+def decidir(valores: Mapping[float, float | None], bandas: Mapping[float, Banda],
+            nao_decidiveis: Mapping[float, str]) -> Veredito:
+    """Regra simétrica da spec §8, sentido "máximo".
+
+    1. Não decidível: valor None, pressão em `nao_decidiveis` (ex.: borda de α) ou banda indisponível. Fica
+       listada com o motivo; não é excluída.
+    2. Entre as decidíveis, x* = maior valor; indistinguíveis = {q : |x* − x_q| ≤ max(banda_x*, banda_q)}.
+    3. melhor = x* só se indistinguíveis == {x*}, a banda de x* é medida (8 e 14 psi nunca sozinhas) e não há
+       pressão não decidível (com pico na borda o valor é limitante inferior e ela pode superar x*).
+    """
+    nd: dict[float, str] = dict(nao_decidiveis)
+    for p, v in valores.items():
+        if p in nd:
+            continue
+        b = bandas.get(p)
+        if v is None:
+            nd[p] = "valor N/A"
+        elif b is None or b.valor is None:
+            nd[p] = _ROT_INDISP
+    dec = {p: v for p, v in valores.items() if p not in nd and v is not None}
+
+    def pronto(melhor, indist, desfecho):
+        return Veredito(melhor, tuple(indist), nd, desfecho, dict(valores), dict(bandas))
+
+    if not dec:
+        return pronto(None, (), "nenhuma pressão decidível")
+    p_star = max(dec, key=lambda p: dec[p])
+    b_star = bandas[p_star].valor
+    indist = sorted(q for q in dec if abs(dec[p_star] - dec[q]) <= max(b_star, bandas[q].valor))
+    sufixo = f"; não decidíveis: {_ps(sorted(nd))} psi" if nd else ""
+    if indist == [p_star]:
+        if nd:
+            return pronto(None, indist, f"veredito suspenso: {_ps(sorted(nd))} psi não decidível")
+        if not bandas[p_star].medida:
+            return pronto(None, indist, f"extremo sem banda medida: {p_star:.3g} psi "
+                                        "não é declarada a melhor sozinha")
+        return pronto(p_star, indist, f"melhor: {p_star:.3g} psi")
+    if len(indist) == len(dec):
+        return pronto(None, indist, "todas indistinguíveis" + sufixo)
+    return pronto(None, indist, f"indistinguíveis: {_ps(indist)} psi" + sufixo)
+
+
+@dataclass(frozen=True)
+class Escolha:
+    criterio: str
+    sentido: str
+    vereditos: Mapping[str, Veredito]
+    veredito_muda_com_kt: bool | None
+    rotulos: tuple[str, ...]
+
+
+def _motivo_na(r: ResultadoCarro) -> str:
+    par = r.par or {}
+    if par.get("pior") is not None:
+        res = par[par["pior"] if par["pior"] != "empate" else "esquerda"]
+        if getattr(res, "motivo", None):
+            return res.motivo
+    return f"a_y_lim N/A ({r.veredito})"
+
+
+def _assinatura(v: Veredito) -> tuple:
+    return (v.melhor, v.indistinguiveis, tuple(sorted(v.nao_decidiveis)))
+
+
+def escolher_pressao(criterio: str, *, resultados_carro: Sequence[ResultadoCarro] | None = None,
+                     family: ts.StaticTireFamily | None = None,
+                     fz_estatica_eixo_n: Mapping[str, float] | None = None,
+                     camber_eixo_rad: Mapping[str, float] | None = None) -> Escolha:
+    """Escolha da pressão por um critério explícito de lista fechada (spec §8); sem ranking que misture critérios.
+
+    `a_y_lim`: um Veredito por variante de KT presente ("KT (a)", "KT (b)"), e `veredito_muda_com_kt` quando as
+    duas existem (muda se o melhor, o conjunto indistinguível ou o conjunto não decidível diferem).
+    `C_alpha_operacao`: um por eixo ("eixo F", "eixo R"), Cα de `metricas_pneu` na Fz estática do eixo (limitada ao
+    teto comum, com rótulo) e no camber estático do eixo; `veredito_muda_com_kt` = None.
+    """
+    if criterio in CRITERIOS_TBD:
+        raise ValueError(f"critério {criterio!r}: meta TBD (sem alvo definido na ficha); só se escolhe por "
+                         f"{', '.join(CRITERIOS)}")
+    if criterio not in CRITERIOS:
+        raise ValueError(f"critério {criterio!r} fora da lista fechada: {', '.join(CRITERIOS)}")
+    sentido = CRITERIOS[criterio]
+    rotulos = ROTULOS_FIXOS + (_ROT_BANDA,)
+    vereditos: dict[str, Veredito] = {}
+    muda: bool | None = None
+    if criterio == "a_y_lim":
+        if not resultados_carro:
+            raise ValueError("a_y_lim pede resultados_carro (saída de comparar_carro)")
+        for var in sorted({r.variante_kt for r in resultados_carro}):
+            rs = [r for r in resultados_carro if r.variante_kt == var]
+            nd: dict[float, str] = {}
+            for r in rs:
+                if r.ay_lim_ms2 is None:
+                    nd[r.pressao_psi] = _motivo_na(r)
+                elif r.borda_alfa:
+                    nd[r.pressao_psi] = _MOTIVO_BORDA
+            vereditos[f"KT ({var})"] = decidir({r.pressao_psi: r.ay_lim_ms2 for r in rs}, banda_carro(rs), nd)
+        if len(vereditos) == 2:
+            a, b = (vereditos[k] for k in sorted(vereditos))
+            muda = _assinatura(a) != _assinatura(b)
+    else:
+        if family is None or fz_estatica_eixo_n is None or camber_eixo_rad is None:
+            raise ValueError("C_alpha_operacao pede family, fz_estatica_eixo_n e camber_eixo_rad")
+        teto = tp.teto_comum_fz(family)
+        for eixo in ("F", "R"):
+            fz = float(fz_estatica_eixo_n[eixo])
+            fz_uso = min(fz, teto)
+            if fz > teto:
+                rotulos += (f"eixo {eixo}: Fz estática {fz:g} N acima do teto comum, Cα avaliado em {teto:.0f} N",)
+            vals = {}
+            for q in family.pressures_psi:
+                prof = family.profiles[q]
+                vals[q] = tp.metricas_pneu(tp.avaliador_perfil(prof), tp.faixa_do_perfil(prof), fz_n=fz_uso,
+                                           camber_rad=float(camber_eixo_rad[eixo])).c_alpha_n_rad
+            vereditos[f"eixo {eixo}"] = decidir(vals, banda_pneu(vals, None), {})
+    return Escolha(criterio, sentido, vereditos, muda, rotulos)
