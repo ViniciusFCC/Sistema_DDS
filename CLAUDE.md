@@ -47,15 +47,27 @@ Foco declarado: completar a planilha (EDR-019).
   `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`): `python/mmm.py` (MMM em raio fixo), `python/escada.py`
   (escada de hipóteses) e `tools/relatorio_escada.py`. Código e testes prontos; o relatório `docs/inc6/escada-hipoteses.md`
   agora roda com os dois R provisórios da 7a (9,125 m na linha central e 8,385 m rente aos cones). Nos dois, nenhum eixo satura até 2 g e todas as linhas dão N/A, com o Ackermann e a h9 desligados; por isso ele não dá base para a tolerância do EDR-065, que precisa de outro caso (Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.
-  EDR-064 IMPLEMENTED (VERIFIED depois da suíte inteira); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
+  EDR-064 VERIFIED (suíte única do inc. 8, 2026-11-11); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
   (item 3: só não inverter o veredito; o valor da tolerância fica a confirmar com o T11) e EDR-066 (achados sobre Ackermann e
   Fx exigido) está APPROVED e IMPLEMENTED na V4.3.
 - V4.3 (incremento 7, partes 7a e 7b; PRs #32 e #34 mesclados em 2026-11-09; tag `v4.3` no merge f7862de; EDR-065 itens 2 e 3,
-  EDR-066, EDR-068 e EDR-069). Desde 2026-11-09 a **planilha viva da equipe é a cópia da V4.3** no Drive
-  (`Planilha DDS\FSAE_EV_Suspension_Fase1_V4_3.xlsx`, SHA igual ao da tag `v4.3`; `conferir_viva` código 0), com o LEIA-ME, os
-  registros de versões V4.2 e V4.3 e o EDR em .docx de 2026-11-09 em `Documentacao\` (os da V4.1 em `Documentacao\_anteriores\`). A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
+  EDR-066, EDR-068 e EDR-069). A troca da viva para a V4.3 (2026-11-09) **nunca chegou ao Drive**: a cota Google do usuário estava
+  cheia e o Drive para desktop guardou os arquivos no `lost_and_found` local (SHA igual ao da tag, sem dados da equipe). A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
   aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Suíte inteira no Excel em 2026-11-09 (commit e94abf0): todos PASS, 2 PULADO (`test_escada`, `test_v4_3`). Revisão final feita
   (pronta para PR); minors adiados no PR #34 (pendências).
+- V4.4 (incremento 8; PR #37 mesclado em 2026-11-11; tag `v4.4` no merge 79a8a33; spec e plano em `docs/superpowers/`; EDR-070 e EDR-064
+  VERIFIED na suíte única de 2026-11-11): a parte 8a tratou as pendências do inc. 7 e a 8b gerou a **V4.4** (fundação parte 2,
+  2026-11-09): as fórmulas das abas 03 a 14 leem por nome toda célula única, com valores iguais aos da V4.3. A V4.4 de referência é
+  `excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx` (146373 fórmulas, 29 abas, 1290 nomes: os 1266 da V4.3 e 24 de `data/nomes_V4_4.csv`;
+  `docs/registro-de-versoes-V4_4.md`). Mudam 428 células da V4.3: 422 fórmulas reescritas pela regra e 6 das exceções X2 a X5
+  (16_EQUILIBRIO F188, limitação do K do EDR-066; 14_DASHBOARD B48; 00_README A3; 15_CHANGELOG A24:C24). Desde 2026-11-11 a
+  **planilha viva da equipe é a cópia da V4.4** no Drive (`Planilha DDS\FSAE_EV_Suspension_Fase1_V4_4.xlsx`, SHA igual ao da tag
+  `v4.4`; `conferir_viva` código 0), com o LEIA-ME, o registro de versões V4.4 e o EDR em .docx de 2026-11-11 em `Documentacao\`.
+  Diretriz do usuário (2026-11-11): o Drive fica só com a versão atual, sem `_anteriores`; as anteriores estão nas tags. Depois de
+  gravar no Drive, confira no navegador (drive.google.com), não só em `H:`. Suíte única feita (2026-11-10 e 11; logs `docs/migracao/verificacao-inc8-*.md`): todos os itens PASS menos o
+  `test_workbook_v4_3`, que no Excel estourou os 1800 s (refeito sozinho com 7200 s: 3/3) e no LibreOffice sai com código 3 porque o
+  TC-WB43-005 só roda no Excel (003 e 004 refeitos no LibreOffice: 2/2; correção do teste e do executor é pendência). Revisão final
+  feita; pendências (minors das revisões) na descrição do PR #37.
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
@@ -69,11 +81,11 @@ Foco declarado: completar a planilha (EDR-019).
   nunca regrave os logs existentes. Um teste só: `uv run python -X utf8 tests/<script>.py`. Os testes são
   scripts com `check()`, não pytest: "passou" = a linha final `N PASS, 0 FAIL, de T
   testes` com N igual ao esperado.
-- Esperado na V4.3 (as contagens da V4.2 continuam valendo): pneu 43, oráculos 5, pneu estático 87 (`tests/test_tire_static.py`, EDR-067; precisa dos `.tir` do TTC Round 6, fora do Git, em `references/ttc/` ou em `DDS_TTC_DIR`; sem eles sai NÃO EXECUTÁVEL), pneu com pressão 109 (`tests/test_tire_pressure.py`, EDR-071; mesmos `.tir`), suspensão 54, cinemática 76, hardpoints 35,
-  equilíbrio 28, equilíbrio linear 18 (incrementos 1 e 2), V4.0 nomes e dados 4 (`tests/test_v4_0.py`, incremento 3), V4.1 estrutura e CA-07 2 (`tests/test_v4_1.py`, TC-WB41-001 e 002), V4.2 estrutura, CA-07, oráculo das metas e fluxo da viva 4 (`tests/test_v4_2.py`, TC-WB42-001 a 004), MMM 11 (`tests/test_mmm.py`, TC-MMM-001 a 011), executor dos testes 1 (`tests/test_executor.py`, TC-RUN-001), skidpad 2 (`tests/test_skidpad.py`, TC-SKP-001 e 002), formas v43 4 (`tests/test_formas_v43.py`, TC-ACK-001/002 e TC-FXI-001/002), estudo do NEUTRO 2 (`tests/test_neutro.py`, TC-NEU-001 e 002), V4.3 estrutura, CA-07 e migração 3 (`tests/test_v4_3.py`, TC-WB43-001, 002 e 006), escada 3 (`tests/test_escada.py`, TC-ESC-001 a 003, ~6 min), mutação 25/25 do pneu, 6/6 do equilíbrio e 5/5 da planilha do equilíbrio (`tests/mutation_planilha_equilibrio.py`, só Excel, minutos), 5/5 do MMM (`tests/mutation_mmm.py`, ~20 min), 5/5 do inc. 7 (`tests/mutation_inc7.py`), 4/4 da planilha V4.3 (`tests/mutation_planilha_v43.py`, Excel, tempo a confirmar na suíte), autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença; V4.0 regenerada da tag `v3.0` com as mesmas 387 fórmulas e os 698 nomes, 0 diferença; V4.1 regenerada da tag `v4.0` com 117569 fórmulas e os 1145 nomes, 0 diferença; V4.2 regenerada da tag `v4.1` com 117627 fórmulas e 1225 nomes definidos no arquivo: 1220 da tabela de nomes (698 + 447 + 75) mais `Origens` e as 4 `Lista_*`, 0 diferença contra `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx`. O CA-07 da V3.0 de `excel/` passa a ser por SHA-256 igual ao da tag `v3.0` (EDR-063). A seção informativa da viva só lê cópia local, nunca a viva do Drive.
+- Esperado na V4.4 (as contagens da V4.3 continuam valendo): pneu 43, oráculos 5, pneu estático 87 (`tests/test_tire_static.py`, EDR-067; precisa dos `.tir` do TTC Round 6, fora do Git, em `references/ttc/` ou em `DDS_TTC_DIR`; sem eles sai NÃO EXECUTÁVEL), pneu com pressão 109 (`tests/test_tire_pressure.py`, EDR-071; mesmos `.tir`), suspensão 54, cinemática 76, hardpoints 35,
+  equilíbrio 28, equilíbrio linear 18 (incrementos 1 e 2), V4.0 nomes e dados 4 (`tests/test_v4_0.py`, incremento 3), V4.1 estrutura e CA-07 2 (`tests/test_v4_1.py`, TC-WB41-001 e 002), V4.2 estrutura, CA-07, oráculo das metas e fluxo da viva 4 (`tests/test_v4_2.py`, TC-WB42-001 a 004), MMM 11 (`tests/test_mmm.py`, TC-MMM-001 a 011), executor dos testes 1 (`tests/test_executor.py`, TC-RUN-001), skidpad 2 (`tests/test_skidpad.py`, TC-SKP-001 e 002), formas v43 4 (`tests/test_formas_v43.py`, TC-ACK-001/002 e TC-FXI-001/002), estudo do NEUTRO 2 (`tests/test_neutro.py`, TC-NEU-001 e 002), V4.3 estrutura, CA-07 e migração 3 (`tests/test_v4_3.py`, TC-WB43-001, 002 e 006), V4.4 regeneração, regra, invariante e migração 4 (`tests/test_v4_4.py`, TC-WB44-001 a 004), escada 3 (`tests/test_escada.py`, TC-ESC-001 a 003, ~6 min), mutação 25/25 do pneu, 6/6 do equilíbrio e 5/5 da planilha do equilíbrio (`tests/mutation_planilha_equilibrio.py`, só Excel, minutos), 5/5 do MMM (`tests/mutation_mmm.py`, ~20 min), 5/5 do inc. 7 (`tests/mutation_inc7.py`), 4/4 da planilha V4.3 (`tests/mutation_planilha_v43.py`, Excel, tempo a confirmar na suíte), 4/4 da planilha V4.4 (`tests/mutation_planilha_v44.py`, Excel, ~15 min), autoteste do comparador 15/15; V2.4 regenerada com 347 fórmulas e V3.0 com 387 (356 + 6 da 1ª rodada de feedback, EDR-050, + 19 da 2ª rodada da revisão metodológica, pior origem no 14_DASHBOARD, + 6 de direção, EDR-052), as duas com 0 diferença; V4.0 regenerada da tag `v3.0` com as mesmas 387 fórmulas e os 698 nomes, 0 diferença; V4.1 regenerada da tag `v4.0` com 117569 fórmulas e os 1145 nomes, 0 diferença; V4.2 regenerada da tag `v4.1` com 117627 fórmulas e 1225 nomes definidos no arquivo: 1220 da tabela de nomes (698 + 447 + 75) mais `Origens` e as 4 `Lista_*`, 0 diferença contra `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx`. O CA-07 da V3.0 de `excel/` passa a ser por SHA-256 igual ao da tag `v3.0` (EDR-063). A seção informativa da viva só lê cópia local, nunca a viva do Drive.
   `tests/test_workbook.py` 19/19 (pneu) e `tests/test_workbook_suspensao.py` 15/15 (suspensão),
   ambos na V3.0 de referência (arquivo da tag `v3.0`; antes da tag, o da árvore), e `tests/test_workbook_v4_0.py` 2/2
-  (V4.0 de `excel/`) e `tests/test_workbook_v4_1.py` 5/5 (V4.1 de `excel/`; TC-WB41-003 a 006) e `tests/test_workbook_v4_2.py` 2/2 (V4.2 de `excel/`; TC-WB42-005 e 006) e `tests/test_workbook_v4_3.py` 3/3 (V4.3 de `excel/`; TC-WB43-003 a 005): recalculam cópias pelo Excel via COM ou, sem Excel, pelo
+  (V4.0 de `excel/`) e `tests/test_workbook_v4_1.py` 5/5 (V4.1 de `excel/`; TC-WB41-003 a 006) e `tests/test_workbook_v4_2.py` 2/2 (V4.2 de `excel/`; TC-WB42-005 e 006) e `tests/test_workbook_v4_3.py` 3/3 (V4.3 de `excel/`; TC-WB43-003 a 005) e `tests/test_workbook_v4_4.py` 5/5 (V4.4 de `excel/`; TC-WB44-005 e 006 e 3 checagens de apoio; 61 casos, média de 66,1 s por caso no Excel; tempo total medido no Excel: 4307 s, máximo de 89,0 s por caso): recalculam cópias pelo Excel via COM ou, sem Excel, pelo
   LibreOffice (EDR-044; `DDS_RECALC=excel|libreoffice` força um). Sem nenhum dos dois eles
   saem NÃO EXECUTÁVEL, que nunca conta como aprovado.
 - Planilha V3.0, **fechada em 2026-10-20** (EDR-051). `excel/FSAE_EV_Suspension_Fase1_V3_0.xlsx`
@@ -112,6 +124,20 @@ Foco declarado: completar a planilha (EDR-019).
   `tools/migrar_viva.py VIVA --para REF_NOVA.xlsx` (leva os dados à versão nova por nome; conflito listado, nunca
   sobrescrito); `tools/medir_recalculo.py` (tempo de recálculo da V4.1 no Excel, em cópia). A viva do Drive é seção informativa
   do log da suíte, fora do resumo.
+- V4.3 (EDR-065 itens 2 e 3, EDR-066, EDR-068 e EDR-069): `python/gerar_v4_3.py` gera a V4.3 da tag `v4.2` em `build/` (nunca em
+  `excel/`; a cópia para `excel/` é um commit próprio). A aba `24_CURVA` sai de `python/aba_curva.py`. Testes: `tests/test_v4_3.py`
+  (TC-WB43-001, 002 e 006) e `tests/test_workbook_v4_3.py` (TC-WB43-003 a 005, Excel via COM ou LibreOffice). V4.3 regenerada da tag
+  `v4.2` com 146373 fórmulas e 1266 nomes, 0 diferença contra `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx`. A troca da viva segue o
+  fluxo da V4.2: `tools/conferir_viva.py` (código 0) antes de tudo e `tools/migrar_viva.py VIVA --para REF_NOVA.xlsx` para levar os
+  dados por nome (conflito listado, nunca sobrescrito); a viva do Drive só é lida por cópia.
+- V4.4 (EDR-070; EDR-066 item 5): `python/gerar_v4_4.py` gera a V4.4 da tag `v4.3` em `build/` (nunca em `excel/`; a cópia para `excel/`
+  é um commit próprio), com a regra da troca de `python/reescrita_nomes.py`, os nomes de `data/nomes_V4_4.csv` (`python/nomes_v4_4.py`) e
+  o catálogo `docs/registro-de-versoes-V4_4-celulas.md` (gerado, nunca editado à mão). V4.4 regenerada da tag `v4.3` com 146373 fórmulas e
+  1290 nomes, 0 diferença contra `excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx`. Testes: `tests/test_v4_4.py` (TC-WB44-001 a 004) e
+  `tests/test_workbook_v4_4.py` (TC-WB44-005, equivalência por valor com tolerância zero, e TC-WB44-006, cobertura de ramos; Excel via COM
+  ou LibreOffice; limite do item 7200 s). Os casos perturbados são sintéticos de teste, nunca dado do carro. Com `DDS_CASOS44` o
+  TC-WB44-006 sai PULADO, que nunca conta como PASS. A V3.0 a V4.3 mantêm o CA-07 como está; a V4.5 volta ao CA-07 por texto, contra a V4.4.
+  Antes de qualquer troca da viva: `tools/conferir_viva.py` (código 0) e `tools/migrar_viva.py VIVA --para REF_NOVA.xlsx`.
 - `tools/rodar_testes.py --pular-recentes ARQ` (ARQ é um JSON `{"tests/x.py": "<commit>"}`, com o commit em que o teste passou): pula o item cujo conjunto conferido não mudou desde esse commit, nem na árvore de trabalho: o script, os imports locais transitivos (python/, tests/ e tools/, por ast; sem import relativo, de pacote ou dinâmico) e as entradas declaradas do item em `DEPENDENCIAS` (módulos e testes que a mutação abre por caminho, planilhas de `excel/` e dados). Arquivo novo ou não rastreado no conjunto impede o pulo; chave do JSON sem item gera aviso. O item aparece como `PULADO (passou em <commit>; código sem mudança)`, nunca conta como PASS e tem contagem própria; ficam fora da conferência o `.tir` do TTC (não versionado), o que o script lê sem declarar e o ambiente. Sem a opção, nada muda. Para valer como verificação, rode a suíte inteira sem a opção.
 - Rode os testes afetados antes de dizer que uma tarefa terminou.
 

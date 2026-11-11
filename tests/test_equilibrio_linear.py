@@ -273,14 +273,15 @@ for rotulo, extra in EXTRAS_034:
 # Forma V4.3 do Ackermann (EDR-066; α_0, C_α, deslocamento e inclinação na mesma forma): mesma igualdade, mesma tolerância
 for rot_g, ganho in (("sem ganho", {c: 0.0 for c in eq.CANTOS}), ("ganho de teste", GANHO_TESTE)):
     rel34, p34, d34 = _comparar_034(ds, ganho, eq.FORMAS_V43, raio_m=8.0, ackermann_pct=100.0)
+    erro_abs34 = None
     if rel34 is not None and p34.k_camber != 0.0:
-        # com o ganho de teste as parcelas se cancelam (soma 3e-2 do maior termo): o erro relativo à soma sobe a 4,1e-3
-        # com o mesmo erro absoluto (~5e-6 °/g); a tolerância é então 1e-3 do maior termo (medido nesta correção)
-        maior = max(abs(p34.k_pneus), abs(p34.k_deslocamento), abs(p34.k_camber))
+        # com o ganho de teste as parcelas se cancelam (a soma é uma fração pequena do maior termo): o erro relativo à
+        # soma sobe a 4,1e-3 (medido) com erro absoluto de 1,8e-6 °/g; aqui o critério é o erro absoluto, <= 1e-5 °/g
+        # (A5, aprovado pelo usuário)
         soma34 = p34.k_pneus + p34.k_deslocamento + p34.k_camber
-        rel34 = rel34 * abs(soma34) / maior
-        d34 += f" (relativo ao maior termo: {rel34:.2e})"
-    ok_034.append(rel34 is not None and rel34 < 1e-3)
+        erro_abs34 = el.para_graus_por_g(rel34 * abs(soma34))
+        d34 += f" (relativo à soma: {rel34:.2e}; erro absoluto: {erro_abs34:.2e} °/g)"
+    ok_034.append(rel34 is not None and (rel34 < 1e-3 if erro_abs34 is None else erro_abs34 <= 1e-5))
     det_034.append(f"FORMAS_V43, R = 8,0 m e Ackermann 100 % (teste), {rot_g}: {d34}")
 # Registro (não decide o check): no ds0 (sem PHY/PVY/RHY, só de teste) o deslocamento do pneu some.
 _, p34_0, d34_0 = _comparar_034(ds0, {c: 0.0 for c in eq.CANTOS})

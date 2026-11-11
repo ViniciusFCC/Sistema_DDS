@@ -72,8 +72,7 @@ def _recusar(caminho_v42: Path, saida: Path) -> None:
 
 
 def aplicar(wb, alteracoes: list[dict]) -> list[dict]:
-    """Grava `alteracoes` em `wb` (cada "antes" tem de bater com a célula) e devolve o registro (cópia das "
-    "alterações)."""
+    """Grava `alteracoes` em `wb` (cada "antes" tem de bater com a célula) e devolve o registro (cópia das alterações)."""
     registro = []
     for alt in alteracoes:
         c = wb[alt["aba"]][alt["cel"]]

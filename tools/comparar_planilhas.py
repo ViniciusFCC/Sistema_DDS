@@ -43,6 +43,9 @@ ENTREGUE_XLSX_V43 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_3.xlsx"
 # 14_DASHBOARD: 3). Constante fixa, de propósito.
 FORMULAS_ESPERADAS_V43 = 146373   # 117627 + 28746
 
+ENTREGUE_XLSX_V44 = RAIZ / "excel" / "FSAE_EV_Suspension_Fase1_V4_4.xlsx"
+FORMULAS_ESPERADAS_V44 = 146373   # = V4.3: a V4.4 só troca operandos (EDR-070)
+
 
 def _formula(v) -> str | None:
     """Texto da fórmula da célula, ou None se a célula não tiver fórmula."""
