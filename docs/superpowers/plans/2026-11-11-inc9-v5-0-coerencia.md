@@ -22,6 +22,9 @@ C1 a C10, vale sobre o resto). Entrada: `docs/passagem-2026-11-11.md`.
 
 ## Itens para a aprovação do usuário (antes da execução)
 
+**Aprovação (usuário, 2026-11-11): A1 a A3 aprovados como estão.** D1 a D4 não foram revertidas. Os IDs da A2 estão
+autorizados; os SUS continuam para o Task 15. Cada download da A3 ainda pede o "sim" na hora (nome, fonte, tamanho).
+
 O plano só é executado depois que o usuário aprova A1 a A3. As decisões D1 a D4 são do controlador e ficam registradas
 para o usuário saber; qualquer uma pode ser revertida na aprovação.
 
