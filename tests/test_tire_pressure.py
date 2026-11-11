@@ -675,6 +675,11 @@ def bandas_todas(v_int, v_ext=1.0):
     return {P8: B(v_ext, False), P10: B(v_int), P12: B(v_int), P14: B(v_ext, False)}
 
 
+def bandas_medidas(v_int, v_ext=1.0):
+    """Hipotética (fixture): extremos com banda medida; só para exercitar o desfecho 'melhor' sem não resolvidas."""
+    return {P8: B(v_ext), P10: B(v_int), P12: B(v_int), P14: B(v_ext)}
+
+
 def rc(p, var, ay, borda=False, veredito="PUSH", res=0.01):
     """ResultadoCarro sintético: par={} e caso=None (escolher_pressao só lê par se ay_lim_ms2 for None)."""
     return cp.ResultadoCarro(pressao_psi=p, variante_kt=var, ay_lim_ms2=ay, sentido_pior="esquerda",
@@ -686,8 +691,8 @@ def serie(var, ays, bordas=()):
     return [rc(p, var, a, borda=(p in bordas)) for p, a in zip(NOS, ays, strict=True)]
 
 
-v_a = cp.decidir({P8: 10.0, P10: 20.0, P12: 12.0, P14: 11.0}, bandas_todas(1.0), {})
-check("TC-TIRE-022a: veredito: máximo isolado em nó interno com banda medida -> melhor == P10, desfecho 'melhor'",
+v_a = cp.decidir({P8: 10.0, P10: 20.0, P12: 12.0, P14: 11.0}, bandas_medidas(1.0), {})
+check("TC-TIRE-022a: veredito (bandas hipotéticas todas medidas): máximo isolado em nó interno com banda medida -> melhor == P10, desfecho 'melhor'",
       v_a.melhor == P10 and v_a.indistinguiveis == (P10,) and not v_a.nao_decidiveis
       and v_a.desfecho.startswith("melhor"), v_a.desfecho)
 
@@ -701,9 +706,9 @@ check("TC-TIRE-022c: empate total -> 'todas indistinguíveis', melhor None, os q
       v_c.melhor is None and v_c.indistinguiveis == NOS and v_c.desfecho == "todas indistinguíveis", v_c.desfecho)
 
 val_d = {P8: 5.0, P10: 20.0, P12: 19.5, P14: 5.0}
-d1 = cp.decidir(val_d, {**bandas_todas(1.0), P10: B(0.2), P12: B(1.0)}, {})
-d2 = cp.decidir(val_d, {**bandas_todas(1.0), P10: B(1.0), P12: B(0.2)}, {})
-d3 = cp.decidir(val_d, {**bandas_todas(1.0), P10: B(0.2), P12: B(0.2)}, {})   # |20 - 19.5| > 0.2: distinguíveis
+d1 = cp.decidir(val_d, {**bandas_medidas(1.0), P10: B(0.2), P12: B(1.0)}, {})
+d2 = cp.decidir(val_d, {**bandas_medidas(1.0), P10: B(1.0), P12: B(0.2)}, {})
+d3 = cp.decidir(val_d, {**bandas_medidas(1.0), P10: B(0.2), P12: B(0.2)}, {})   # |20 - 19.5| > 0.2: distinguíveis
 check("TC-TIRE-022d: simetria: trocar as bandas de 10 e 12 (0,2 e 1 vs 1 e 0,2) não muda o conjunto (usa o max)",
       d1.indistinguiveis == d2.indistinguiveis == (P10, P12) and d1.melhor == d2.melhor is None
       and d3.indistinguiveis == (P10,) and d3.melhor == P10,
@@ -720,11 +725,23 @@ check("TC-TIRE-022e: borda: 14 psi com borda_alfa vai a nao_decidiveis com o mot
       and v_e2.desfecho.startswith("veredito suspenso") and v_e2.valores[P14] == 30.0,
       f"{ve.desfecho} | {v_e2.desfecho}")
 
-v_f = cp.decidir({P8: 20.0, P10: 10.0, P12: 9.0, P14: 8.0}, bandas_todas(1.0), {})
+v_f = cp.decidir({P8: 20.0, P10: 10.0, P12: 9.0, P14: 8.0}, {**bandas_todas(1.0), P14: B(1.0)}, {})   # 14 psi medida: sem não resolvidas
 check("TC-TIRE-022f: extremo (8 psi) com o maior valor, isolado, banda medida=False -> melhor None, "
       "'extremo sem banda medida'",
       v_f.melhor is None and v_f.indistinguiveis == (P8,) and v_f.desfecho.startswith("extremo sem banda medida"),
       v_f.desfecho)
+
+# Regra dos extremos (EDR-071 item 9.10): banda não medida é só limite inferior; diferença maior que ela não prova
+# que a pressão seja pior -> "não resolvida", nem indistinguível nem excluída. Banda de 8 e 14 psi = 1,0 (limite inferior).
+v_r1 = cp.decidir({P8: 5.0, P10: 20.0, P12: 19.5, P14: 12.0}, bandas_todas(1.0), {})
+v_r2 = cp.decidir({P8: 10.0, P10: 20.0, P12: 12.0, P14: 11.0}, bandas_todas(1.0), {})
+check("TC-TIRE-022m: extremo não medido com |Δ| > banda fica não resolvido (fora de indistinguiveis e sem 'fora do "
+      "conjunto'); x* sozinho com não resolvido -> 'veredito suspenso', melhor None",
+      v_r1.indistinguiveis == (P10, P12) and "8, 14 psi não resolvidos: banda só limite inferior" in v_r1.desfecho
+      and "fora do conjunto" not in v_r1.desfecho and v_r1.melhor is None
+      and v_r2.indistinguiveis == (P10,) and v_r2.melhor is None
+      and v_r2.desfecho.startswith("veredito suspenso") and "8, 14 psi não resolvido(s)" in v_r2.desfecho,
+      f"{v_r1.desfecho} | {v_r2.desfecho}")
 
 recusa("TC-TIRE-022g: escolher_pressao('K') -> ValueError 'meta TBD'",
        lambda: cp.escolher_pressao("K"), ValueError, "meta TBD")

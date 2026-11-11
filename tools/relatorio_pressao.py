@@ -455,9 +455,16 @@ def main() -> int:
     w("Critério explícito, lista fechada: a_y_lim (máximo) e C_alpha_operacao (máximo, na Fz estática por eixo, no "
       "camber estático do eixo). K, TARGET-006 e TARGET-007 só com alvo definido na ficha; hoje são TBD e o código "
       "recusa. Regra simétrica: A e B são indistinguíveis se |X_A − X_B| ≤ max(banda_A, banda_B). 8 e 14 psi: banda "
-      "não medida (maior banda interna, \"limite inferior\"); nunca declaradas melhores sozinhas. Pressão com pico "
+      "não medida (maior banda interna, \"limite inferior\"); nunca declaradas melhores sozinhas. Uma delas com "
+      "diferença maior que a banda fica \"não resolvida\" (banda só de limite inferior: a diferença não prova que "
+      "seja pior), nem indistinguível nem excluída, e suspende o veredito se x* ficaria sozinha. Pressão com pico "
       "na borda de α ou com valor/banda indisponível vira \"não decidível\", com o motivo. \"Todas indistinguíveis\" "
       "é um desfecho válido. Banda é faixa heurística, não intervalo de confiança.")
+    w("")
+    w("A banda é heurística: o LOO de um nó interno cobre 4 psi e mede sobretudo a curvatura da resposta em pressão, "
+      "não o ruído de ensaio nem a repetibilidade do TTC; por isso ela é maior perto do ótimo e puxa para "
+      "'indistinguíveis'. As pressões são as de ensaio do TTC, não a pressão fria de calibração da equipe; nenhuma "
+      "conclusão daqui vira ajuste de pressão sem a A3 (spec §12).")
     w("")
 
     def bloco(titulo: str, esc: cmp.Escolha, fmt) -> None:
@@ -560,7 +567,8 @@ def main() -> int:
                 "o caso é o demonstrativo T09/E03 com coeficientes de 12 psi como linha de base, não o T11",
                 "a robustez de λ supõe a mesma perda TTC→pista em todas as pressões (hipótese declarada)",
                 "a banda é heurística; o LOO do carro tem só dois nós internos (10 e 12 psi), e 8 e 14 psi usam a maior "
-                "banda interna (inclui resolução ou piso) como limite inferior",
+                "banda interna (inclui resolução ou piso) como limite inferior; a diferença que supera essa banda deixa a "
+                "pressão \"não resolvida\", não \"fora do conjunto\"",
                 "Cκ e μx: ajuste longitudinal mal condicionado; Cγ: sem informação de pressão na PDY3",
                 "pico na borda de α ou da faixa: valor é limitante inferior; a pressão vira \"não decidível\"",
                 f"grade do equilíbrio: ay_max_g {GRADE['ay_max_g']}, passo_g {GRADE['passo_g']}, n_alfa "
