@@ -312,12 +312,14 @@ def casos_perturbados(caso: eq.CasoEquilibrio) -> dict:
 # Tabelas do estudo (Markdown)
 # ---------------------------------------------------------------------------
 
-def caso_base_sintetico():
+def caso_base_sintetico(raiz: Path | None = None):
     """Caso V4.2 SINTÉTICO do estudo: veiculo_base de tests/test_escada.py, pneu provisório do TTC com LMUY = 0,5
-    (escala de teste), R = 8,5 m, downforce 400 N com 45 % na frente. Nada disto é dado do carro."""
+    (escala de teste), R = 8,5 m, downforce 400 N com 45 % na frente. Nada disto é dado do carro. Único caso-base
+    do estudo e dos testes (test_neutro e test_escada o importam). raiz: raiz do repositório, de onde sai o .tir
+    (padrão: a deste arquivo; os testes de mutação rodam uma cópia do módulo fora do repositório e passam a raiz)."""
     import tire_model as tm
     from suspension_model import VehicleConfig
-    raiz = Path(__file__).resolve().parent.parent
+    raiz = Path(__file__).resolve().parent.parent if raiz is None else Path(raiz)
     cfg = VehicleConfig(mass_total=250.0, cg_height=0.300, wheelbase=1.550, track_front=1.200, track_rear=1.150,
                         cg_to_front=0.837, cg_to_rear=0.713, unsprung_mass_front=15.0, unsprung_mass_rear=18.0,
                         unsprung_cg_height_front=0.230, unsprung_cg_height_rear=0.230, roll_center_front=0.030,
@@ -372,6 +374,11 @@ def tabela_margens(perto: dict, titulo: str) -> str:
     return "\n".join(L) + "\n"
 
 
+def _d3(c: Convergencia) -> float | None:
+    """d3 = |S_h/4 − S_h/8| [g] do eixo, ou None se faltar uma das duas saturações."""
+    return None if c.s[2] is None or c.s[3] is None else abs(c.s[2] - c.s[3])
+
+
 def tabela_perto(perto: dict, titulo: str = "### Tabela 7. Varredura de λ_f perto do neutro, sem refino [g] "
                  "(sintético)", xs: list | None = None) -> str:
     """Tabela 7: varredura de λ_f perto do neutro (sem refino), com a classe de cada veredito contra o sinal da h/8.
@@ -383,8 +390,8 @@ def tabela_perto(perto: dict, titulo: str = "### Tabela 7. Varredura de λ_f per
          "Classe: NEUTRO; \"certo\" ou \"ERRADO\" contra o sinal de Δ_h/8 (a h/8 não convergiu por completo). "
          "A alternativa 3 (refino) não foi calculada nesta varredura.\n",
          "| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) "
-         "| Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R |",
-         "|---|---|---|---|---|---|---|---|---|"]
+         "| Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R | d3_F / d3_R |",
+         "|---|---|---|---|---|---|---|---|---|---|"]
     erradas = {k: 0 for k in _ALTS}
     neutros = dict(erradas)
     for nome, r in perto.items():
@@ -400,7 +407,8 @@ def tabela_perto(perto: dict, titulo: str = "### Tabela 7. Varredura de λ_f per
             neutros[k] += c == "NEUTRO"
             return f"{_e(r['faixas'][k])} / {v} / {c}"
         L.append(f"| {nome} | {_f(r['delta'][0])} | {_f(d_ref)} | {real} | {cel('atual')} | {cel('alt1')} "
-                 f"| {cel('alt1_43')} | {cel('alt2')} | {_f(r['F'].p, '.2f')} / {_f(r['R'].p, '.2f')} |")
+                 f"| {cel('alt1_43')} | {cel('alt2')} | {_f(r['F'].p, '.2f')} / {_f(r['R'].p, '.2f')} "
+                 f"| {_e(_d3(r['F']))} / {_e(_d3(r['R']))} |")
     xs = [4.0 + 0.5 * k for k in range(len(perto))] if xs is None else xs
     rs = list(perto.values())
     x_h = _cruzamento(xs, [r["delta"][0] for r in rs])

@@ -163,7 +163,7 @@ def _entradas_v43() -> set:
     return celulas_de_entrada_v43()
 
 
-# O número de fórmulas vem de tools/comparar_planilhas (FORMULAS_ESPERADAS_V41, _V42 e _V43): uma constante só.
+# O número de fórmulas vem de tools/comparar_planilhas (FORMULAS_ESPERADAS_V41, _V42, _V43 e _V44): uma constante só.
 REFERENCIAS: dict[str, Referencia] = {
     "V4.1": Referencia("V4.1", "v4.1", "excel/FSAE_EV_Suspension_Fase1_V4_1.xlsx", _entradas_v41,
                        (origens.TX_V41, origens.T09_V41, *origens.ORIGENS_V42[2:]), _cp.FORMULAS_ESPERADAS_V41),
@@ -171,6 +171,9 @@ REFERENCIAS: dict[str, Referencia] = {
                        origens.ORIGENS_V42, _cp.FORMULAS_ESPERADAS_V42, confere_edr=True),
     "V4.3": Referencia("V4.3", "v4.3", "excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx", _entradas_v43,
                        origens.ORIGENS_V42, _cp.FORMULAS_ESPERADAS_V43, confere_edr=True),
+    # A V4.4 só troca operandos por nomes: as entradas são as da V4.3 (nenhuma criada nem movida).
+    "V4.4": Referencia("V4.4", "v4.4", "excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx", _entradas_v43,
+                       origens.ORIGENS_V42, _cp.FORMULAS_ESPERADAS_V44, confere_edr=True),
 }
 # Troca de rótulos de Origem entre versões (a decisão 1 do EDR-062); a migração e a base dos conflitos usam o mesmo mapa.
 MAPAS_ROTULO: dict[tuple[str, str], dict[str, str]] = {("V4.1", "V4.2"): origens.MAPA_DADO_V41_V42}

@@ -391,7 +391,9 @@ def _rodada(caso, a, nome: str, texto_raio: str, obs_raio: str, aviso_raio) -> t
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--saida", type=Path, default=SAIDA_PADRAO)
+    ap.add_argument("--saida", type=Path, default=None,
+                    help="arquivo de saída (padrão: docs/inc6/escada-hipoteses.md; com --caso-sintetico, "
+                         "docs/inc6/escada-caso-sintetico.md)")
     ap.add_argument("--sobrescrever", action="store_true", help="regrava um relatório que já existe")
     ap.add_argument("--raio", type=float, default=None, help="raio R do skidpad [m], só para o caso deste relatório")
     ap.add_argument("--origem-raio", default=None, help="de onde vem o R (obrigatório com --raio)")
@@ -435,9 +437,13 @@ def main() -> int:
         if not a.metodo_raio and a.raio is None:
             print("RECUSADO: --caso-sintetico exige um R explícito (--metodo-raio ou --raio)", file=sys.stderr)
             return 2
-        if a.saida == SAIDA_PADRAO:
-            a.saida = SAIDA_SINTETICO
+    if a.saida is None:
+        a.saida = SAIDA_SINTETICO if a.caso_sintetico else SAIDA_PADRAO
     saida = a.saida if a.saida.is_absolute() else Path.cwd() / a.saida
+    if a.caso_sintetico and saida.resolve() == SAIDA_PADRAO.resolve():
+        print("RECUSADO: --caso-sintetico não grava em docs/inc6/escada-hipoteses.md (o relatório da planilha); "
+              "use docs/inc6/escada-caso-sintetico.md ou outro caminho", file=sys.stderr)
+        return 2
     if saida.exists() and not a.sobrescrever:
         print(f"RECUSADO: {saida} já existe (use --sobrescrever)", file=sys.stderr)
         return 2

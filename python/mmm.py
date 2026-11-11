@@ -374,7 +374,9 @@ def trim(caso: eq.CasoEquilibrio, hip: Hipoteses, ay_ms2: float, n_alfa: int = 4
     a_f, a_r = raiz["F"]["alfa_ref"], raiz["R"]["alfa_ref"]
     beta = a_r + cfg.cg_to_rear / R
     delta = beta + cfg.cg_to_front / R - a_f
-    alfa = alfa_rodas(caso, hip, beta, delta, {"F": a_f, "R": a_r})   # hip é desacoplada: alfa ∈ {planilha, eixo_traseiro}
+    # alfa_rodas recebe β, δ e as raízes α_ref por eixo (a_f, a_r): α_roda = α_ref do eixo + deriva_total (hip desacoplada:
+    # alfa ∈ {planilha, eixo_traseiro}; este último só muda o Ackermann da deriva, para a forma v43)
+    alfa = alfa_rodas(caso, hip, beta, delta, {"F": a_f, "R": a_r})
     fz = eq.cargas(caso, ay_ms2)
     cos_ref = math.cos(cfg.wheelbase / R)
     fx_exigido = eq.fx_exigido_traseira(caso, ay_ms2, formas=formas, n_alfa=n_alfa) if eq.tracao_ativa(caso) else 0.0

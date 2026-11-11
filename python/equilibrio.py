@@ -629,9 +629,10 @@ def fx_exigido_traseira(caso: CasoEquilibrio, ay_ms2: float, *, formas: Formas =
     dado dele (cda_m2; crr; raio_m para o termo da curva). 0 com a hipótese desligada.
     Forma v43 (EDR-066, spec §4.2): o termo da curva vira o arrasto induzido F_yf·|α_F| + F_yr·|α_R|, com os α de
     alfas_de_arrasto (n_alfa inteiro: réplica de grade, a da célula; None: réplica contínua). No balanço
-    F_yf·tan δ − m·a_y·tan β (fx_balanco_exato), com δ ≈ L/R + α_F − α_R e β ≈ b/R − α_R, os termos em b/R se
-    cancelam (o termo da v42 é a parte que se cancela) e sobra o arrasto induzido; a diferença é de 3ª ordem com α e
-    L/R da mesma ordem. Entra com a mesma condição do termo da v42 (tração ativa e raio_m). Exige a_y >= 0 (curva à
+    F_yf·tan δ − m·a_y·tan β (fx_balanco_exato, que usa δ e β exatos de cinematica_rigida: δ = atan2(L − C_x, C_y) +
+    α_F), a derivação de 1ª ordem (δ ≈ L/R + α_F − α_R, β ≈ b/R − α_R; só na dedução, o código não calcula δ aqui)
+    mostra que os termos em b/R se cancelam (o termo da v42, com δ_ref = L/R no argumento de tan, é a parte que se
+    cancela) e sobra o arrasto induzido; a diferença é de 3ª ordem com α e L/R da mesma ordem. Entra com a mesma condição do termo da v42 (tração ativa e raio_m). Exige a_y >= 0 (curva à
     esquerda; a direita é espelhar(caso)): com a_y < 0 dá ValueError, porque F_yf < 0 zeraria o termo. Curva dianteira inválida:
     devolve o motivo MSG_FX_SEM_FRENTE (str), em vez de um número (decisão D3). Omissão rotulada (spec §4.2):
     Σ F_yi·(δ_i − δ̄) por roda.
