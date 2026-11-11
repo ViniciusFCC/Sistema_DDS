@@ -269,7 +269,7 @@ def main() -> int:
             a2[q] = {"viz": (p_lo, p_hi), "erro": str(e)}
 
     # --- Diferenças fora de λ (o ds do caso vem da 10_TIRE) ---
-    difs = cmp.diferencas_fora_de_lambda(caso.ds, p12, teto)
+    difs = cmp.diferencas_fora_de_lambda(caso.ds, p12)
 
     # =============================== relatório ===============================
     md: list[str] = []
@@ -329,14 +329,17 @@ def main() -> int:
           f"{GRADE['ay_max_g']:g} g): não há Fz no a_y limite, e a grade traz só as Fz de a_y = 0.**")
         w("")
     w(f"Fz estática por pneu: eixo dianteiro {n(fz_estatica_eixo['F'], 0)} N, traseiro "
-      f"{n(fz_estatica_eixo['R'], 0)} N (carga do eixo dividida por 2, `equilibrio.cargas` em a_y = 0). "
+      f"{n(fz_estatica_eixo['R'], 0)} N (carga do eixo dividida por 2, `equilibrio.cargas` em a_y = 0, com a downforce do caso). "
       f"Camber estático médio: dianteiro {graus(cam_eixo['F'])}, traseiro {graus(cam_eixo['R'])}; γ avaliados: "
       + ", ".join(graus(g) for g in gamas) + ".")
     w("")
     w("Sinais: Cα = −∂Fy/∂α e Cγ = −∂Fy/∂γ; Cκ = +∂Fx/∂κ (no `.tir` Fx > 0 para κ > 0; a spec §6 escreve \"−∂Fx/∂κ\", "
       "e a troca de sinal está a confirmar). Asterisco no μ: pico na borda da faixa, \"limitante inferior, sem pico "
       "interior\". Cγ: μy(γ) sem informação de pressão (PDY3 = 2 nos quatro perfis). Cκ e μx: ajuste longitudinal "
-      "mal condicionado (PKX2/PKX3 instáveis). Assimetria ±α em parte física (conicidade e ply-steer).")
+      "mal condicionado (PKX2/PKX3 instáveis). Assimetria ±α em parte física (conicidade e ply-steer) e, com γ ≠ 0, inclui o empuxo de camber.")
+    w("")
+    w("Penalidade de transferência: não apresentada — ΔFz sem fonte (o 12 psi não tem a_y limite). A função está "
+      "implementada (TC-TIRE-015c), e o ΔFz vem de quem chama; nenhum valor é inventado aqui.")
     w("")
     for g in gamas:
         w(f"### 2.{gamas.index(g) + 1} γ = {graus(g)}")
@@ -423,7 +426,7 @@ def main() -> int:
                        "—" if r.resolucao_ms2 is None else n(r.resolucao_ms2 / sm.G, 4) + " g",
                        "sim" if r.borda_alfa else "não", rob])
     w("\n".join(tabela(["var.", "p [psi]", "a_y limite", "sentido pior", "eixo que satura", "veredito",
-                        "K [rad/(m/s²)]", "resolução", "borda de α", "robustez ao pneu"], linhas)))
+                        "K [rad/(m/s²)]", "resolução", "borda de α", "robustez ao pneu (sentido esquerdo)"], linhas)))
     w("")
     w("Rótulos do caso (variante a, 12 psi):")
     w("")
@@ -552,8 +555,8 @@ def main() -> int:
                 "Fy em α = 0 como no modelo (invertido pelo espelhamento nas rodas esquerdas)",
                 "o caso é o demonstrativo T09/E03 com coeficientes de 12 psi como linha de base, não o T11",
                 "a robustez de λ supõe a mesma perda TTC→pista em todas as pressões (hipótese declarada)",
-                "a banda é heurística; o LOO do carro tem só dois nós internos (10 e 12 psi), e 8 e 14 psi usam o maior "
-                "|LOO| interno como limite inferior",
+                "a banda é heurística; o LOO do carro tem só dois nós internos (10 e 12 psi), e 8 e 14 psi usam a maior "
+                "banda interna (inclui resolução ou piso) como limite inferior",
                 "Cκ e μx: ajuste longitudinal mal condicionado; Cγ: sem informação de pressão na PDY3",
                 "pico na borda de α ou da faixa: valor é limitante inferior; a pressão vira \"não decidível\"",
                 f"grade do equilíbrio: ay_max_g {GRADE['ay_max_g']}, passo_g {GRADE['passo_g']}, n_alfa "

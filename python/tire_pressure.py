@@ -339,7 +339,8 @@ def metricas_pneu(avaliador: Avaliador, faixa: Faixa, *, fz_n: float, camber_rad
 
     Sinais: Cα = −∂Fy/∂α; Cγ = −∂Fy/∂γ (como `rigidez_camber`). Cκ = +∂Fx/∂κ em κ = 0: no `.tir` Fx > 0 para
     κ > 0 (TC-TIRE-004b), então a rigidez longitudinal positiva é +∂Fx/∂κ. A spec §6 escreve "−∂Fx/∂κ", que dá
-    negativo com esta convenção; a troca de sinal é decisão do controlador, a confirmar com o usuário.
+    negativo com esta convenção; a troca de sinal é decisão do controlador, a confirmar com o usuário (EDR-071).
+    γ exatamente em CAMMIN ou CAMMAX é recusado (`TireRangeError`): a diferença central avalia γ ± h, fora da faixa.
     t0 = −(∂Mz/∂α)/(∂Fy/∂α) em α = 0 (spec §6, anexo)."""
     h = _base._H_RIGIDEZ
 
@@ -484,12 +485,12 @@ class Assimetria:
 
 def assimetria_alfa(metricas: MetricasPneu) -> Assimetria:
     """Assimetria ±α: diferença entre os picos de μy para α > 0 e α < 0, e Fy em α = 0 (já em `metricas`).
-    Em parte é física (conicidade e ply-steer), então não é só erro de ajuste."""
+    Em parte é física (conicidade e ply-steer) e, com γ ≠ 0, inclui o empuxo de camber; não é só erro de ajuste."""
     a, b = metricas.mu_y_pos.mu, metricas.mu_y_neg.mu
     dif = abs(a - b)
     media = 0.5 * (a + b)
     return Assimetria(dif, dif / media if media else 0.0, metricas.fy_alpha0_n,
-                      "em parte física: conicidade e ply-steer")
+                      "em parte física: conicidade e ply-steer; com γ ≠ 0, inclui o empuxo de camber")
 
 
 def monotonicidade(valores: Mapping[float, float]) -> str:
