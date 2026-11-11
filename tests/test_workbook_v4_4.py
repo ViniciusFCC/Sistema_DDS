@@ -18,7 +18,6 @@ restringe os casos; vazio = todos. "Passou" = a V4.4 reproduz a V4.3; não é va
 """
 import hashlib
 import json
-import math
 import os
 import random
 import re
@@ -253,7 +252,7 @@ def _formula(v):
     return v if isinstance(v, str) and v.startswith("=") else None
 
 
-def formulas(caminho: Path) -> dict[tuple[str, str], str]:
+def formulas(caminho: Path) -> tuple[dict[tuple[str, str], str], dict[str, str]]:
     wb = openpyxl.load_workbook(caminho)
     out = {}
     try:

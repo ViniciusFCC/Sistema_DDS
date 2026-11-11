@@ -8,13 +8,13 @@ tem de pegar. O arquivo mutado vai ao teste pela variável DDS_V44 e os casos, p
 Cada mutante confere antes que o trecho aparece exatamente uma vez na fórmula (senão, código 2: a lista está desatualizada).
 Padrão de tests/mutation_planilha_v43.py: pré-checagem do original (o teste com a V4.4 intacta tem de sair com código 0 e
 `N PASS, 0 FAIL, de N testes`); "detectado" = o teste termina dentro do tempo, sai com código != 0 e tem [FAIL] de TC-WB44-005.
-Os casos são NOMINAL, P01, P02 e P03 (DDS_CASOS44). Com esse subconjunto o TC-WB44-006 usa os arquivos de cobertura de
-build/cobertura-v44-casos/ gravados por rodadas completas anteriores (mesmo layout); sem eles ele falha e a pré-checagem
-acusa. A cobertura vem do lado V4.3, que o mutante não toca. O motor é o Excel (DDS_RECALC=excel).
+Os casos são NOMINAL, P01, P02 e P03 (DDS_CASOS44). Com DDS_CASOS44 definido o TC-WB44-006 (cobertura) sai PULADO, sem
+contar como PASS nem FAIL: a cobertura só fecha com o conjunto completo e vem do lado V4.3, que o mutante não toca. O motor é
+o Excel (DDS_RECALC=excel).
 Roda como script: uv run python -X utf8 tests/mutation_planilha_v44.py
 Código de saída: 0 = todos detectados; 1 = algum mutante escapou; 2 = pré-checagem falhou ou lista desatualizada; 3 = sem motor.
 Tempo (EDR-068): orçamento DDS_ORCAMENTO_S (padrão 10000 s); cada rodada tem min(TIMEOUT, restante). Cada caso leva ~65 s
-(duas cópias recalculadas no Excel); 4 casos ≈ 5 a 6 min por rodada, 5 rodadas ≈ 30 min. TIMEOUT = 1800 s por rodada.
+(duas cópias recalculadas no Excel); medido em 2026-11-10: ~185 s por rodada, 5 rodadas ≈ 16 min. TIMEOUT = 1800 s por rodada.
 """
 import os, re, shutil, sys, tempfile
 
