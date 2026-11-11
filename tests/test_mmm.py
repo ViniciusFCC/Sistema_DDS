@@ -567,6 +567,27 @@ ok_acopl = (mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).convergiu
             and mmm.trim(caso_t, mmm.Hipoteses(cos_delta="trim"), 1.0 * G).delta_rodas is not None
             and mmm.trim(caso_t, hip_pl, 1.0 * G).delta_rodas is None)
 
+# Combinação mista alfa="eixo_traseiro" + cos_delta="trim" (a primeira é variante da planilha V4.3 e a segunda leva ao
+# Newton 2-D): com Ackermann e toe (caso_pc_ack) o resultado difere do de cada hipótese sozinha e é finito (trim e
+# limite). Valores sintéticos de teste.
+hip_mix = mmm.Hipoteses(alfa="eixo_traseiro", cos_delta="trim")
+hip_et = mmm.Hipoteses(alfa="eixo_traseiro")
+hip_ct = mmm.Hipoteses(cos_delta="trim")
+lim_mix = mmm.limite(caso_pc_ack, hip_mix)
+lim_ct = mmm.limite(caso_pc_ack, hip_ct)
+lim_et = mmm.limite(caso_pc_ack, hip_et)
+_ay_mix = 0.5 * lim_mix.ay_t_ms2 if lim_mix.ay_t_ms2 is not None else 0.8 * G
+tr_mix = mmm.trim(caso_pc_ack, hip_mix, _ay_mix)
+tr_ct = mmm.trim(caso_pc_ack, hip_ct, _ay_mix)
+tr_et = mmm.trim(caso_pc_ack, hip_et, _ay_mix)
+_fin = lambda v: v is not None and math.isfinite(v)
+ok_mix = (tr_mix.convergiu and tr_ct.convergiu and tr_et.convergiu and tr_mix.delta_rodas is not None
+          and _fin(tr_mix.beta_rad) and _fin(tr_mix.delta_rad)
+          and (_fin(lim_mix.ay_t_ms2) or bool(lim_mix.motivo))
+          and abs(tr_mix.delta_rodas["FL"] - tr_ct.delta_rodas["FL"]) > 1e-6        # difere de cos_delta="trim" sozinha
+          and abs(tr_mix.delta_rad - tr_et.delta_rad) > 1e-6                        # difere de alfa="eixo_traseiro" sozinha
+          and abs(tr_mix.beta_rad - tr_ct.beta_rad) > 1e-6)
+
 # Rotação β sempre no caminho acoplado (adendo §2.5, EDR-064): mesmo com as hipóteses da planilha, o trim acoplado (a linha
 # de controle mmm.planilha_acoplada()) fecha ΣFy = m·A·cos β (a_y = A·cos β), e o desacoplado fecha ΣFy = m·A. A diferença
 # entre os dois é o viés da rotação (fator cos β); o N fecha em 1e-6 N·m. A linha de controle fica fora de VARIANTES e de
@@ -661,7 +682,7 @@ check("TC-MMM-007: no trim |ΣFy−m·A_Y|<1e-6 N e |N|<1e-6 N·m; A_Y acima do 
       "do limite acoplado (capacidade enorme -> N/A, sem eixo limitante); folga do outro eixo em T à mão (N e fração), "
       "NEUTRO com fração <= res/T e None nas desacopladas",
       ok_res and ok_alto and ok_raio and ok_acopl and ok_desc and ok_toe and ok_pc and ok_lim_a and ok_lim_n and ok_acima
-      and ok_regime and ok_rot and ok_causa and ok_margem and ok_folga,
+      and ok_regime and ok_rot and ok_causa and ok_margem and ok_folga and ok_mix,
       f"resíduos(F,N)={[(f'{rf:.1e}', f'{rn:.1e}') for _, rf, rn in rs]}; motivo(5g)={tr_alto.motivo!r}; "
       f"eixo_sem_raiz={tr_alto.eixo_sem_raiz}; descolamento: {lim_desc.motivo!r}; toe: {lim_toe.motivo!r}; "
       f"borda: {lim_borda.motivo!r}; completo: {det_pc[0]}; com Ackermann: {det_pc[1]}; "
@@ -672,6 +693,9 @@ check("TC-MMM-007: no trim |ΣFy−m·A_Y|<1e-6 N e |N|<1e-6 N·m; A_Y acima do 
       f"β={_f(None if tr_ctrl.beta_rad is None else math.degrees(tr_ctrl.beta_rad), '.3f')}°, |ΣFy − m·A·cos β|={res_y_ctrl:.1e} N, sem o cos β={res_y_sem_cos:.2f} N, "
       f"desacoplado |ΣFy − m·A|={res_y_desac:.1e} N; T(cos δ trim, 8,5 m) com a rotação={T_acopl:.6f}, sem ela "
       f"(derivação antiga)={T_acopl_sem_rot:.6f}; margem: {lim_margem.motivo!r}; folga do outro eixo em T (brinquedo, 8,5 m): "
+      f"mista eixo_traseiro + cos_delta (Ackermann): δ_FL={_f(None if tr_mix.delta_rodas is None else math.degrees(tr_mix.delta_rodas['FL']), '.4f')}° "
+      f"(só cos_delta {_f(None if tr_ct.delta_rodas is None else math.degrees(tr_ct.delta_rodas['FL']), '.4f')}°, só eixo_traseiro {_f(math.degrees(tr_et.delta_rad), '.4f')}°), "
+      f"T={_f(lim_mix.ay_t_ms2, '.4f')} (cos_delta {_f(lim_ct.ay_t_ms2, '.4f')}, eixo_traseiro {_f(lim_et.ay_t_ms2, '.4f')}); "
       f"{_f(lim_cd.folga_outro_N, '.4f')} N (mão {folga_mao:.4f}, tol {tol_folga_N:.3f}), "
       f"fração {_f(lim_cd.folga_outro_fracao, '.6f')} "
       f"(mão {1.0 - s_r_it:.6f}); R grande (NEUTRO): {lim_cd_g.folga_outro_N} N, fração {lim_cd_g.folga_outro_fracao}; "

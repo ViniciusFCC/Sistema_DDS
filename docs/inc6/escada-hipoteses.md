@@ -12,10 +12,10 @@ Faixa de busca da saturação: 0 a 2,00 g (parâmetro `--ay-max-g`, rótulo de v
 
 ## 1. Origem
 
-- Data: 2026-11-02T17:01:05
-- Commit: `ce6808aea4708160daa33504b504bf151ce41138` (ramo `claude/inc7-plano-0926f7`; árvore sem mudanças pendentes)
+- Data: 2026-11-09T15:10:54
+- Commit: `65d8d3d1092b09d8b6d87aa7daff599d6b57e6e3` (ramo `claude/frosty-jang-b87ba8`; árvore sem mudanças pendentes)
 - Planilha: `excel/FSAE_EV_Suspension_Fase1_V4_2.xlsx` (SHA-256 antes `0d979440f8db788700900526bce60c7df3202fb93e24c41ca6bf46c59c9ccde0`; depois igual: só uma cópia temporária foi recalculada). O caso é lido com o leitor da V4.1 (`caso_da_planilha_v41`, `passo1=False`), porque a V4.2 contém todos os nomes da V4.1.
-- Motor de recálculo da cópia: excel (Excel 16.0 via COM, PID 37616); 117627 fórmulas, 0 erros, 36,8 s
+- Motor de recálculo da cópia: excel (Excel 16.0 via COM, PID 40688); 117627 fórmulas, 0 erros, 15,1 s
 - Pneu: `data/Hoosier_R25B_13x7_TTC_provisional.tir` (SHA-256 `f3bc80fda4145d53da06f69c8c0fcffbddfbbf73f4aab4149e1caa386c77c796`), em ISO_TYDEX (EDR-039)
 - Python 3.13.17, numpy 2.5.4; rodadas: 2 (uma por R, abaixo)
 
@@ -29,14 +29,14 @@ Origem dos coeficientes combinados do .tir (REX1, RBX*, RCX1, RBY*, RCY1, RVY*):
 
 - R = 9,125 m (origem: skidpad, linha central: R = (D_int + D_ext)/4 com D_int = 15,25 m e D_ext = 21,25 m (Formula SAE Rules 2026 v1.0 (10/09/2025), D.10.1.1; entrada provisória, a confirmar com o regulamento da prova); bitolas do caso da planilha (dados demonstrativos, não do carro): t_f = 1,277 m, t_r = 1,271 m (não entra no R da linha central))
 - O caso da planilha não tem R (R vazio); o valor do método foi aplicado só ao caso deste relatório. A planilha não foi alterada.
-- Caso: L = 1,594 m, bitola dianteira 1,277 m, Ackermann desligado, CG lateral 0,000 m, aero downforce fixa, arrasto desligado.
-- Tempos desta rodada: degrau 1 67,6 s, degrau 2 24,2 s, sensibilidades 28,2 s
+- Caso: massa 316,5 kg, L = 1,594 m, bitola dianteira 1,277 m, Ackermann desligado, CG lateral 0,000 m, aero downforce fixa, arrasto desligado.
+- Tempos desta rodada: degrau 1 26,3 s, degrau 2 11,2 s, sensibilidades 13,2 s
 
 **Aviso: a base "planilha" deste relatório não é a planilha de hoje.** A planilha com R vazio tem a hipótese 3 (cos δ_ref) desligada, e no Python o raio liga o cos δ_ref na dianteira (a Fy dianteira leva cos(L/R)). Com o R informado, a linha `planilha` já tem a hipótese 3 ligada, e o Δ da linha `3` mede só o cos δ do trim contra esse cos δ_ref, não contra a falta dele. Preencha o R na planilha (e ligue a chave da hipótese 3) para a base ser a da planilha.
 
 ### 3. Degrau 1: MMM na configuração da planilha contra `analise_par`
 
-O degrau 1 é uma identidade quase por construção: os dois códigos usam a física por roda do mesmo módulo. Ele prova o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 2 × a resolução. Diferenças = MMM − `analise_par`.
+O degrau 1 é uma identidade quase por construção: os dois códigos usam a física por roda do mesmo módulo. Ele prova o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 1,5 × a resolução (que já traz o 4/3 do EDR-065, item 2: igual a 2 × |S − S2|). Diferenças = MMM − `analise_par`.
 
 | Sentido | Veredito MMM | Veredito par | Δ ay_sat F [m/s²] | Δ ay_sat R [m/s²] | C_N MMM (Q) | C_N par | Resolução [m/s²] | Passa o critério numérico | Motivo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -129,14 +129,14 @@ Nada foi ajustado para bater. Cada efeito vale para este R e para o caso sintét
 
 - R = 8,385 m (origem: skidpad, rente aos cones: R = √(b² + R_c²), R_c = 8,3494 m (eixo traseiro limita), limite geométrico de ocupação e não a trajetória real; D_int = 15,25 m e D_ext = 21,25 m (Formula SAE Rules 2026 v1.0 (10/09/2025), D.10.1.1; entrada provisória, a confirmar com o regulamento da prova); meia largura do pneu 0,0889 m, ◐ Provisório (.tir TTC); bitolas do caso da planilha (dados demonstrativos, não do carro): t_f = 1,277 m, t_r = 1,271 m)
 - O caso da planilha não tem R (R vazio); o valor do método foi aplicado só ao caso deste relatório. A planilha não foi alterada.
-- Caso: L = 1,594 m, bitola dianteira 1,277 m, Ackermann desligado, CG lateral 0,000 m, aero downforce fixa, arrasto desligado.
-- Tempos desta rodada: degrau 1 52,8 s, degrau 2 20,8 s, sensibilidades 24,0 s
+- Caso: massa 316,5 kg, L = 1,594 m, bitola dianteira 1,277 m, Ackermann desligado, CG lateral 0,000 m, aero downforce fixa, arrasto desligado.
+- Tempos desta rodada: degrau 1 26,0 s, degrau 2 11,2 s, sensibilidades 13,2 s
 
 **Aviso: a base "planilha" deste relatório não é a planilha de hoje.** A planilha com R vazio tem a hipótese 3 (cos δ_ref) desligada, e no Python o raio liga o cos δ_ref na dianteira (a Fy dianteira leva cos(L/R)). Com o R informado, a linha `planilha` já tem a hipótese 3 ligada, e o Δ da linha `3` mede só o cos δ do trim contra esse cos δ_ref, não contra a falta dele. Preencha o R na planilha (e ligue a chave da hipótese 3) para a base ser a da planilha.
 
 ### 3. Degrau 1: MMM na configuração da planilha contra `analise_par`
 
-O degrau 1 é uma identidade quase por construção: os dois códigos usam a física por roda do mesmo módulo. Ele prova o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 2 × a resolução. Diferenças = MMM − `analise_par`.
+O degrau 1 é uma identidade quase por construção: os dois códigos usam a física por roda do mesmo módulo. Ele prova o reuso, não a física do MMM (adendo §5.1). Grade de α comum aos dois (401 pontos), cota da saturação = 1,5 × a resolução (que já traz o 4/3 do EDR-065, item 2: igual a 2 × |S − S2|). Diferenças = MMM − `analise_par`.
 
 | Sentido | Veredito MMM | Veredito par | Δ ay_sat F [m/s²] | Δ ay_sat R [m/s²] | C_N MMM (Q) | C_N par | Resolução [m/s²] | Passa o critério numérico | Motivo |
 |---|---|---|---|---|---|---|---|---|---|
@@ -234,5 +234,5 @@ Nada foi ajustado para bater. Cada efeito vale para este R e para o caso sintét
 - Passou nos critérios do degrau 1 = os dois códigos concordam; não é validação física.
 - O arrasto entra inteiro no eixo x do carro; a componente lateral D·sen β (a velocidade faz o ângulo β com o carro) fica fora do balanço lateral. É de 2ª ordem em β e D é uma fração pequena de m·A.
 - A precisão de T nas linhas acopladas é da ordem da resolução do limite (0,01 m/s²), e não a da bisseção: a dobra do Newton pode cair até essa distância antes do pico do eixo.
-- A cota do degrau 1 (2 × a resolução) é empírica: a resolução que o `analise_par` declara subestima o erro de interpolação dele (EDR-064, item 2.9).
+- A cota do degrau 1 (1,5 × a resolução, igual a 2 × |S − S2| só no caso de dois eixos; nos casos de passo e piso ela caiu de 2× para 1,5×) é empírica: o |S − S2| que o `analise_par` mede subestima o erro de interpolação dele (EDR-064, item 2.9; o 4/3 já está na resolução, EDR-065, item 2).
 

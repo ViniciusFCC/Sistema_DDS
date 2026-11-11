@@ -242,7 +242,8 @@ ORG_POR_CELULA = {(n["aba"], n["celula"]): n["nome"] for n in ORG}
 
 def textos_esperados(copia: Path, pior_ver: str, pior_k: str, origem=origens.T11) -> tuple[str, str]:
     """(veredito, K) que o Python dá ao caso lido da cópia recalculada, com a pior origem dada por construção."""
-    res = eq.analise_par(cpl.caso_da_planilha_v41(copia, TIR, passo1=False), fator_neutro=1.0)  # a V4.2 não tem o 4/3 (EDR-065 item 2 vale desde a V4.3)
+    # a V4.2 não tem o 4/3 (EDR-065 item 2 vale desde a V4.3)
+    res = eq.analise_par(cpl.caso_da_planilha_v41(copia, TIR, passo1=False), fator_neutro=1.0)
     p = el.parcelas_k(cpl.caso_da_planilha_v41(copia, TIR), 0.0)
     return eq.texto_veredito(res, pior_ver, origem_do_carro=origem), el.texto_k(p, pior_k, origem_do_carro=origem)
 

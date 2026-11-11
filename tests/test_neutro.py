@@ -16,17 +16,15 @@ Roda como script: uv run python -X utf8 tests/test_neutro.py
 
 Veículo, pneu de escala, R, downforce e balanço aero são entradas SINTÉTICAS de teste, não do carro.
 """
-import dataclasses
 import math
 import os
 
 import equilibrio as eq
+import estudo_neutro
 import mmm
-import tire_model as tm
-from suspension_model import G, VehicleConfig
+from suspension_model import G
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TIR = os.path.join(HERE, "..", "data", "Hoosier_R25B_13x7_TTC_provisional.tir")
 results = []
 
 
@@ -36,20 +34,8 @@ def check(name, condition, detail=""):
     print(f"[{status}] {name}  {detail}")
 
 
-def veiculo_base(**over) -> VehicleConfig:
-    """Veículo de teste (números plausíveis, NÃO é setup real): o mesmo de tests/test_escada.py."""
-    base = dict(mass_total=250.0, cg_height=0.300, wheelbase=1.550, track_front=1.200, track_rear=1.150,
-                cg_to_front=0.837, cg_to_rear=0.713, unsprung_mass_front=15.0, unsprung_mass_rear=18.0,
-                unsprung_cg_height_front=0.230, unsprung_cg_height_rear=0.230, roll_center_front=0.030,
-                roll_center_rear=0.050, roll_stiffness_front=20826.4, roll_stiffness_rear=26450.0)
-    base.update(over)
-    return VehicleConfig(**base)
-
-
-ds = tm.load_dataset(TIR, source_axis_system="ISO_TYDEX")
-ds_teste = dataclasses.replace(ds, p={**ds.p, "LMUY": 0.5})   # escala de teste, não é pneu do carro
-CASO = eq.CasoEquilibrio(cfg=veiculo_base(), ds=ds_teste, raio_m=8.5,            # sintético de teste
-                         downforce_N=400.0, aero_balance_front=0.45)              # sintético de teste
+# O caso-base sintético é uma só função, estudo_neutro.caso_base_sintetico (tests/test_escada.py usa a mesma).
+CASO = estudo_neutro.caso_base_sintetico(os.path.join(HERE, ".."))   # sintético de teste
 # Veredito do analise_par neste caso, medido no commit b8d622d (antes do estudo existir), com os padrões
 # ay_max_g = 2,0, passo_g = 0,05 e n_alfa = 25. O estudo não pode mudá-lo.
 VEREDITO_ANTES = eq.LOOSE
@@ -148,7 +134,7 @@ def tc_neu_001() -> tuple[bool, str]:
             or en.classe(eq.LOOSE, 0.001) != "ERRADO" or en.classe(eq.LOOSE, -0.001) != "certo":
         falhas.append("classe do veredito contra o sinal da h/8")
 
-    det =(f"ramo {r1['ramo']}; p_F = {r1['F'].p}, p_R = {r1['R'].p}; erro_delta = {r1['erro_delta']:.3e} g, "
+    det = (f"ramo {r1['ramo']}; p_F = {r1['F'].p}, p_R = {r1['R'].p}; erro_delta = {r1['erro_delta']:.3e} g, "
            f"soma_erros = {r1['soma_erros']:.3e} g; veredito {res.veredito}")
     return not falhas, ("; ".join(falhas) + " | " + det) if falhas else det
 
@@ -216,7 +202,8 @@ def tc_neu_002() -> tuple[bool, str]:
         # os dois lados estão colados à borda (|Δ|/faixa perto de 1; medido 1,0000, e 16 passos de bisseção dão margem de 1e-3)
         if not (abs(d_b / f_b - 1.0) < 1e-3 and abs(d_a / f_a - 1.0) < 1e-3):
             falhas.append(f"(b) {rotulo}: |Δ|/faixa = {d_b / f_b:.5f} (dentro) e {d_a / f_a:.5f} (fora), longe da borda")
-        det_b.append(f"{rotulo}: λ_f x{b:.7f} NEUTRO |Δ|/faixa = {d_b / f_b:.4f}; x{a:.7f} {r_a.veredito} {d_a / f_a:.4f}")
+        det_b.append(f"{rotulo}: λ_f x{b:.7f} NEUTRO |Δ|/faixa = {d_b / f_b:.4f}; "
+                     f"x{a:.7f} {r_a.veredito} {d_a / f_a:.4f}")
 
     # (c) eixo que satura numa grade só: a faixa é o passo da grade pedida, como hoje, sem o fator. ay_max = 1,475 g
     # deixa a última linha da grade pedida em 1,45 g (antes das saturações, em ~1,47 g) e a da refinada em 1,475 g

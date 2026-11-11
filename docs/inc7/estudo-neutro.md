@@ -152,15 +152,15 @@ Passo da grade h em α: 0,01091 rad.
 
 Classe: NEUTRO; "certo" ou "ERRADO" contra o sinal de Δ_h/8 (a h/8 não convergiu por completo). A alternativa 3 (refino) não foi calculada nesta varredura.
 
-| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) | Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R |
-|---|---|---|---|---|---|---|---|---|
-| λ_f +4,0 % (sintético) | -0,0023040 | -0,0011534 | LOOSE | 1,14e-03 / LOOSE / certo | 1,14e-03 / LOOSE / certo | 1,51e-03 / LOOSE / certo | 1,15e-03 / LOOSE / certo | 5,29 / 10,35 |
-| λ_f +4,5 % (sintético) | -0,0015988 | -0,0004652 | LOOSE | 1,11e-03 / LOOSE / certo | 1,11e-03 / LOOSE / certo | 1,48e-03 / LOOSE / certo | 1,12e-03 / LOOSE / certo | 4,92 / 10,56 |
-| λ_f +5,0 % (sintético) | -0,0008936 | 0,0002231 | PUSH | 1,09e-03 / NEUTRO / NEUTRO | 1,09e-03 / NEUTRO / NEUTRO | 1,46e-03 / NEUTRO / NEUTRO | 1,10e-03 / NEUTRO / NEUTRO | 4,62 / 10,82 |
-| λ_f +5,5 % (sintético) | -0,0001884 | 0,0009115 | PUSH | 1,07e-03 / NEUTRO / NEUTRO | 1,07e-03 / NEUTRO / NEUTRO | 1,43e-03 / NEUTRO / NEUTRO | 1,08e-03 / NEUTRO / NEUTRO | 4,37 / 11,14 |
-| λ_f +6,0 % (sintético) | 0,0005170 | 0,0016000 | PUSH | 1,05e-03 / NEUTRO / NEUTRO | 1,05e-03 / NEUTRO / NEUTRO | 1,40e-03 / NEUTRO / NEUTRO | 1,06e-03 / NEUTRO / NEUTRO | 4,14 / 11,55 |
-| λ_f +6,5 % (sintético) | 0,0012225 | 0,0022886 | PUSH | 1,03e-03 / PUSH / certo | 1,03e-03 / PUSH / certo | 1,37e-03 / NEUTRO / NEUTRO | 1,04e-03 / PUSH / certo | 3,94 / 12,16 |
-| λ_f +7,0 % (sintético) | 0,0019280 | 0,0029774 | PUSH | 1,00e-03 / PUSH / certo | 1,00e-03 / PUSH / certo | 1,34e-03 / PUSH / certo | 1,02e-03 / PUSH / certo | 3,76 / 13,28 |
+| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) | Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R | d3_F / d3_R |
+|---|---|---|---|---|---|---|---|---|---|
+| λ_f +4,0 % (sintético) | -0,0023040 | -0,0011534 | LOOSE | 1,14e-03 / LOOSE / certo | 1,14e-03 / LOOSE / certo | 1,51e-03 / LOOSE / certo | 1,15e-03 / LOOSE / certo | 5,29 / 10,35 | 1,48e-07 / 2,66e-05 |
+| λ_f +4,5 % (sintético) | -0,0015988 | -0,0004652 | LOOSE | 1,11e-03 / LOOSE / certo | 1,11e-03 / LOOSE / certo | 1,48e-03 / LOOSE / certo | 1,12e-03 / LOOSE / certo | 4,92 / 10,56 | 1,90e-07 / 3,17e-05 |
+| λ_f +5,0 % (sintético) | -0,0008936 | 0,0002231 | PUSH | 1,09e-03 / NEUTRO / NEUTRO | 1,09e-03 / NEUTRO / NEUTRO | 1,46e-03 / NEUTRO / NEUTRO | 1,10e-03 / NEUTRO / NEUTRO | 4,62 / 10,82 | 2,32e-07 / 3,69e-05 |
+| λ_f +5,5 % (sintético) | -0,0001884 | 0,0009115 | PUSH | 1,07e-03 / NEUTRO / NEUTRO | 1,07e-03 / NEUTRO / NEUTRO | 1,43e-03 / NEUTRO / NEUTRO | 1,08e-03 / NEUTRO / NEUTRO | 4,37 / 11,14 | 2,75e-07 / 4,20e-05 |
+| λ_f +6,0 % (sintético) | 0,0005170 | 0,0016000 | PUSH | 1,05e-03 / NEUTRO / NEUTRO | 1,05e-03 / NEUTRO / NEUTRO | 1,40e-03 / NEUTRO / NEUTRO | 1,06e-03 / NEUTRO / NEUTRO | 4,14 / 11,55 | 3,19e-07 / 4,71e-05 |
+| λ_f +6,5 % (sintético) | 0,0012225 | 0,0022886 | PUSH | 1,03e-03 / PUSH / certo | 1,03e-03 / PUSH / certo | 1,37e-03 / NEUTRO / NEUTRO | 1,04e-03 / PUSH / certo | 3,94 / 12,16 | 3,64e-07 / 5,23e-05 |
+| λ_f +7,0 % (sintético) | 0,0019280 | 0,0029774 | PUSH | 1,00e-03 / PUSH / certo | 1,00e-03 / PUSH / certo | 1,34e-03 / PUSH / certo | 1,02e-03 / PUSH / certo | 3,76 / 13,28 | 4,09e-07 / 5,74e-05 |
 
 - Cruzamento de zero por interpolação linear entre casos vizinhos: Δ_h = 0 em λ_f +5,63 %; Δ_h/8 = 0 em λ_f +4,84 %.
 - Sinal errado / NEUTRO em 7 casos: regra atual 0 / 3; alt. 1 (p medido) 0 / 3; alt. 1 com 4/3 0 / 4; alt. 2 0 / 3.
@@ -183,9 +183,9 @@ Classe: NEUTRO; "certo" ou "ERRADO" contra o sinal de Δ_h/8 (a h/8 não converg
 
 Classe: NEUTRO; "certo" ou "ERRADO" contra o sinal de Δ_h/8 (a h/8 não convergiu por completo). A alternativa 3 (refino) não foi calculada nesta varredura.
 
-| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) | Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R |
-|---|---|---|---|---|---|---|---|---|
-| λ_f +4,85 % (sintético) | -0,0011052 | 0,0000166 | PUSH | 1,10e-03 / LOOSE / ERRADO | 1,10e-03 / LOOSE / ERRADO | 1,46e-03 / NEUTRO / NEUTRO | 1,11e-03 / NEUTRO / NEUTRO | 4,71 / 10,74 |
+| Caso | Δ_h | Δ_h/8 | sinal real (h/8) | Atual: faixa / veredito / classe | Alt. 1 (p medido) | Alt. 1 com 4/3 | Alt. 2 (e_F + e_R) | p_F / p_R | d3_F / d3_R |
+|---|---|---|---|---|---|---|---|---|---|
+| λ_f +4,85 % (sintético) | -0,0011052 | 0,0000166 | PUSH | 1,10e-03 / LOOSE / ERRADO | 1,10e-03 / LOOSE / ERRADO | 1,46e-03 / NEUTRO / NEUTRO | 1,11e-03 / NEUTRO / NEUTRO | 4,71 / 10,74 | 2,19e-07 / 3,53e-05 |
 
 - Sinal errado / NEUTRO em 1 caso: regra atual 1 / 0; alt. 1 (p medido) 1 / 0; alt. 1 com 4/3 0 / 1; alt. 2 0 / 1.
 
@@ -235,7 +235,7 @@ Margem do caso de conferência [g] (sintético)
    traseira (8,84e-05 e 8,54e-05), ou seja, a própria referência h/8 ainda não convergiu nesse nível. Na varredura
    perto do neutro (Tabela 8), (c) é violada nos 7 casos, e também no caso de conferência de +4,85 % (Tabela 9): o
    excesso do erro de Δ sobre e_F + e_R vai de 3,9e-06 (+4,0 %) a 3,4e-05 g (+7,0 %) e cresce com o λ_f. A mesma
-   ressalva da h/8 vale aqui; os d3 dos casos da varredura não estão nas tabelas. Os números não permitem afirmar que
+   ressalva da h/8 vale aqui; os d3 dos casos da varredura estão na Tabela 7. Os números não permitem afirmar que
    essas violações são reais, nem que não são.
 
 6. **Nos sete casos, nenhum veredito muda, por construção.** As cinco faixas (hoje, alternativa 1 com p medido,
@@ -263,11 +263,12 @@ Margem do caso de conferência [g] (sintético)
    referência não convergida.
 
    **Caso de conferência λ_f +4,85 % (Tabela 9).** Δ_h = −0,0011052 e Δ_h/8 = +0,0000166, então a h/8 indica PUSH.
-   A regra de hoje e a alternativa 1 com p medido (faixa 1,10e-03) dão LOOSE, sinal errado. A alternativa 2 (faixa
+   A regra de hoje e a alternativa 1 com p medido (faixa 1,10e-03) dão LOOSE. A alternativa 2 (faixa
    1,11e-03) e a 4/3 (faixa 1,46e-03) dão NEUTRO. Isso bate com a margem: a da alternativa 2 é −1,24e-05, menor em
    módulo que o Δ_h/8 desse caso, e a de hoje é −2,39e-05, maior. Ressalva: o Δ_h/8 de 1,66e-05 g é menor que
    diferenças d3 vistas na Tabela 1 (até 8,84e-05 g), então o "sinal real" desse caso é o da h/8, não o de uma
-   solução convergida. A alternativa 3 não entrou na varredura nem na conferência.
+   solução convergida. Com essa ressalva, o LOOSE da regra de hoje e da alternativa 1 com p medido é sinal errado
+   contra a h/8. A alternativa 3 não entrou na varredura nem na conferência.
 
 8. **Refino por parábola (alternativa 3).** O erro de Δ cai em seis dos sete casos (no caso-base, de 1,28e-03 para
    1,33e-04) e sobe em toe +0,1° (de 6,34e-04 para 7,30e-04), que passa a violar (c): 7,30e-04 contra 7,11e-04. O

@@ -315,10 +315,18 @@ def tc_fxi_001() -> tuple[bool, str]:
     cin = eq.cinematica_rigida(caso_tr, a_f, a_r)
     C = cin["C"]
     v_r = _vel((0.0, 0.0), C)
+    # perpendicularidade por cálculo independente (não pela construção ẑ × (P − C)): v_roda = v_CG + ω·ẑ × (P − CG),
+    # com v_CG de módulo V na direção do corpo girada por β e ω = V/R (V sintético de teste; curva à esquerda: ω > 0)
+    v_t = 5.0
+    w_t = v_t / R_TESTE
+    v_cg_i = (v_t * math.cos(cin["beta"]), v_t * math.sin(cin["beta"]))
+    v_r_i = (v_cg_i[0] - w_t * (0.0 - 0.0), v_cg_i[1] + w_t * (0.0 - B))
+    p_c = (0.0 - C[0], 0.0 - C[1])
+    perp_i = abs(v_r_i[0] * p_c[0] + v_r_i[1] * p_c[1]) <= 1e-9 * math.hypot(*v_r_i) * math.hypot(*p_c)
     v_cg = _vel((B, 0.0), C)
     v_f = _vel((L, 0.0), C)
     geo = (abs(math.hypot(C[0] - B, C[1]) - R_TESTE) <= 1e-12
-           and abs(v_r[0] * (0.0 - C[0]) + v_r[1] * (0.0 - C[1])) <= 1e-12
+           and perp_i
            and abs(math.atan2(v_r[1], v_r[0]) - (-a_r)) <= 1e-12
            and abs(math.atan2(v_cg[1], v_cg[0]) - cin["beta"]) <= 1e-12
            and abs(math.atan2(v_f[1], v_f[0]) + a_f - cin["delta"]) <= 1e-12)
@@ -492,16 +500,21 @@ def tc_ack_002() -> tuple[bool, str]:
                f"ok={ok_j}{'' if mot_j is None else ', ' + mot_j}; V4.2: {lim42.veredito}; sat v43 "
                f"({par.ay_sat_f}, {par.ay_sat_r}) × v42 ({par42.ay_sat_f}, {par42.ay_sat_r})")
 
-    # (e) a escada: sem incluir_v43 as 12 linhas de hoje; com ele, a linha "planilha V4.3" em 2º, referência "planilha"
-    ln = escada.degrau_2(caso, ay_max_g=1.0, incluir_v43=True)
-    sem = escada.degrau_2(caso, ay_max_g=1.0)
-    nomes = tuple(x.nome for x in ln)
-    partes["e"] = (escada.NOME_PLANILHA_V43 == "planilha V4.3" and len(sem) == 12 and len(ln) == 13
-                   and nomes[:3] == ("planilha", "planilha V4.3", "planilha (acoplado, sem rotação)")
-                   and nomes[2:] == tuple(x.nome for x in sem)[1:]
-                   and ln[1].referencia == "planilha" and ln[1].hipoteses == ()
-                   and all(x.referencia == y.referencia for x, y in zip(ln[2:], sem[1:])))
-    det.append(f"(e) nomes={nomes[:4]}…, referência da V4.3={ln[1].referencia!r}")
+    # (e) a escada: sem incluir_v43 as 12 linhas de hoje; com ele, a linha "planilha V4.3" em 2º, referência "planilha";
+    # o mesmo critério a 0,5 g, 1 g e 1,5 g (o teto da varredura em A_Y)
+    ok_e, nomes_e = escada.NOME_PLANILHA_V43 == "planilha V4.3", ()
+    for g_e in (0.5, 1.0, 1.5):
+        ln = escada.degrau_2(caso, ay_max_g=g_e, incluir_v43=True)
+        sem = escada.degrau_2(caso, ay_max_g=g_e)
+        nomes = tuple(x.nome for x in ln)
+        nomes_e = nomes_e or nomes
+        ok_e = ok_e and (len(sem) == 12 and len(ln) == 13
+                         and nomes[:3] == ("planilha", "planilha V4.3", "planilha (acoplado, sem rotação)")
+                         and nomes[2:] == tuple(x.nome for x in sem)[1:]
+                         and ln[1].referencia == "planilha" and ln[1].hipoteses == ()
+                         and all(x.referencia == y.referencia for x, y in zip(ln[2:], sem[1:])))
+    partes["e"] = ok_e
+    det.append(f"(e) nomes={nomes_e[:4]}…, referência da V4.3={ln[1].referencia!r}, a 0,5 g, 1 g e 1,5 g")
     return all(partes.values()), "; ".join(det) + f" | partes={partes}"
 
 

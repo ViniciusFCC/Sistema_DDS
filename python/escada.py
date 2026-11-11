@@ -32,8 +32,8 @@ NOME_PLANILHA_V43 = "planilha V4.3"   # as fórmulas da planilha V4.3 (Ackermann
 @dataclass(frozen=True)
 class ComparacaoDegrau1:
     """MMM (planilha) contra analise_par num sentido. d_ay_sat_* = MMM − analise_par [m/s²] (None se algum lado não tem
-    saturação no eixo). cn_mmm é o cn_estabilizante_q; cn_par é o c_n. ok = mesmo veredito, |d_ay_sat| <= 1,5·resolucao_ms2 (cota empírica,
-    ver _julga) em cada eixo e cn dentro da folga equivalente; motivo diz o que reprovou (None quando ok)."""
+    saturação no eixo). cn_mmm é o cn_estabilizante_q; cn_par é o c_n. ok = mesmo veredito,
+    |d_ay_sat| <= 1,5·resolucao_ms2 (cota empírica, ver _julga) em cada eixo e cn dentro da folga equivalente; motivo diz o que reprovou (None quando ok)."""
     sentido: str
     veredito_mmm: str
     veredito_par: str
@@ -88,7 +88,8 @@ def _julga(veredito_mmm: str, veredito_par: str, d_f: float | None, d_r: float |
     cota rigorosa em função da resolução. A `resolucao_ms2` do analise_par é FATOR_NEUTRO·|S_h − S_h/2| (EDR-065 item 2: o
     |S_h − S_h/2| de um erro assintótico c·h² vale 3/4 do erro de S_h, e o 4/3 de Richardson já está na faixa). A cota
     1,5·res = 2·|S_h − S_h/2| é numericamente a de antes (2·|S_h − S_h/2|), 1,5 vez a estimativa do erro de S_h
-    (4/3·|S_h − S_h/2| + 1e-4·res); fora do caso de dois eixos (passo ou piso), vale 1,5 do passo. Cota EMPÍRICA (a razão |d_ay_sat|/res de cada caso do TC-ESC-001 sai no detalhe do teste).
+    (4/3·|S_h − S_h/2| + 1e-4·res); fora do caso de dois eixos (passo ou piso), vale 1,5 do passo.
+    Cota EMPÍRICA (a razão |d_ay_sat|/res de cada caso do TC-ESC-001 sai no detalhe do teste).
     Não é cota provada, e a ciência do usuário é pedida no PR (EDR-064, item 2.9). Exigir só <= res_ms2 punha o
     oráculo no limite por construção."""
     cota = _COTA_RES * res_ms2
@@ -97,7 +98,8 @@ def _julga(veredito_mmm: str, veredito_par: str, d_f: float | None, d_r: float |
         motivos.append(f"veredito {veredito_mmm} (MMM) ≠ {veredito_par} (analise_par)")
     for eixo, d in (("F", d_f), ("R", d_r)):
         if d is not None and abs(d) > cota:
-            motivos.append(f"|ay_sat_{eixo} MMM − analise_par| = {abs(d):.3e} > cota empírica 1,5·resolucao_ms2 = {cota:.3e}")
+            motivos.append(f"|ay_sat_{eixo} MMM − analise_par| = {abs(d):.3e} "
+                           f"> cota empírica 1,5·resolucao_ms2 = {cota:.3e}")
     if (cn_mmm is None) != (cn_par is None):
         motivos.append(f"C_N só num dos lados (MMM {cn_mmm}, analise_par {cn_par})")
     elif cn_mmm is not None and cn_par is not None:
@@ -136,8 +138,8 @@ def degrau_1(caso: eq.CasoEquilibrio, ay_max_g: float = 2.0) -> tuple[Comparacao
     Mesma grade de α dos dois lados: analise_par com n_alfa = 401 e passo_g = 0,01 (e o limite com o mesmo n_alfa e
     resolucao_ms2 igual à resolução que o próprio analise_par mede). Com a grade padrão dele (n_alfa = 25, passo
     0,05 g) a diferença é de ~3e-3 m/s² e vem da grade de α (a grossa subestima o pico), e não da hipótese; comparar
-    nela mediria a grade. A cota da saturação é 1,5·resolucao_ms2 (= 2·|S − S2|), empírica (ver _julga: a resolução que o
-    analise_par declara subestima o erro dele), e `ok` usa a mesma cota. Onde o analise_par não mede resolução (nenhum eixo
+    nela mediria a grade. A cota da saturação é 1,5·resolucao_ms2 (= 2·|S − S2|), empírica (ver _julga: a resolução
+    que o analise_par declara subestima o erro dele), e `ok` usa a mesma cota. Onde o analise_par não mede resolução (nenhum eixo
     satura), usa-se o padrão do limite. ay_max_g é a faixa de busca da saturação (rotulada; padrão 2,0 g, o do analise_par
     e do limite).
     """
