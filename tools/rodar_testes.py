@@ -39,7 +39,7 @@ TESTES = [
     ("pneu", "tests/test_tire_model.py", 43, "registro-de-versoes-V2_4.md:16"),
     ("oráculos", "tests/test_tire_oracles.py", 5, "registro-de-versoes-V2_4.md:16"),
     ("pneu estático", "tests/test_tire_static.py", 87, "EDR-067; PR #25 (precisa dos .tir do TTC Round 6, fora do Git)"),
-    ("pneu com pressão", "tests/test_tire_pressure.py", 109, "EDR-071 (precisa dos .tir do TTC Round 6, fora do Git)"),
+    ("pneu com pressão", "tests/test_tire_pressure.py", 110, "EDR-071 (precisa dos .tir do TTC Round 6, fora do Git)"),
     ("suspensão", "tests/test_suspension_model.py", 54, "registro-de-versoes-V3_0.md"),
     ("cinemática", "tests/test_kinematics_model.py", 76, "registro-de-versoes-V3_0.md; plano do incremento 2 da V4.0"),
     ("hardpoints", "tests/test_hardpoints.py", 35, "HANDOFF §6.2"),

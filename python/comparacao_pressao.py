@@ -278,8 +278,12 @@ def decidir(valores: Mapping[float, float | None], bandas: Mapping[float, Banda]
     1. Não decidível: valor None, pressão em `nao_decidiveis` (ex.: borda de α) ou banda indisponível. Fica
        listada com o motivo; não é excluída.
     2. Entre as decidíveis, x* = maior valor; indistinguíveis = {q : |x* − x_q| ≤ max(banda_x*, banda_q)}.
-    3. melhor = x* só se indistinguíveis == {x*}, a banda de x* é medida (8 e 14 psi nunca sozinhas) e não há
-       pressão não decidível (com pico na borda o valor é limitante inferior e ela pode superar x*).
+    3. melhor = x* só se indistinguíveis == {x*}, a banda de x* é medida (8 e 14 psi nunca sozinhas), não há
+       pressão não decidível (com pico na borda o valor é limitante inferior e ela pode superar x*) e não há
+       pressão não resolvida.
+    4. Não resolvida: decidível q ≠ x* com banda não medida (extremo) e |x* − x_q| > max(banda_x*, banda_q).
+       Banda não medida é só limite inferior da incerteza, então a diferença não prova que q seja pior: q não
+       é indistinguível nem excluída.
     """
     nd: dict[float, str] = dict(nao_decidiveis)
     for p, v in valores.items():
@@ -301,16 +305,23 @@ def decidir(valores: Mapping[float, float | None], bandas: Mapping[float, Banda]
     b_star = bandas[p_star].valor
     indist = sorted(q for q in dec if abs(dec[p_star] - dec[q]) <= max(b_star, bandas[q].valor))
     sufixo = f"; não decidíveis: {_ps(sorted(nd))} psi" if nd else ""
+    # Banda não medida é só limite inferior da incerteza: a diferença grande não prova que a pressão seja pior.
+    nres = sorted(q for q in dec if q not in indist and not bandas[q].medida)
     if indist == [p_star]:
-        if nd:
-            return pronto(None, indist, f"veredito suspenso: {_ps(sorted(nd))} psi não decidível")
+        if nd or nres:
+            partes = []
+            if nd:
+                partes.append(f"{_ps(sorted(nd))} psi não decidível")
+            if nres:
+                partes.append(f"{_ps(nres)} psi não resolvido(s) (banda só limite inferior)")
+            return pronto(None, indist, "veredito suspenso: " + "; ".join(partes))
         if not bandas[p_star].medida:
             return pronto(None, indist, f"extremo sem banda medida: {p_star:.3g} psi "
                                         "não é declarada a melhor sozinha")
         return pronto(p_star, indist, f"melhor: {p_star:.3g} psi")
-    fora = sorted(q for q in dec if q not in indist and not bandas[q].medida)
-    if fora:
-        sufixo += f"; {_ps(fora)} psi fora do conjunto com banda não medida (limite inferior)"
+    if nres:
+        sufixo += (f"; {_ps(nres)} psi não resolvidos: banda só limite inferior "
+                   "(a diferença não prova que sejam piores)")
     if len(indist) == len(dec):
         todas = "todas as decidíveis indistinguíveis" if nd else "todas indistinguíveis"
         return pronto(None, indist, todas + sufixo)
