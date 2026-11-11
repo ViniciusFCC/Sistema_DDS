@@ -188,14 +188,50 @@ with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
     escreve("tests/mut.py", "import folha\nimport novo\n")
     ok_h4 = rt.pode_pular("tests/mut.py", c1, rep) is False
     ok_h5 = rt.chaves_desconhecidas({"tests/test_executor.py": "x", "tests/nada.py": "y"}) == ["tests/nada.py"]
-    ok_f = all((ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g, ok_h1, ok_h2, ok_h3, ok_h4, ok_h5))
+
+    # (i) laço da mutação (CA-06): PASS com a pré-checagem e o placar; FAIL sem placar completo ou sem pré-checagem; PULADO
+    def script_texto(nome, linhas, codigo=0):
+        caminho = os.path.join(d, nome)
+        corpo = "".join(f"print({l!r})\n" for l in linhas) + f"raise SystemExit({codigo})\n"
+        with open(caminho, "w", encoding="utf-8") as fh:
+            fh.write(corpo)
+        return caminho
+
+    ma = script_texto("ma.py", ["PRE-CHECAGEM OK: x", "2 / 2"])
+    mb = script_texto("mb.py", ["PRE-CHECAGEM OK: x", "1 / 2"])
+    mc = script_texto("mc.py", ["2 / 2"])
+    md_py = script_texto("md.py", ["PRE-CHECAGEM OK: x", "2 / 2"])
+    pulados_i, resumo_i, md_i = [], [], []
+    try:
+        rt.rodar_lista_mutacao([(ma, 2), (mb, 2), (mc, 2), (md_py, 2)], lambda s: "abc1234" if s == md_py else None,
+                               pulados_i, resumo_i, md_i)
+        ok_i = ([x[2] for x in resumo_i] == ["PASS", "FAIL", "FAIL", "PULADO"] and pulados_i == [(md_py, "abc1234")]
+                and any("AUSENTE" in l for l in md_i))
+    except Exception as e:      # noqa: BLE001
+        ok_i = False
+        print("  (i) exceção:", type(e).__name__, e)
+    # (j) laço das planilhas (CA-09): PASS com o resumo, NÃO EXECUTÁVEL com código 3, PULADO
+    pa = script_texto("pa.py", ["MOTOR: excel", "1 PASS, 0 FAIL, de 1 testes"])
+    pb = script_texto("pb.py", ["NÃO EXECUTÁVEL: sem motor"], codigo=3)
+    pc = script_texto("pc.py", ["MOTOR: excel", "1 PASS, 0 FAIL, de 1 testes"])
+    pulados_j, resumo_j, md_j = [], [], []
+    try:
+        rt.rodar_lista_planilhas([(pa, 1, "f"), (pb, 1, "f"), (pc, 1, "f")], lambda s: "abc1234" if s == pc else None,
+                                 pulados_j, resumo_j, md_j)
+        ok_j = ([x[2] for x in resumo_j] == ["PASS", "NÃO EXECUTÁVEL", "PULADO"] and pulados_j == [(pc, "abc1234")]
+                and any("MOTOR: excel" in l for l in md_j) and pa not in rt.TIMEOUT_PLANILHAS
+                and rt.TIMEOUT_PLANILHAS == {"tests/test_workbook_v4_3.py": 7200, "tests/test_workbook_v4_4.py": 7200})
+    except Exception as e:      # noqa: BLE001
+        ok_j = False
+        print("  (j) exceção:", type(e).__name__, e)
+    ok_f = all((ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g, ok_h1, ok_h2, ok_h3, ok_h4, ok_h5, ok_i, ok_j))
 
     check("TC-RUN-001 executor: tempo-limite encerra a árvore, saída UTF-8, orçamento, regra da mutação e --pular-recentes",
           ok_a and ok_b and ok_c and ok_d and ok_e and ok_f,
           f"(a) estourou={a.estourou}, código={a.returncode}, {a.tempo_s:.1f} s, neto {neto} vivo={vivo}; "
           f"(b) {b.stdout.strip()!r}, código={b.returncode}; (c) {ok_c}; "
           f"(d) estourou={r.estourou}, {dur:.1f} s, detectado={mp.detectado(r)}, orçamento={orc.total_s:g}; (e) levantou={levantou}, neto {neto_e} vivo={vivo_e}; "
-          f"(f) {[ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g, ok_h1, ok_h2, ok_h3, ok_h4, ok_h5]}")
+          f"(f) {[ok_f1, ok_f2, ok_f3, ok_f4, ok_f5, ok_f6, ok_g, ok_h1, ok_h2, ok_h3, ok_h4, ok_h5, ok_i, ok_j]}")
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")

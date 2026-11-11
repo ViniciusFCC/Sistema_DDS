@@ -1,0 +1,25 @@
+nome,aba,celula,papel,sus_id,rotulo
+ent_10_canto_b,10_TIRE,B20,ent,,Canto
+ent_10_canto_c,10_TIRE,C20,ent,,Canto
+ent_10_canto_d,10_TIRE,D20,ent,,Canto
+ent_10_canto_e,10_TIRE,E20,ent,,Canto
+ent_10_canto_f,10_TIRE,F20,ent,,Canto
+ent_10_lado_da_roda_l_esquerda_r_direita_b,10_TIRE,B21,ent,SUS-501,Lado da roda (L esquerda / R direita)
+ent_10_lado_da_roda_l_esquerda_r_direita_c,10_TIRE,C21,ent,SUS-501,Lado da roda (L esquerda / R direita)
+ent_10_lado_da_roda_l_esquerda_r_direita_d,10_TIRE,D21,ent,SUS-501,Lado da roda (L esquerda / R direita)
+ent_10_lado_da_roda_l_esquerda_r_direita_e,10_TIRE,E21,ent,SUS-501,Lado da roda (L esquerda / R direita)
+ent_10_lado_da_roda_l_esquerda_r_direita_f,10_TIRE,F21,ent,SUS-501,Lado da roda (L esquerda / R direita)
+ent_10_fz_de_09_loads_sus_104_verif_valor_fixo_f,10_TIRE,F22,ent,SUS-104,"Fz (de 09_LOADS, SUS-104; VERIF: valor fixo)"
+ent_10_angulo_de_deriva_alfa_iso_8855_velocidad_f,10_TIRE,F23,ent,SUS-501,Ângulo de deriva α (ISO 8855: + = velocidade p/ esquerda)
+ent_10_camber_gama_projeto_topo_para_fora_f,10_TIRE,F24,ent,SUS-404,Camber γ (projeto: + = topo para fora)
+ent_10_slip_ratio_kappa_iso_1_travada_em_frenag_f,10_TIRE,F25,ent,SUS-502,Slip ratio κ (ISO: −1 = travada em frenagem)
+ent_10_epsilon_guarda_de_divisao_por_zero_em_bx,10_TIRE,B176,ent,SUS-501,"ε (guarda de divisão por zero em Bx, By)"
+org_10_sistema_de_eixos_do_arquivo_declarado_sa,10_TIRE,I11,org,,Sistema de eixos do arquivo (declarado): SAE_CALSPAN ou ISO_TYDEX
+org_10_lado_da_roda_l_esquerda_r_direita,10_TIRE,I21,org,SUS-501,Lado da roda (L esquerda / R direita)
+org_10_epsilon_guarda_de_divisao_por_zero_em_bx,10_TIRE,I176,org,SUS-501,"ε (guarda de divisão por zero em Bx, By)"
+ent_13_referencia_python_fx_do_caso_verif_n_res,13_VALIDATION,B37,ent,SUS-502,Referência Python — Fx do caso VERIF [N] (resultado de código)
+ent_13_referencia_python_fy_do_caso_verif_n_res,13_VALIDATION,B38,ent,SUS-501,Referência Python — Fy do caso VERIF [N] (resultado de código)
+ent_13_referencia_python_mu_eff_do_caso_verif_r,13_VALIDATION,B39,ent,SUS-503,Referência Python — μ_eff do caso VERIF (resultado de código)
+res_16_gradiente_de_subesterco_k_texto_de_exibi_e188,16_EQUILIBRIO,E188,res,,"Gradiente de subesterço K (texto de exibição, linear)"
+res_16_equilibrio_no_limite_texto_de_exibicao_e189,16_EQUILIBRIO,E189,res,,Equilíbrio no limite (texto de exibição)
+res_16_linha_de_apoio_saturacoes_a_y_limite_c_n_e190,16_EQUILIBRIO,E190,res,,"Linha de apoio: saturações, a_y limite, C_N, custo e Δt (spec 7.3, item 2)"
