@@ -220,7 +220,7 @@ with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
                                  pulados_j, resumo_j, md_j)
         ok_j = ([x[2] for x in resumo_j] == ["PASS", "NÃO EXECUTÁVEL", "PULADO"] and pulados_j == [(pc, "abc1234")]
                 and any("MOTOR: excel" in l for l in md_j) and pa not in rt.TIMEOUT_PLANILHAS
-                and rt.TIMEOUT_PLANILHAS == {"tests/test_workbook_v4_4.py": 7200})
+                and rt.TIMEOUT_PLANILHAS == {"tests/test_workbook_v4_3.py": 7200, "tests/test_workbook_v4_4.py": 7200})
     except Exception as e:      # noqa: BLE001
         ok_j = False
         print("  (j) exceção:", type(e).__name__, e)
