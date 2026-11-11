@@ -277,3 +277,6 @@ do skidpad.
   troca da viva, conferir a cota do Drive; cota acima de 90% bloqueia a troca até o usuário liberar espaço.
 - **IDs:** os EDR-071 a 074 e os prefixos TC-REG e TC-WB50 podem ser autorizados antes da 9b, para os catálogos nascerem com
   eles; os SUS ficam para o passo do usuário, porque dependem do estudo.
+- **A1 do plano (usuário, 2026-11-11):** a chave 0 sai da planilha V5.0 e do gerador da V5.0; no Python, `FORMAS_V42` fica
+  só para as referências V4.3 e V4.4 que a suíte testa (TC-WB43-003/004, `test_v4_3`, `mutation_planilha_v43`, TC-WB44-006).
+  Revê a U9 do inc. 7 nesse ponto e torna sem objeto o teste de caracterização do C3. IDs da A2 do plano autorizados.
