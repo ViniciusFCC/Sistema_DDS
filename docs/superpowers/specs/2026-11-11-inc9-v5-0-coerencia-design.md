@@ -20,6 +20,7 @@
 | D5 | A Formula SAE Brasil não tem regulamento próprio: usa as FSAE Rules da SAE International e publica um Addendum, um Handbook e um Dynamic Events Procedures. A fonte é o conjunto; o Addendum prevalece onde muda a regra base | controlador | 2026-11-11 |
 | D6 | Efeito no objetivo em **segundos** (Δt do skidpad), nunca em pontos: a fórmula de pontos do skidpad usa T_min e T_max da prova, que não têm fonte. A hierarquia entre provas usa só os pontos máximos (fato do regulamento) | controlador | 2026-11-11 |
 | D7 | Triagem dos EDRs em AWAITING_DECISION sem decidir nenhum: cada um recebe o dado que espera e o critério de reabertura; EDR-023 e EDR-036 (IDs) vão ao passo do usuário com recomendação | controlador | 2026-11-11 |
+| D8 | Revisão pelo conselho (5 lentes, todas Sonnet; pedido do usuário antes do plano): as correções C1 a C10 da seção 11 valem sobre o texto das seções 3 a 8 onde divergirem. O D1 se mantém (uma V5.0, uma troca da viva) | controlador | 2026-11-11 |
 
 Decisões anteriores que continuam: chave 0 até a V5.0 (U9 do inc. 7); EDR-065 item 3 (planilha completa × Python completo:
 só não inverter PUSH/LOOSE; tolerâncias a confirmar com o T11); diretriz do Drive (só a versão atual, conferida no navegador).
@@ -90,15 +91,22 @@ Sem mudança de engenharia; nenhum valor muda.
 ### 4.2 Física do K (D3)
 
 - **Oráculo:** função nova em `python/equilibrio_linear.py` (nome no plano) com a parcela de força de tração do Gillespie
-  (p. 223-224; equações conferidas na imagem do PDF, regra do CLAUDE.md). O Fx vem de: arrasto aerodinâmico (½·ρ·CdA·V², com
-  V² = a_y·R) e resistência ao rolamento (Crr·W), na roda motriz traseira (RWD, motor no chassi atrás; a confirmar para o T11).
-  Entradas novas (CdA, Crr) e a existente ρ ficam "a confirmar", com Origem.
-- **Estudo** (`docs/inc9/estudo-k-tracao.md`): duas formas para a perda de rigidez lateral do pneu com o Fx: (i) só o termo
-  do Gillespie p. 223-224; (ii) com a perda de rigidez em forma fechada (Gillespie p. 299, ou elipse de atrito). Compara as
-  duas com a linha `todas` da escada (`docs/inc6/escada-caso-sintetico.md`) no caso sintético, e a linha `planilha V4.3`
-  (ΔK = +1,57 °/g) como ponto de partida. Critério: a forma não inverte o veredito (EDR-065 item 3) e, entre as que passam,
-  a mais próxima do Python completo, com a mais simples em empate (regra "decidir quando uma opção domina"). O ΔK restante é
-  registrado como informação, sem tolerância.
+  (p. 223-224, eq. 6-62 a 6-67; equações conferidas na imagem do PDF, regra do CLAUDE.md). O Fx traseiro vem de
+  `equilibrio.fx_exigido_traseira` na forma v43 (arrasto aerodinâmico, resistência ao rolamento e arrasto induzido em curva
+  F_yf·|α_F| + F_yr·|α_R|; `python/equilibrio.py:620`), nunca de uma conta reescrita; o Fx dianteiro é −Crr·W_f (C2).
+  Tração na traseira (RWD, motor no chassi atrás; a confirmar para o T11). CdA e Crr ficam "a confirmar", com Origem.
+- **Estudo** (`docs/inc9/estudo-k-tracao.md`), na ordem: (0) conta de ordem de grandeza de Fx/Fz no skidpad; (1) as duas
+  parcelas separadas, cada uma com o sinal: a direta (componente lateral do Fx, eq. 6-67: subesterço com Fx_r > 0 num RWD) e
+  a de perda de rigidez lateral do pneu traseiro com o Fx (sobresterço); (2) formas: (i) só a direta; (ii) direta + perda de
+  rigidez pelo peso combinado do próprio PAC2002 (G_yκ com os coeficientes do `.tir` em uso; só se existirem no arquivo), já
+  que a p. 299 é qualitativa e não dá equação; (3) conferência de dupla contagem contra o Python completo; (4) comparação com
+  a linha `todas` da escada (`docs/inc6/escada-caso-sintetico.md`), com a linha `planilha V4.3` (ΔK = +1,57 °/g) como ponto
+  de partida. Critério: não inverte o veredito (EDR-065 item 3) e, entre as que passam, a mais próxima do Python completo,
+  com a mais simples em empate. O estudo diz se algum eixo satura no caso; sem saturação o critério do veredito sai "sem
+  sinal" e a escolha é a forma (i). Se a parcela for desprezível perante a incerteza das entradas, o estudo diz isso, e ela
+  entra assim mesmo com CdA e Crr vazios por padrão (vazio = resultado da V4.4). O ΔK restante é informação, sem tolerância.
+- **Ponto de avaliação:** o K com a parcela é secante no a_y do skidpad (o Fx cresce com a_y), não derivada em a_y → 0; o
+  rótulo diz isso.
 - O rótulo do K muda de "sem compliance, torque de alinhamento e tração" para "sem compliance e torque de alinhamento; tração
   por aproximação (Gillespie p. 223-224)".
 
@@ -180,8 +188,9 @@ IDs propostos e as recomendações para EDR-023 e EDR-036.
 1. **CA-07 por texto (4.5):** 0 diferença fora do catálogo.
 2. **Regeneração:** V5.0 regenerada da tag `v4.4`, 0 diferença contra `excel/`.
 3. **Equivalência por valor com o oráculo** (TC-WB50, proposto; Excel via COM ou LibreOffice, casos sintéticos rotulados):
-   K com a parcela de tração = função Python; estado de coerência = `metas.py`; contador por Origem = oráculo; nos casos com
-   h2v = h9v = 1 (o padrão), toda célula fora do catálogo tem o mesmo valor da V4.4.
+   K com a parcela de tração = função Python; estado de coerência = `metas.py`; contador por Origem = oráculo. O passe de
+   estrutura tem tolerância zero contra a V4.4 em todas as células; no passe de física, toda célula fora do catálogo de
+   fórmulas **e** fora do catálogo de dependentes por valor (C1) tem o mesmo valor da V4.4.
 4. **Mutação da planilha V5.0:** um mutante por regra nova (parcela de tração, malha fechada, custo, contador) e o mutante
    identidade (minor T17), que precisa sobreviver.
 5. **Escada:** a linha da planilha V5.0 não inverte o veredito contra `todas`; ΔK registrado.
@@ -224,3 +233,47 @@ IDs propostos e as recomendações para EDR-023 e EDR-036.
 - A malha fechada sem valor real do setup dá NÃO AVALIÁVEL em todas as fichas enquanto não houver catálogo de mola e barra.
 - A suíte cresce com a V5.0; o tempo real se mede na 9c.
 - Validation continua NOT_VALIDATED: "passou" quer dizer que a planilha reproduz o oráculo, não validação física.
+
+## 11. Correções da revisão pelo conselho (2026-11-11, D8)
+
+Conselho rigoroso de 5 lentes (Dinâmica veicular, Arquiteto, Cético, Pragmático, Usuário/Produto), todas Sonnet, com revisão
+anônima; ordem sem voto próprio: Dinâmica > Arquiteto > Cético > Pragmático > Usuário. Fatos decisivos conferidos pelo
+controlador: `fx_exigido_traseira` v43 (`python/equilibrio.py:620`), a "prova mais forte" da chave 0 (spec do inc. 7,
+linha 159) e os nomes das chaves (`data/nomes_V4_3.csv`, linhas 17 a 22). Não verificado: a definição de T_max na pontuação
+do skidpad.
+
+- **C1. Dois passes no gerador.** `gerar_v5_0` tem `passe_estrutura` (retirada da chave 0, textos, estrutura da coerência
+  sem valor novo) e `passe_fisica` (parcela de tração, regras de coerência que mudam valor, contador). A saída do primeiro é
+  intermediária, em `build/`, e é conferida com tolerância zero contra a V4.4. O gerador emite, além do catálogo de fórmulas,
+  o **catálogo de dependentes por valor** (células alcançáveis das alteradas pelo grafo de precedentes). Cada mudança é um
+  **bloco** independente com nome; um bloco recusado no passo do usuário sai sem derrubar os outros, e o catálogo diz de qual
+  bloco vem cada célula. A divisão em duas planilhas (V4.5 e V5.0, ou V5.0 e V5.1) foi considerada e rejeitada: reabre o D1
+  e dobra a troca da viva; os passes dão a mesma separação de causas.
+- **C2. Física do K** (§4.2 já reescrita): Fx v43 reaproveitado, Fx dianteiro, parcelas com sinal, forma (ii) pelo PAC2002
+  combinado só se os coeficientes existirem no `.tir`, dupla contagem, ponto de avaliação, saturação e critério de parada.
+- **C3. Chave 0 como mudança de fórmula existente.** O passo do usuário lista cada fórmula da 24_CURVA que lê B9 ou B10
+  (`thFL`, `thFR`, `sit24`, `vh2v`, `vh9v` e as demais que o plano levantar) com o texto anterior e o novo, e os 6 nomes que
+  saem (`ent_`, `org_` e `fte_24_chave_h2v_...` e `..._h9v_...`). O CA-07 trata nome removido como mudança catalogada. Na
+  migração, viva com B9 ou B10 ≠ 1 é conflito listado antes da troca (caso de teste com B9 = 0). Antes de apagar o ramo
+  antigo no Python, um teste de caracterização compara a forma única com os valores da V4.3 com chave 1 nos mesmos casos.
+  O relatório `docs/inc6/escada-hipoteses.md` fica como evidência do inc. 6, sem ser regravado; a escada sem a linha da
+  V4.2 vai a `docs/inc9/escada-v5.md`.
+- **C4. Dois motivos de NÃO AVALIÁVEL.** O vocabulário continua fechado; o motivo distingue "meta sem valor ou papel (TBD)"
+  de "sem valor real do setup", e o 14_DASHBOARD mostra a contagem por motivo, para o painel não ficar igual em toda ficha.
+- **C5. Δt rotulado.** A célula do efeito no objetivo leva "DEMONSTRATIVO (R provisório da 24_CURVA)" na própria célula e
+  mostra também o Δt em %. "Acerto neutro" é o cruzamento das saturações na tabela de troca (spec V4.0 §5 item 4), não K = 0.
+- **C6. Tolerância do resíduo** fixada por método desde já: resolução numérica medida por refinamento da grade, como no
+  EDR-056; o plano diz qual grade e qual caso.
+- **C7. Regulamento como dado.** Os valores usados vão a `data/regulamento.csv` (valor, unidade, documento, edição, regra,
+  página, PROVISÓRIO ou FINAL), lidos pela planilha por nome; os textos citam o nome, não o valor. O TC-REG confere CSV ×
+  nota de fontes. A troca pelo texto final de 2027 vira edição do CSV e regeneração. A D.10 confere também a penalidade por
+  cone, como o tempo é tomado e a largura da faixa. Se a regra definir T_max como múltiplo de T_min, o efeito em pontos pode
+  sair sem número inventado e o D6 volta ao usuário.
+- **C8. Entradas novas** (CdA, Crr, valor real do setup) têm nome em `data/nomes_V5_0.csv`, entram em
+  `celulas_de_entrada()` e têm caso de migração: célula nova vazia não é conflito.
+- **C9. Arquivos por parte.** O plano traz a tabela arquivo × parte (9a, 9b, 9c) e a ordem de merge (9a antes da 9c).
+- **C10. Passo do usuário e troca da viva.** O relatório do passo traz, para cada bloco, uma linha em linguagem simples
+  ("o que muda para a equipe") antes do detalhe técnico. O roteiro de entrada do T11 vai também para a 00_README. Antes da
+  troca da viva, conferir a cota do Drive; cota acima de 90% bloqueia a troca até o usuário liberar espaço.
+- **IDs:** os EDR-071 a 074 e os prefixos TC-REG e TC-WB50 podem ser autorizados antes da 9b, para os catálogos nascerem com
+  eles; os SUS ficam para o passo do usuário, porque dependem do estudo.
