@@ -14,7 +14,7 @@ o Excel (DDS_RECALC=excel).
 Roda como script: uv run python -X utf8 tests/mutation_planilha_v44.py
 Código de saída: 0 = todos detectados; 1 = algum mutante escapou; 2 = pré-checagem falhou ou lista desatualizada; 3 = sem motor.
 Tempo (EDR-068): orçamento DDS_ORCAMENTO_S (padrão 10000 s); cada rodada tem min(TIMEOUT, restante). Cada caso leva ~65 s
-(duas cópias recalculadas no Excel); medido em 2026-11-10: ~185 s por rodada, 5 rodadas ≈ 16 min. TIMEOUT = 1800 s por rodada.
+(duas cópias recalculadas no Excel); medido na suíte de 2026-11-11: 165 a 180 s por rodada, 5 rodadas ≈ 15 min. TIMEOUT = 1800 s por rodada.
 """
 import os, re, shutil, sys, tempfile
 

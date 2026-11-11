@@ -76,8 +76,8 @@ teste): abrir 8,51 s (inclui o cálculo de carga), `CalculateFull` 0,11 s, grava
 O tempo real por caso foi maior que o previsto: na rodada final de 61 casos, média de 66,1 s e máximo de 89,0 s. Na rodada
 anterior de 35 casos, a média foi de 45,1 s e o máximo, de 75,4 s (P09). Antes disso, uma rodada parcial passou de 60 s, o
 limite de A4, e a execução parou e avisou. O usuário aprovou o limite de **120 s por caso** (`LIMITE_S`) em 2026-11-09, sem
-reduzir N. O item da suíte tem limite de 7200 s (`TIMEOUT_PLANILHAS`). No LibreOffice, medido em 2026-11-11, o caso NOMINAL levou 61,0 s,
-o mesmo que no Excel, e o item inteiro, 2242,9 s (5/5).
+reduzir N. O item da suíte tem limite de 7200 s (`TIMEOUT_PLANILHAS`). Na suíte única, o item inteiro levou 3268,6 s no Excel e
+2242,9 s no LibreOffice (5/5 nos dois; `docs/migracao/verificacao-inc8-*.md`).
 
 ## Células existentes alteradas
 
