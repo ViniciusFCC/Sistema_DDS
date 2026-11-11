@@ -73,7 +73,8 @@ AUTOTESTE = ("tools/test_comparar_planilhas.py", 15)
 RE_RESUMO = re.compile(r"^(\d+) PASS, (\d+) FAIL, de (\d+) testes\s*$")
 # Tempo-limite por teste de planilha (padrão 1800 s). O test_workbook_v4_4 roda 61 casos pelo Excel (média de 66,1 s por caso, máximo de
 # 89,0 s, medidos em 2026-11-09) e o LibreOffice é mais lento: 7200 s. O test_workbook_v4_3 levou 1631 s no Excel em 2026-11-09 e
-# estourou os 1800 s padrão na suíte de 2026-11-10 (máquina ~15% mais lenta, sem mudança de código): 7200 s também.
+# estourou os 1800 s padrão na suíte de 2026-11-10, sem mudança de código (sozinho, levou 2595 s em 2026-11-11: o tempo
+# varia muito entre rodadas): 7200 s também.
 TIMEOUT_PLANILHAS: dict[str, int] = {"tests/test_workbook_v4_3.py": 7200, "tests/test_workbook_v4_4.py": 7200}
 RE_MUTACAO = re.compile(r"^(\d+) / (\d+)\s*$")
 # Teste da planilha (CA-09, EDR-044): Excel via COM ou LibreOffice. Sem motor, sai com
