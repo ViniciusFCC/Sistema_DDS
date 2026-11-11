@@ -84,8 +84,21 @@ São quatro arquivos, todos para `references/regulamento/`, fora do Git:
 
 Os três últimos vêm de `arquivos.saebrasil.org.br`.
 
-O download é autorizado desde a U7 do inc. 7, mas cada arquivo ainda pede o "sim" do usuário na hora, com o nome, a
-fonte e o tamanho. Isso segue a regra de segurança da sessão.
+**Aprovação prévia (usuário, 2026-11-11): os quatro downloads estão aprovados**, com duas condições:
+1. **Buscar na fonte.** O ponto de partida é a página oficial da Formula SAE Brasil, em `saebrasil.org.br`. Os
+   documentos da FSAEB vêm de `arquivos.saebrasil.org.br`. As FSAE Rules vêm do endereço que a própria FSAE Brasil
+   indica, que é o `fsaeonline.com` da SAE International. Não vale espelho, cópia de terceiros nem arquivo de equipe.
+2. **Versões completas mais recentes.** Antes de baixar, conferir na página oficial se há versão mais nova que as da
+   A3. Os casos a conferir:
+   - Addendum depois da V1.0 e Handbook depois da V2.1;
+   - documentos da FSAEB de 2027 já publicados;
+   - as Rules 2027 finais publicadas: se já saíram, substituem o rascunho.
+
+   Vale sempre o documento inteiro, nunca um resumo nem só a lista de mudanças. Se a versão escolhida não for a da A3,
+   registrar o motivo na nota de fontes.
+
+Com isso, não é preciso perguntar de novo antes de cada download. Depois de baixar, informar ao usuário o nome, a fonte
+(URL), a versão, a data e o tamanho de cada arquivo.
 
 ### Decisões do controlador (registradas)
 
@@ -245,8 +258,10 @@ uma `main` que já tem as duas anteriores.
   - `regulamento.ler(caminho: Path = CSV) -> dict[str, Regra]`;
   - `regulamento.valor(chave: str) -> float | str`.
 
-- [ ] **Step 1:** pedir o "sim" do usuário para cada um dos quatro downloads da A3, com o nome, a fonte e o tamanho
-  (tamanho conferido por `HEAD` antes). Gravar cada arquivo numa pasta nova, vazia; não rodar nada de dentro dela.
+- [ ] **Step 1:** localizar os documentos a partir da página oficial da Formula SAE Brasil e conferir se há versões
+  completas mais novas (condições 1 e 2 da A3; os quatro downloads já estão aprovados). Baixar cada um numa pasta nova e
+  vazia em `references/regulamento/`, sem rodar nada de dentro dela. Registrar o SHA-256 na nota de fontes e informar ao
+  usuário o nome, a URL, a versão, a data e o tamanho de cada arquivo.
 - [ ] **Step 2:** converter cada PDF para `.md` uma vez, com o docling ou o markitdown (se os dois MCP falharem,
   `uv run --with docling` num script fora da pasta). Ler a D.1.1, a D.10 inteira e o Addendum na parte da D.10 e da
   pontuação.
@@ -556,7 +571,14 @@ uma `main` que já tem as duas anteriores.
 
 - [ ] **Step 1:** os testes, no padrão de `tests/test_workbook_v4_4.py`, Excel via COM ou LibreOffice:
   - **TC-WB50-005 (passe de estrutura):** `copia_v50(so_estrutura=True)` contra a V4.4, com tolerância zero, em todas
-    as células, nos 61 casos do TC-WB44-005 (as mesmas perturbações).
+    as células, nos 61 casos do TC-WB44-005 (as mesmas perturbações). **Cache da V4.4 (otimização 3, 2026-11-11):** os
+    valores recalculados da V4.4 em cada caso ficam em `build/cache-v44-<motor>/<caso>.json`, um arquivo por motor. A
+    chave de validade junta o SHA-256 de `excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx`, o hash da alteração do caso e a
+    versão do motor (`rc` informa a versão do Excel ou do LibreOffice). Qualquer diferença na chave faz o caso ser
+    recalculado. A V5.0 é sempre recalculada, e a comparação continua com tolerância zero. Com `DDS_SEM_CACHE=1`, nada se
+    reaproveita. A rodada da suíte final (Task 24) usa `DDS_SEM_CACHE=1`, para que a evidência não dependa de cache.
+    Pré-checagem: um caso com o cache adulterado, mudando um valor e mantendo a chave, tem de ser detectado e reprovado.
+    Para isso, o arquivo do cache guarda também o SHA dos valores.
   - **TC-WB50-006 (equivalência com o oráculo):** nos casos sintéticos com CdA e Crr preenchidos (rotulados), o K da
     planilha = `k_com_tracao` com erro absoluto ≤ 1e-5 °/g (o critério da A5 do inc. 8), e o estado de cada ficha =
     `metas.estado_coerencia`. Os casos dirigidos: CdA em texto, Crr < 0, ficha TBD sem setup.
@@ -603,9 +625,16 @@ uma `main` que já tem as duas anteriores.
 
 ### Task 24: suíte única do incremento
 
-- [ ] **Step 1:** numa árvore sem mudanças, `uv run python -X utf8 tools/rodar_testes.py --saida
-  docs/migracao/verificacao-inc9-excel.md --titulo "..."`, com `DDS_RECALC=excel`, em segundo plano (~4 h). Depois o
-  mesmo no LibreOffice (`verificacao-inc9-libreoffice.md`).
+- [ ] **Step 1 (otimização 2, 2026-11-11): os dois motores ao mesmo tempo, em worktrees separadas.** Numa árvore sem
+  mudanças, anotar o commit C. Criar uma segunda worktree no mesmo commit, com
+  `git worktree add --detach ../inc9-suite-lo C`, e rodar `uv sync` nela. As duas suítes não podem dividir a mesma
+  `build/`: o TC-WB44-006 grava `build/cobertura-v44-casos/` e o `test_workbook_v4_1` grava `build/medir-bruto.json`.
+  Na worktree principal, rodar `DDS_RECALC=excel uv run python -X utf8 tools/rodar_testes.py --saida
+  docs/migracao/verificacao-inc9-excel.md --titulo "..."`. Na segunda, rodar ao mesmo tempo
+  `DDS_RECALC=libreoffice ... --saida <worktree principal>/docs/migracao/verificacao-inc9-libreoffice.md`. As duas vão
+  em segundo plano (~4 h) e com `DDS_SEM_CACHE=1`. O log informa o commit C das duas. Item que estourar o limite de
+  tempo é refeito sozinho, já com a outra suíte terminada; o log complementar segue o padrão do inc. 8. No fim, remover
+  a segunda worktree.
 - [ ] **Step 2:** todos os itens PASS, ou PULADO pela regra. Qualquer FAIL volta ao task dono, e a suíte é refeita só
   com a aprovação do usuário. Os EDR-071 a 074 passam a VERIFIED; commit dos logs.
 
@@ -626,9 +655,13 @@ uma `main` que já tem as duas anteriores.
 
 | Sessão | Tasks | Modelo | Depende de |
 |---|---|---|---|
-| S1 (9a) | 1 a 4 | Sonnet | — (paralela à S2) |
+| S1 (9a) | 1 a 4 | Sonnet | — (paralela à S2 e à S3; Excel só depois da suíte da `elegant-tesla-cfe8e8`) |
 | S2 (9b-1) | 5, 6, 12, 13, 14 | Sonnet; o controlador lê o regulamento | A2 e A3 aprovados |
-| S3 (9b-2) | 7 a 11, 15 | controlador (física) e Sonnet (resto) | S2 (Task 6 e 14) |
+| S3 (9b-2) | 7 a 11 já; 15 depois | controlador (física) e Sonnet (resto) | Tasks 7 a 11: nada (paralela à S1 e à S2, otimização 1); Task 15: S2 (Task 6 e 14) |
+
+Otimização 1 (2026-11-11): as Tasks 7 a 11 não leem nada da S2 e não usam Excel. A S3 começa junto com a S1 e a S2, e
+deixa o Task 15 para quando a S2 tiver entregado a conferência da D.10 e os rascunhos dos EDRs. A S2 e a S3 trabalham em
+worktrees próprias. A S3 traz a branch da S2 (merge) antes do Task 15, e o PR da 9b sai da branch da S3.
 | Passo do usuário | aprovação dos blocos e dos SUS | — | Task 15 |
 | S4 (9c-1) | 16 a 22 | Sonnet | merge da 9a e da 9b; passo do usuário |
 | S5 (9c-2) | 23 a 25 | Sonnet; suíte em segundo plano | S4 |
