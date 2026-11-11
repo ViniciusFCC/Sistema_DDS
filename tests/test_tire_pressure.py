@@ -473,7 +473,7 @@ check("TC-TIRE-018g: assimetria_alfa a 12 psi, 1054 N: dif_mu_pico >= 0 e fy_alp
       a12.dif_mu_pico >= 0 and a12.fy_alpha0_n == M1054[P[2]].fy_alpha0_n, str(a12))
 check("TC-TIRE-018g: dif_mu_pico = |μy+ − μy−|, dif_rel coerente e rótulo de origem física",
       abs(a12.dif_mu_pico - abs(M1054[P[2]].mu_y_pos.mu - M1054[P[2]].mu_y_neg.mu)) <= 1e-15
-      and a12.rotulo == "em parte física: conicidade e ply-steer" and a12.dif_rel >= 0)
+      and a12.rotulo == "em parte física: conicidade e ply-steer; com γ ≠ 0, inclui o empuxo de camber" and a12.dif_rel >= 0)
 
 ok_ck, det_ck = True, []
 for q, pr in zip(P, PERFIS, strict=True):
@@ -644,7 +644,7 @@ res_pdy = cp.comparar_carro(caso_pdy, FAMILIA, **KW)
 check("TC-TIRE-021e: PDY1 do ds trocado (≠ .tir, não é λ): rotulos de todos os ResultadoCarro citam 'PDY1'",
       len(res_pdy) == 4 and all(any("PDY1" in x for x in r.rotulos) for r in res_pdy)
       and not any("PDY1" in x for r in RA for x in r.rotulos)
-      and set(cp.diferencas_fora_de_lambda(ds_pdy, FAMILIA.at_pressure(12.0), TETO)) == {"PDY1"})
+      and set(cp.diferencas_fora_de_lambda(ds_pdy, FAMILIA.at_pressure(12.0))) == {"PDY1"})
 
 check("TC-TIRE-021f: eixo_satura, k_rad e rótulos fixos coerentes",
       all(r.eixo_satura == {"PUSH": "F", "LOOSE": "R", "NEUTRO": "ambos"}.get(r.veredito) for r in RES)

@@ -68,14 +68,13 @@ def perfil_ajustado(ds_caso: _base.TireDataset, profile: ts.StaticTireProfile,
     return ds, tuple(rotulos)
 
 
-def diferencas_fora_de_lambda(ds_caso: _base.TireDataset, profile: ts.StaticTireProfile,
-                              teto_fz_n: float) -> dict[str, tuple[float, float]]:
+def diferencas_fora_de_lambda(ds_caso: _base.TireDataset,
+                              profile: ts.StaticTireProfile) -> dict[str, tuple[float, float]]:
     """Coeficientes do caso ≠ do perfil, fora de FATORES_LAMBDA e de FZMAX: {nome: (caso, perfil)}.
 
     O `perfil_ajustado` troca esses coeficientes pelos do `.tir` sem aviso; esta função é o aviso. Só olha nomes que
-    existem nos dois. `teto_fz_n` entra só na assinatura (FZMAX já fica de fora, porque é reescrito de propósito).
+    existem nos dois (FZMAX fica de fora, porque é reescrito de propósito).
     """
-    del teto_fz_n
     return {n: (float(v), float(profile.parameters[n])) for n, v in ds_caso.p.items()
             if n not in eq.FATORES_LAMBDA and n != "FZMAX" and n in profile.parameters
             and float(v) != float(profile.parameters[n])}
@@ -123,7 +122,7 @@ def comparar_carro(caso: eq.CasoEquilibrio, family: ts.StaticTireFamily, *,
     """Roda o caso com o ds de cada pressão (ordem crescente): variante "a" e, com `kt_caso_n_m`, a "b".
 
     `kt_caso_n_m` = {"F": KTF, "R": KTR} [N/m], os KT com que o K_φ do caso foi calculado. `fatores_lambda` liga a
-    robustez (varredura_pneu), com a hipótese de que a perda TTC→pista é a mesma em todas as pressões.
+    robustez (varredura_pneu, só no sentido esquerdo), com a hipótese de que a perda TTC→pista é a mesma em todas as pressões.
     `**kw_analise` (ay_max_g, passo_g, n_alfa, formas…) vai a analise_par_dois_sentidos e a varredura_pneu.
     """
     if not isinstance(family, ts.StaticTireFamily):
@@ -131,7 +130,7 @@ def comparar_carro(caso: eq.CasoEquilibrio, family: ts.StaticTireFamily, *,
                         "10_TIRE (coeficientes de 12 psi) por cima do .tir e devolveria 12 psi em silêncio")
     teto = tp.teto_comum_fz(family)
     base12 = family.at_pressure(12.0)
-    difs = diferencas_fora_de_lambda(caso.ds, base12, teto)
+    difs = diferencas_fora_de_lambda(caso.ds, base12)
     rot_difs = tuple(f"{n} do caso ({a:g}) difere do .tir de 12 psi ({b:g}); o ds de cada pressão usa o do .tir"
                      for n, (a, b) in difs.items())
     rs = caso.roll_steer
@@ -164,7 +163,9 @@ def comparar_carro(caso: eq.CasoEquilibrio, family: ts.StaticTireFamily, *,
             if fatores_lambda:
                 robustez = eq.veredito_robusto([r.veredito for _, r in eq.varredura_pneu(caso_p, fatores_lambda,
                                                                                          **kw_analise)])
-                rot_rob = ("hipótese: a perda TTC→pista é a mesma em todas as pressões",)
+                rot_rob = ("hipótese: a perda TTC→pista é a mesma em todas as pressões",
+                           "robustez no sentido esquerdo (a varredura de λ cobre só a curva à esquerda; o "
+                           "a_y_lim e o veredito vêm do pior dos dois sentidos)")
             saida.append(ResultadoCarro(
                 pressao_psi=q, variante_kt=var, ay_lim_ms2=res.ay_lim, sentido_pior=par["pior"],
                 eixo_satura=_EIXO_POR_VEREDITO.get(res.veredito), veredito=res.veredito, k_rad_ms2=pk.k_total,
@@ -191,7 +192,7 @@ _MOTIVO_BORDA = "pico na borda da grade de α: valor é limitante inferior"
 @dataclass(frozen=True)
 class Banda:
     """Faixa heurística (nunca intervalo de confiança). `valor` None = banda indisponível; `medida` False nos
-    extremos (8 e 14 psi), onde o valor é o maior |LOO| interno (limite inferior)."""
+    extremos (8 e 14 psi), onde o valor é a maior banda interna, que inclui resolução ou piso (limite inferior)."""
     valor: float | None
     medida: bool
     componentes: Mapping[str, float]
@@ -307,8 +308,12 @@ def decidir(valores: Mapping[float, float | None], bandas: Mapping[float, Banda]
             return pronto(None, indist, f"extremo sem banda medida: {p_star:.3g} psi "
                                         "não é declarada a melhor sozinha")
         return pronto(p_star, indist, f"melhor: {p_star:.3g} psi")
+    fora = sorted(q for q in dec if q not in indist and not bandas[q].medida)
+    if fora:
+        sufixo += f"; {_ps(fora)} psi fora do conjunto com banda não medida (limite inferior)"
     if len(indist) == len(dec):
-        return pronto(None, indist, "todas indistinguíveis" + sufixo)
+        todas = "todas as decidíveis indistinguíveis" if nd else "todas indistinguíveis"
+        return pronto(None, indist, todas + sufixo)
     return pronto(None, indist, f"indistinguíveis: {_ps(indist)} psi" + sufixo)
 
 
@@ -343,7 +348,7 @@ def escolher_pressao(criterio: str, *, resultados_carro: Sequence[ResultadoCarro
     `a_y_lim`: um Veredito por variante de KT presente ("KT (a)", "KT (b)"), e `veredito_muda_com_kt` quando as
     duas existem (muda se o melhor, o conjunto indistinguível ou o conjunto não decidível diferem).
     `C_alpha_operacao`: um por eixo ("eixo F", "eixo R"), Cα de `metricas_pneu` na Fz estática do eixo
-    (`fz_estatica_eixo_n` é a Fz estática por pneu do eixo, em N; limitada ao teto comum, com rótulo) e no camber estático do eixo; `veredito_muda_com_kt` = None.
+    (`fz_estatica_eixo_n` é a Fz estática por pneu do eixo, em N, em a_y = 0 e com a downforce do caso; limitada ao teto comum, com rótulo) e no camber estático do eixo; `veredito_muda_com_kt` = None.
     """
     if criterio in CRITERIOS_TBD:
         raise ValueError(f"critério {criterio!r}: meta TBD (sem alvo definido na ficha); só se escolhe por "
