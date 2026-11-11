@@ -76,8 +76,8 @@ teste): abrir 8,51 s (inclui o cálculo de carga), `CalculateFull` 0,11 s, grava
 O tempo real por caso foi maior que o previsto: na rodada final de 61 casos, média de 66,1 s e máximo de 89,0 s. Na rodada
 anterior de 35 casos, a média foi de 45,1 s e o máximo, de 75,4 s (P09). Antes disso, uma rodada parcial passou de 60 s, o
 limite de A4, e a execução parou e avisou. O usuário aprovou o limite de **120 s por caso** (`LIMITE_S`) em 2026-11-09, sem
-reduzir N. O item da suíte tem limite de 7200 s (`TIMEOUT_PLANILHAS`), porque o LibreOffice é mais lento e ainda não foi
-medido nesta planilha.
+reduzir N. O item da suíte tem limite de 7200 s (`TIMEOUT_PLANILHAS`). No LibreOffice, medido em 2026-11-11, o caso NOMINAL levou 61,0 s,
+o mesmo que no Excel, e o item inteiro, 2242,9 s (5/5).
 
 ## Células existentes alteradas
 
@@ -100,8 +100,23 @@ a suíte única; a 12 (auditoria do LEIA-ME e aviso dos campos dos `.docx`) fico
 Contagens esperadas: `test_v4_4` 4 (TC-WB44-001 a 004), `test_workbook_v4_4` 5 (TC-WB44-005, TC-WB44-006 e 3 checagens de
 apoio: ausência de funções voláteis, fecho de dependentes das exceções vazio e pré-checagem da contagem de ramos), mutação da
 planilha V4.4 4/4. Medido nos Tasks 14 a 17: `test_workbook_v4_4` 5 PASS de 5 no Excel (61 casos, 0 diferença; 1552 de 1624
-lados cobertos, 72 aprovados) e a mutação 4/4. A suíte única, sem `--pular-recentes`, no Excel e no LibreOffice, ainda não
-rodou: **a confirmar** (Task 19). Só depois dela o EDR-070 passa de IMPLEMENTED a VERIFIED.
+lados cobertos, 72 aprovados) e a mutação 4/4.
+
+Suíte única, sem `--pular-recentes` (Task 19):
+
+- **Excel** (`docs/migracao/verificacao-inc8-excel.md`, commit 01930ef, 2026-11-10 23:28 a 2026-11-11 03:08): todos os itens PASS,
+  inclusive `test_workbook_v4_4` 5/5 (3268,6 s), a mutação da V4.4 4/4 e "planilha vs V4.3/V4.4 de referência", menos o CA-09
+  `test_workbook_v4_3`, que estourou o limite padrão de 1800 s sem nenhuma conferência falha (1631 s em 2026-11-09). O commit
+  44341e8 sobe o limite desse item para 7200 s, e só ele foi refeito (decisão do usuário): 3/3 em 2595,4 s
+  (`verificacao-inc8-excel-v43.md`).
+- **LibreOffice** (`verificacao-inc8-libreoffice.md`, commit e3dc12b, 2026-11-11 04:12 a 08:48): todos os itens PASS, inclusive
+  `test_workbook_v4_4` 5/5 (2242,9 s), menos o mesmo `test_workbook_v4_3`, que sai com código 3 porque o TC-WB43-005
+  (`HasFormula`/`FormulaHidden` via COM) só roda no Excel e o script para antes do 004. É código da V4.3, que nunca tinha rodado
+  no LibreOffice. O 003 e o 004 refeitos no LibreOffice: 2/2 em 1335,2 s (`verificacao-inc8-libreoffice-v43.md`). Decisão do
+  usuário: registrar; fazer o 005 sair PULADO fora do Excel, e o executor aceitar isso, é pendência.
+
+Com isso o EDR-070 e o EDR-064 passaram a VERIFIED (2026-11-11). As pendências 1 e 2 do inc. 7 (suíte no LibreOffice e
+"planilha vs V4.3 de referência") ficam cobertas por esses logs.
 
 ## CA-07 daqui em diante
 

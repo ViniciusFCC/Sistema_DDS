@@ -47,7 +47,7 @@ Foco declarado: completar a planilha (EDR-019).
   `docs/superpowers/specs/2026-10-27-inc6-mmm-escada-design.md`): `python/mmm.py` (MMM em raio fixo), `python/escada.py`
   (escada de hipóteses) e `tools/relatorio_escada.py`. Código e testes prontos; o relatório `docs/inc6/escada-hipoteses.md`
   agora roda com os dois R provisórios da 7a (9,125 m na linha central e 8,385 m rente aos cones). Nos dois, nenhum eixo satura até 2 g e todas as linhas dão N/A, com o Ackermann e a h9 desligados; por isso ele não dá base para a tolerância do EDR-065, que precisa de outro caso (Ackermann e tração ligados e um eixo que sature) ou de uma decisão sem ele.
-  EDR-064 APPROVED (VERIFIED depois da suíte única do inc. 8); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
+  EDR-064 VERIFIED (suíte única do inc. 8, 2026-11-11); EDR-065 (tolerância e regra do NEUTRO) está APPROVED desde 2026-11-09
   (item 3: só não inverter o veredito; o valor da tolerância fica a confirmar com o T11) e EDR-066 (achados sobre Ackermann e
   Fx exigido) está APPROVED e IMPLEMENTED na V4.3.
 - V4.3 (incremento 7, partes 7a e 7b; PRs #32 e #34 mesclados em 2026-11-09; tag `v4.3` no merge f7862de; EDR-065 itens 2 e 3,
@@ -56,14 +56,17 @@ Foco declarado: completar a planilha (EDR-019).
   registros de versões V4.2 e V4.3 e o EDR em .docx de 2026-11-09 em `Documentacao\` (os da V4.1 em `Documentacao\_anteriores\`). A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
   aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Suíte inteira no Excel em 2026-11-09 (commit e94abf0): todos PASS, 2 PULADO (`test_escada`, `test_v4_3`). Revisão final feita
   (pronta para PR); minors adiados no PR #34 (pendências).
-- Incremento 8 (branch `claude/frosty-jang-b87ba8`; spec e plano em `docs/superpowers/`; EDR-070 IMPLEMENTED, VERIFIED só depois da suíte
-  única; EDR-064 APPROVED, VERIFIED na mesma suíte): a parte 8a tratou as pendências do inc. 7 e a 8b gerou a **V4.4** (fundação parte 2,
+- Incremento 8 (branch `claude/frosty-jang-b87ba8`; spec e plano em `docs/superpowers/`; EDR-070 e EDR-064
+  VERIFIED na suíte única de 2026-11-11): a parte 8a tratou as pendências do inc. 7 e a 8b gerou a **V4.4** (fundação parte 2,
   2026-11-09): as fórmulas das abas 03 a 14 leem por nome toda célula única, com valores iguais aos da V4.3. A V4.4 de referência é
   `excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx` (146373 fórmulas, 29 abas, 1290 nomes: os 1266 da V4.3 e 24 de `data/nomes_V4_4.csv`;
   `docs/registro-de-versoes-V4_4.md`). Mudam 428 células da V4.3: 422 fórmulas reescritas pela regra e 6 das exceções X2 a X5
   (16_EQUILIBRIO F188, limitação do K do EDR-066; 14_DASHBOARD B48; 00_README A3; 15_CHANGELOG A24:C24). **Ainda não é a viva
   do Drive**: a troca (e o LEIA-ME e os .docx) é o fechamento do incremento e só sai com a confirmação do usuário. A viva continua a
-  V4.3. Falta a suíte única (Excel e LibreOffice), a revisão final, o PR, o merge e a tag `v4.4`.
+  V4.3. Suíte única feita (2026-11-10 e 11; logs `docs/migracao/verificacao-inc8-*.md`): todos os itens PASS menos o
+  `test_workbook_v4_3`, que no Excel estourou os 1800 s (refeito sozinho com 7200 s: 3/3) e no LibreOffice sai com código 3 porque o
+  TC-WB43-005 só roda no Excel (003 e 004 refeitos no LibreOffice: 2/2; correção do teste e do executor é pendência). Revisão final
+  feita. Falta o PR, o merge e a tag `v4.4`.
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
