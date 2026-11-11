@@ -338,8 +338,12 @@ def main() -> int:
       "interior\". Cγ: μy(γ) sem informação de pressão (PDY3 = 2 nos quatro perfis). Cκ e μx: ajuste longitudinal "
       "mal condicionado (PKX2/PKX3 instáveis). Assimetria ±α em parte física (conicidade e ply-steer) e, com γ ≠ 0, inclui o empuxo de camber.")
     w("")
-    w("Penalidade de transferência: não apresentada — ΔFz sem fonte (o 12 psi não tem a_y limite). A função está "
-      "implementada (TC-TIRE-015c), e o ΔFz vem de quem chama; nenhum valor é inventado aqui.")
+    if ay_lim12 is None:
+        w("Penalidade de transferência: não apresentada — ΔFz sem fonte (o 12 psi não tem a_y limite). A função está "
+          "implementada (TC-TIRE-015c), e o ΔFz vem de quem chama; nenhum valor é inventado aqui.")
+    else:
+        w("Penalidade de transferência: não apresentada neste relatório; o ΔFz vem de quem chama (TC-TIRE-015c) e não "
+          "é calculado aqui.")
     w("")
     for g in gamas:
         w(f"### 2.{gamas.index(g) + 1} γ = {graus(g)}")
