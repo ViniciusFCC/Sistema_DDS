@@ -89,6 +89,8 @@ estático do caso).
 | Rigidez vertical | `VERTICAL_STIFFNESS` do `.tir` | valor do arquivo, linear, origem não verificada |
 | Anexo: trilha t0 e α do pico de Mz | t0 = −(∂Mz/∂α)/(∂Fy/∂α) em α=0 | pendente do item 3 do EDR-067; fora do A1-escolha |
 
+> Divergências aprovadas: ver EDR-071 item 9 (sinal do Cκ, banda dos extremos e demais).
+
 Indicadores de incerteza, ao lado de cada métrica: erro deixando um perfil de fora (|LOO|, em 10 e 12 psi; ausente em
 8 e 14, declarado); assimetria ±α (pico α>0 vs α<0 e Fy em α=0; em parte física: conicidade e ply-steer);
 monotonicidade com a pressão. Derivadas por diferença central com o passo do `tire_model` (1e-6). Tabelas sem ranking.
@@ -110,6 +112,8 @@ monotonicidade com a pressão. Derivadas por diferença central com o passo do `
   modelo (invertido pelo espelhamento nas rodas esquerdas); linha de base demonstrativa.
 
 ## 8. A1-escolha: `escolher_pressao`
+
+> Divergências aprovadas: ver EDR-071 item 9 (regra 3 do `decidir` e regra dos extremos não resolvidos).
 
 - Critério explícito, de lista fechada, com o sentido de "melhor": `a_y_lim` (máximo); `C_alpha_operacao` (máximo, na
   Fz estática por eixo). `K` (TARGET-006) e `TARGET-007` só com alvo definido na ficha; hoje são TBD e o código só
