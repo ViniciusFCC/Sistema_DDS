@@ -50,9 +50,11 @@ Sem mudança de engenharia; nenhum valor muda.
    roda `test_executor` e o `test_workbook_v4_3` nos dois motores e vira PR próprio (com o "sim" do usuário).
 2. **Minors do PR #37**, em lotes por arquivo (lista na descrição do PR #37, seção Pendências):
    - T1 `argumentos_planilha(ref30=None)` gera "None";
-   - T4/T5 linhas longas em `escada.py` e `equilibrio.py`;
+   - T4/T5 linhas longas em `escada.py` e `equilibrio.py`: **vão para a 9b** (4.4), que mexe nesses arquivos ao tirar a
+     chave 0; assim a 9a não toca arquivo da 9b e as duas rodam em paralelo;
    - T6 `test_skidpad` (só registro: a conversão LF já está feita);
-   - T9 `guarda_h2_h2v` por substring (vira por chave);
+   - T9 `guarda_h2_h2v` por substring: **vai para a 9b** (4.4); a guarda perde o objeto com a retirada da chave 0 e sai ou
+     é reescrita lá;
    - T11 limites do Tokenizer na `reescrita_nomes` (espaço duplo, `_xlfn.`, maiúsculas, escopo de aba): documentar e testar;
    - T12/T15 SHA da V4.3 de `excel/` sem conferência contra a tag; `nomes_v4_4` importa funções privadas;
    - T13 pré-checagem de X2 a X5 sem conteúdo; `docProps/core.xml` não reproduzível (documentar);
@@ -124,7 +126,8 @@ os quatro estados.
 Saem as formas antigas do Ackermann e do Fx exigido: `FORMAS_V42` e o parâmetro `formas` de `equilibrio_linear.parcelas_k`
 (padrão hoje `FORMAS_V42`) e das funções que o recebem; as entradas de `mmm.VARIANTES` para h2v e h9v ficam com uma só forma;
 a linha "planilha V4.2" da escada e os testes que só existiam para ela (`test_formas_v43` muda para conferir a forma única).
-O relatório `docs/inc6/escada-hipoteses.md` é regenerado. A tag `v4.2` guarda a forma antiga.
+O relatório `docs/inc6/escada-hipoteses.md` é regenerado. A tag `v4.2` guarda a forma antiga. Junto entram os minors T4/T5
+(linhas longas em `escada.py` e `equilibrio.py`) e T9 (`guarda_h2_h2v`), vindos da 9a.
 
 ### 4.5 CA-07 por texto contra a V4.4
 
