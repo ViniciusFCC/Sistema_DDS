@@ -51,22 +51,23 @@ Foco declarado: completar a planilha (EDR-019).
   (item 3: só não inverter o veredito; o valor da tolerância fica a confirmar com o T11) e EDR-066 (achados sobre Ackermann e
   Fx exigido) está APPROVED e IMPLEMENTED na V4.3.
 - V4.3 (incremento 7, partes 7a e 7b; PRs #32 e #34 mesclados em 2026-11-09; tag `v4.3` no merge f7862de; EDR-065 itens 2 e 3,
-  EDR-066, EDR-068 e EDR-069). Desde 2026-11-09 a **planilha viva da equipe é a cópia da V4.3** no Drive
-  (`Planilha DDS\FSAE_EV_Suspension_Fase1_V4_3.xlsx`, SHA igual ao da tag `v4.3`; `conferir_viva` código 0), com o LEIA-ME, os
-  registros de versões V4.2 e V4.3 e o EDR em .docx de 2026-11-09 em `Documentacao\` (os da V4.1 em `Documentacao\_anteriores\`). A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
+  EDR-066, EDR-068 e EDR-069). A troca da viva para a V4.3 (2026-11-09) **nunca chegou ao Drive**: a cota Google do usuário estava
+  cheia e o Drive para desktop guardou os arquivos no `lost_and_found` local (SHA igual ao da tag, sem dados da equipe). A V4.3 de referência está em `excel/FSAE_EV_Suspension_Fase1_V4_3.xlsx` (146373 fórmulas, 29 abas, 1266 nomes;
   aba nova `24_CURVA`; `docs/registro-de-versoes-V4_3.md`). Suíte inteira no Excel em 2026-11-09 (commit e94abf0): todos PASS, 2 PULADO (`test_escada`, `test_v4_3`). Revisão final feita
   (pronta para PR); minors adiados no PR #34 (pendências).
-- Incremento 8 (branch `claude/frosty-jang-b87ba8`; spec e plano em `docs/superpowers/`; EDR-070 e EDR-064
+- V4.4 (incremento 8; PR #37 mesclado em 2026-11-11; tag `v4.4` no merge 79a8a33; spec e plano em `docs/superpowers/`; EDR-070 e EDR-064
   VERIFIED na suíte única de 2026-11-11): a parte 8a tratou as pendências do inc. 7 e a 8b gerou a **V4.4** (fundação parte 2,
   2026-11-09): as fórmulas das abas 03 a 14 leem por nome toda célula única, com valores iguais aos da V4.3. A V4.4 de referência é
   `excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx` (146373 fórmulas, 29 abas, 1290 nomes: os 1266 da V4.3 e 24 de `data/nomes_V4_4.csv`;
   `docs/registro-de-versoes-V4_4.md`). Mudam 428 células da V4.3: 422 fórmulas reescritas pela regra e 6 das exceções X2 a X5
-  (16_EQUILIBRIO F188, limitação do K do EDR-066; 14_DASHBOARD B48; 00_README A3; 15_CHANGELOG A24:C24). **Ainda não é a viva
-  do Drive**: a troca (e o LEIA-ME e os .docx) é o fechamento do incremento e só sai com a confirmação do usuário. A viva continua a
-  V4.3. Suíte única feita (2026-11-10 e 11; logs `docs/migracao/verificacao-inc8-*.md`): todos os itens PASS menos o
+  (16_EQUILIBRIO F188, limitação do K do EDR-066; 14_DASHBOARD B48; 00_README A3; 15_CHANGELOG A24:C24). Desde 2026-11-11 a
+  **planilha viva da equipe é a cópia da V4.4** no Drive (`Planilha DDS\FSAE_EV_Suspension_Fase1_V4_4.xlsx`, SHA igual ao da tag
+  `v4.4`; `conferir_viva` código 0), com o LEIA-ME, o registro de versões V4.4 e o EDR em .docx de 2026-11-11 em `Documentacao\`.
+  Diretriz do usuário (2026-11-11): o Drive fica só com a versão atual, sem `_anteriores`; as anteriores estão nas tags. Depois de
+  gravar no Drive, confira no navegador (drive.google.com), não só em `H:`. Suíte única feita (2026-11-10 e 11; logs `docs/migracao/verificacao-inc8-*.md`): todos os itens PASS menos o
   `test_workbook_v4_3`, que no Excel estourou os 1800 s (refeito sozinho com 7200 s: 3/3) e no LibreOffice sai com código 3 porque o
   TC-WB43-005 só roda no Excel (003 e 004 refeitos no LibreOffice: 2/2; correção do teste e do executor é pendência). Revisão final
-  feita. PR #37 aberto; falta o merge e a tag `v4.4`.
+  feita; pendências (minors das revisões) na descrição do PR #37.
 
 ## Comandos
 - Ambiente: `uv sync` (Python 3.13). No Git Bash, rode `export UV_SYSTEM_CERTS=1` antes de
