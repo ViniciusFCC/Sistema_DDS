@@ -1,16 +1,22 @@
 """Testes do pneu-1 (sensibilidade do pneu e arrasto induzido), EDR-075. Script com check(), não pytest.
 
-Esta parte (Task 1) não precisa do .tir: catálogo, leitura, edição e gravação do caso, e o x da planilha.
+TC-SEN-001 a 005 não precisam do .tir: catálogo, leitura, edição e gravação do caso, e o x da planilha.
+TC-SEN-006 a 008 precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
+caso_pneu1.achar_ttc): sem eles, a seção imprime NÃO EXECUTÁVEL e o script sai com o código 3 depois das outras.
 Os dados do teste são SINTÉTICOS de teste, não são dado do carro (números do veiculo_base de tests/test_equilibrio.py).
 """
 from __future__ import annotations
 
 import copy
+import dataclasses
 import tempfile
 from pathlib import Path
 
 import aba_equilibrio as ae
+import caso_planilha as cpl
 import caso_pneu1 as cp
+import comparacao_pressao as cmp
+import equilibrio as eq
 
 results = []
 
@@ -116,5 +122,77 @@ check("TC-SEN-005 valores_usados: todos os campos e os 5 res_ com a célula; nul
       and {v.calculado_por for v in res} == {"05_VEHICLE B4", "05_VEHICLE B9", "05_VEHICLE B10", "05_VEHICLE B16",
                                              "05_VEHICLE B17"}
       and nulo.valor is None and nulo.origem == cp.ORIGEM_A_CONFIRMAR and not nulo.editado)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Seção com .tir (TC-SEN-006 a 008)
+# ---------------------------------------------------------------------------------------------------------------------
+TTC = cp.achar_ttc()
+if TTC is None:
+    print("\nNÃO EXECUTÁVEL: TC-SEN-006 a 008 precisam dos .tir do TTC Round 6 (defina DDS_TTC_DIR ou coloque-os em "
+          f"{cp.SUBDIR_TTC.as_posix()}). Não conta como aprovado.")
+    encerrar()
+    raise SystemExit(3)
+
+FAM = cp.familia_ttc()
+TIR12 = FAM.at_pressure(12.0).source_path
+
+
+def campos_diferentes(c1: eq.CasoEquilibrio, c2: eq.CasoEquilibrio) -> list[str]:
+    """Nomes dos campos do CasoEquilibrio que diferem (igualdade exata; ds pelo dataclass inteiro)."""
+    return [f.name for f in dataclasses.fields(c1) if getattr(c1, f.name) != getattr(c2, f.name)]
+
+
+# TC-SEN-006: o caso de caso_de_dados é o de _caso_de_valores sobre o x com os res_ escritos à mão; formas; Direita
+x_mao = {c.chave_x: D["campos"][k]["valor"] for k, c in cp.CAMPOS.items() if c.chave_x is not None}
+x_mao.update(m=182.0 + 68.0, a=1.55 * (1 - 0.46), b=1.55 * 0.46, huF=18.1 * 0.0254 / 2 * 1.0,
+             huR=18.1 * 0.0254 / 2 * 1.0, motivo_r="")
+x_mao["coef_nomes"] = {n: 1.0 for n in cp.LAMBDAS}
+x_mao["coef"] = [1.0] * len(cp.LAMBDAS)
+montado = cp.caso_de_dados(D, FAM)
+passo1 = True       # epsF e epsR presentes (0) nos dados sintéticos: o mesmo passo1 que caso_de_dados escolhe
+oraculo = cpl._caso_de_valores(x_mao, TIR12, passo1, ae.VERIFICACOES_V43, cp.FONTE_CASO)
+dif = campos_diferentes(montado.caso, oraculo)
+dir_ = cp.caso_de_dados(cp.editar(D, sentido="Direita"), FAM)
+dif_dir = campos_diferentes(dir_.caso, eq.espelhar(montado.caso))
+check("TC-SEN-006 caso_de_dados = _caso_de_valores(x à mão); formas v43/v43; Direita = espelhar(Esquerda)",
+      not dif and montado.caso.cfg == oraculo.cfg and montado.caso.toe_rad == oraculo.toe_rad
+      and montado.caso.camber_estatico_rad == oraculo.camber_estatico_rad
+      and montado.caso.ganho_camber == oraculo.ganho_camber and montado.caso.raio_m == oraculo.raio_m
+      and montado.caso.ds.p == oraculo.ds.p and montado.formas == eq.Formas("v43", "v43")
+      and montado.fator_neutro == 4 / 3 and montado.kt_n_m == {"F": 120000.0, "R": 120000.0}
+      and montado.valores == cp.valores_usados(D) and not dif_dir and dir_.formas == montado.formas
+      and cp.ROTULO_SEM_ROLL_STEER not in montado.rotulos,
+      f"diferentes={dif}, direita={dif_dir}, formas={montado.formas}")
+
+# TC-SEN-007: ds.p = perfil de 12 psi com os lambda_* do JSON por cima; nada fora dos λ difere do perfil
+L = cp.editar(D, lambda_LMUY=1.2, lambda_LKY=0.8)
+caso_l = cp.caso_de_dados(L, FAM).caso
+perfil12 = FAM.at_pressure(12.0)
+esperado = {**dict(perfil12.parameters), **{n: L["campos"][f"lambda_{n}"]["valor"] for n in cp.LAMBDAS}}
+fora = cmp.diferencas_fora_de_lambda(caso_l.ds, perfil12)
+check("TC-SEN-007 ds.p = perfil de 12 psi com os lambda_* do JSON; diferencas_fora_de_lambda vazio",
+      caso_l.ds.p == esperado and caso_l.ds.p["LMUY"] == 1.2 and caso_l.ds.p["LKY"] == 0.8 and fora == {}
+      and cmp.diferencas_fora_de_lambda(montado.caso.ds, perfil12) == {}, f"fora={fora}")
+
+
+def levanta_sem(fn, trecho) -> tuple[bool, str]:
+    try:
+        fn()
+    except ValueError as exc:
+        return trecho in str(exc), str(exc)
+    return False, "não levantou"
+
+
+# TC-SEN-008: entrada inválida para a planilha levanta ValueError com o texto da verificação
+r_f = levanta_sem(lambda: cp.caso_de_dados(cp.editar(D, f_dianteira=1.5), FAM), "SUS-006")
+r_h3 = levanta_sem(lambda: cp.caso_de_dados(cp.editar(D, h9=1), FAM), ae.MSG_H3)
+r_crr = levanta_sem(lambda: cp.caso_de_dados(cp.editar(D, h9=1, h3=1, rho_kg_m3=1.2, cda_m2=1.0), FAM),
+                    "Crr a confirmar")
+D_sem_eps = copy.deepcopy(D)          # editar não aceita null: o campo nulo é escrito direto, como num JSON
+D_sem_eps["campos"]["epsF_rad_rad"].update(valor=None, origem=cp.ORIGEM_A_CONFIRMAR)
+sem_eps = cp.caso_de_dados(D_sem_eps, FAM)
+check("TC-SEN-008 f_dianteira 1,5, h9 sem h3 e h9 com Crr nulo levantam ValueError; eps nulo = passo1 False + rótulo",
+      r_f[0] and r_h3[0] and r_crr[0] and cp.ROTULO_SEM_ROLL_STEER in sem_eps.rotulos
+      and sem_eps.caso.roll_steer == {"F": 0.0, "R": 0.0}, f"{r_f[1]} | {r_h3[1]} | {r_crr[1]}")
 
 encerrar()

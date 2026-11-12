@@ -20,7 +20,8 @@ from typing import Literal
 import aba_curva
 import origens
 import aba_equilibrio as ae
-from equilibrio import FATORES_LAMBDA
+import tire_model_static as ts
+from equilibrio import FATORES_LAMBDA, CasoEquilibrio, Formas
 from tire_model import AXIS_TRANSFORMS
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -344,3 +345,75 @@ def valores_usados(dados: dict) -> tuple[ValorUsado, ...]:
         origem = ORIGEM_A_CONFIRMAR if res[k] is None else max((e["origem"] for e in ent), key=pos)
         out.append(ValorUsado(k, res[k], unidade, origem, any(bool(e.get("editado", False)) for e in ent), celula))
     return tuple(out)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Família do TTC e montagem do CasoEquilibrio (D1)
+# ---------------------------------------------------------------------------------------------------------------------
+SUBDIR_TTC = Path("references") / "ttc" / "round6_hoosier_r25b_20p5x7_13_7in"
+PRESSAO_DO_CASO_PSI = 12.0          # o .tir do caso (D1): o perfil de 12 psi da família
+FONTE_CASO = "caso do pneu-1 (JSON)"
+ROTULO_SEM_ROLL_STEER = "K com roll steer 0 = sem dado"
+
+
+def _tem_quatro_tir(c: Path) -> bool:
+    return c.is_dir() and len(list(c.glob("*PAC02_UM4.tir"))) >= 4
+
+
+def achar_ttc() -> Path | None:
+    """Pasta com os quatro .tir do TTC Round 6, pela regra de tests/test_tire_pressure.py::achar_diretorio_ttc: se
+    DDS_TTC_DIR estiver definido, só ele vale (inválido = None, sem cair para outra pasta); senão, SUBDIR_TTC na raiz
+    deste checkout ou na raiz do repositório principal (worktrees ficam em .claude/worktrees/x). None = não achou."""
+    env = os.environ.get("DDS_TTC_DIR")
+    if env:
+        return Path(env) if _tem_quatro_tir(Path(env)) else None
+    candidatos = [RAIZ / SUBDIR_TTC]
+    if len(RAIZ.parents) >= 3 and RAIZ.parent.name == "worktrees":
+        candidatos.append(RAIZ.parents[2] / SUBDIR_TTC)
+    return next((c for c in candidatos if _tem_quatro_tir(c)), None)
+
+
+def familia_ttc() -> ts.StaticTireFamily:
+    """A família de perfis do TTC Round 6 (8, 10, 12 e 14 psi), lida em ISO_TYDEX. Sem a pasta, FileNotFoundError."""
+    pasta = achar_ttc()
+    if pasta is None:
+        env = os.environ.get("DDS_TTC_DIR")
+        onde = (f"DDS_TTC_DIR={env} não é uma pasta com os quatro arquivos *PAC02_UM4.tir" if env
+                else f"nenhuma pasta {SUBDIR_TTC.as_posix()} com os quatro arquivos *PAC02_UM4.tir")
+        raise FileNotFoundError(
+            "sem os .tir do TTC Round 6: defina DDS_TTC_DIR com a pasta dos arquivos do pneu, ou coloque-os em "
+            f"{SUBDIR_TTC.as_posix()} ({onde}). Eles não ficam no Git.")
+    return ts.load_profile_family(pasta, source_axis_system="ISO_TYDEX")
+
+
+@dataclass(frozen=True)
+class CasoMontado:
+    """O caso pronto para o equilíbrio. `formas` das chaves h2v e h9v (1 = "v43", 0 = "v42"); `fator_neutro` do JSON
+    (24_CURVA B34); `kt_n_m` a rigidez vertical do pneu por eixo ("F", "R"; N/m), para a variante de KT;
+    `valores` os valores usados (valores_usados); `rotulos` os avisos próprios do caso."""
+    caso: CasoEquilibrio
+    formas: Formas
+    fator_neutro: float
+    kt_n_m: dict[str, float]
+    valores: tuple[ValorUsado, ...]
+    rotulos: tuple[str, ...]
+
+
+def caso_de_dados(dados: dict, familia: ts.StaticTireFamily) -> CasoMontado:
+    """Monta o CasoEquilibrio do caso `dados` (D1): o `x` de `x_de_dados` vai para `caso_planilha._caso_de_valores`
+    com o .tir de 12 psi da família e as verificações da V4.3, então as verificações, as mensagens e a montagem são as
+    da planilha (entrada inválida: ValueError com o texto dela). Sem epsF ou epsR, o caso sai com passo1=False (roll
+    steer 0) e o rótulo ROTULO_SEM_ROLL_STEER."""
+    import caso_planilha
+    _checar_estrutura(dados)
+    x = x_de_dados(dados)
+    passo1 = _eh_num(x["epsF"]) and _eh_num(x["epsR"])
+    rotulos = () if passo1 else (ROTULO_SEM_ROLL_STEER,)
+    tir = familia.at_pressure(PRESSAO_DO_CASO_PSI).source_path
+    # Rotina privada de caso_planilha, de propósito (D1): é o mesmo corpo de caso_da_planilha_v43, sem a leitura da
+    # planilha. Só esta função a chama.
+    caso = caso_planilha._caso_de_valores(x, tir, passo1, ae.VERIFICACOES_V43, FONTE_CASO)
+    formas = Formas("v43" if x["h2v"] == 1 else "v42", "v43" if x["h9v"] == 1 else "v42")
+    return CasoMontado(caso=caso, formas=formas, fator_neutro=float(x["fator"]),
+                       kt_n_m={"F": float(x["KTF"]), "R": float(x["KTR"])}, valores=valores_usados(dados),
+                       rotulos=rotulos)
