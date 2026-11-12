@@ -277,7 +277,8 @@ def salvar_caso(dados: dict, caminho: str | Path) -> Path:
     _checar_estrutura(dados)
     destino = Path(caminho)
     destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    with open(destino, "w", encoding="utf-8", newline="\n") as f:     # LF também no Windows
+        f.write(json.dumps(dados, ensure_ascii=False, indent=2) + "\n")
     return destino
 
 
