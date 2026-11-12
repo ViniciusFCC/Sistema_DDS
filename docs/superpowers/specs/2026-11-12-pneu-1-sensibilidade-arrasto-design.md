@@ -122,6 +122,21 @@ usados": chave, valor, unidade, origem, editado (sim/não). Entrada incoerente �
 `VehicleConfig` ou do `CasoEquilibrio`, que já validam (a + b = L, massas, chaves). Chave desconhecida no `--set`,
 ou valor que não é número, também é erro, sem adivinhar.
 
+### 5.5 Preparo para a interface (usuário, 2026-11-12)
+
+O usuário pretende fazer, na última versão, uma interface para que pessoas leigas usem e entendam a ferramenta. A
+interface não faz parte deste subprojeto, nem a escolha da tecnologia dela. Para que ela venha sem retrabalho:
+- **A API é o núcleo.** A linha de comando e a futura interface são cascas finas sobre `ler_caso`, `editar`,
+  `caso_de_dados` e `estudo`. Nenhuma lógica fica no script de `tools/`.
+- **O JSON descreve os próprios campos.** Além de `valor`, `origem` e `fonte`, cada campo tem `rotulo` (texto
+  legível, ex. "Altura do CG"), `unidade_exibicao` e `descricao` (uma frase). Não há faixa de valor, que seria um
+  limite inventado. A validação é a física que já existe, com mensagens em português que um leigo entende.
+- **O resultado é dado, não texto.** `estudo()` devolve um objeto com `para_dict()` (serializável em JSON): números,
+  unidades, rótulos da §9 e o "muda decisão" de cada degrau. O relatório em Markdown é só uma forma de exibição.
+- **Cada conclusão vem com uma frase simples**, ex. "a pressão muda o veredito: entre 8 e 14 psi o carro passa de
+  sair de frente para sair de traseira". Os rótulos da §9 vão junto, no mesmo objeto, para que nenhuma tela mostre
+  um número sem o aviso.
+
 ### 5.4 Equivalência com a planilha (verificação, não dependência)
 
 Um teste opcional confere que `caso_de_dados(JSON capturado)` dá o mesmo `CasoEquilibrio` que
@@ -257,7 +272,9 @@ Testes mínimos (o plano detalha):
 ## 11. Pendências do usuário
 
 - Autorizar os IDs: um EDR para as decisões deste estudo (regra da §6.3, D com sen α roda a roda, caso em JSON) e
-  os TC dos testes. Até lá, o plano usa marcadores sem número.
+  os TC dos testes. Proposta: **EDR-075** (EDR-072 a EDR-074 estão reservados no plano do incremento 9,
+  `docs/superpowers/plans/2026-11-11-inc9-v5-0-coerencia.md`) e o prefixo novo **TC-SEN-001** em diante (nenhum TC
+  usa `SEN`). Até a autorização, o plano usa marcadores sem número.
 - A origem do caso capturado: confirmar que é `◐ Dado de outro carro (TX, T09)` campo a campo (vem das colunas
   `org_` da V4.4).
 
