@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Literal
 
 import aba_curva
+import origens
 import aba_equilibrio as ae
 from equilibrio import FATORES_LAMBDA
 from tire_model import AXIS_TRANSFORMS
@@ -51,7 +52,7 @@ def _v40(k: str) -> str:
 def _montar() -> dict[str, Campo]:
     c: dict[str, Campo] = {}
 
-    def add(chave, chave_x, nome, unidade, rotulo, descricao, tipo="num"):
+    def add(chave, chave_x, nome, unidade, rotulo, descricao, tipo: Literal["num", "chave", "texto"] = "num"):
         c[chave] = Campo(chave_x, nome, unidade, rotulo, descricao, tipo)
 
     # 05_VEHICLE
@@ -167,8 +168,9 @@ RES = {"m": ("05_VEHICLE B4", "kg"), "a": ("05_VEHICLE B9", "m"), "b": ("05_VEHI
 _DEPENDE = {"m": ("m_sem_piloto_kg", "m_piloto_kg"), "a": ("L_m", "f_dianteira"), "b": ("L_m", "f_dianteira"),
             "huF": ("d_pneu_F_pol", "razao_hns_F"), "huR": ("d_pneu_R_pol", "razao_hns_R")}
 
-_ORDEM_ORIGEM = ("● Dado do T11", "● Dado do TX", "◐ Dado de outro carro (TX, T09)", "◐ Dado do T09",
-                 "◐ Provisório (.tir TTC)", "○ Estimativa", "○ Arbitrário / demonstrativo", ORIGEM_A_CONFIRMAR)
+# Do melhor para o pior, como a lista `Origens` da V4.4 (00_README A43:A48; a 23_LISTAS não guarda origens). A fonte
+# única no código é `origens.ORIGENS_V42`, conferida contra a lista da planilha na captura.
+_ORDEM_ORIGEM = origens.ORIGENS_V42
 
 
 def _eh_num(v) -> bool:
