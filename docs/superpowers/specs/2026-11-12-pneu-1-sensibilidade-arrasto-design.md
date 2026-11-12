@@ -1,6 +1,6 @@
 # pneu-1: estudo de sensibilidade do pneu e arrasto induzido (design)
 
-Data: 2026-11-12. Situação: RASCUNHO, à espera da aprovação do usuário.
+Data: 2026-11-12. Situação: APROVADA pelo usuário em 2026-11-12, com os IDs EDR-075 e TC-SEN-001 em diante autorizados.
 Origem: `docs/pneu/roteiro-modelo-de-pneu.md`, Fase 1, itens 16 e 15.
 
 ## 1. Intenção
