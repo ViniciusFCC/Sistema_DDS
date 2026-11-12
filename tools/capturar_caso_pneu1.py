@@ -208,7 +208,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     destino = Path(args.saida)
     destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    destino.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(tabela(dados))
     print(f"\nGravado em {destino}")
     return 0
