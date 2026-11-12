@@ -53,13 +53,14 @@ def _destino(wb, nome: str) -> tuple[str, str]:
 
 
 def _origem_da_celula(wb, aba: str, cel: str) -> str:
-    """Origem da célula: 05/06/07/08/11 pela coluna E e 10_TIRE pela coluna I (raizes.origem_da_raiz, com a lista da
-    V4.2); 16 e 24 pela coluna E da própria linha (raizes.celula_origem não as conhece). Vazio ou fora da lista da V4.4
-    conta como `? A confirmar`."""
-    if raizes.celula_origem(aba, cel) is not None:
-        rot = raizes.origem_da_raiz(wb, aba, cel, lista=origens.ORIGENS_V42)
-        return cp.ORIGEM_A_CONFIRMAR if rot == raizes.SEM_ROTULO else rot
-    v = wb[aba][f"E{raizes.linha(cel)}"].value
+    """Origem da célula pela regra do projeto (aba_equilibrio._origem_da_raiz: coluna E nas abas de entrada; 10_TIRE:
+    I23 a I25 nos casos de carga e I84 no resto, que é a origem do pneu). 16 e 24 não têm regra lá: coluna E da própria
+    linha. Vazio ou fora da lista da V4.4 conta como `? A confirmar`."""
+    try:
+        aba_o, cel_o = ae._origem_da_raiz(aba, cel)
+    except ValueError:
+        aba_o, cel_o = aba, f"E{raizes.linha(cel)}"
+    v = wb[aba_o][cel_o].value
     return v if v in origens.ORIGENS_V42 else cp.ORIGEM_A_CONFIRMAR
 
 
@@ -198,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         dados = capturar(Path(args.xlsx))
         cp._checar_estrutura(dados)
-    except ErroCaptura as e:
+    except (ErroCaptura, OSError) as e:
         print(f"ERRO: {e}", file=sys.stderr)
         return 2
     if cp._mesmo_caminho(args.saida, cp.CAMINHO_DEMONSTRATIVO):
