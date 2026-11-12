@@ -64,6 +64,16 @@ Nada de pneu entra na V5.0 (incremento 9). Fases:
    por um conselheiro, a confirmar): se a pressão de trabalho ficar fora de 8 a 14 psi, o A2 não cobre o uso real.
 2. Pedir à Hoosier e ao TTC os dados do R60A.
 
+Respostas do usuário (2026-11-12):
+
+| Pergunta | Resposta | Consequência |
+|---|---|---|
+| Pneu e aro do T11 | Hoosier R60A, aro 13 | Mesmo aro do R25B do `.tir` (20.5x7-13); falta confirmar a largura do aro, porque outra largura muda o Cα e a rigidez vertical |
+| Pressão de uso | Ainda não definida; faixa de 8 a 14 psi | Cabe na faixa do TTC e do A2: o pneu-3 (A2 no carro) fica liberado. O número de catálogo citado por um conselheiro deixa de importar |
+| Licença do OptimumTire | Licença de estudante | O pneu-2 (comparação, itens 14 e 9) fica liberado; falta conferir se a licença importa `.tir` PAC2002 e exporta as curvas |
+| TX e datalogger | O TX vai rodar, sem datalogger | A Fase 2 usa métodos sem aquisição (abaixo); coast-down e ângulo de volante ficam para quando houver aquisição |
+| Dados do R60A | Pedidos e negados | O R25B continua como substituto. O caminho é calibrar a escala do R25B no skidpad com o R60A montado (corrige o nível de aderência, não a forma das curvas). A conferir: se o TTC tem o R20 (citado para o Round 9 por um conselheiro) e se ele é mais próximo do R60A |
+
 **Fase 1: depois da V5.0, só Python, sem planilha nova.** Verificação pelos testes do pneu; a suíte inteira fica
 para o fechamento de versão.
 - pneu-1: estudo de sensibilidade (16) e arrasto induzido (15).
@@ -77,6 +87,10 @@ para o fechamento de versão.
 - Ensaios de garagem: deflexão do pneu (12), balança de cantos, manômetro calibrado.
 - Piloto com o TX: skidpad nos dois sentidos (8), pressão e temperatura ao fim de cada stint (3 e 11), coast-down (7).
   O λ medido no TX com o modelo do R25B e aplicado ao T11 é uma dupla substituição e leva rótulo e incerteza próprios.
+- Sem datalogger no TX (resposta de 2026-11-12): skidpad cronometrado, com o raio medido a trena e a_y = v²/R,
+  v = 2πR/t, várias voltas por sentido para estimar a dispersão; pressão com manômetro calibrado e temperatura com
+  pirômetro infravermelho de mão, logo ao fim de cada stint; deflexão do pneu e balança de cantos na garagem. O
+  coast-down e o ângulo de volante (λKy) esperam um sistema de aquisição.
 
 **Fase 3: quando o dado chegar.** A3 e temperatura (3 e 11), troca do pneu (6), combinado (10), PP*/QPZ (2), B (4)
 e C (5).
