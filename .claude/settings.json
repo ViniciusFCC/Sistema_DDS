@@ -2,6 +2,7 @@
   "enabledPlugins": {
     "pyright-lsp@anthropic-plugin-directory": true
   },
+  "enabledMcpjsonServers": ["token-savior"],
   "permissions": {
     "deny": [
       "Edit(importado-claude-ai/**)",
