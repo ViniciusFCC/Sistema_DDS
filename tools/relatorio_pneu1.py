@@ -67,7 +67,7 @@ def tabela_carro(linhas) -> list[str]:
     corpo = []
     for l in linhas:
         obs = ("" if l.ay_lim_g is not None else
-               f"não avaliado: o carro não chega ao limite até {n(sp.GRADE['ay_max_g'], 1)} g")
+               "não avaliado: " + (l.motivo_na or "a_y_lim N/A"))
         if l.borda_alfa:
             obs = (obs + "; " if obs else "") + "α na borda da grade"
         corpo.append([l.rotulo_corrida, n(l.pressao_psi, 1), l.variante_kt, fatores_txt(l.fatores),

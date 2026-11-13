@@ -147,7 +147,7 @@ def _ler_fatores() -> dict[str, list[float]]:
 
 FATORES_EXPLORATORIOS: dict[str, list[float]] = _ler_fatores()
 
-# Rótulos da spec §9, um por linha, mais o aviso do fator_neutro (Global Constraints).
+# Rótulos da spec §9, um por linha. O aviso do fator_neutro é por caso (`rotulo_fator_neutro`).
 ROTULOS: tuple[str, ...] = (
     "caso de outro carro (T09/E03), demonstrativo, não o T11; valores editados marcados",
     "pneu R25B do TTC no lugar do R60A; μ absoluto do TTC não transferível",
@@ -156,10 +156,16 @@ ROTULOS: tuple[str, ...] = (
     "banda heurística, não intervalo de confiança",
     "Validation = NOT_VALIDATED; VERIFIED não é validado",
     "Fx·κ fora (sem fonte); traçado do enduro a confirmar",
-    "fator_neutro do caso (24_CURVA B34, 4/3 na V4.4) difere do 1,0 do relatorio_pressao: a regra do NEUTRO não é a "
-    "daquele relatório",
 )
 
+
+def rotulo_fator_neutro(cm: CasoMontado) -> tuple[str, ...]:
+    """Aviso do fator_neutro do caso: só quando ele difere do 1,0 do relatorio_pressao, com o valor real."""
+    if cm.fator_neutro == 1.0:
+        return ()
+    v = f"{cm.fator_neutro:.4g}".replace(".", ",")
+    return (f"fator_neutro do caso (24_CURVA B34) = {v}, difere do 1,0 do relatorio_pressao: a regra do NEUTRO não é "
+            f"a daquele relatório",)
 
 
 def rigidez_eixos(caso: eq.CasoEquilibrio, *, formas: eq.Formas) -> tuple[float | None, float | None, str | None]:
@@ -198,6 +204,7 @@ class LinhaCarro:
     borda_alfa: bool
     robustez: tuple | None
     rotulos: tuple[str, ...]
+    motivo_na: str | None = None
 
 
 def _sem_repeticao(*grupos) -> tuple[str, ...]:
@@ -222,7 +229,8 @@ def linha_de_resultado(r: cmp.ResultadoCarro, *, formas: eq.Formas,
         veredito=r.veredito, sentido_pior=r.sentido_pior, c_f_n_rad=c_f, c_r_n_rad=c_r,
         k_grau_g=None if r.k_rad_ms2 is None else el.para_graus_por_g(r.k_rad_ms2),
         resolucao_ms2=r.resolucao_ms2, borda_alfa=r.borda_alfa, robustez=r.robustez,
-        rotulos=_sem_repeticao(ROTULOS, r.rotulos))
+        rotulos=_sem_repeticao(ROTULOS, r.rotulos),
+        motivo_na=cmp._motivo_na(r) if r.ay_lim_ms2 is None else None)
 
 
 def _resultado_12psi(cm: CasoMontado, familia: ts.StaticTireFamily, fatores: dict[str, float],
@@ -488,12 +496,28 @@ def decidir_kt(resultados: Sequence[cmp.ResultadoCarro]) -> tuple[str, dict[str,
             est2, det2 = _NAV, "a_y_lim ou banda indisponível"
         else:
             dif = abs(ra.ay_lim_ms2 - rb.ay_lim_ms2)
-            est2 = _SIM if dif > bd.valor else _NAO
             det2 = f"|Δa_y_lim| = {dif:.3g} m/s² contra a banda de {bd.valor:.3g} m/s²"
+            if dif <= bd.valor:
+                est2 = _NAO
+            elif bd.medida:
+                est2 = _SIM
+            else:      # banda não medida é só limite inferior: a diferença grande não prova nada (D7)
+                est2, det2 = _NAV, "banda só limite inferior (não medida); " + det2
         estados += [est1, est2]
         criterios[f"veredito de a e b a {ps(p)} psi"] = f"{est1}: {det1}"
         criterios[f"a_y_lim de a e b a {ps(p)} psi"] = f"{est2}: {det2}"
     return _agregar(estados), criterios
+
+
+def _motivos_na(resultados: Sequence[cmp.ResultadoCarro]) -> str:
+    """Motivo medido do N/A de cada pressão sem a_y_lim: dito uma vez se igual em todas, senão agrupado por motivo."""
+    grupos: dict[str, list[str]] = {}
+    for r in sorted(resultados, key=lambda x: x.pressao_psi):
+        if r.ay_lim_ms2 is None:
+            grupos.setdefault(cmp._motivo_na(r), []).append(ps(r.pressao_psi))
+    if len(grupos) == 1:
+        return f"{next(iter(grupos))}, em todas as pressões"
+    return "; ".join(f"{m} a {_lista_psi(prs)}" for m, prs in grupos.items())
 
 
 def _frase_pressao(estado: str, criterios: dict[str, str], resultados_a: Sequence[cmp.ResultadoCarro]) -> str:
@@ -510,7 +534,7 @@ def _frase_pressao(estado: str, criterios: dict[str, str], resultados_a: Sequenc
     if estado == _NAO:
         return f"a pressão não muda a decisão: {_NOTA_REGRA}"
     if not com:
-        return "não avaliado: o carro não chega ao limite até 2 g em nenhuma pressão"
+        return f"não avaliado: sem a_y_lim em nenhuma pressão ({_motivos_na(resultados_a)})"
     pend = next((_detalhe(c) for c in criterios.values() if _estado_de(c) == _NAV), "critério sem avaliação")
     return f"não avaliado: {pend}; nenhum critério avaliado deu sim"
 
@@ -583,7 +607,8 @@ _SUFIXO_DEGRAU: dict[int, str] = {
 
 
 def tabela_decisoes(lam: tuple[str, dict[str, str]], pres: tuple[str, dict[str, str]],
-                    kt: tuple[str, dict[str, str]], *, frases: dict[int, str] | None = None) -> tuple[Decisao, ...]:
+                    kt: tuple[str, dict[str, str]], *, frases: dict[int, str] | None = None,
+                    rotulos_extra: tuple[str, ...] = ()) -> tuple[Decisao, ...]:
     """As 18 decisões, uma por degrau: 6 e 8 recebem `lam`; 1, 2 e 3, `pres`; 12, `kt`; 7 e 15 ficam "não avaliado"
     (D6); 16 é "este estudo" ("não medido aqui"); os demais, "não medido aqui" (spec §6.1). `frases` troca a frase
     de um degrau (a padrão só usa o que foi medido)."""
@@ -610,7 +635,7 @@ def tabela_decisoes(lam: tuple[str, dict[str, str]], pres: tuple[str, dict[str, 
             frase = fr.get(g) or _frase_generica(nome, est, cri)
         if g in _SUFIXO_DEGRAU and est != _NMA:
             frase += _SUFIXO_DEGRAU[g]
-        rot = ROTULOS + ((_ROT_DEGRAU[g],) if g in _ROT_DEGRAU else ())
+        rot = ROTULOS + rotulos_extra + ((_ROT_DEGRAU[g],) if g in _ROT_DEGRAU else ())
         saida.append(Decisao(g, nome, _FATORES_DE_DEGRAU.get(g, ()), est, cri, frase, rot))
     return tuple(saida)
 
@@ -674,6 +699,7 @@ def estudo(cm: CasoMontado, familia: ts.StaticTireFamily, rapido: bool = False) 
     arr = medir("arrasto", lambda: arrasto_induzido(cm.caso, formas=cm.formas, ay_ate_ms2=ay12,
                                                     ay_max_g=GRADE["ay_max_g"], crr_referencia=crr))
     arr = tuple(dataclasses.replace(l, rotulos=_sem_repeticao(l.rotulos, (ROTULO_ARRASTO,))) for l in arr)
+    rot_neutro = rotulo_fator_neutro(cm)
 
     res_a = [r for r in pres_res if r.variante_kt == "a"]
     fz0 = eq.cargas(cm.caso, 0.0)
@@ -695,9 +721,9 @@ def estudo(cm: CasoMontado, familia: ts.StaticTireFamily, rapido: bool = False) 
     if comb_res is None:
         frases.update({6: "não avaliado: combinação não rodada (--rapido)",
                        8: "não avaliado: combinação não rodada (--rapido)"})
-    decisoes = tabela_decisoes(lam, pres, kt, frases=frases)
+    decisoes = tabela_decisoes(lam, pres, kt, frases=frases, rotulos_extra=rot_neutro)
     return Resultado(
         valores=cm.valores, tornado=torn,
         pressao=tuple(linha_de_resultado(r, formas=cm.formas) for r in pres_res),
         combinacao=None if comb_res is None else tuple(linha_de_resultado(r, formas=cm.formas) for r in comb_res),
-        pneu=pneu, arrasto=arr, decisoes=decisoes, rotulos=ROTULOS, tempos_s=tempos)
+        pneu=pneu, arrasto=arr, decisoes=decisoes, rotulos=ROTULOS + rot_neutro, tempos_s=tempos)
