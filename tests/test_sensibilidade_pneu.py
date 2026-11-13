@@ -261,7 +261,7 @@ check("TC-SEN-012 |D/D1a−1| decresce e fecha < 1e-3; grade sem limite para ond
       and sem_lim[0].rotulos and com_lim[-1].ay_ms2 <= 0.73 * G and abs(com_lim[-1].ay_g - 0.7) < 1e-9,
       f"razoes={razoes}, ultima={ult.ay_g}, rotulo={sem_lim[0].rotulos}")
 
-# TC-SEN-013: a grade para onde angulos_necessarios deixa de resolver, com rótulo (D4); limite acima de ay_max_g também
+# TC-SEN-012b: a grade para onde angulos_necessarios deixa de resolver, com rótulo (D4); limite acima de ay_max_g também
 # SINTÉTICO de teste: aderência reduzida (LMUY 0,3) só para saturar; não é dado do carro
 CASO_SAT = dataclasses.replace(CASO, ds=eq.com_fatores(CASO.ds, {"LMUY": 0.3}))
 sat = sp.arrasto_induzido(CASO_SAT, formas=FORMAS, ay_ate_ms2=None)
@@ -269,7 +269,7 @@ u_sat = sat[-1]
 prox_sat = (round(u_sat.ay_g / 0.1) + 1) * 0.1
 sat_lim = sp.arrasto_induzido(CASO_SAT, formas=FORMAS, ay_ate_ms2=2.0 * G)
 cortado = sp.arrasto_induzido(CASO, formas=FORMAS, ay_ate_ms2=3.0 * G, ay_max_g=1.0)
-check("TC-SEN-013 grade que satura: para antes de 2 g, o próximo ponto não resolve e há rótulo; limite acima de ay_max_g avisa",
+check("TC-SEN-012b grade que satura: para antes de 2 g, o próximo ponto não resolve e há rótulo; limite acima de ay_max_g avisa",
       u_sat.ay_g < 1.9 and el.angulos_necessarios(CASO_SAT, u_sat.ay_g * G, formas=FORMAS) is not None
       and el.angulos_necessarios(CASO_SAT, prox_sat * G, formas=FORMAS) is None
       and all("deixam de resolver" in r and f"{u_sat.ay_g:.2f} g" in r for l in sat for r in l.rotulos)
