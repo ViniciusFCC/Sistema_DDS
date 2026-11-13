@@ -125,11 +125,20 @@ def montar_relatorio(r: sp.Resultado, rapido: bool, caso_arq: Path) -> str:
           "",
           "Fonte: Milliken & Milliken, RCVD, §2.9, p. 64 a 67 (D = F_x·cos α − F_y·sen α na p. 64 e 65; bicicleta na "
           "Fig. 2.36, p. 67). Generalizar a bicicleta do Milliken (2 rodas) para a soma roda a roda é escolha do "
-          "Claude, não do livro. A resistência ao rolamento está a confirmar: sem Crr com fonte, D sai como tamanho "
-          "de efeito, não como decisão.", ""]
-    L += tabela(["a_y (g)", "α frente", "α trás", "D (N)", "D/(m·g)", "D/D_1ª ordem"],
+          "Claude, não do livro. ", ""]
+    crr = next((v for v in r.valores if v.chave == "crr_referencia"), None)
+    com_crr = any(l.d_sobre_rolamento is not None for l in r.arrasto)
+    if com_crr and crr is not None:
+        L[-2] += (f"Crr informado pelo usuário: {n(crr.valor, 4)} (origem: {crr.origem}); D/(Crr·m·g) é tamanho de "
+                  "efeito, não decisão.")
+    else:
+        L[-2] += ("A resistência ao rolamento está a confirmar: sem Crr com fonte, D sai como tamanho de efeito, não "
+                  "como decisão.")
+    cab = ["a_y (g)", "α frente", "α trás", "D (N)", "D/(m·g)", "D/D_1ª ordem"] + (["D/(Crr·m·g)"] if com_crr else [])
+    L += tabela(cab,
                 [[n(l.ay_g, 2), graus(l.alfa_f_rad), graus(l.alfa_r_rad), n(l.d_n, 3), n(l.d_sobre_mg, 5),
-                  n(l.d_n / l.d_1a_ordem_n, 4) if l.d_1a_ordem_n else "—"] for l in r.arrasto]) + [""]
+                  n(l.d_n / l.d_1a_ordem_n, 4) if l.d_1a_ordem_n else "—"]
+                 + ([n(l.d_sobre_rolamento, 3)] if com_crr else []) for l in r.arrasto]) + [""]
     rots = sorted({t for l in r.arrasto for t in l.rotulos})
     L += [f"- {t}" for t in rots] + ([""] if rots else [])
     L += [NOTA_D, ""]

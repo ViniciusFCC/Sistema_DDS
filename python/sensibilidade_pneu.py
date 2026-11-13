@@ -78,6 +78,10 @@ class LinhaArrasto:
     rotulos: tuple[str, ...]
 
 
+ROTULO_ARRASTO = ("o arrasto usa o .tir de 12 psi com os λ do caso; o a_y_lim vem do perfil ajustado ao teto comum "
+                  "de Fz")
+
+
 def arrasto_induzido(caso: eq.CasoEquilibrio, *, formas: eq.Formas, ay_ate_ms2: float | None,
                      ay_max_g: float = 2.0, passo_g: float = 0.1,
                      crr_referencia: float | None = None) -> tuple[LinhaArrasto, ...]:
@@ -112,14 +116,17 @@ def arrasto_induzido(caso: eq.CasoEquilibrio, *, formas: eq.Formas, ay_ate_ms2: 
     if not linhas:
         raise ValueError("Nenhum a_y da grade tem solução (nem a_y = 0).")
     ult = linhas[-1].ay_g
+
+    def g_txt(x: float) -> str:
+        return f"{x:.2f}".replace(".", ",")
     rots = []
     if parou_antes is not None:
-        rots.append(f"os ângulos de deriva deixam de resolver acima de {ult:.2f} g (a_y = {parou_antes / G:.2f} g "
+        rots.append(f"os ângulos de deriva deixam de resolver acima de {g_txt(ult)} g (a_y = {g_txt(parou_antes / G)} g "
                     f"sem solução): grade até o último a_y resolvido")
     elif ay_ate_ms2 is None:
-        rots.append(f"sem saturação até {ult:.2f} g: grade até o último a_y resolvido")
+        rots.append(f"sem saturação até {g_txt(ult)} g: grade até o último a_y resolvido")
     if ay_ate_ms2 is not None and ay_ate_ms2 > ay_max_g * G * (1 + PASSO_REL):
-        rots.append(f"o limite pedido ({ay_ate_ms2 / G:.2f} g) passa de ay_max_g; grade cortada em {ay_max_g:.2f} g")
+        rots.append(f"o limite pedido ({g_txt(ay_ate_ms2 / G)} g) passa de ay_max_g; grade cortada em {g_txt(ay_max_g)} g")
     if rots:
         linhas = [dataclasses.replace(l, rotulos=tuple(rots)) for l in linhas]
     return tuple(linhas)
@@ -152,6 +159,7 @@ ROTULOS: tuple[str, ...] = (
     "fator_neutro do caso (24_CURVA B34, 4/3 na V4.4) difere do 1,0 do relatorio_pressao: a regra do NEUTRO não é a "
     "daquele relatório",
 )
+
 
 
 def rigidez_eixos(caso: eq.CasoEquilibrio, *, formas: eq.Formas) -> tuple[float | None, float | None, str | None]:
@@ -659,10 +667,13 @@ def estudo(cm: CasoMontado, familia: ts.StaticTireFamily, rapido: bool = False) 
     pres_res = medir("pressao", lambda: pressao(cm, familia))
     comb_res = None if rapido else medir("combinacao", lambda: combinacao(cm, familia))
     pneu = medir("pneu", lambda: pneu_por_pressao(cm, familia))
-    r12 = next((r for r in pres_res if r.variante_kt == "a" and abs(r.pressao_psi - PRESSAO_DO_CASO_PSI) < 1e-6), None)
+    r12 = next((r for r in pres_res if r.variante_kt == "a"
+                and abs(r.pressao_psi - PRESSAO_DO_CASO_PSI) < ts.PRESSURE_TOLERANCE_PSI), None)
     ay12 = None if r12 is None else r12.ay_lim_ms2
+    crr = next((v.valor for v in cm.valores if v.chave == "crr_referencia"), None)
     arr = medir("arrasto", lambda: arrasto_induzido(cm.caso, formas=cm.formas, ay_ate_ms2=ay12,
-                                                    ay_max_g=GRADE["ay_max_g"]))
+                                                    ay_max_g=GRADE["ay_max_g"], crr_referencia=crr))
+    arr = tuple(dataclasses.replace(l, rotulos=_sem_repeticao(l.rotulos, (ROTULO_ARRASTO,))) for l in arr)
 
     res_a = [r for r in pres_res if r.variante_kt == "a"]
     fz0 = eq.cargas(cm.caso, 0.0)
