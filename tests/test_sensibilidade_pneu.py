@@ -168,7 +168,8 @@ def escolhas(ay_vals, ca_vals, b=0.5):
 
 
 PUSH_ROB = ("PUSH", "mesmo sinal na varredura exploratória do pneu")
-NC_ROB = ("NÃO CONCLUSIVO", "o sinal depende do pneu")
+NC_ROB = eq.veredito_robusto([eq.PUSH, eq.LOOSE])       # NÃO CONCLUSIVO, "o sinal depende do pneu"
+NC_NA_ROB = eq.veredito_robusto([eq.PUSH, eq.NA])      # NÃO CONCLUSIVO, "N/A em parte da varredura (sem inversão...)"
 NA_ROB = ("N/A", "N/A em toda a varredura")
 l_nao, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[PUSH_ROB] * 4))
 l_sim, c_sim = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[PUSH_ROB, PUSH_ROB, NC_ROB, PUSH_ROB]))
@@ -176,11 +177,15 @@ l_na, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[PUSH_ROB, NA_R
 l_nc_na, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[NA_ROB, PUSH_ROB, NC_ROB, PUSH_ROB]))
 l_loose, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[("LOOSE", "x")] * 4))
 l_semrob, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4))
-check("TC-SEN-016 decidir_lambda (D6): PUSH/LOOSE nas 4 -> não; NÃO CONCLUSIVO -> sim; N/A -> não avaliado; "
-      "NÃO CONCLUSIVO + N/A -> sim; sem robustez -> não avaliado; critérios por pressão",
+l_nc_semi, c_semi = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[PUSH_ROB, NC_NA_ROB, PUSH_ROB, PUSH_ROB]))
+l_nc_semi_sim, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[NC_NA_ROB, PUSH_ROB, NC_ROB, PUSH_ROB]))
+check("TC-SEN-016 decidir_lambda (D6): PUSH/LOOSE nas 4 -> não; NÃO CONCLUSIVO 'o sinal depende do pneu' -> sim; "
+      "N/A -> não avaliado; esse + N/A -> sim; NÃO CONCLUSIVO 'N/A em parte…' numa pressão e PUSH nas outras -> "
+      "não avaliado (e sim se outra pressão inverte o sinal); sem robustez -> não avaliado; critérios por pressão",
       l_nao == "não" and l_loose == "não" and l_sim == "sim" and l_na == "não avaliado" and l_nc_na == "sim"
+      and l_nc_semi == "não avaliado" and l_nc_semi_sim == "sim" and "não avaliado" in c_semi["robustez de λ a 10,0 psi"]
       and l_semrob == "não avaliado" and len(c_sim) == 4 and all(isinstance(v, str) for v in c_sim.values()),
-      f"{l_nao}, {l_loose}, {l_sim}, {l_na}, {l_nc_na}, {l_semrob}")
+      f"{l_nao}, {l_loose}, {l_sim}, {l_na}, {l_nc_na}, {l_nc_semi}, {l_nc_semi_sim}, {l_semrob}")
 
 # TC-SEN-017: pressão. Critério 1 (vereditos entre pressões) e critério 2 (D7, bandas)
 planas = serie_rc("a", [10.0, 10.0, 10.0, 10.0])
@@ -226,10 +231,13 @@ k_none, _ = sp.decidir_kt(a_s + b_none)
 k_sem_b, _ = sp.decidir_kt(a_s)
 k_none_ver, _ = sp.decidir_kt(a_s + serie_rc("b", [10.0, None, 14.0, 16.0],
                                               vereditos=["PUSH", "PUSH", "LOOSE", "PUSH"]))
+k_na_na, c_na_na = sp.decidir_kt(serie_rc("a", [10.0, 12.0, 14.0, 16.0], vereditos=["N/A"] * 4)
+                                  + serie_rc("b", [10.0, 12.0, 14.0, 16.0], vereditos=["N/A"] * 4))
 check("TC-SEN-018 decidir_kt: a = b -> não; |Δa_y| > banda -> sim; veredito difere -> sim; ay None -> não avaliado "
-      "(e sim se outro nó dá sim); sem variante b -> não avaliado",
+      "(e sim se outro nó dá sim); sem variante b -> não avaliado; N/A nas duas variantes -> critério 1 não avaliado",
       k_ig == "não" and k_ay == "sim" and k_ver == "sim" and k_none == "não avaliado" and k_sem_b == "não avaliado"
-      and k_none_ver == "sim" and len(c_ay) >= 1, f"{k_ig}, {k_ay}, {k_ver}, {k_none}, {k_sem_b}, {k_none_ver}")
+      and k_none_ver == "sim" and len(c_ay) >= 1 and k_na_na == "não avaliado"
+      and c_na_na["veredito de a e b a 10,0 psi"].startswith("não avaliado"), f"{k_ig}, {k_ay}, {k_ver}, {k_none}, {k_sem_b}, {k_none_ver}")
 
 # TC-SEN-019: Resultado serializável, 18 decisões, rótulos
 tab = sp.tabela_decisoes(("não", {"λ": "não"}), ("sim", {"pressão": "sim: PUSH × LOOSE"}),
@@ -508,11 +516,32 @@ with tempfile.TemporaryDirectory() as tmp20:
     with contextlib.redirect_stderr(err20):
         cod_massa = rel.main(["--set", "massa=1", "--saida", tmp20])
 msg20 = err20.getvalue()
+# código 3: sem o .tir (achar_ttc trocado por um substituto que simula a ausência; o original volta no finally);
+# --set sem "=" e --caso inexistente: código 2
+achar_orig = cp.achar_ttc
+cp.achar_ttc = lambda: None
+err3 = io.StringIO()
+try:
+    with contextlib.redirect_stderr(err3):
+        cod3 = rel.main(["--rapido", "--saida", tempfile.gettempdir() + "/pneu1-teste-cod3"])
+finally:
+    cp.achar_ttc = achar_orig
+err_eq, err_arq = io.StringIO(), io.StringIO()
+with contextlib.redirect_stderr(err_eq):
+    cod_sem_igual = rel.main(["--set", "h_cg_m", "--saida", tempfile.gettempdir() + "/pneu1-teste-cod2"])
+with contextlib.redirect_stderr(err_arq):
+    cod_sem_arq = rel.main(["--caso", str(Path(tempfile.gettempdir()) / "nao-existe-pneu1.json"),
+                            "--saida", tempfile.gettempdir() + "/pneu1-teste-cod2"])
 check("TC-SEN-020 relatorio_pneu1: código 0, dois arquivos, h_cg_m editado com a origem ✎, ROTULOS no relatório; "
-      "--set massa=1 dá código 2 com mensagem em português e sem traceback",
+      "--set massa=1 dá código 2 com mensagem em português e sem traceback; sem .tir dá código 3; --set sem = e --caso "
+      "inexistente dão código 2",
       cod20 == 0 and existem and vh.get("editado") is True and vh.get("origem") == cp.ORIGEM_EDITADO
       and all(t in md20 for t in sp.ROTULOS)
-      and cod_massa == 2 and "chave desconhecida: massa" in msg20 and "Traceback" not in msg20,
-      f"cod={cod20}, massa={cod_massa}, h_cg={vh}, msg={msg20.strip()!r}")
+      and cod_massa == 2 and "chave desconhecida: massa" in msg20 and "Traceback" not in msg20
+      and cod3 == 3 and "NÃO EXECUTÁVEL" in err3.getvalue() and cp.achar_ttc is achar_orig
+      and cod_sem_igual == 2 and "chave=valor" in err_eq.getvalue()
+      and cod_sem_arq == 2 and "arquivo do caso" in err_arq.getvalue(),
+      f"cod={cod20}, massa={cod_massa}, cod3={cod3}, sem_igual={cod_sem_igual}, sem_arq={cod_sem_arq}, h_cg={vh}, "
+      f"msg={msg20.strip()!r}")
 
 encerrar()
