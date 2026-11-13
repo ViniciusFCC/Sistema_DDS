@@ -2,7 +2,7 @@
 
 TC-SEN-001 a 005 não precisam do .tir: catálogo, leitura, edição e gravação do caso, e o x da planilha.
 TC-SEN-016 a 019 (regra de muda decisão e Resultado) também não precisam do .tir.
-TC-SEN-006 a 008 e 010 a 015 precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
+TC-SEN-006 a 008, 010 a 015 e 020 (linha de comando) precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
 caso_pneu1.achar_ttc): sem eles, a seção imprime NÃO EXECUTÁVEL e o script sai com o código 3 depois das outras.
 Os dados do teste são SINTÉTICOS de teste, não são dado do carro (números do veiculo_base de tests/test_equilibrio.py).
 """
@@ -487,5 +487,32 @@ check("TC-SEN-015 pneu_por_pressao: 13 x 2; interpolado False só em 8, 10, 12, 
       and abs(l12f.c_alpha_n_rad - m12.c_alpha_n_rad) <= 1e-9 * abs(m12.c_alpha_n_rad)
       and l12f.mu_y_pico == m12.mu_y_pos.mu,
       f"Ca={l12f.c_alpha_n_rad} vs {m12.c_alpha_n_rad}")
+
+# TC-SEN-020: linha de comando (tools/relatorio_pneu1.py): --rapido com --set; arquivos, origem editada, rótulos;
+# entrada inválida -> código 2, mensagem em português e sem traceback (usa o caso demonstrativo e os .tir: ~20 s)
+import contextlib
+import io
+import sys as _sys
+
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+import relatorio_pneu1 as rel  # noqa: E402
+
+with tempfile.TemporaryDirectory() as tmp20:
+    cod20 = rel.main(["--rapido", "--set", "h_cg_m=0.31", "--saida", tmp20])
+    arq_md, arq_js = Path(tmp20) / "relatorio.md", Path(tmp20) / "resultados.json"
+    existem = arq_md.is_file() and arq_js.is_file()
+    js20 = json.loads(arq_js.read_text(encoding="utf-8")) if existem else {}
+    md20 = arq_md.read_text(encoding="utf-8") if existem else ""
+    vh = next((v for v in js20.get("valores", []) if v["chave"] == "h_cg_m"), {})
+    err20 = io.StringIO()
+    with contextlib.redirect_stderr(err20):
+        cod_massa = rel.main(["--set", "massa=1", "--saida", tmp20])
+msg20 = err20.getvalue()
+check("TC-SEN-020 relatorio_pneu1: código 0, dois arquivos, h_cg_m editado com a origem ✎, ROTULOS no relatório; "
+      "--set massa=1 dá código 2 com mensagem em português e sem traceback",
+      cod20 == 0 and existem and vh.get("editado") is True and vh.get("origem") == cp.ORIGEM_EDITADO
+      and all(t in md20 for t in sp.ROTULOS)
+      and cod_massa == 2 and "chave desconhecida: massa" in msg20 and "Traceback" not in msg20,
+      f"cod={cod20}, massa={cod_massa}, h_cg={vh}, msg={msg20.strip()!r}")
 
 encerrar()
