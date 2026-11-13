@@ -203,6 +203,8 @@ def _valida_valor(chave: str, valor, permitir_nulo: bool = False):
         if valor not in (0, 1):
             raise ValueError(f"{chave}: é uma chave, aceita só 0 (desligada) ou 1 (ligada); recebi {valor!r}.")
         return int(valor)
+    if chave.startswith("lambda_") and valor <= 0.0:
+        raise ValueError(f"{chave}: o fator de escala precisa ser finito e maior que zero; recebi {valor!r}.")
     return valor
 
 
