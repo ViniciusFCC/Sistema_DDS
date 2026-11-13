@@ -1,0 +1,722 @@
+{
+  "schema": "caso_pneu1/1",
+  "aviso": "DEMONSTRATIVO: caso de outro carro (T09/E03 e TX), não o T11",
+  "captura": {
+    "planilha": "excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx",
+    "sha256": "a1c03cabca3c49308c6cf2e2131fd158caca230e751c57cbe91c7081c16ed711",
+    "data": "2026-11-12",
+    "ferramenta": "tools/capturar_caso_pneu1.py"
+  },
+  "campos": {
+    "m_sem_piloto_kg": {
+      "valor": 248.5,
+      "unidade": "kg",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_massa_medida_sem_piloto (05_VEHICLE B30)",
+      "rotulo": "Massa do carro sem piloto",
+      "unidade_exibicao": "kg",
+      "descricao": "Massa do carro pesado sem o piloto.",
+      "editado": false
+    },
+    "m_piloto_kg": {
+      "valor": 68,
+      "unidade": "kg",
+      "origem": "○ Estimativa",
+      "fonte": "ent_05_massa_do_piloto (05_VEHICLE B31)",
+      "rotulo": "Massa do piloto",
+      "unidade_exibicao": "kg",
+      "descricao": "Massa do piloto com equipamento.",
+      "editado": false
+    },
+    "h_cg_m": {
+      "valor": 0.315,
+      "unidade": "m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_altura_do_cg_total (05_VEHICLE B5)",
+      "rotulo": "Altura do centro de gravidade",
+      "unidade_exibicao": "m",
+      "descricao": "Altura do centro de gravidade do carro todo, medida a partir do chão.",
+      "editado": false
+    },
+    "L_m": {
+      "valor": 1.594,
+      "unidade": "m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_wheelbase_l (05_VEHICLE B6)",
+      "rotulo": "Entre-eixos",
+      "unidade_exibicao": "m",
+      "descricao": "Distância entre o eixo dianteiro e o traseiro.",
+      "editado": false
+    },
+    "tF_m": {
+      "valor": 1.277,
+      "unidade": "m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_front_track_t_f (05_VEHICLE B7)",
+      "rotulo": "Bitola dianteira",
+      "unidade_exibicao": "m",
+      "descricao": "Distância entre o centro das duas rodas da frente.",
+      "editado": false
+    },
+    "tR_m": {
+      "valor": 1.271,
+      "unidade": "m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_rear_track_t_r (05_VEHICLE B8)",
+      "rotulo": "Bitola traseira",
+      "unidade_exibicao": "m",
+      "descricao": "Distância entre o centro das duas rodas de trás.",
+      "editado": false
+    },
+    "f_dianteira": {
+      "valor": 0.4843,
+      "unidade": "-",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_fracao_de_peso_no_eixo_dianteiro_f (05_VEHICLE B32)",
+      "rotulo": "Fração do peso na frente",
+      "unidade_exibicao": "-",
+      "descricao": "Parte do peso do carro que fica sobre o eixo dianteiro, de 0 a 1.",
+      "editado": false
+    },
+    "muF_kg": {
+      "valor": 15,
+      "unidade": "kg",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_05_massa_nao_suspensa_dianteira (05_VEHICLE B14)",
+      "rotulo": "Massa não suspensa dianteira",
+      "unidade_exibicao": "kg",
+      "descricao": "Massa das peças da frente que não são sustentadas pela mola (roda, pneu, cubo, parte dos braços), por eixo.",
+      "editado": false
+    },
+    "muR_kg": {
+      "valor": 18,
+      "unidade": "kg",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_05_massa_nao_suspensa_traseira (05_VEHICLE B15)",
+      "rotulo": "Massa não suspensa traseira",
+      "unidade_exibicao": "kg",
+      "descricao": "Massa das peças de trás que não são sustentadas pela mola, por eixo.",
+      "editado": false
+    },
+    "d_pneu_F_pol": {
+      "valor": 20,
+      "unidade": "in",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_diametro_do_pneu_dianteiro (05_VEHICLE B33)",
+      "rotulo": "Diâmetro do pneu dianteiro",
+      "unidade_exibicao": "in",
+      "descricao": "Diâmetro externo do pneu da frente, em polegadas.",
+      "editado": false
+    },
+    "d_pneu_R_pol": {
+      "valor": 20,
+      "unidade": "in",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_05_diametro_do_pneu_traseiro (05_VEHICLE B34)",
+      "rotulo": "Diâmetro do pneu traseiro",
+      "unidade_exibicao": "in",
+      "descricao": "Diâmetro externo do pneu de trás, em polegadas.",
+      "editado": false
+    },
+    "razao_hns_F": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "○ Estimativa",
+      "fonte": "ent_05_razao_h_ns_raio_do_pneu_dianteiro (05_VEHICLE B35)",
+      "rotulo": "Altura da massa não suspensa, frente",
+      "unidade_exibicao": "-",
+      "descricao": "Altura do centro das massas não suspensas da frente, como fração do raio do pneu.",
+      "editado": false
+    },
+    "razao_hns_R": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "○ Estimativa",
+      "fonte": "ent_05_razao_h_ns_raio_do_pneu_traseiro (05_VEHICLE B36)",
+      "rotulo": "Altura da massa não suspensa, trás",
+      "unidade_exibicao": "-",
+      "descricao": "Altura do centro das massas não suspensas de trás, como fração do raio do pneu.",
+      "editado": false
+    },
+    "KsF_N_m": {
+      "valor": 49909.24,
+      "unidade": "N/m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_spring_rate_dianteiro (06_SUSPENSION B4)",
+      "rotulo": "Rigidez da mola dianteira",
+      "unidade_exibicao": "N/m",
+      "descricao": "Rigidez da mola da suspensão dianteira, medida na própria mola.",
+      "editado": false
+    },
+    "MRF": {
+      "valor": 1.76,
+      "unidade": "-",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_motion_ratio_dianteiro_wheel_spring (06_SUSPENSION B6)",
+      "rotulo": "Relação de movimento dianteira",
+      "unidade_exibicao": "-",
+      "descricao": "Quanto a roda se move para cada milímetro que a mola se move, suspensão dianteira.",
+      "editado": false
+    },
+    "KarbF_Nm_rad": {
+      "valor": 5012.32,
+      "unidade": "N*m/rad",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_k_arb_dianteiro (06_SUSPENSION B10)",
+      "rotulo": "Rigidez da barra estabilizadora dianteira",
+      "unidade_exibicao": "N*m/rad",
+      "descricao": "Quanto a barra estabilizadora dianteira resiste à rolagem da carroceria.",
+      "editado": false
+    },
+    "zF_m": {
+      "valor": 0.0675,
+      "unidade": "m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_roll_center_dianteiro_rh_estatico (06_SUSPENSION B14)",
+      "rotulo": "Altura do centro de rolagem dianteira",
+      "unidade_exibicao": "m",
+      "descricao": "Altura do centro de rolagem do eixo dianteira, na posição parada.",
+      "editado": false
+    },
+    "KTF_N_m": {
+      "valor": 120312,
+      "unidade": "N/m",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_06_rigidez_vertical_do_pneu_dianteiro_k_t (06_SUSPENSION B47)",
+      "rotulo": "Rigidez vertical do pneu dianteira",
+      "unidade_exibicao": "N/m",
+      "descricao": "Quanto o pneu dianteira resiste a ser comprimido na vertical.",
+      "editado": false
+    },
+    "KsR_N_m": {
+      "valor": 57052.22,
+      "unidade": "N/m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_spring_rate_traseiro (06_SUSPENSION B5)",
+      "rotulo": "Rigidez da mola traseira",
+      "unidade_exibicao": "N/m",
+      "descricao": "Rigidez da mola da suspensão traseira, medida na própria mola.",
+      "editado": false
+    },
+    "MRR": {
+      "valor": 1.76,
+      "unidade": "-",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_motion_ratio_traseiro_wheel_spring (06_SUSPENSION B7)",
+      "rotulo": "Relação de movimento traseira",
+      "unidade_exibicao": "-",
+      "descricao": "Quanto a roda se move para cada milímetro que a mola se move, suspensão traseira.",
+      "editado": false
+    },
+    "KarbR_Nm_rad": {
+      "valor": 10.78,
+      "unidade": "N*m/rad",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_k_arb_traseiro (06_SUSPENSION B11)",
+      "rotulo": "Rigidez da barra estabilizadora traseira",
+      "unidade_exibicao": "N*m/rad",
+      "descricao": "Quanto a barra estabilizadora traseira resiste à rolagem da carroceria.",
+      "editado": false
+    },
+    "zR_m": {
+      "valor": 0.11,
+      "unidade": "m",
+      "origem": "◐ Dado de outro carro (TX, T09)",
+      "fonte": "ent_06_roll_center_traseiro_rh_estatico (06_SUSPENSION B15)",
+      "rotulo": "Altura do centro de rolagem traseira",
+      "unidade_exibicao": "m",
+      "descricao": "Altura do centro de rolagem do eixo traseira, na posição parada.",
+      "editado": false
+    },
+    "KTR_N_m": {
+      "valor": 120312,
+      "unidade": "N/m",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_06_rigidez_vertical_do_pneu_traseiro_k_t (06_SUSPENSION B48)",
+      "rotulo": "Rigidez vertical do pneu traseira",
+      "unidade_exibicao": "N/m",
+      "descricao": "Quanto o pneu traseira resiste a ser comprimido na vertical.",
+      "editado": false
+    },
+    "DF_N": {
+      "valor": 400,
+      "unidade": "N",
+      "origem": "○ Estimativa",
+      "fonte": "ent_08_downforce_total (08_VEHICLE_STATE B8)",
+      "rotulo": "Força aerodinâmica para baixo",
+      "unidade_exibicao": "N",
+      "descricao": "Força vertical total que o ar faz sobre o carro, para baixo, usada quando a hipótese h8 está desligada.",
+      "editado": false
+    },
+    "bal_dianteira": {
+      "valor": 0.45,
+      "unidade": "-",
+      "origem": "○ Estimativa",
+      "fonte": "ent_08_aero_balance_fracao_dianteira (08_VEHICLE_STATE B9)",
+      "rotulo": "Parte da força aerodinâmica na frente",
+      "unidade_exibicao": "-",
+      "descricao": "Fração da força aerodinâmica para baixo que atua no eixo dianteiro, de 0 a 1.",
+      "editado": false
+    },
+    "dgF_grau_mm": {
+      "valor": -0.6,
+      "unidade": "deg/mm",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_07_camber_gain_dianteiro_dcamber_dz (07_KINEMATICS B23)",
+      "rotulo": "Ganho de camber dianteiro",
+      "unidade_exibicao": "deg/mm",
+      "descricao": "Quanto o ângulo de camber da roda da frente muda para cada milímetro de curso da suspensão.",
+      "editado": false
+    },
+    "dgR_grau_mm": {
+      "valor": -0.5,
+      "unidade": "deg/mm",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_07_camber_gain_traseiro_dcamber_dz (07_KINEMATICS B24)",
+      "rotulo": "Ganho de camber traseiro",
+      "unidade_exibicao": "deg/mm",
+      "descricao": "Quanto o ângulo de camber da roda de trás muda para cada milímetro de curso da suspensão.",
+      "editado": false
+    },
+    "epsF_rad_rad": {
+      "valor": 0,
+      "unidade": "°/°",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_07_roll_steer_dianteiro_epsilon_f (07_KINEMATICS B82)",
+      "rotulo": "Esterço de rolagem dianteiro",
+      "unidade_exibicao": "°/°",
+      "descricao": "Quanto a roda da frente esterça sozinha quando a carroceria rola, em graus por grau de rolagem.",
+      "editado": false
+    },
+    "epsR_rad_rad": {
+      "valor": 0,
+      "unidade": "°/°",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_07_roll_steer_traseiro_epsilon_r (07_KINEMATICS B83)",
+      "rotulo": "Esterço de rolagem traseiro",
+      "unidade_exibicao": "°/°",
+      "descricao": "Quanto a roda de trás esterça sozinha quando a carroceria rola, em graus por grau de rolagem.",
+      "editado": false
+    },
+    "gsFL_grau": {
+      "valor": -1.5,
+      "unidade": "°",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_10_camber_gama_projeto_topo_para_fora_b (10_TIRE B24)",
+      "rotulo": "Camber estático, roda dianteira esquerda",
+      "unidade_exibicao": "°",
+      "descricao": "Inclinação da roda dianteira esquerda com o carro parado; positivo = topo da roda para fora.",
+      "editado": false
+    },
+    "gsFR_grau": {
+      "valor": -1.5,
+      "unidade": "°",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_10_camber_gama_projeto_topo_para_fora_c (10_TIRE C24)",
+      "rotulo": "Camber estático, roda dianteira direita",
+      "unidade_exibicao": "°",
+      "descricao": "Inclinação da roda dianteira direita com o carro parado; positivo = topo da roda para fora.",
+      "editado": false
+    },
+    "gsRL_grau": {
+      "valor": -1,
+      "unidade": "°",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_10_camber_gama_projeto_topo_para_fora_d (10_TIRE D24)",
+      "rotulo": "Camber estático, roda traseira esquerda",
+      "unidade_exibicao": "°",
+      "descricao": "Inclinação da roda traseira esquerda com o carro parado; positivo = topo da roda para fora.",
+      "editado": false
+    },
+    "gsRR_grau": {
+      "valor": -1,
+      "unidade": "°",
+      "origem": "○ Arbitrário / demonstrativo",
+      "fonte": "ent_10_camber_gama_projeto_topo_para_fora_e (10_TIRE E24)",
+      "rotulo": "Camber estático, roda traseira direita",
+      "unidade_exibicao": "°",
+      "descricao": "Inclinação da roda traseira direita com o carro parado; positivo = topo da roda para fora.",
+      "editado": false
+    },
+    "eixos_tir": {
+      "valor": "ISO_TYDEX",
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_sistema_de_eixos_do_arquivo_declarado_sa (10_TIRE B11)",
+      "rotulo": "Sistema de eixos do arquivo do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Convenção de eixos em que o arquivo do pneu foi medido (ISO_TYDEX ou SAE_CALSPAN).",
+      "editado": false
+    },
+    "sentido": {
+      "valor": "Esquerda",
+      "unidade": "-",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_sentido_da_curva (16_EQUILIBRIO B4)",
+      "rotulo": "Sentido da curva",
+      "unidade_exibicao": "-",
+      "descricao": "Para que lado o carro faz a curva: Esquerda ou Direita.",
+      "editado": false
+    },
+    "toeFL_grau": {
+      "valor": 0,
+      "unidade": "°",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_toe_fl (16_EQUILIBRIO B5)",
+      "rotulo": "Convergência (toe), roda dianteira esquerda",
+      "unidade_exibicao": "°",
+      "descricao": "Ângulo da roda dianteira esquerda em relação ao eixo do carro; positivo = abre para fora (toe-out).",
+      "editado": false
+    },
+    "toeFR_grau": {
+      "valor": 0,
+      "unidade": "°",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_toe_fr (16_EQUILIBRIO B6)",
+      "rotulo": "Convergência (toe), roda dianteira direita",
+      "unidade_exibicao": "°",
+      "descricao": "Ângulo da roda dianteira direita em relação ao eixo do carro; positivo = abre para fora (toe-out).",
+      "editado": false
+    },
+    "toeRL_grau": {
+      "valor": 0,
+      "unidade": "°",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_toe_rl (16_EQUILIBRIO B7)",
+      "rotulo": "Convergência (toe), roda traseira esquerda",
+      "unidade_exibicao": "°",
+      "descricao": "Ângulo da roda traseira esquerda em relação ao eixo do carro; positivo = abre para fora (toe-out).",
+      "editado": false
+    },
+    "toeRR_grau": {
+      "valor": 0,
+      "unidade": "°",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_toe_rr (16_EQUILIBRIO B8)",
+      "rotulo": "Convergência (toe), roda traseira direita",
+      "unidade_exibicao": "°",
+      "descricao": "Ângulo da roda traseira direita em relação ao eixo do carro; positivo = abre para fora (toe-out).",
+      "editado": false
+    },
+    "R_m": {
+      "valor": 9.125,
+      "unidade": "m",
+      "origem": "● Dado do T11",
+      "fonte": "((ent_24_diametro_do_circulo_interno) + (ent_24_diametro_do_circulo_externo))/4, modo Linha central (24_CURVA B5 e B6; 24_CURVA B20); modo em ent_24_modo_do_raio_r (24_CURVA B4)",
+      "rotulo": "Raio da curva",
+      "unidade_exibicao": "m",
+      "descricao": "Raio da curva que o carro percorre, usado pelas hipóteses que dependem da trajetória.",
+      "editado": false
+    },
+    "cg_lateral_m": {
+      "valor": 0,
+      "unidade": "m",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_cg_lateral_y_cg (16_EQUILIBRIO B10)",
+      "rotulo": "Posição lateral do centro de gravidade",
+      "unidade_exibicao": "m",
+      "descricao": "Quanto o centro de gravidade está deslocado para o lado esquerdo do carro; negativo = direita.",
+      "editado": false
+    },
+    "cza_m2": {
+      "valor": null,
+      "unidade": "m²",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_cza (16_EQUILIBRIO B11)",
+      "rotulo": "Área efetiva de sustentação (CzA)",
+      "unidade_exibicao": "m²",
+      "descricao": "Produto do coeficiente de sustentação para baixo pela área de referência.",
+      "editado": false
+    },
+    "rho_kg_m3": {
+      "valor": null,
+      "unidade": "kg/m³",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_rho_densidade_do_ar (16_EQUILIBRIO B12)",
+      "rotulo": "Densidade do ar",
+      "unidade_exibicao": "kg/m³",
+      "descricao": "Massa de ar por metro cúbico.",
+      "editado": false
+    },
+    "cda_m2": {
+      "valor": null,
+      "unidade": "m²",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_cda (16_EQUILIBRIO B13)",
+      "rotulo": "Área efetiva de arrasto (CdA)",
+      "unidade_exibicao": "m²",
+      "descricao": "Produto do coeficiente de arrasto do ar pela área de referência.",
+      "editado": false
+    },
+    "crr": {
+      "valor": null,
+      "unidade": "-",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_crr_resistencia_ao_rolamento (16_EQUILIBRIO B14)",
+      "rotulo": "Resistência ao rolamento (Crr)",
+      "unidade_exibicao": "-",
+      "descricao": "Fração do peso que vira força contra o movimento por causa do rolamento do pneu.",
+      "editado": false
+    },
+    "h2": {
+      "valor": 0,
+      "unidade": "0/1",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_chave_h2_ackermann_sus_414 (16_EQUILIBRIO B15)",
+      "rotulo": "Hipótese h2: geometria de Ackermann",
+      "unidade_exibicao": "0/1",
+      "descricao": "1 = usa a porcentagem de Ackermann da direção; 0 = desligada.",
+      "editado": false
+    },
+    "h3": {
+      "valor": 0,
+      "unidade": "0/1",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_chave_h3_cos_delta_ref_na_frente (16_EQUILIBRIO B16)",
+      "rotulo": "Hipótese h3: cosseno do esterço médio na frente",
+      "unidade_exibicao": "0/1",
+      "descricao": "1 = considera o esterço da roda dianteira na força lateral; 0 = desligada.",
+      "editado": false
+    },
+    "h7": {
+      "valor": 0,
+      "unidade": "0/1",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_chave_h7_cg_lateral (16_EQUILIBRIO B17)",
+      "rotulo": "Hipótese h7: centro de gravidade deslocado",
+      "unidade_exibicao": "0/1",
+      "descricao": "1 = usa a posição lateral do centro de gravidade; 0 = desligada.",
+      "editado": false
+    },
+    "h8": {
+      "valor": 0,
+      "unidade": "0/1",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_chave_h8_aero_com_v_a_yr (16_EQUILIBRIO B18)",
+      "rotulo": "Hipótese h8: aerodinâmica pela velocidade",
+      "unidade_exibicao": "0/1",
+      "descricao": "1 = calcula a força aerodinâmica pela velocidade na curva; 0 = usa a força fixa.",
+      "editado": false
+    },
+    "h9": {
+      "valor": 0,
+      "unidade": "0/1",
+      "origem": "? A confirmar",
+      "fonte": "ent_16_chave_h9_tracao_na_traseira (16_EQUILIBRIO B19)",
+      "rotulo": "Hipótese h9: tração no eixo traseiro",
+      "unidade_exibicao": "0/1",
+      "descricao": "1 = inclui a força de tração do eixo traseiro; 0 = desligada.",
+      "editado": false
+    },
+    "h2v": {
+      "valor": 1,
+      "unidade": "0/1",
+      "origem": "? A confirmar",
+      "fonte": "ent_24_chave_h2v_forma_do_ackermann (24_CURVA B9)",
+      "rotulo": "Forma do Ackermann: ângulos de cada roda",
+      "unidade_exibicao": "0/1",
+      "descricao": "1 = usa os ângulos de esterço de cada roda calculados pela geometria da curva; 0 = forma antiga.",
+      "editado": false
+    },
+    "h9v": {
+      "valor": 1,
+      "unidade": "0/1",
+      "origem": "? A confirmar",
+      "fonte": "ent_24_chave_h9v_forma_do_fx_exigido (24_CURVA B10)",
+      "rotulo": "Forma da tração: força exigida pela curva",
+      "unidade_exibicao": "0/1",
+      "descricao": "1 = usa a força longitudinal exigida pela trajetória; 0 = forma antiga.",
+      "editado": false
+    },
+    "fator_neutro": {
+      "valor": 1.3333333333333333,
+      "unidade": "-",
+      "origem": "○ Estimativa",
+      "fonte": "res_24_fator_da_faixa_do_neutro (24_CURVA B34), fórmula =4/3",
+      "rotulo": "Fator da faixa do equilíbrio neutro",
+      "unidade_exibicao": "-",
+      "descricao": "Quanto a diferença entre frente e trás pode variar para o carro ainda contar como neutro.",
+      "editado": false
+    },
+    "ackermann_pct": {
+      "valor": null,
+      "unidade": "%",
+      "origem": "? A confirmar",
+      "fonte": "res_07_ackermann (07_KINEMATICS B75) é resultado: não capturado; informe o valor se a h2 for ligada",
+      "rotulo": "Porcentagem de Ackermann",
+      "unidade_exibicao": "%",
+      "descricao": "Quanto a direção se aproxima da geometria de Ackermann exata; 100 = exata. Só é lida com a h2 ligada.",
+      "editado": false
+    },
+    "crr_referencia": {
+      "valor": null,
+      "unidade": "-",
+      "origem": "? A confirmar",
+      "fonte": "sem fonte na planilha: a confirmar",
+      "rotulo": "Crr de referência",
+      "unidade_exibicao": "-",
+      "descricao": "Valor de referência da resistência ao rolamento para comparar com o arrasto; sem fonte, fica a confirmar.",
+      "editado": false
+    },
+    "lambda_LFZO": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lfzo (10_TIRE B97)",
+      "rotulo": "Fator de escala LFZO do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LFZO do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LCX": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lcx (10_TIRE B98)",
+      "rotulo": "Fator de escala LCX do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LCX do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LMUX": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lmux (10_TIRE B99)",
+      "rotulo": "Fator de escala LMUX do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LMUX do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LEX": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lex (10_TIRE B100)",
+      "rotulo": "Fator de escala LEX do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LEX do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LKX": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lkx (10_TIRE B101)",
+      "rotulo": "Fator de escala LKX do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LKX do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LHX": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lhx (10_TIRE B102)",
+      "rotulo": "Fator de escala LHX do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LHX do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LVX": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lvx (10_TIRE B103)",
+      "rotulo": "Fator de escala LVX do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LVX do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LGAX": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lgax (10_TIRE B104)",
+      "rotulo": "Fator de escala LGAX do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LGAX do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LCY": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lcy (10_TIRE B105)",
+      "rotulo": "Fator de escala LCY do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LCY do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LMUY": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lmuy (10_TIRE B106)",
+      "rotulo": "Fator de escala LMUY do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LMUY do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LEY": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_ley (10_TIRE B107)",
+      "rotulo": "Fator de escala LEY do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LEY do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LKY": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lky (10_TIRE B108)",
+      "rotulo": "Fator de escala LKY do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LKY do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LHY": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lhy (10_TIRE B109)",
+      "rotulo": "Fator de escala LHY do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LHY do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LVY": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lvy (10_TIRE B110)",
+      "rotulo": "Fator de escala LVY do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LVY do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LGAY": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lgay (10_TIRE B111)",
+      "rotulo": "Fator de escala LGAY do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LGAY do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    },
+    "lambda_LKYG": {
+      "valor": 1,
+      "unidade": "-",
+      "origem": "◐ Provisório (.tir TTC)",
+      "fonte": "ent_10_lkyg (10_TIRE B177)",
+      "rotulo": "Fator de escala LKYG do pneu",
+      "unidade_exibicao": "-",
+      "descricao": "Multiplica o coeficiente LKYG do modelo do pneu; 1 = sem alteração.",
+      "editado": false
+    }
+  }
+}
