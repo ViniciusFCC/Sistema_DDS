@@ -1,7 +1,8 @@
 """Testes do pneu-1 (sensibilidade do pneu e arrasto induzido), EDR-075. Script com check(), não pytest.
 
 TC-SEN-001 a 005 não precisam do .tir: catálogo, leitura, edição e gravação do caso, e o x da planilha.
-TC-SEN-006 a 008 e 010 a 012 precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
+TC-SEN-016 a 019 (regra de muda decisão e Resultado) também não precisam do .tir.
+TC-SEN-006 a 008 e 010 a 015 precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
 caso_pneu1.achar_ttc): sem eles, a seção imprime NÃO EXECUTÁVEL e o script sai com o código 3 depois das outras.
 Os dados do teste são SINTÉTICOS de teste, não são dado do carro (números do veiculo_base de tests/test_equilibrio.py).
 """
@@ -9,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import json
 import tempfile
 from pathlib import Path
 
@@ -130,6 +132,129 @@ check("TC-SEN-005 valores_usados: todos os campos e os 5 res_ com a célula; nul
 # ---------------------------------------------------------------------------------------------------------------------
 # Seção com .tir (TC-SEN-006 a 008)
 # ---------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
+# TC-SEN-016 a 019: regra de "muda decisão" e Resultado (sem .tir; ResultadoCarro sintético, como o rc() de
+# tests/test_tire_pressure.py; os números são SINTÉTICOS de teste, não são dado do carro)
+# ---------------------------------------------------------------------------------------------------------------------
+NOS = (8.0, 10.0, 12.0, 14.0)
+
+
+def rc(p, var, ay, borda=False, veredito="PUSH", res=0.01, robustez=None):
+    """ResultadoCarro sintético: par={} e caso=None (escolher_pressao só lê par se ay_lim_ms2 for None)."""
+    return cmp.ResultadoCarro(pressao_psi=p, variante_kt=var, ay_lim_ms2=ay, sentido_pior="esquerda",
+                              eixo_satura=None, veredito=veredito, k_rad_ms2=None, k_motivo=None,
+                              resolucao_ms2=res, borda_alfa=borda, robustez=robustez, rotulos=(), par={}, caso=None)
+
+
+def serie_rc(var, ays, vereditos=None, robustezes=None):
+    vs = vereditos or ["PUSH"] * 4
+    rb = robustezes or [None] * 4
+    return [rc(p, var, a, veredito=v, robustez=r) for p, a, v, r in zip(NOS, ays, vs, rb, strict=True)]
+
+
+def banda(v):
+    return cmp.Banda(v, True, {}, "banda sintética")
+
+
+def vered(valores, b=0.5):
+    return cmp.decidir(dict(zip(NOS, valores, strict=True)), {p: banda(b) for p in NOS}, {})
+
+
+def escolhas(ay_vals, ca_vals, b=0.5):
+    """(esc_ay, esc_ca) sintéticos a partir de Vereditos de `cmp.decidir`."""
+    return (cmp.Escolha("a_y_lim", "máximo", {"KT (a)": vered(ay_vals, b)}, None, ()),
+            cmp.Escolha("C_alpha_operacao", "máximo", {"eixo F": vered(ca_vals, b), "eixo R": vered(ca_vals, b)},
+                        None, ()))
+
+
+PUSH_ROB = ("PUSH", "mesmo sinal na varredura exploratória do pneu")
+NC_ROB = ("NÃO CONCLUSIVO", "o sinal depende do pneu")
+NA_ROB = ("N/A", "N/A em toda a varredura")
+l_nao, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[PUSH_ROB] * 4))
+l_sim, c_sim = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[PUSH_ROB, PUSH_ROB, NC_ROB, PUSH_ROB]))
+l_na, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[PUSH_ROB, NA_ROB, PUSH_ROB, PUSH_ROB]))
+l_nc_na, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[NA_ROB, PUSH_ROB, NC_ROB, PUSH_ROB]))
+l_loose, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[("LOOSE", "x")] * 4))
+l_semrob, _ = sp.decidir_lambda(serie_rc("a", [10.0] * 4))
+check("TC-SEN-016 decidir_lambda (D6): PUSH/LOOSE nas 4 -> não; NÃO CONCLUSIVO -> sim; N/A -> não avaliado; "
+      "NÃO CONCLUSIVO + N/A -> sim; sem robustez -> não avaliado; critérios por pressão",
+      l_nao == "não" and l_loose == "não" and l_sim == "sim" and l_na == "não avaliado" and l_nc_na == "sim"
+      and l_semrob == "não avaliado" and len(c_sim) == 4 and all(isinstance(v, str) for v in c_sim.values()),
+      f"{l_nao}, {l_loose}, {l_sim}, {l_na}, {l_nc_na}, {l_semrob}")
+
+# TC-SEN-017: pressão. Critério 1 (vereditos entre pressões) e critério 2 (D7, bandas)
+planas = serie_rc("a", [10.0, 10.0, 10.0, 10.0])
+ay_p, ca_p = escolhas([10.0] * 4, [100.0] * 4)
+ay_p_real = cmp.escolher_pressao("a_y_lim", resultados_carro=planas)
+p_nao, c_nao = sp.decidir_pressao(planas, ay_p_real, ca_p)
+p_c1, c_c1 = sp.decidir_pressao(serie_rc("a", [10.0] * 4, vereditos=["PUSH", "PUSH", "PUSH", "LOOSE"]), ay_p, ca_p)
+ay_d, ca_d = escolhas([10.0, 20.0, 10.0, 10.0], [100.0] * 4)           # o a_y_lim de 10 psi se destaca: D7
+p_c2, _ = sp.decidir_pressao(planas, ay_d, ca_p)
+ay_cd, ca_cd = escolhas([10.0] * 4, [100.0, 100.0, 300.0, 100.0])      # um eixo do Cα se destaca
+p_c2b, _ = sp.decidir_pressao(planas, ay_p, ca_cd)
+na = serie_rc("a", [None] * 4, vereditos=["N/A"] * 4)
+ay_na = cmp.escolher_pressao("a_y_lim", resultados_carro=na)
+p_na, c_na = sp.decidir_pressao(na, ay_na, ca_p)
+p_na1, _ = sp.decidir_pressao(serie_rc("a", [10.0, 10.0, 10.0, None], vereditos=["PUSH", "PUSH", "PUSH", "N/A"]),
+                              ay_p, ca_p)
+check("TC-SEN-017 decidir_pressao: PUSH e bandas que não separam -> não; PUSH×LOOSE -> sim (critério 1); "
+      "a_y_lim ou Cα se distinguem -> sim (critério 2); ay None -> não avaliado; um N/A isolado -> não avaliado",
+      p_nao == "não" and p_c1 == "sim" and p_c2 == "sim" and p_c2b == "sim" and p_na == "não avaliado"
+      and p_na1 == "não avaliado" and len(c_nao) >= 2 and len(c_c1) >= 2,
+      f"{p_nao}, {p_c1}, {p_c2}, {p_c2b}, {p_na}, {p_na1}; {c_nao}")
+
+# TC-SEN-018: KT, variante a x b
+a_s = serie_rc("a", [10.0, 12.0, 14.0, 16.0])
+b_ig = serie_rc("b", [10.0, 12.0, 14.0, 16.0])
+b_dif = serie_rc("b", [10.0, 15.0, 14.0, 16.0])                       # 10 psi: |Δa_y| = 3 > banda interna (0,01)
+b_ver = serie_rc("b", [10.0, 12.0, 14.0, 16.0], vereditos=["PUSH", "PUSH", "LOOSE", "PUSH"])
+b_none = serie_rc("b", [10.0, None, 14.0, 16.0])
+k_ig, _ = sp.decidir_kt(a_s + b_ig)
+k_ay, c_ay = sp.decidir_kt(a_s + b_dif)
+k_ver, _ = sp.decidir_kt(a_s + b_ver)
+k_none, _ = sp.decidir_kt(a_s + b_none)
+k_sem_b, _ = sp.decidir_kt(a_s)
+k_none_ver, _ = sp.decidir_kt(a_s + serie_rc("b", [10.0, None, 14.0, 16.0],
+                                              vereditos=["PUSH", "PUSH", "LOOSE", "PUSH"]))
+check("TC-SEN-018 decidir_kt: a = b -> não; |Δa_y| > banda -> sim; veredito difere -> sim; ay None -> não avaliado "
+      "(e sim se outro nó dá sim); sem variante b -> não avaliado",
+      k_ig == "não" and k_ay == "sim" and k_ver == "sim" and k_none == "não avaliado" and k_sem_b == "não avaliado"
+      and k_none_ver == "sim" and len(c_ay) >= 1, f"{k_ig}, {k_ay}, {k_ver}, {k_none}, {k_sem_b}, {k_none_ver}")
+
+# TC-SEN-019: Resultado serializável, 18 decisões, rótulos
+tab = sp.tabela_decisoes(("não", {"λ": "não"}), ("sim", {"pressão": "sim: PUSH × LOOSE"}),
+                         ("não avaliado", {"KT": "não avaliado"}))
+lc = sp.LinhaCarro("12 psi, variante a", 12.0, "a", {"LMUY": 0.8}, 12.3, 1.25, "PUSH", "esquerda", 5.0e4, 4.0e4, 3.1,
+                   0.01, False, ("PUSH", "mesmo sinal"), ("r",))
+la = sp.LinhaArrasto(1.0, 0.1, 0.01, 0.02, 3.0, {"FL": 1.0, "FR": 2.0}, 3.1, 0.001, None, ())
+lp = sp.LinhaPneu(8.0, "F", False, 900.0, 5.0e4, 1.5, False, ("r",))
+vu = cp.valores_usados(D)[0]
+res_s = sp.Resultado(valores=(vu,), tornado=(lc,), pressao=(lc,), combinacao=None, pneu=(lp,), arrasto=(la,),
+                     decisoes=tab, rotulos=sp.ROTULOS, tempos_s={"tornado": 0.5})
+try:
+    texto = json.dumps(res_s.para_dict(), allow_nan=False)
+    volta = json.loads(texto)
+except (TypeError, ValueError) as exc:
+    texto, volta = "", {}
+    print("json:", exc)
+res_comb = sp.Resultado(valores=(), tornado=(), pressao=(), combinacao=(lc,), pneu=(), arrasto=(), decisoes=tab,
+                        rotulos=sp.ROTULOS, tempos_s={})
+dec19 = {d.degrau: d for d in tab}
+medidos = {1, 2, 3, 6, 7, 8, 12, 15}
+check("TC-SEN-019 Resultado.para_dict em JSON, 18 decisões, fora de {1,2,3,6,7,8,12,15} = 'não medido aqui', "
+      "rótulos não vazios, DEGRAUS 1 a 18, resumo uma frase por decisão",
+      len(volta.get("decisoes", [])) == 18 and sorted(dec19) == list(range(1, 19))
+      and set(sp.DEGRAUS) == set(range(1, 19))
+      and all(dec19[g].muda == "não medido aqui" for g in dec19 if g not in medidos)
+      and dec19[6].muda == "não" and dec19[8].muda == "não" and dec19[1].muda == "sim" and dec19[3].muda == "sim"
+      and dec19[12].muda == "não avaliado" and dec19[7].muda == "não avaliado" and dec19[15].muda == "não avaliado"
+      and dec19[16].muda == "não medido aqui" and dec19[16].frase == "este estudo"
+      and all(d.rotulos and d.frase and d.nome == sp.DEGRAUS[d.degrau] for d in tab)
+      and '"caso"' not in texto and volta["combinacao"] is None and len(res_s.resumo()) == 18
+      and len(res_comb.para_dict()["combinacao"]) == 1 and volta["decisoes"][0]["fatores"] == ["Pressão"],
+      f"{len(volta.get('decisoes', []))}")
+
+
 TTC = cp.achar_ttc()
 if TTC is None:
     print("\nNÃO EXECUTÁVEL: TC-SEN-006 a 008 e 010 a 012 precisam dos .tir do TTC Round 6 (defina DDS_TTC_DIR ou coloque-os em "
