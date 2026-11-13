@@ -2,7 +2,7 @@
 
 TC-SEN-001 a 005 não precisam do .tir: catálogo, leitura, edição e gravação do caso, e o x da planilha.
 TC-SEN-016 a 019 (regra de muda decisão e Resultado) também não precisam do .tir.
-TC-SEN-006 a 008, 010 a 015 e 020 (linha de comando) precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
+TC-SEN-006 a 008, 010 a 015 e 020 a 021 (linha de comando) precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
 caso_pneu1.achar_ttc): sem eles, a seção imprime NÃO EXECUTÁVEL e o script sai com o código 3 depois das outras.
 Os dados do teste são SINTÉTICOS de teste, não são dado do carro (números do veiculo_base de tests/test_equilibrio.py).
 """
@@ -428,7 +428,7 @@ cortado = sp.arrasto_induzido(CASO, formas=FORMAS, ay_ate_ms2=3.0 * G, ay_max_g=
 check("TC-SEN-012b grade que satura: para antes de 2 g, o próximo ponto não resolve e há rótulo; limite acima de ay_max_g avisa",
       u_sat.ay_g < 1.9 and el.angulos_necessarios(CASO_SAT, u_sat.ay_g * G, formas=FORMAS) is not None
       and el.angulos_necessarios(CASO_SAT, prox_sat * G, formas=FORMAS) is None
-      and all("deixam de resolver" in r and f"{u_sat.ay_g:.2f} g" in r for l in sat for r in l.rotulos)
+      and all("deixam de resolver" in r and f"{u_sat.ay_g:.2f} g".replace(".", ",") in r for l in sat for r in l.rotulos)
       and all("sem saturação" not in r for l in sat for r in l.rotulos)
       and sat_lim[-1].ay_g == u_sat.ay_g and all(l.rotulos and "deixam de resolver" in l.rotulos[0] for l in sat_lim)
       and cortado[-1].ay_g <= 1.0 + 1e-9 and all("passa de ay_max_g" in l.rotulos[-1] for l in cortado),
@@ -554,5 +554,30 @@ check("TC-SEN-020 relatorio_pneu1: código 0, dois arquivos, h_cg_m editado com 
       and cod_sem_arq == 2 and "arquivo do caso" in err_arq.getvalue(),
       f"cod={cod20}, massa={cod_massa}, cod3={cod3}, sem_igual={cod_sem_igual}, sem_arq={cod_sem_arq}, h_cg={vh}, "
       f"msg={msg20.strip()!r}")
+
+# TC-SEN-021: estudo num caso que satura (SINTÉTICO de teste: LMUY 0,3 e Crr 0,02, nenhum é dado do carro): o arrasto para
+# no a_y_lim de 12 psi (C1), usa o Crr do caso (I3), rótulos com vírgula (M1) e o rótulo do .tir cru do arrasto
+import re
+
+val_crr = tuple(dataclasses.replace(v, valor=0.02, origem=cp.ORIGEM_EDITADO, editado=True)
+                if v.chave == "crr_referencia" else v for v in montado_sat.valores)
+res21 = sp.estudo(dataclasses.replace(montado_sat, valores=val_crr), FAM, rapido=True)
+l12_21 = next(l for l in res21.pressao if l.variante_kt == "a" and abs(l.pressao_psi - 12.0) < 1e-3)
+arr21 = res21.arrasto
+md21 = rel.montar_relatorio(res21, True, cp.CAMINHO_DEMONSTRATIVO)
+arr_sem = sp.arrasto_induzido(CASO, formas=FORMAS, ay_ate_ms2=None)
+check("TC-SEN-021 estudo saturante: arrasto até o a_y_lim de 12 psi sem rótulo de 'sem saturação'; Crr do caso nas "
+      "linhas e no relatório; rótulos com vírgula; rótulo do .tir cru; sem Crr, a confirmar",
+      l12_21.ay_lim_ms2 is not None and arr21[-1].ay_ms2 <= l12_21.ay_lim_ms2 * (1 + 1e-9)
+      and arr21[-1].ay_ms2 >= l12_21.ay_lim_ms2 - 0.1 * G - 1e-9
+      and all("sem saturação" not in t for l in arr21 for t in l.rotulos)
+      and all(sp.ROTULO_ARRASTO in l.rotulos for l in arr21)
+      and all(l.d_sobre_rolamento is not None and abs(l.d_sobre_rolamento - l.d_n / (0.02 * CASO.cfg.mass_total * G)) <= 1e-9 * abs(l.d_sobre_rolamento) + 1e-12
+              for l in arr21[1:])
+      and "Crr informado pelo usuário" in md21 and "D/(Crr·m·g)" in md21
+      and any("2,00 g" in t for t in arr_sem[0].rotulos)
+      and not any(re.search(r"\d\.\d\d g", t) for l in arr_sem + arr21 for t in l.rotulos)
+      and "a confirmar" in md20 and "D/(Crr·m·g)" not in md20 and sp.ROTULO_ARRASTO in md21,
+      f"ultima={arr21[-1].ay_ms2}, ay_lim={l12_21.ay_lim_ms2}")
 
 encerrar()
