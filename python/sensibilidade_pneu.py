@@ -393,12 +393,25 @@ def decidir_lambda(combinacao: Sequence[cmp.ResultadoCarro]) -> tuple[str, dict[
 
 
 def _distingue(v: cmp.Veredito) -> tuple[str, str]:
-    """D7: o critério 2 dá "sim" se `indistinguiveis` tem menos pressões que as decidíveis (alguma ficou de fora)."""
+    """D7 (revista): conta como distinguida só a pressão decidível fora de `indistinguiveis` com banda medida.
+
+    Pressão não resolvida (extremo, `medida=False`, Δ > banda) não prova nada: se for a única evidência, o critério
+    fica "não avaliado". Com menos de 2 decidíveis, também "não avaliado" (o detalhe lista as não decidíveis)."""
     dec = [p for p, x in v.valores.items() if x is not None and p not in v.nao_decidiveis]
-    if not dec:
-        return _NAV, "nenhuma pressão decidível"
-    if len(v.indistinguiveis) < len(dec):
+    nd = ", ".join(f"{p:g}" for p in sorted(v.nao_decidiveis) if p in v.valores)
+    nd += (", " if nd else "") + ", ".join(f"{p:g}" for p, x in sorted(v.valores.items())
+                                           if x is None and p not in v.nao_decidiveis)
+    nd = nd.strip(", ")
+    if len(dec) < 2:
+        return _NAV, (f"menos de 2 pressões decidíveis ({len(dec)}); não decidíveis: {nd or 'nenhuma'} psi "
+                      f"({v.desfecho})")
+    fora = [q for q in dec if q not in v.indistinguiveis]
+    resolvidas = [q for q in fora if v.bandas[q].medida]
+    if resolvidas:
         return _SIM, f"as pressões se distinguem pela banda ({v.desfecho})"
+    if fora:
+        return _NAV, (f"a pressão {', '.join(f'{q:g}' for q in sorted(fora))} psi difere, mas a banda ali é só "
+                      "limite inferior: não resolvida")
     return _NAO, f"as pressões não se distinguem pela banda ({v.desfecho})"
 
 
@@ -509,6 +522,12 @@ _ROT_DEGRAU: dict[int, str] = {
 }
 
 
+_SUFIXO_DEGRAU: dict[int, str] = {
+    2: " (nos perfis interpolados entre os .tir, não num ajuste PP*/QPZ)",
+    3: " (pressão de ensaio, a fria; pressão quente e temperatura não estão no modelo)",
+}
+
+
 def tabela_decisoes(lam: tuple[str, dict[str, str]], pres: tuple[str, dict[str, str]],
                     kt: tuple[str, dict[str, str]], *, frases: dict[int, str] | None = None) -> tuple[Decisao, ...]:
     """As 18 decisões, uma por degrau: 6 e 8 recebem `lam`; 1, 2 e 3, `pres`; 12, `kt`; 7 e 15 ficam "não avaliado"
@@ -535,6 +554,8 @@ def tabela_decisoes(lam: tuple[str, dict[str, str]], pres: tuple[str, dict[str, 
                      "tamanho de efeito")
         else:
             frase = fr.get(g) or _frase_generica(nome, est, cri)
+        if g in _SUFIXO_DEGRAU and est != _NMA:
+            frase += _SUFIXO_DEGRAU[g]
         rot = ROTULOS + ((_ROT_DEGRAU[g],) if g in _ROT_DEGRAU else ())
         saida.append(Decisao(g, nome, _FATORES_DE_DEGRAU.get(g, ()), est, cri, frase, rot))
     return tuple(saida)

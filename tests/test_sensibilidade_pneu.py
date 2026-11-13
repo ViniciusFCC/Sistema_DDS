@@ -197,10 +197,20 @@ ay_na = cmp.escolher_pressao("a_y_lim", resultados_carro=na)
 p_na, c_na = sp.decidir_pressao(na, ay_na, ca_p)
 p_na1, _ = sp.decidir_pressao(serie_rc("a", [10.0, 10.0, 10.0, None], vereditos=["PUSH", "PUSH", "PUSH", "N/A"]),
                               ay_p, ca_p)
+# D7 revista: extremo não resolvido (banda só limite inferior) e 1 decidível só dão "não avaliado"
+bd_ext = {8.0: cmp.Banda(0.1, False, {}, "x"), 10.0: banda(0.5), 12.0: banda(0.5), 14.0: cmp.Banda(0.1, False, {}, "x")}
+v_nres = cmp.decidir(dict(zip(NOS, (5.0, 10.0, 10.2, 5.0), strict=True)), bd_ext, {})
+v_um = cmp.decidir(dict(zip(NOS, (None, None, 10.0, None), strict=True)), {p: banda(0.5) for p in NOS}, {})
+esc_nres = cmp.Escolha("a_y_lim", "máximo", {"KT (a)": v_nres}, None, ())
+esc_um = cmp.Escolha("a_y_lim", "máximo", {"KT (a)": v_um}, None, ())
+p_nres, c_nres = sp.decidir_pressao(planas, esc_nres, ca_p)
+p_um, c_um = sp.decidir_pressao(planas, esc_um, ca_p)
 check("TC-SEN-017 decidir_pressao: PUSH e bandas que não separam -> não; PUSH×LOOSE -> sim (critério 1); "
       "a_y_lim ou Cα se distinguem -> sim (critério 2); ay None -> não avaliado; um N/A isolado -> não avaliado",
       p_nao == "não" and p_c1 == "sim" and p_c2 == "sim" and p_c2b == "sim" and p_na == "não avaliado"
-      and p_na1 == "não avaliado" and len(c_nao) >= 2 and len(c_c1) >= 2,
+      and p_na1 == "não avaliado" and len(c_nao) >= 2 and len(c_c1) >= 2
+      and p_nres == "não avaliado" and "não resolvida" in c_nres["a_y_lim, KT (a)"]
+      and p_um == "não avaliado" and "menos de 2" in c_um["a_y_lim, KT (a)"],
       f"{p_nao}, {p_c1}, {p_c2}, {p_c2b}, {p_na}, {p_na1}; {c_nao}")
 
 # TC-SEN-018: KT, variante a x b
@@ -250,6 +260,9 @@ check("TC-SEN-019 Resultado.para_dict em JSON, 18 decisões, fora de {1,2,3,6,7,
       and dec19[12].muda == "não avaliado" and dec19[7].muda == "não avaliado" and dec19[15].muda == "não avaliado"
       and dec19[16].muda == "não medido aqui" and dec19[16].frase == "este estudo"
       and all(d.rotulos and d.frase and d.nome == sp.DEGRAUS[d.degrau] for d in tab)
+      and dec19[2].frase.endswith("não num ajuste PP*/QPZ)") and "ajuste PP*/QPZ" in dec19[2].frase
+      and dec19[3].frase.endswith("pressão quente e temperatura não estão no modelo)")
+      and not dec19[1].frase.endswith(")")
       and '"caso"' not in texto and volta["combinacao"] is None and len(res_s.resumo()) == 18
       and len(res_comb.para_dict()["combinacao"]) == 1 and volta["decisoes"][0]["fatores"] == ["Pressão"],
       f"{len(volta.get('decisoes', []))}")
