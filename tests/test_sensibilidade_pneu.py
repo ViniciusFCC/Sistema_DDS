@@ -278,4 +278,54 @@ check("TC-SEN-012b grade que satura: para antes de 2 g, o próximo ponto não re
       and cortado[-1].ay_g <= 1.0 + 1e-9 and all("passa de ay_max_g" in l.rotulos[-1] for l in cortado),
       f"ultima={u_sat.ay_g}, rotulo={sat[0].rotulos}, cortado={cortado[0].rotulos}")
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Corridas do estudo (Task 5): tornado, rigidez de eixo, pneu por pressão. A combinação é cara e não entra aqui.
+# ---------------------------------------------------------------------------------------------------------------------
+import tire_pressure as tp
+
+# TC-SEN-013: a base do tornado é o caso de 12 psi com λ = 1; 1 + 2·3 linhas, sem fator 1,0 fora da base
+torn = sp.tornado(montado, FAM)
+ds12, _ = cmp.perfil_ajustado(montado.caso.ds, FAM.at_pressure(12.0), tp.teto_comum_fz(FAM))
+par12 = eq.analise_par_dois_sentidos(dataclasses.replace(montado.caso, ds=ds12), **sp.GRADE, formas=montado.formas,
+                                     fator_neutro=montado.fator_neutro)
+res12 = par12[par12["pior"] if par12["pior"] != "empate" else "esquerda"]
+fora_da_base = [l for l in torn[1:] if len(l.fatores) != 1 or any(v == 1.0 for v in l.fatores.values())]
+check("TC-SEN-013 tornado: base = analise_par direto a 12 psi; 7 linhas; só 0,8 e 1,2 fora da base",
+      len(torn) == 7 and torn[0].ay_lim_ms2 == res12.ay_lim and torn[0].veredito == res12.veredito
+      and torn[0].fatores == {} and not fora_da_base
+      and {(next(iter(l.fatores)), next(iter(l.fatores.values()))) for l in torn[1:]}
+      == {(n, v) for n in sp.FATORES_EXPLORATORIOS for v in (0.8, 1.2)}
+      and all(l.pressao_psi == 12.0 and l.variante_kt == "a" for l in torn)
+      and all(r in l.rotulos for l in torn for r in sp.ROTULOS),
+      f"base={torn[0].ay_lim_ms2}, direto={res12.ay_lim}, n={len(torn)}")
+
+# TC-SEN-014: C_f, C_r > 0; K da linha = para_graus_por_g; gradiente_pneus reproduz k_pneus
+cf, cr, mot = sp.rigidez_eixos(montado.caso, formas=montado.formas)
+r_a = cmp.comparar_carro(montado.caso, FAM, kt_caso_n_m=montado.kt_n_m, formas=montado.formas,
+                         fator_neutro=montado.fator_neutro, ay_max_g=0.2, passo_g=0.1, n_alfa=9)[0]
+lin_a = sp.linha_de_resultado(r_a, formas=montado.formas)
+pk0 = el.parcelas_k(montado.caso, 0.0, formas=montado.formas)
+w_f, w_r = el._pesos_eixo(montado.caso)
+k_cons = el.gradiente_pneus(w_f, w_r, cf, cr)
+check("TC-SEN-014 rigidez_eixos > 0; K da linha = para_graus_por_g; gradiente_pneus(W, C) = k_pneus",
+      cf > 0 and cr > 0 and mot is None and lin_a.k_grau_g == el.para_graus_por_g(r_a.k_rad_ms2)
+      and abs(k_cons - pk0.k_pneus) <= 1e-12 * abs(pk0.k_pneus) and lin_a.c_f_n_rad > 0 and lin_a.c_r_n_rad > 0,
+      f"cf={cf}, cr={cr}, dK={k_cons - pk0.k_pneus}")
+
+# TC-SEN-015: pneu por pressão, 13 pressões x 2 eixos; interpolado só fora dos nós; Cα(12) = perfil direto
+pneu = sp.pneu_por_pressao(montado, FAM)
+nos = {l.pressao_psi for l in pneu if not l.interpolado}
+l12f = next(l for l in pneu if l.pressao_psi == 12.0 and l.eixo == "F")
+fz0 = eq.cargas(montado.caso, 0.0)
+fz_f = min(0.5 * (fz0["FL"] + fz0["FR"]), tp.teto_comum_fz(FAM))
+cam_f = 0.5 * (montado.caso.camber_estatico_rad["FL"] + montado.caso.camber_estatico_rad["FR"])
+m12 = tp.metricas_pneu(tp.avaliador_perfil(FAM.at_pressure(12.0)), tp.faixa_comum(FAM.profiles.values()),
+                       fz_n=fz_f, camber_rad=cam_f)
+check("TC-SEN-015 pneu_por_pressao: 13 x 2; interpolado False só em 8, 10, 12, 14; Cα(12) = perfil direto",
+      len(pneu) == 26 and {l.pressao_psi for l in pneu} == {8 + 0.5 * i for i in range(13)}
+      and nos == {8.0, 10.0, 12.0, 14.0} and {l.eixo for l in pneu} == {"F", "R"}
+      and abs(l12f.c_alpha_n_rad - m12.c_alpha_n_rad) <= 1e-9 * abs(m12.c_alpha_n_rad)
+      and l12f.mu_y_pico == m12.mu_y_pos.mu,
+      f"Ca={l12f.c_alpha_n_rad} vs {m12.c_alpha_n_rad}")
+
 encerrar()
