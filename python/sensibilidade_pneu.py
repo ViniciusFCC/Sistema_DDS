@@ -13,12 +13,22 @@ distância percorrida).
 from __future__ import annotations
 
 import dataclasses
+import json
 import math
+import time
+from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
 
+import comparacao_pressao as cmp
 import equilibrio as eq
 import equilibrio_linear as el
 import tire_model as tm
+import tire_model_static as ts
+import tire_pressure as tp
+from caso_pneu1 import (  # noqa: F401  (D8: ler_caso, editar, salvar_caso, familia_ttc e caso_de_dados reexportados)
+    CasoMontado, ValorUsado, caso_de_dados, editar, familia_ttc, ler_caso, salvar_caso, valores_usados)
 from suspension_model import G
 
 PASSO_REL = 1e-9    # tolerância para o último passo da grade cair em ay_ate
@@ -112,15 +122,6 @@ def arrasto_induzido(caso: eq.CasoEquilibrio, *, formas: eq.Formas, ay_ate_ms2: 
 # ---------------------------------------------------------------------------------------------------------------------
 # Corridas do estudo: tornado de λ, pressão, combinação e métricas do pneu por pressão (Task 5)
 # ---------------------------------------------------------------------------------------------------------------------
-import json
-from pathlib import Path
-
-import comparacao_pressao as cmp
-import equilibrio_linear as _el
-import tire_model_static as ts
-import tire_pressure as tp
-from caso_pneu1 import CasoMontado
-
 GRADE = {"ay_max_g": 2.0, "passo_g": 0.05, "n_alfa": 25}
 PRESSAO_DO_CASO_PSI = 12.0
 _CAMINHO_FATORES = Path(__file__).resolve().parent.parent / "data" / "varredura_pneu_exploratoria.json"
@@ -157,8 +158,8 @@ def rigidez_eixos(caso: eq.CasoEquilibrio, *, formas: eq.Formas) -> tuple[float 
     if alfa_0 is None:
         return None, None, "os ângulos de deriva não resolvem em a_y = 0"
     fz0, gam0 = eq.cargas(caso, 0.0), eq.camber(caso, 0.0)
-    c_f, _, m_f = _el._rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0], formas=formas)
-    c_r, _, m_r = _el._rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1], formas=formas)
+    c_f, _, m_f = el._rigidez_eixo(caso, "F", fz0, gam0, alfa_0[0], formas=formas)
+    c_r, _, m_r = el._rigidez_eixo(caso, "R", fz0, gam0, alfa_0[1], formas=formas)
     motivos = [m for m in (m_f, m_r) if m is not None]
     return c_f, c_r, ("; ".join(motivos) if motivos else None)
 
@@ -205,7 +206,7 @@ def linha_de_resultado(r: cmp.ResultadoCarro, *, formas: eq.Formas,
         rotulo_corrida=rot, pressao_psi=r.pressao_psi, variante_kt=r.variante_kt, fatores=fat,
         ay_lim_ms2=r.ay_lim_ms2, ay_lim_g=None if r.ay_lim_ms2 is None else r.ay_lim_ms2 / G,
         veredito=r.veredito, sentido_pior=r.sentido_pior, c_f_n_rad=c_f, c_r_n_rad=c_r,
-        k_grau_g=None if r.k_rad_ms2 is None else _el.para_graus_por_g(r.k_rad_ms2),
+        k_grau_g=None if r.k_rad_ms2 is None else el.para_graus_por_g(r.k_rad_ms2),
         resolucao_ms2=r.resolucao_ms2, borda_alfa=r.borda_alfa, robustez=r.robustez,
         rotulos=_sem_repeticao(ROTULOS, r.rotulos))
 
@@ -219,7 +220,7 @@ def _resultado_12psi(cm: CasoMontado, familia: ts.StaticTireFamily, fatores: dic
     caso_p = dataclasses.replace(cm.caso, ds=ds_p)
     par = eq.analise_par_dois_sentidos(caso_p, **GRADE, formas=cm.formas, fator_neutro=cm.fator_neutro)
     res = par[par["pior"] if par["pior"] != "empate" else "esquerda"]
-    pk = _el.parcelas_k(caso_p, 0.0, formas=cm.formas)
+    pk = el.parcelas_k(caso_p, 0.0, formas=cm.formas)
     # Rótulos que `comparar_carro` anexa a cada corrida (roll steer, KT fixo, ds do caso × .tir de 12 psi).
     rs = cm.caso.roll_steer
     rot_rs = ("K com o roll steer do caso" if (rs["F"] != 0.0 or rs["R"] != 0.0)
@@ -303,3 +304,320 @@ def pneu_por_pressao(cm: CasoMontado, familia: ts.StaticTireFamily, passo_psi: f
             saida.append(LinhaPneu(q, eixo, interp, fz, m.c_alpha_n_rad, m.mu_y_pos.mu, m.mu_y_pos.borda,
                                    _sem_repeticao(rot, m.rotulos)))
     return tuple(saida)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Regra de "muda decisão" (spec §6.3, D6 e D7), Resultado e estudo (Task 6)
+# ---------------------------------------------------------------------------------------------------------------------
+Muda = Literal["sim", "não", "não avaliado", "não medido aqui"]
+
+# Nomes dos degraus 1 a 18, copiados da tabela de docs/pneu/roteiro-modelo-de-pneu.md.
+DEGRAUS: dict[int, str] = {
+    1: "A2 no carro",
+    2: "Ajuste PP*/QPZ do PAC2002",
+    3: "A3: pressão em operação",
+    4: "B: transiente do pneu",
+    5: "C: dinâmica do veículo",
+    6: "Pneu substituto do T11",
+    7: "Resistência ao rolamento",
+    8: "λμ e λKy calibrados no skidpad",
+    9: "Mz, trilha pneumática e Mx",
+    10: "Deslizamento combinado validado",
+    11: "Temperatura como estado, com ciclos térmicos",
+    12: "Rigidez vertical do pneu",
+    13: "Raio carregado e raio de rolamento",
+    14: "Comparação com o OptimumTire",
+    15: "Arrasto induzido pela deriva",
+    16: "Estudo de sensibilidade",
+    17: "Instrumentação e contrato de dados de ensaio",
+    18: "Ciclo de engenharia (V5 do roadmap)",
+}
+
+_SIM, _NAO, _NAV, _NMA = "sim", "não", "não avaliado", "não medido aqui"
+_VEREDITO_TEXTO = {eq.PUSH: "sair de frente", eq.LOOSE: "sair de traseira", eq.NEUTRO: "neutro no limite"}
+_NOTA_REGRA = ("não muda = neste caso demonstrativo, nesta faixa exploratória; a banda é heurística, não intervalo "
+               "de confiança")
+
+
+@dataclass(frozen=True)
+class Decisao:
+    """Um degrau do roteiro e se ele muda alguma decisão do estudo. `criterios`: critério -> "estado: detalhe"."""
+    degrau: int
+    nome: str
+    fatores: tuple[str, ...]
+    muda: Muda
+    criterios: dict[str, str]
+    frase: str
+    rotulos: tuple[str, ...]
+
+
+def _agregar(estados: Sequence[str]) -> str:
+    """D6: "sim" se algum critério dá sim; "não" se todos foram avaliados e dão não; senão "não avaliado"."""
+    if _SIM in estados:
+        return _SIM
+    if estados and all(e == _NAO for e in estados):
+        return _NAO
+    return _NAV
+
+
+def _detalhe(criterio: str) -> str:
+    return criterio.split(": ", 1)[-1]
+
+
+def _estado_de(detalhe: str) -> str:
+    return detalhe.split(":", 1)[0]
+
+
+def decidir_lambda(combinacao: Sequence[cmp.ResultadoCarro]) -> tuple[str, dict[str, str]]:
+    """Critério 1 da spec §6.3 em cada pressão, pela robustez da combinação 3×3×3 de λ (D6).
+
+    PUSH ou LOOSE puro -> "não"; NÃO CONCLUSIVO -> "sim"; N/A (ou sem robustez) -> "não avaliado"; agregados por D6."""
+    criterios: dict[str, str] = {}
+    estados: list[str] = []
+    for r in sorted(combinacao, key=lambda x: x.pressao_psi):
+        chave = f"robustez de λ a {r.pressao_psi:g} psi"
+        if r.robustez is None:
+            est, det = _NAV, "sem robustez calculada"
+        else:
+            ver, motivo = r.robustez[0], r.robustez[1]
+            if ver in (eq.PUSH, eq.LOOSE):
+                est = _NAO
+            elif ver == eq.NAO_CONCLUSIVO:
+                est = _SIM
+            else:
+                est = _NAV
+            det = f"{ver}, {motivo}"
+        estados.append(est)
+        criterios[chave] = f"{est}: {det}"
+    return _agregar(estados), criterios
+
+
+def _distingue(v: cmp.Veredito) -> tuple[str, str]:
+    """D7: o critério 2 dá "sim" se `indistinguiveis` tem menos pressões que as decidíveis (alguma ficou de fora)."""
+    dec = [p for p, x in v.valores.items() if x is not None and p not in v.nao_decidiveis]
+    if not dec:
+        return _NAV, "nenhuma pressão decidível"
+    if len(v.indistinguiveis) < len(dec):
+        return _SIM, f"as pressões se distinguem pela banda ({v.desfecho})"
+    return _NAO, f"as pressões não se distinguem pela banda ({v.desfecho})"
+
+
+def _veredito_por_pressao(resultados: Sequence[cmp.ResultadoCarro]) -> dict[float, str]:
+    return {r.pressao_psi: r.veredito for r in sorted(resultados, key=lambda x: x.pressao_psi)}
+
+
+def decidir_pressao(resultados_a: Sequence[cmp.ResultadoCarro], esc_ay: cmp.Escolha,
+                    esc_ca: cmp.Escolha) -> tuple[str, dict[str, str]]:
+    """Pressão (spec §6.3). Critério 1: os vereditos PUSH/LOOSE/NEUTRO diferem entre pressões (um N/A é "não
+    avaliado" naquela pressão). Critério 2: D7 sobre `esc_ay` e sobre cada eixo de `esc_ca`. Agregado por D6."""
+    ver = _veredito_por_pressao(resultados_a)
+    com = {p: v for p, v in ver.items() if v != eq.NA}
+    sem = [p for p, v in ver.items() if v == eq.NA]
+    if len(set(com.values())) > 1:
+        est1 = _SIM
+        det1 = ", ".join(f"{v} a {p:g} psi" for p, v in com.items())
+    elif sem or not com:
+        est1 = _NAV
+        det1 = ("N/A a " + ", ".join(f"{p:g}" for p in sem) + " psi") if sem else "sem veredito"
+    else:
+        est1, det1 = _NAO, f"{next(iter(com.values()))} em todas as pressões"
+    criterios = {"vereditos entre pressões": f"{est1}: {det1}"}
+    estados = [est1]
+    for nome, esc in (("a_y_lim", esc_ay), ("Cα", esc_ca)):
+        for rot, v in esc.vereditos.items():
+            est, det = _distingue(v)
+            estados.append(est)
+            criterios[f"{nome}, {rot}"] = f"{est}: {det}"
+    return _agregar(estados), criterios
+
+
+def decidir_kt(resultados: Sequence[cmp.ResultadoCarro]) -> tuple[str, dict[str, str]]:
+    """KT (spec §6.3). Critério 1: o veredito de a e de b difere em alguma pressão. Critério 2: |ay_a − ay_b| passa da
+    banda de `banda_carro` da variante a naquela pressão; banda ou ay None = "não avaliado" naquele nó."""
+    a = {r.pressao_psi: r for r in resultados if r.variante_kt == "a"}
+    b = {r.pressao_psi: r for r in resultados if r.variante_kt == "b"}
+    if not a or not b:
+        return _NAV, {"variantes a e b": "não avaliado: falta a variante " + ("b" if a else "a")}
+    bandas = cmp.banda_carro(list(a.values()))
+    criterios: dict[str, str] = {}
+    estados: list[str] = []
+    for p in sorted(set(a) & set(b)):
+        ra, rb = a[p], b[p]
+        if eq.NA in (ra.veredito, rb.veredito) and ra.veredito != rb.veredito:
+            est1, det1 = _NAV, f"{ra.veredito} (a) e {rb.veredito} (b)"
+        else:
+            est1 = _SIM if ra.veredito != rb.veredito else _NAO
+            det1 = f"{ra.veredito} (a) e {rb.veredito} (b)"
+        bd = bandas.get(p)
+        if ra.ay_lim_ms2 is None or rb.ay_lim_ms2 is None or bd is None or bd.valor is None:
+            est2, det2 = _NAV, "a_y_lim ou banda indisponível"
+        else:
+            dif = abs(ra.ay_lim_ms2 - rb.ay_lim_ms2)
+            est2 = _SIM if dif > bd.valor else _NAO
+            det2 = f"|Δa_y_lim| = {dif:.3g} m/s² contra a banda de {bd.valor:.3g} m/s²"
+        estados += [est1, est2]
+        criterios[f"veredito de a e b a {p:g} psi"] = f"{est1}: {det1}"
+        criterios[f"a_y_lim de a e b a {p:g} psi"] = f"{est2}: {det2}"
+    return _agregar(estados), criterios
+
+
+def _frase_pressao(estado: str, criterios: dict[str, str], resultados_a: Sequence[cmp.ResultadoCarro]) -> str:
+    ver = _veredito_por_pressao(resultados_a)
+    com = {p: v for p, v in ver.items() if v != eq.NA}
+    if estado == _SIM:
+        if len(set(com.values())) > 1:
+            ps = sorted(com)
+            p0 = ps[0]
+            p1 = next(p for p in ps if com[p] != com[p0])
+            return (f"a pressão muda o veredito: o carro passa de {_VEREDITO_TEXTO.get(com[p0], com[p0])} "
+                    f"({p0:g} psi) para {_VEREDITO_TEXTO.get(com[p1], com[p1])} ({p1:g} psi)")
+        return "a pressão muda o a_y_lim ou o Cα além da banda heurística: nem todas as pressões se equivalem"
+    if estado == _NAO:
+        return f"a pressão não muda a decisão: {_NOTA_REGRA}"
+    if not com:
+        return "não avaliado: o carro não chega ao limite até 2 g em nenhuma pressão"
+    pend = next((_detalhe(c) for c in criterios.values() if _estado_de(c) == _NAV), "critério sem avaliação")
+    return f"não avaliado: {pend}; nenhum critério avaliado deu sim"
+
+
+def _frase_generica(nome: str, estado: str, criterios: dict[str, str]) -> str:
+    if estado == _SIM:
+        return f"{nome} muda a decisão: " + "; ".join(_detalhe(c) for c in criterios.values()
+                                                    if _estado_de(c) == _SIM)[:300]
+    if estado == _NAO:
+        return f"{nome} não muda a decisão: {_NOTA_REGRA}"
+    pend = [_detalhe(c) for c in criterios.values() if _estado_de(c) == _NAV]
+    return f"não avaliado: {pend[0] if pend else 'sem critério avaliado'}; nenhum critério avaliado deu sim"
+
+
+_FATORES_DE_DEGRAU: dict[int, tuple[str, ...]] = {
+    1: ("Pressão",), 2: ("Pressão",), 3: ("Pressão",),
+    6: ("LMUY", "LFZO"), 8: ("LMUY", "LFZO", "LKY"),
+    12: ("KT",),
+    7: ("Arrasto induzido × resistência ao rolamento",), 15: ("Arrasto induzido × resistência ao rolamento",),
+}
+_ROT_DEGRAU: dict[int, str] = {
+    1: "pressão de ensaio ≠ pressão fria nem quente (a confirmar); só 8 a 14 psi",
+    2: "interpolação entre perfis ajustados separadamente, não o ajuste PP*/QPZ",
+    3: "pressão fria de calibração; a pressão quente de pista e a temperatura não estão no modelo",
+    6: "λ exploratório (EDR-055), não o R60A",
+    7: "sem Crr com fonte e sem regra de decisão para energia (D6)",
+    8: "λ exploratório (EDR-055), não calibrado no skidpad",
+    12: "KT do caso × VERTICAL_STIFFNESS do perfil do R25B",
+    15: "o arrasto induzido sai como tamanho de efeito (D6); Fx·κ fora (sem fonte)",
+    16: "este estudo",
+}
+
+
+def tabela_decisoes(lam: tuple[str, dict[str, str]], pres: tuple[str, dict[str, str]],
+                    kt: tuple[str, dict[str, str]], *, frases: dict[int, str] | None = None) -> tuple[Decisao, ...]:
+    """As 18 decisões, uma por degrau: 6 e 8 recebem `lam`; 1, 2 e 3, `pres`; 12, `kt`; 7 e 15 ficam "não avaliado"
+    (D6); 16 é "este estudo" ("não medido aqui"); os demais, "não medido aqui" (spec §6.1). `frases` troca a frase
+    de um degrau (a padrão só usa o que foi medido)."""
+    fr = frases or {}
+    saida: list[Decisao] = []
+    for g, nome in DEGRAUS.items():
+        if g in (6, 8):
+            est, cri = lam
+        elif g in (1, 2, 3):
+            est, cri = pres
+        elif g == 12:
+            est, cri = kt
+        elif g in (7, 15):
+            est, cri = _NAV, {"arrasto × rolamento": "não avaliado: sem Crr com fonte e sem regra de decisão para "
+                                                     "energia; o arrasto sai como tamanho de efeito"}
+        else:
+            est, cri = _NMA, {}
+        if est == _NMA:
+            frase = "este estudo" if g == 16 else "o degrau não entra neste estudo (spec §6.1)"
+        elif g in (7, 15):
+            frase = ("não avaliado: sem Crr com fonte e sem regra de decisão para energia; o arrasto sai como "
+                     "tamanho de efeito")
+        else:
+            frase = fr.get(g) or _frase_generica(nome, est, cri)
+        rot = ROTULOS + ((_ROT_DEGRAU[g],) if g in _ROT_DEGRAU else ())
+        saida.append(Decisao(g, nome, _FATORES_DE_DEGRAU.get(g, ()), est, cri, frase, rot))
+    return tuple(saida)
+
+
+def _json(x):
+    """Converte para tipos JSON: dataclass -> dict, tupla -> lista, chaves de dict -> str."""
+    if dataclasses.is_dataclass(x) and not isinstance(x, type):
+        return {f.name: _json(getattr(x, f.name)) for f in dataclasses.fields(x)}
+    if isinstance(x, dict):
+        return {str(k): _json(v) for k, v in x.items()}
+    if isinstance(x, (tuple, list)):
+        return [_json(v) for v in x]
+    if x is None or isinstance(x, (bool, int, float, str)):
+        return x
+    raise TypeError(f"valor sem tipo JSON: {type(x).__name__}")
+
+
+@dataclass(frozen=True)
+class Resultado:
+    """Saída de `estudo`. `combinacao` é None com `rapido=True`. `tempos_s`: tempo medido de cada corrida."""
+    valores: tuple[ValorUsado, ...]
+    tornado: tuple[LinhaCarro, ...]
+    pressao: tuple[LinhaCarro, ...]
+    combinacao: tuple[LinhaCarro, ...] | None
+    pneu: tuple[LinhaPneu, ...]
+    arrasto: tuple[LinhaArrasto, ...]
+    decisoes: tuple[Decisao, ...]
+    rotulos: tuple[str, ...]
+    tempos_s: dict[str, float]
+
+    def para_dict(self) -> dict:
+        """Só tipos JSON (sem `caso` nem `par`, que as linhas não guardam)."""
+        return _json(self)
+
+    def resumo(self) -> list[str]:
+        """Uma frase por decisão."""
+        return [f"Degrau {d.degrau} ({d.nome}): {d.muda}. {d.frase}" for d in self.decisoes]
+
+
+def estudo(cm: CasoMontado, familia: ts.StaticTireFamily, rapido: bool = False) -> Resultado:
+    """Roda as corridas (tornado, pressão, combinação, pneu, arrasto) e monta as 18 decisões.
+
+    `rapido=True`: sem a combinação (`combinacao=None`) e a decisão de λ fica "não avaliado". O arrasto vai do
+    a_y = 0 até o a_y_lim de 12 psi, variante a (D4); sem ele, até `GRADE["ay_max_g"]` com rótulo."""
+    tempos: dict[str, float] = {}
+
+    def medir(nome, fn):
+        t0 = time.perf_counter()
+        r = fn()
+        tempos[nome] = time.perf_counter() - t0
+        return r
+
+    torn = medir("tornado", lambda: tornado(cm, familia))
+    pres_res = medir("pressao", lambda: pressao(cm, familia))
+    comb_res = None if rapido else medir("combinacao", lambda: combinacao(cm, familia))
+    pneu = medir("pneu", lambda: pneu_por_pressao(cm, familia))
+    r12 = next((r for r in pres_res if r.variante_kt == "a" and abs(r.pressao_psi - PRESSAO_DO_CASO_PSI) < 1e-6), None)
+    ay12 = None if r12 is None else r12.ay_lim_ms2
+    arr = medir("arrasto", lambda: arrasto_induzido(cm.caso, formas=cm.formas, ay_ate_ms2=ay12,
+                                                    ay_max_g=GRADE["ay_max_g"]))
+
+    res_a = [r for r in pres_res if r.variante_kt == "a"]
+    fz0 = eq.cargas(cm.caso, 0.0)
+    fz_eixo = {"F": 0.5 * (fz0["FL"] + fz0["FR"]), "R": 0.5 * (fz0["RL"] + fz0["RR"])}
+    cam = {"F": 0.5 * (cm.caso.camber_estatico_rad["FL"] + cm.caso.camber_estatico_rad["FR"]),
+           "R": 0.5 * (cm.caso.camber_estatico_rad["RL"] + cm.caso.camber_estatico_rad["RR"])}
+    esc_ay = cmp.escolher_pressao("a_y_lim", resultados_carro=pres_res)
+    esc_ca = cmp.escolher_pressao("C_alpha_operacao", family=familia, fz_estatica_eixo_n=fz_eixo,
+                                  camber_eixo_rad=cam)
+    pres = decidir_pressao(res_a, esc_ay, esc_ca)
+    kt = decidir_kt(pres_res)
+    if comb_res is None:
+        lam = (_NAV, {"robustez de λ": "não avaliado: combinação não rodada (--rapido)"})
+    else:
+        lam = decidir_lambda(comb_res)
+    frases = {g: _frase_pressao(pres[0], pres[1], res_a) for g in (1, 2, 3)}
+    if comb_res is None:
+        frases.update({6: "não avaliado: combinação não rodada (--rapido)",
+                       8: "não avaliado: combinação não rodada (--rapido)"})
+    decisoes = tabela_decisoes(lam, pres, kt, frases=frases)
+    return Resultado(
+        valores=cm.valores, tornado=torn,
+        pressao=tuple(linha_de_resultado(r, formas=cm.formas) for r in pres_res),
+        combinacao=None if comb_res is None else tuple(linha_de_resultado(r, formas=cm.formas) for r in comb_res),
+        pneu=pneu, arrasto=arr, decisoes=decisoes, rotulos=ROTULOS, tempos_s=tempos)
