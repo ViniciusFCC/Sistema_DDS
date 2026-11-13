@@ -532,6 +532,10 @@ with tempfile.TemporaryDirectory() as tmp20:
     err20 = io.StringIO()
     with contextlib.redirect_stderr(err20):
         cod_massa = rel.main(["--set", "massa=1", "--saida", tmp20])
+    err_lam = io.StringIO()
+    with contextlib.redirect_stderr(err_lam):
+        cod_lam0 = rel.main(["--set", "lambda_LFZO=0", "--saida", tmp20])
+        cod_lam_neg = rel.main(["--set", "lambda_LMUY=-0.5", "--saida", tmp20])
 msg20 = err20.getvalue()
 # código 3: sem o .tir (achar_ttc trocado por um substituto que simula a ausência; o original volta no finally);
 # --set sem "=" e --caso inexistente: código 2
@@ -556,10 +560,12 @@ check("TC-SEN-020 relatorio_pneu1: código 0, dois arquivos, h_cg_m editado com 
       and all(t in md20 for t in sp.ROTULOS)
       and cod_massa == 2 and "chave desconhecida: massa" in msg20 and "Traceback" not in msg20
       and "7.99999" not in md20 and "`R_m`" in md20 and "Valores marcados como" in md20
+      and cod_lam0 == 2 and cod_lam_neg == 2 and "maior que zero" in err_lam.getvalue()
+      and "Traceback" not in err_lam.getvalue()
       and cod3 == 3 and "NÃO EXECUTÁVEL" in err3.getvalue() and cp.achar_ttc is achar_orig
       and cod_sem_igual == 2 and "chave=valor" in err_eq.getvalue()
       and cod_sem_arq == 2 and "arquivo do caso" in err_arq.getvalue(),
-      f"cod={cod20}, massa={cod_massa}, cod3={cod3}, sem_igual={cod_sem_igual}, sem_arq={cod_sem_arq}, h_cg={vh}, "
+      f"cod={cod20}, massa={cod_massa}, lam0={cod_lam0}, lam_neg={cod_lam_neg}, cod3={cod3}, sem_igual={cod_sem_igual}, sem_arq={cod_sem_arq}, h_cg={vh}, "
       f"msg={msg20.strip()!r}")
 
 # TC-SEN-021: estudo num caso que satura (SINTÉTICO de teste: LMUY 0,3 e Crr 0,02, nenhum é dado do carro): o arrasto para

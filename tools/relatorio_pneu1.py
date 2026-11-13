@@ -197,6 +197,10 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"erro: o caso não passa nas verificações do modelo: {exc}", file=sys.stderr)
         return 2
+    except ArithmeticError as exc:
+        print(f"erro: o modelo não consegue calcular com os valores do caso ({exc}); confira os valores editados.",
+              file=sys.stderr)
+        return 2
 
     args.saida.mkdir(parents=True, exist_ok=True)
     (args.saida / "resultados.json").write_text(
