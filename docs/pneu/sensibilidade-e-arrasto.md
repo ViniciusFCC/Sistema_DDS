@@ -21,7 +21,7 @@ O roteiro do modelo de pneu (`roteiro-modelo-de-pneu.md`) lista 18 degraus de me
 
 ## 2. Resposta curta
 
-No caso demonstrativo, **nenhum degrau pôde ser avaliado**. A causa é uma só: o carro não chega ao limite de aderência até 2 g. Das 7 corridas do tornado de λ, 6 dão `a_y limite = N/A`, e nas 8 corridas da pressão todas dão N/A. Sem a_y limite, não há veredito (frente ou traseira saindo primeiro), e os dois critérios da regra de "muda decisão" ficam sem base.
+No caso demonstrativo, **nenhum degrau pôde ser avaliado**. Das 7 corridas do tornado de λ, 6 dão `a_y limite = N/A`, e nas 8 corridas da pressão todas dão N/A. A ferramenta informa o motivo medido de cada N/A: a 8, 10 e 12 psi, "não satura até 2 g" (nenhum eixo chega ao limite na grade); a 14 psi, "pico na borda da grade de α em a_y = 0 g" (o pico da curva de força lateral cai na borda da grade de α já sem aceleração lateral, então nem o a_y = 0 tem solução dentro da grade). Os dois motivos são diferentes e o segundo não prova que o carro não chega ao limite. Sem a_y limite, não há veredito (frente ou traseira saindo primeiro), e os dois critérios da regra de "muda decisão" ficam sem base.
 
 Isso não quer dizer "o pneu não importa", e sim "este caso não permite dizer". Na tabela por degrau, a palavra para isso é **não avaliado**. Ela é diferente de **não** (avaliado, e nada mudou).
 
@@ -132,28 +132,28 @@ Cada linha muda um fator por vez, nas amplitudes exploratórias do EDR-055 (0,8 
 
 | corrida | pressão (psi) | KT | fatores λ | a_y limite (g) | veredito | K (°/g) | C_f (N/rad) | C_r (N/rad) | observação |
 |---|---|---|---|---|---|---|---|---|---|
-| 12,0 psi, variante a | 12,0 | a | — | N/A | N/A | -0,136 | 87685 | 94101 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 12,0 psi, variante a; LFZO × 0,8 | 12,0 | a | LFZO=0,80 | N/A | N/A | -0,150 | 80109 | 84865 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 12,0 psi, variante a; LFZO × 1,2 | 12,0 | a | LFZO=1,20 | N/A | N/A | -0,128 | 92403 | 99984 | não avaliado: o carro não chega ao limite até 2,0 g |
+| 12,0 psi, variante a | 12,0 | a | — | N/A | N/A | -0,136 | 87685 | 94101 | não avaliado: não satura até 2 g |
+| 12,0 psi, variante a; LFZO × 0,8 | 12,0 | a | LFZO=0,80 | N/A | N/A | -0,150 | 80109 | 84865 | não avaliado: não satura até 2 g |
+| 12,0 psi, variante a; LFZO × 1,2 | 12,0 | a | LFZO=1,20 | N/A | N/A | -0,128 | 92403 | 99984 | não avaliado: não satura até 2 g |
 | 12,0 psi, variante a; LMUY × 0,8 | 12,0 | a | LMUY=0,80 | 1,949 | LOOSE | -0,149 | 87170 | 93804 |  |
-| 12,0 psi, variante a; LMUY × 1,2 | 12,0 | a | LMUY=1,20 | N/A | N/A | -0,123 | 87966 | 94262 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 12,0 psi, variante a; LKY × 0,8 | 12,0 | a | LKY=0,80 | N/A | N/A | -0,117 | 70413 | 75433 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 12,0 psi, variante a; LKY × 1,2 | 12,0 | a | LKY=1,20 | N/A | N/A | -0,149 | 104738 | 112642 | não avaliado: o carro não chega ao limite até 2,0 g |
+| 12,0 psi, variante a; LMUY × 1,2 | 12,0 | a | LMUY=1,20 | N/A | N/A | -0,123 | 87966 | 94262 | não avaliado: não satura até 2 g |
+| 12,0 psi, variante a; LKY × 0,8 | 12,0 | a | LKY=0,80 | N/A | N/A | -0,117 | 70413 | 75433 | não avaliado: não satura até 2 g |
+| 12,0 psi, variante a; LKY × 1,2 | 12,0 | a | LKY=1,20 | N/A | N/A | -0,149 | 104738 | 112642 | não avaliado: não satura até 2 g |
 
 ### 5.2 Pressão (a: KT do caso; b: KT do perfil)
 
 | corrida | pressão (psi) | KT | fatores λ | a_y limite (g) | veredito | K (°/g) | C_f (N/rad) | C_r (N/rad) | observação |
 |---|---|---|---|---|---|---|---|---|---|
-| 8,0 psi, variante a | 8,0 | a | — | N/A | N/A | -0,193 | 83844 | 87550 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 10,0 psi, variante a | 10,0 | a | — | N/A | N/A | -0,153 | 90260 | 96109 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 12,0 psi, variante a | 12,0 | a | — | N/A | N/A | -0,136 | 87685 | 94101 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 14,0 psi, variante a | 14,0 | a | — | N/A | N/A | -0,117 | 81080 | 87329 | não avaliado: o carro não chega ao limite até 2,0 g; α na borda da grade |
-| 8,0 psi, variante b | 8,0 | b | — | N/A | N/A | -0,199 | 83844 | 87550 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 10,0 psi, variante b | 10,0 | b | — | N/A | N/A | -0,155 | 90260 | 96109 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 12,0 psi, variante b | 12,0 | b | — | N/A | N/A | -0,136 | 87685 | 94101 | não avaliado: o carro não chega ao limite até 2,0 g |
-| 14,0 psi, variante b | 14,0 | b | — | N/A | N/A | -0,117 | 81080 | 87329 | não avaliado: o carro não chega ao limite até 2,0 g; α na borda da grade |
+| 8,0 psi, variante a | 8,0 | a | — | N/A | N/A | -0,193 | 83844 | 87550 | não avaliado: não satura até 2 g |
+| 10,0 psi, variante a | 10,0 | a | — | N/A | N/A | -0,153 | 90260 | 96109 | não avaliado: não satura até 2 g |
+| 12,0 psi, variante a | 12,0 | a | — | N/A | N/A | -0,136 | 87685 | 94101 | não avaliado: não satura até 2 g |
+| 14,0 psi, variante a | 14,0 | a | — | N/A | N/A | -0,117 | 81080 | 87329 | não avaliado: pico na borda da grade de α em a_y = 0 g; α na borda da grade |
+| 8,0 psi, variante b | 8,0 | b | — | N/A | N/A | -0,199 | 83844 | 87550 | não avaliado: não satura até 2 g |
+| 10,0 psi, variante b | 10,0 | b | — | N/A | N/A | -0,155 | 90260 | 96109 | não avaliado: não satura até 2 g |
+| 12,0 psi, variante b | 12,0 | b | — | N/A | N/A | -0,136 | 87685 | 94101 | não avaliado: não satura até 2 g |
+| 14,0 psi, variante b | 14,0 | b | — | N/A | N/A | -0,117 | 81080 | 87329 | não avaliado: pico na borda da grade de α em a_y = 0 g; α na borda da grade |
 
-A 14 psi o α fica na borda da grade, e a ferramenta avisa na coluna de observação.
+A 14 psi o α fica na borda da grade, e a ferramenta avisa na coluna de observação. A coluna também traz o motivo medido de cada N/A (ver a seção 2).
 
 
 ### 5.3 Combinação de λ (robustez por pressão)
@@ -204,6 +204,8 @@ A grade vai de 0 a 2,00 g, porque o carro não satura antes disso. O ponto de 2,
 | 1,90 | -3,01° | -3,20° | 320,278 | 0,10315 | 0,9995 |
 | 2,00 | -3,42° | -3,82° | 392,338 | 0,12636 | 0,9993 |
 
+Rótulos da ferramenta nesta grade: "o arrasto usa o .tir de 12 psi com os λ do caso; o a_y_lim vem do perfil ajustado ao teto comum de Fz" e "sem saturação até 2,00 g: grade até o último a_y resolvido" (como o a_y_lim de 12 psi é N/A neste caso, a grade vai até 2 g). Sem Crr informado, a coluna D/(Crr·m·g) não aparece e a resistência ao rolamento fica a confirmar.
+
 Leitura: o arrasto cresce rápido com a aceleração lateral, de 0,141 N a 0,10 g a 392,338 N a 2,00 g, e D/(m·g) chega a 0,12636 nesse ponto. A forma linearizada acompanha o cálculo roda a roda (razão de 1,0000 até 1,10 g e 0,9993 a 2,00 g). O α sai com sinal negativo porque a curva é à esquerda, no eixo ISO do projeto.
 
 **Energia do enduro.** Sem o traçado do enduro não existe energia total. D vale por condição (a_y e R). A energia é Σ D × comprimento de cada trecho de curva, e o traçado está a confirmar.
@@ -214,9 +216,9 @@ Os degraus são os do roteiro. "Não medido aqui" quer dizer que o degrau está 
 
 | degrau | nome | muda decisão | frase |
 |---|---|---|---|
-| 1 | A2 no carro | não avaliado | não avaliado: o carro não chega ao limite até 2 g em nenhuma pressão |
-| 2 | Ajuste PP*/QPZ do PAC2002 | não avaliado | não avaliado: o carro não chega ao limite até 2 g em nenhuma pressão (nos perfis interpolados entre os .tir, não num ajuste PP*/QPZ) |
-| 3 | A3: pressão em operação | não avaliado | não avaliado: o carro não chega ao limite até 2 g em nenhuma pressão (pressão de ensaio, a fria; pressão quente e temperatura não estão no modelo) |
+| 1 | A2 no carro | não avaliado | não avaliado: sem a_y_lim em nenhuma pressão (não satura até 2 g a 8,0, 10,0 e 12,0 psi; pico na borda da grade de α em a_y = 0 g a 14,0 psi) |
+| 2 | Ajuste PP*/QPZ do PAC2002 | não avaliado | não avaliado: sem a_y_lim em nenhuma pressão (não satura até 2 g a 8,0, 10,0 e 12,0 psi; pico na borda da grade de α em a_y = 0 g a 14,0 psi) (nos perfis interpolados entre os .tir, não num ajuste PP*/QPZ) |
+| 3 | A3: pressão em operação | não avaliado | não avaliado: sem a_y_lim em nenhuma pressão (não satura até 2 g a 8,0, 10,0 e 12,0 psi; pico na borda da grade de α em a_y = 0 g a 14,0 psi) (pressão de ensaio, a fria; pressão quente e temperatura não estão no modelo) |
 | 4 | B: transiente do pneu | não medido aqui | o degrau não entra neste estudo (spec §6.1) |
 | 5 | C: dinâmica do veículo | não medido aqui | o degrau não entra neste estudo (spec §6.1) |
 | 6 | Pneu substituto do T11 | não avaliado | não avaliado: o λ exploratório (LMUY, LFZO, LKY), a 8,0, 10,0 e 12,0 psi: NÃO CONCLUSIVO, N/A em parte da varredura (sem inversão de sinal); a 14,0 psi: N/A em toda a varredura; nenhum critério avaliado deu sim |
@@ -251,13 +253,13 @@ Tempos medidos na execução completa, em segundos.
 | parte | tempo (s) |
 |---|---|
 | tornado | 3,6 |
-| pressao | 3,9 |
-| combinacao | 26,9 |
-| pneu | 2,7 |
+| pressao | 4,1 |
+| combinacao | 27,9 |
+| pneu | 2,9 |
 | arrasto | 0,4 |
-| total | 37,6 |
+| total | 39,0 |
 
-A combinação das 27 combinações de λ é a parte lenta (26,9 s dos 37,6 s). Com `--rapido` ela não roda.
+A combinação das 27 combinações de λ é a parte lenta (27,9 s dos 39,0 s). Com `--rapido` ela não roda.
 
 ## 9. Como rodar
 
