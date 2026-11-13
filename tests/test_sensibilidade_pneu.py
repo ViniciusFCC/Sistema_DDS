@@ -210,12 +210,22 @@ esc_nres = cmp.Escolha("a_y_lim", "máximo", {"KT (a)": v_nres}, None, ())
 esc_um = cmp.Escolha("a_y_lim", "máximo", {"KT (a)": v_um}, None, ())
 p_nres, c_nres = sp.decidir_pressao(planas, esc_nres, ca_p)
 p_um, c_um = sp.decidir_pressao(planas, esc_um, ca_p)
+# o ramo PUSH -> LOOSE de _frase_pressao (não pode sombrear ps()) e a frase agrupada do λ
+try:
+    fr_pl = sp._frase_pressao("sim", c_c1, serie_rc("a", [10.0] * 4, vereditos=["PUSH", "PUSH", "PUSH", "LOOSE"]))
+except TypeError as exc:
+    fr_pl = f"TypeError: {exc}"
+_, c_lam = sp.decidir_lambda(serie_rc("a", [10.0] * 4, robustezes=[NC_NA_ROB, NC_NA_ROB, NC_NA_ROB, NA_ROB]))
+fr_lam = sp._frase_lambda("não avaliado", c_lam)
 check("TC-SEN-017 decidir_pressao: PUSH e bandas que não separam -> não; PUSH×LOOSE -> sim (critério 1); "
       "a_y_lim ou Cα se distinguem -> sim (critério 2); ay None -> não avaliado; um N/A isolado -> não avaliado",
       p_nao == "não" and p_c1 == "sim" and p_c2 == "sim" and p_c2b == "sim" and p_na == "não avaliado"
       and p_na1 == "não avaliado" and len(c_nao) >= 2 and len(c_c1) >= 2
       and p_nres == "não avaliado" and "não resolvida" in c_nres["a_y_lim, KT (a)"]
-      and p_um == "não avaliado" and "menos de 2" in c_um["a_y_lim, KT (a)"],
+      and p_um == "não avaliado" and "menos de 2" in c_um["a_y_lim, KT (a)"]
+      and "8,0 psi" in fr_pl and "14,0 psi" in fr_pl and "TypeError" not in fr_pl
+      and fr_lam.count("o λ exploratório") == 1 and "a 8,0, 10,0 e 12,0 psi: NÃO CONCLUSIVO" in fr_lam
+      and "a 14,0 psi: N/A em toda a varredura" in fr_lam and "N/A, N/A" not in fr_lam,
       f"{p_nao}, {p_c1}, {p_c2}, {p_c2b}, {p_na}, {p_na1}; {c_nao}")
 
 # TC-SEN-018: KT, variante a x b
