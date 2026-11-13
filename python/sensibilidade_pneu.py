@@ -424,8 +424,8 @@ def _distingue(v: cmp.Veredito) -> tuple[str, str]:
     if resolvidas:
         return _SIM, f"as pressões se distinguem pela banda ({v.desfecho})"
     if fora:
-        return _NAV, (f"a pressão {', '.join(ps(q) for q in sorted(fora))} psi difere, mas a banda ali é só "
-                      "limite inferior: não resolvida")
+        return _NAV, (f"{'a pressão' if len(fora) == 1 else 'as pressões'} {_lista_psi([ps(q) for q in sorted(fora)])} "
+                      f"{'difere' if len(fora) == 1 else 'diferem'}, mas a banda ali é só limite inferior: não resolvida")
     return _NAO, f"as pressões não se distinguem pela banda ({v.desfecho})"
 
 
@@ -493,9 +493,9 @@ def _frase_pressao(estado: str, criterios: dict[str, str], resultados_a: Sequenc
     com = {p: v for p, v in ver.items() if v != eq.NA}
     if estado == _SIM:
         if len(set(com.values())) > 1:
-            ps = sorted(com)
-            p0 = ps[0]
-            p1 = next(p for p in ps if com[p] != com[p0])
+            ordem = sorted(com)
+            p0 = ordem[0]
+            p1 = next(p for p in ordem if com[p] != com[p0])
             return (f"a pressão muda o veredito: o carro passa de {_VEREDITO_TEXTO.get(com[p0], com[p0])} "
                     f"({ps(p0)} psi) para {_VEREDITO_TEXTO.get(com[p1], com[p1])} ({ps(p1)} psi)")
         return "a pressão muda o a_y_lim ou o Cα além da banda heurística: nem todas as pressões se equivalem"
@@ -507,19 +507,36 @@ def _frase_pressao(estado: str, criterios: dict[str, str], resultados_a: Sequenc
     return f"não avaliado: {pend}; nenhum critério avaliado deu sim"
 
 
+def _lista_psi(pressoes: Sequence[str]) -> str:
+    """["8,0", "10,0", "12,0"] -> "8,0, 10,0 e 12,0 psi"."""
+    if len(pressoes) == 1:
+        return f"{pressoes[0]} psi"
+    return f"{', '.join(pressoes[:-1])} e {pressoes[-1]} psi"
+
+
 def _frase_lambda(estado: str, criterios: dict[str, str]) -> str:
-    """Frase dos degraus 6 e 8: uma entrada por pressão, com o rótulo em psi já formatado (ver `ps`)."""
+    """Frase dos degraus 6 e 8: o sujeito uma vez só, e as pressões com o mesmo detalhe agrupadas (rótulo em psi já
+    formatado, ver `ps`)."""
     suj = "o λ exploratório (LMUY, LFZO, LKY)"
 
     def entradas(alvo: str) -> str:
-        return "; ".join(f"{k.removeprefix('robustez de λ ')}: {_detalhe(c)}" for k, c in criterios.items()
-                         if _estado_de(c) == alvo)
+        grupos: dict[str, list[str]] = {}
+        for k, c in criterios.items():
+            if _estado_de(c) != alvo:
+                continue
+            det = _detalhe(c)
+            for dup in (eq.NA, eq.NAO_CONCLUSIVO):      # "N/A, N/A em toda a varredura" -> sem repetir o veredito
+                if det.startswith(f"{dup}, {dup}"):
+                    det = det[len(dup) + 2:]
+            pr = k.removeprefix("robustez de λ a ").removesuffix(" psi")
+            grupos.setdefault(det, []).append(pr)
+        return "; ".join(f"a {_lista_psi(prs)}: {det}" for det, prs in grupos.items())
     if estado == _SIM:
         return f"{suj} muda a decisão: {entradas(_SIM)}"
     if estado == _NAO:
         return f"{suj} não muda a decisão: {_NOTA_REGRA}"
     pend = entradas(_NAV)
-    return (f"não avaliado ({suj}): {pend or 'sem critério avaliado'}; nenhum critério avaliado deu sim")
+    return f"não avaliado: {suj}, {pend or 'sem critério avaliado'}; nenhum critério avaliado deu sim"
 
 
 def _frase_generica(nome: str, estado: str, criterios: dict[str, str]) -> str:
