@@ -1,7 +1,7 @@
 """Testes do pneu-1 (sensibilidade do pneu e arrasto induzido), EDR-075. Script com check(), não pytest.
 
 TC-SEN-001 a 005 não precisam do .tir: catálogo, leitura, edição e gravação do caso, e o x da planilha.
-TC-SEN-006 a 008 precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
+TC-SEN-006 a 008 e 010 a 012 precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
 caso_pneu1.achar_ttc): sem eles, a seção imprime NÃO EXECUTÁVEL e o script sai com o código 3 depois das outras.
 Os dados do teste são SINTÉTICOS de teste, não são dado do carro (números do veiculo_base de tests/test_equilibrio.py).
 """
@@ -17,6 +17,10 @@ import caso_planilha as cpl
 import caso_pneu1 as cp
 import comparacao_pressao as cmp
 import equilibrio as eq
+import equilibrio_linear as el
+import math
+import sensibilidade_pneu as sp
+from suspension_model import G
 
 results = []
 
@@ -128,7 +132,7 @@ check("TC-SEN-005 valores_usados: todos os campos e os 5 res_ com a célula; nul
 # ---------------------------------------------------------------------------------------------------------------------
 TTC = cp.achar_ttc()
 if TTC is None:
-    print("\nNÃO EXECUTÁVEL: TC-SEN-006 a 008 precisam dos .tir do TTC Round 6 (defina DDS_TTC_DIR ou coloque-os em "
+    print("\nNÃO EXECUTÁVEL: TC-SEN-006 a 008 e 010 a 012 precisam dos .tir do TTC Round 6 (defina DDS_TTC_DIR ou coloque-os em "
           f"{cp.SUBDIR_TTC.as_posix()}). Não conta como aprovado.")
     encerrar()
     raise SystemExit(3)
@@ -194,5 +198,63 @@ sem_eps = cp.caso_de_dados(D_sem_eps, FAM)
 check("TC-SEN-008 f_dianteira 1,5, h9 sem h3 e h9 com Crr nulo levantam ValueError; eps nulo = passo1 False + rótulo",
       r_f[0] and r_h3[0] and r_crr[0] and cp.ROTULO_SEM_ROLL_STEER in sem_eps.rotulos
       and sem_eps.caso.roll_steer == {"F": 0.0, "R": 0.0}, f"{r_f[1]} | {r_h3[1]} | {r_crr[1]}")
+
+# ---------------------------------------------------------------------------------------------------------------------
+# TC-SEN-010 a 012: forças por roda e arrasto induzido (caso SINTÉTICO de teste, não é dado do carro)
+# ---------------------------------------------------------------------------------------------------------------------
+CASO = montado.caso
+FORMAS = montado.formas
+COS_F = 1.0 if CASO.raio_m is None else math.cos(CASO.cfg.wheelbase / CASO.raio_m)   # o de eq._cos_dianteira
+
+# TC-SEN-010: Σ F_y,i por eixo (× cos δ_ref na frente com raio) = fy_eixo_limitado no α de angulos_necessarios
+# e = força exigida
+erros = []
+for ay_g in (0.5, 1.0):
+    ay = ay_g * G
+    alfas = el.angulos_necessarios(CASO, ay, formas=FORMAS)
+    por_roda = sp.forcas_por_roda(CASO, ay, alfas, formas=FORMAS)
+    fz, gam = eq.cargas(CASO, ay), eq.camber(CASO, ay)
+    for eixo, a_ref, req in zip(("F", "R"), alfas, eq.forca_exigida(CASO, ay)):
+        rodas = eq.RODAS_DO_EIXO[eixo]
+        fz_u, gam_u, _ = eq.entrada_limitada(CASO, rodas, fz, gam)
+        soma = sum(por_roda[c][1] for c in rodas) * (COS_F if eixo == "F" else 1.0)
+        ref = eq.fy_eixo_limitado(CASO, rodas, fz_u, gam_u, a_ref, formas=FORMAS)
+        erros.append((ay_g, eixo, abs(soma - ref) / ref, abs(soma - req) / req))
+check("TC-SEN-010 Σ F_y,i do eixo = fy_eixo_limitado (1e-9) e = força exigida (1e-6), a_y 0,5 g e 1,0 g",
+      all(e1 < 1e-9 and e2 < 1e-6 for _, _, e1, e2 in erros), f"cos_f={COS_F}, erros={erros}")
+
+# TC-SEN-011: sinal, toe e camber
+# caso de sinal: γ = 0 (sem camber estático nem ganho de camber), como no plano; com camber, uma roda pouco carregada
+# pode ter F_y e α de mesmo sinal (empuxo de camber), e D_i < 0 ali é físico (D3), não erro
+D_G0 = cp.editar(D, gsFL_grau=0.0, gsFR_grau=0.0, gsRL_grau=0.0, gsRR_grau=0.0, dgF_grau_mm=0.0, dgR_grau_mm=0.0)
+caso_g0 = cp.caso_de_dados(D_G0, FAM)
+lin0 = sp.arrasto_induzido(caso_g0.caso, formas=caso_g0.formas, ay_ate_ms2=1.0 * G)
+sim_zero = abs(lin0[0].d_n) < 1e-9 and lin0[0].ay_ms2 == 0.0
+sim_pos = all(v >= -1e-9 for l in lin0 for v in l.d_por_roda.values())
+caso_toe = cp.caso_de_dados(cp.editar(D_G0, toeFL_grau=-0.2, toeFR_grau=-0.2), FAM)
+lin_toe = sp.arrasto_induzido(caso_toe.caso, formas=caso_toe.formas, ay_ate_ms2=1.0 * G)
+# com toe, a roda interna chega a α ≈ 0 em ~0,3 g, e o Fy residual do pneu em α = 0 (SHY, PHY3...) dá D_i de alguns
+# mN negativos: físico, não erro; o total D fica >= 0 e nenhuma roda passa de −0,05 N
+toe_ok = (lin_toe[0].d_n > 0.0 and all(l.d_n >= 0.0 for l in lin_toe)
+          and all(v >= -0.05 for l in lin_toe for v in l.d_por_roda.values()))
+a_mao, fy_mao = -0.05, 100.0
+check("TC-SEN-011 D(0) = 0 no simétrico, D_i >= 0; com toe-in D(0) > 0; −F_y·sen α à mão",
+      sim_zero and sim_pos and toe_ok and abs(-fy_mao * math.sin(a_mao) - 100.0 * math.sin(0.05)) < 1e-12,
+      f"d0={lin0[0].d_n}, d0_toe={lin_toe[0].d_n}")
+
+# TC-SEN-012: 1ª ordem (consistência da linearização) e grade (D4)
+razoes = {}
+for g in (0.2, 0.1, 0.05):
+    l = sp.arrasto_induzido(CASO, formas=FORMAS, ay_ate_ms2=g * G, passo_g=g)[-1]
+    razoes[g] = abs(l.d_n / l.d_1a_ordem_n - 1.0)
+sem_lim = sp.arrasto_induzido(CASO, formas=FORMAS, ay_ate_ms2=None)
+ult = sem_lim[-1]
+prox = (round(ult.ay_g / 0.1) + 1) * 0.1
+seguinte_ok = prox > 2.0 + 1e-9 or el.angulos_necessarios(CASO, prox * G, formas=FORMAS) is None
+com_lim = sp.arrasto_induzido(CASO, formas=FORMAS, ay_ate_ms2=0.73 * G)
+check("TC-SEN-012 |D/D1a−1| decresce e fecha < 1e-3; grade sem limite para onde não resolve; com limite, ay <= limite",
+      razoes[0.2] > razoes[0.1] > razoes[0.05] and razoes[0.05] < 1e-3 and ult.ay_g <= 2.0 + 1e-9 and seguinte_ok
+      and sem_lim[0].rotulos and com_lim[-1].ay_ms2 <= 0.73 * G and abs(com_lim[-1].ay_g - 0.7) < 1e-9,
+      f"razoes={razoes}, ultima={ult.ay_g}, rotulo={sem_lim[0].rotulos}")
 
 encerrar()
