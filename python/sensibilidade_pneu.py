@@ -12,6 +12,7 @@ distância percorrida).
 """
 from __future__ import annotations
 
+import dataclasses
 import math
 from dataclasses import dataclass
 
@@ -94,13 +95,15 @@ def arrasto_induzido(caso: eq.CasoEquilibrio, *, formas: eq.Formas, ay_ate_ms2: 
         k += 1
     if not linhas:
         raise ValueError("Nenhum a_y da grade tem solução (nem a_y = 0).")
-    if ay_ate_ms2 is None:
-        ult = linhas[-1].ay_g
-        if parou_antes is None:
-            rot = f"sem saturação até {ult:.2f} g: grade até o último a_y resolvido"
-        else:
-            rot = (f"os ângulos de deriva deixam de resolver acima de {ult:.2f} g (a_y = {parou_antes / G:.2f} g "
-                   f"sem solução): grade até o último a_y resolvido")
-        linhas = [LinhaArrasto(*(getattr(l, f) for f in LinhaArrasto.__dataclass_fields__ if f != "rotulos"),
-                               rotulos=(rot,)) for l in linhas]
+    ult = linhas[-1].ay_g
+    rots = []
+    if parou_antes is not None:
+        rots.append(f"os ângulos de deriva deixam de resolver acima de {ult:.2f} g (a_y = {parou_antes / G:.2f} g "
+                    f"sem solução): grade até o último a_y resolvido")
+    elif ay_ate_ms2 is None:
+        rots.append(f"sem saturação até {ult:.2f} g: grade até o último a_y resolvido")
+    if ay_ate_ms2 is not None and ay_ate_ms2 > ay_max_g * G * (1 + PASSO_REL):
+        rots.append(f"o limite pedido ({ay_ate_ms2 / G:.2f} g) passa de ay_max_g; grade cortada em {ay_max_g:.2f} g")
+    if rots:
+        linhas = [dataclasses.replace(l, rotulos=tuple(rots)) for l in linhas]
     return tuple(linhas)
