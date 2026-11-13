@@ -31,6 +31,12 @@ from caso_pneu1 import (  # noqa: F401  (D8: ler_caso, editar, salvar_caso, fami
     CasoMontado, ValorUsado, caso_de_dados, editar, familia_ttc, ler_caso, salvar_caso, valores_usados)
 from suspension_model import G
 
+def ps(p: float) -> str:
+    """Pressão para exibir: 1 casa, vírgula decimal. As pressões nominais dos .tir do TTC não são inteiras (7,999992,
+    10,000062, 11,999987 e 14,000058 psi): mostrar 8,0, 10,0, 12,0 e 14,0 evita "7.99999 psi"."""
+    return f"{p:.1f}".replace(".", ",")
+
+
 PASSO_REL = 1e-9    # tolerância para o último passo da grade cair em ay_ate
 
 
@@ -200,7 +206,7 @@ def linha_de_resultado(r: cmp.ResultadoCarro, *, formas: eq.Formas,
     """Converte um ResultadoCarro em LinhaCarro (C_f e C_r por `rigidez_eixos` no caso rodado; K em °/g)."""
     fat = dict(fatores or {})
     c_f, c_r, _ = rigidez_eixos(r.caso, formas=formas)
-    rot = (f"{r.pressao_psi:g} psi, variante {r.variante_kt}"
+    rot = (f"{ps(r.pressao_psi)} psi, variante {r.variante_kt}"
            + ("; " + ", ".join(f"{n} × {v:g}".replace(".", ",") for n, v in fat.items()) if fat else ""))
     return LinhaCarro(
         rotulo_corrida=rot, pressao_psi=r.pressao_psi, variante_kt=r.variante_kt, fatores=fat,
@@ -368,22 +374,30 @@ def _estado_de(detalhe: str) -> str:
     return detalhe.split(":", 1)[0]
 
 
+# Motivos de `eq.veredito_robusto`, pelo próprio texto que ela devolve (não copiado à mão).
+_MOTIVO_SINAL = eq.veredito_robusto([eq.PUSH, eq.LOOSE])[1]
+
+
 def decidir_lambda(combinacao: Sequence[cmp.ResultadoCarro]) -> tuple[str, dict[str, str]]:
     """Critério 1 da spec §6.3 em cada pressão, pela robustez da combinação 3×3×3 de λ (D6).
 
-    PUSH ou LOOSE puro -> "não"; NÃO CONCLUSIVO -> "sim"; N/A (ou sem robustez) -> "não avaliado"; agregados por D6."""
+    PUSH ou LOOSE puro -> "não"; NÃO CONCLUSIVO por "o sinal depende do pneu" -> "sim"; NÃO CONCLUSIVO por "N/A em
+    parte da varredura (sem inversão de sinal)", N/A ou sem robustez -> "não avaliado" (sem inversão não há prova);
+    agregados por D6."""
     criterios: dict[str, str] = {}
     estados: list[str] = []
     for r in sorted(combinacao, key=lambda x: x.pressao_psi):
-        chave = f"robustez de λ a {r.pressao_psi:g} psi"
+        chave = f"robustez de λ a {ps(r.pressao_psi)} psi"
         if r.robustez is None:
             est, det = _NAV, "sem robustez calculada"
         else:
             ver, motivo = r.robustez[0], r.robustez[1]
             if ver in (eq.PUSH, eq.LOOSE):
                 est = _NAO
-            elif ver == eq.NAO_CONCLUSIVO:
+            elif ver == eq.NAO_CONCLUSIVO and motivo == _MOTIVO_SINAL:
                 est = _SIM
+            elif ver == eq.NAO_CONCLUSIVO:
+                est = _NAV       # N/A em parte da varredura, sem inversão de sinal: sem prova (spec §6.3)
             else:
                 est = _NAV
             det = f"{ver}, {motivo}"
@@ -398,8 +412,8 @@ def _distingue(v: cmp.Veredito) -> tuple[str, str]:
     Pressão não resolvida (extremo, `medida=False`, Δ > banda) não prova nada: se for a única evidência, o critério
     fica "não avaliado". Com menos de 2 decidíveis, também "não avaliado" (o detalhe lista as não decidíveis)."""
     dec = [p for p, x in v.valores.items() if x is not None and p not in v.nao_decidiveis]
-    nd = ", ".join(f"{p:g}" for p in sorted(v.nao_decidiveis) if p in v.valores)
-    nd += (", " if nd else "") + ", ".join(f"{p:g}" for p, x in sorted(v.valores.items())
+    nd = ", ".join(ps(p) for p in sorted(v.nao_decidiveis) if p in v.valores)
+    nd += (", " if nd else "") + ", ".join(ps(p) for p, x in sorted(v.valores.items())
                                            if x is None and p not in v.nao_decidiveis)
     nd = nd.strip(", ")
     if len(dec) < 2:
@@ -410,7 +424,7 @@ def _distingue(v: cmp.Veredito) -> tuple[str, str]:
     if resolvidas:
         return _SIM, f"as pressões se distinguem pela banda ({v.desfecho})"
     if fora:
-        return _NAV, (f"a pressão {', '.join(f'{q:g}' for q in sorted(fora))} psi difere, mas a banda ali é só "
+        return _NAV, (f"a pressão {', '.join(ps(q) for q in sorted(fora))} psi difere, mas a banda ali é só "
                       "limite inferior: não resolvida")
     return _NAO, f"as pressões não se distinguem pela banda ({v.desfecho})"
 
@@ -428,10 +442,10 @@ def decidir_pressao(resultados_a: Sequence[cmp.ResultadoCarro], esc_ay: cmp.Esco
     sem = [p for p, v in ver.items() if v == eq.NA]
     if len(set(com.values())) > 1:
         est1 = _SIM
-        det1 = ", ".join(f"{v} a {p:g} psi" for p, v in com.items())
+        det1 = ", ".join(f"{v} a {ps(p)} psi" for p, v in com.items())
     elif sem or not com:
         est1 = _NAV
-        det1 = ("N/A a " + ", ".join(f"{p:g}" for p in sem) + " psi") if sem else "sem veredito"
+        det1 = ("N/A a " + ", ".join(ps(p) for p in sem) + " psi") if sem else "sem veredito"
     else:
         est1, det1 = _NAO, f"{next(iter(com.values()))} em todas as pressões"
     criterios = {"vereditos entre pressões": f"{est1}: {det1}"}
@@ -456,7 +470,7 @@ def decidir_kt(resultados: Sequence[cmp.ResultadoCarro]) -> tuple[str, dict[str,
     estados: list[str] = []
     for p in sorted(set(a) & set(b)):
         ra, rb = a[p], b[p]
-        if eq.NA in (ra.veredito, rb.veredito) and ra.veredito != rb.veredito:
+        if eq.NA in (ra.veredito, rb.veredito):
             est1, det1 = _NAV, f"{ra.veredito} (a) e {rb.veredito} (b)"
         else:
             est1 = _SIM if ra.veredito != rb.veredito else _NAO
@@ -469,8 +483,8 @@ def decidir_kt(resultados: Sequence[cmp.ResultadoCarro]) -> tuple[str, dict[str,
             est2 = _SIM if dif > bd.valor else _NAO
             det2 = f"|Δa_y_lim| = {dif:.3g} m/s² contra a banda de {bd.valor:.3g} m/s²"
         estados += [est1, est2]
-        criterios[f"veredito de a e b a {p:g} psi"] = f"{est1}: {det1}"
-        criterios[f"a_y_lim de a e b a {p:g} psi"] = f"{est2}: {det2}"
+        criterios[f"veredito de a e b a {ps(p)} psi"] = f"{est1}: {det1}"
+        criterios[f"a_y_lim de a e b a {ps(p)} psi"] = f"{est2}: {det2}"
     return _agregar(estados), criterios
 
 
@@ -483,7 +497,7 @@ def _frase_pressao(estado: str, criterios: dict[str, str], resultados_a: Sequenc
             p0 = ps[0]
             p1 = next(p for p in ps if com[p] != com[p0])
             return (f"a pressão muda o veredito: o carro passa de {_VEREDITO_TEXTO.get(com[p0], com[p0])} "
-                    f"({p0:g} psi) para {_VEREDITO_TEXTO.get(com[p1], com[p1])} ({p1:g} psi)")
+                    f"({ps(p0)} psi) para {_VEREDITO_TEXTO.get(com[p1], com[p1])} ({ps(p1)} psi)")
         return "a pressão muda o a_y_lim ou o Cα além da banda heurística: nem todas as pressões se equivalem"
     if estado == _NAO:
         return f"a pressão não muda a decisão: {_NOTA_REGRA}"
@@ -491,6 +505,21 @@ def _frase_pressao(estado: str, criterios: dict[str, str], resultados_a: Sequenc
         return "não avaliado: o carro não chega ao limite até 2 g em nenhuma pressão"
     pend = next((_detalhe(c) for c in criterios.values() if _estado_de(c) == _NAV), "critério sem avaliação")
     return f"não avaliado: {pend}; nenhum critério avaliado deu sim"
+
+
+def _frase_lambda(estado: str, criterios: dict[str, str]) -> str:
+    """Frase dos degraus 6 e 8: uma entrada por pressão, com o rótulo em psi já formatado (ver `ps`)."""
+    suj = "o λ exploratório (LMUY, LFZO, LKY)"
+
+    def entradas(alvo: str) -> str:
+        return "; ".join(f"{k.removeprefix('robustez de λ ')}: {_detalhe(c)}" for k, c in criterios.items()
+                         if _estado_de(c) == alvo)
+    if estado == _SIM:
+        return f"{suj} muda a decisão: {entradas(_SIM)}"
+    if estado == _NAO:
+        return f"{suj} não muda a decisão: {_NOTA_REGRA}"
+    pend = entradas(_NAV)
+    return (f"não avaliado ({suj}): {pend or 'sem critério avaliado'}; nenhum critério avaliado deu sim")
 
 
 def _frase_generica(nome: str, estado: str, criterios: dict[str, str]) -> str:
@@ -633,6 +662,8 @@ def estudo(cm: CasoMontado, familia: ts.StaticTireFamily, rapido: bool = False) 
     else:
         lam = decidir_lambda(comb_res)
     frases = {g: _frase_pressao(pres[0], pres[1], res_a) for g in (1, 2, 3)}
+    if comb_res is not None:
+        frases.update({6: _frase_lambda(*lam), 8: _frase_lambda(*lam)})
     if comb_res is None:
         frases.update({6: "não avaliado: combinação não rodada (--rapido)",
                        8: "não avaliado: combinação não rodada (--rapido)"})
