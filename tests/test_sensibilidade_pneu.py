@@ -223,7 +223,7 @@ for ay_g in (0.5, 1.0):
 check("TC-SEN-010 Σ F_y,i do eixo = fy_eixo_limitado (1e-9) e = força exigida (1e-6), a_y 0,5 g e 1,0 g",
       all(e1 < 1e-9 and e2 < 1e-6 for _, _, e1, e2 in erros), f"cos_f={COS_F}, erros={erros}")
 
-# TC-SEN-011: sinal, toe e camber
+# TC-SEN-011: sinal, toe e camber (D_i >= −1e-9 N no simétrico; com toe, a tolerância é a de −0,05 N abaixo)
 # caso de sinal: γ = 0 (sem camber estático nem ganho de camber), como no plano; com camber, uma roda pouco carregada
 # pode ter F_y e α de mesmo sinal (empuxo de camber), e D_i < 0 ali é físico (D3), não erro
 D_G0 = cp.editar(D, gsFL_grau=0.0, gsFR_grau=0.0, gsRL_grau=0.0, gsRR_grau=0.0, dgF_grau_mm=0.0, dgR_grau_mm=0.0)
@@ -237,9 +237,13 @@ lin_toe = sp.arrasto_induzido(caso_toe.caso, formas=caso_toe.formas, ay_ate_ms2=
 # mN negativos: físico, não erro; o total D fica >= 0 e nenhuma roda passa de −0,05 N
 toe_ok = (lin_toe[0].d_n > 0.0 and all(l.d_n >= 0.0 for l in lin_toe)
           and all(v >= -0.05 for l in lin_toe for v in l.d_por_roda.values()))
-a_mao, fy_mao = -0.05, 100.0
+# D_i = −F_y,i·sen α_i, conferido contra forcas_por_roda em a_y = 0,5 g (não só a conta à mão)
+l5 = sp.arrasto_induzido(caso_g0.caso, formas=caso_g0.formas, ay_ate_ms2=0.5 * G)[-1]
+pr5 = sp.forcas_por_roda(caso_g0.caso, l5.ay_ms2, (l5.alfa_f_rad, l5.alfa_r_rad), formas=caso_g0.formas)
+d_roda_ok = all(abs(l5.d_por_roda[c] + fy * math.sin(a)) < 1e-12 and a < 0.0 and fy > 0.0
+                for c, (a, fy) in pr5.items())
 check("TC-SEN-011 D(0) = 0 no simétrico, D_i >= 0; com toe-in D(0) > 0; −F_y·sen α à mão",
-      sim_zero and sim_pos and toe_ok and abs(-fy_mao * math.sin(a_mao) - 100.0 * math.sin(0.05)) < 1e-12,
+      sim_zero and sim_pos and toe_ok and d_roda_ok,
       f"d0={lin0[0].d_n}, d0_toe={lin_toe[0].d_n}")
 
 # TC-SEN-012: 1ª ordem (consistência da linearização) e grade (D4)
@@ -256,5 +260,22 @@ check("TC-SEN-012 |D/D1a−1| decresce e fecha < 1e-3; grade sem limite para ond
       razoes[0.2] > razoes[0.1] > razoes[0.05] and razoes[0.05] < 1e-3 and ult.ay_g <= 2.0 + 1e-9 and seguinte_ok
       and sem_lim[0].rotulos and com_lim[-1].ay_ms2 <= 0.73 * G and abs(com_lim[-1].ay_g - 0.7) < 1e-9,
       f"razoes={razoes}, ultima={ult.ay_g}, rotulo={sem_lim[0].rotulos}")
+
+# TC-SEN-013: a grade para onde angulos_necessarios deixa de resolver, com rótulo (D4); limite acima de ay_max_g também
+# SINTÉTICO de teste: aderência reduzida (LMUY 0,3) só para saturar; não é dado do carro
+CASO_SAT = dataclasses.replace(CASO, ds=eq.com_fatores(CASO.ds, {"LMUY": 0.3}))
+sat = sp.arrasto_induzido(CASO_SAT, formas=FORMAS, ay_ate_ms2=None)
+u_sat = sat[-1]
+prox_sat = (round(u_sat.ay_g / 0.1) + 1) * 0.1
+sat_lim = sp.arrasto_induzido(CASO_SAT, formas=FORMAS, ay_ate_ms2=2.0 * G)
+cortado = sp.arrasto_induzido(CASO, formas=FORMAS, ay_ate_ms2=3.0 * G, ay_max_g=1.0)
+check("TC-SEN-013 grade que satura: para antes de 2 g, o próximo ponto não resolve e há rótulo; limite acima de ay_max_g avisa",
+      u_sat.ay_g < 1.9 and el.angulos_necessarios(CASO_SAT, u_sat.ay_g * G, formas=FORMAS) is not None
+      and el.angulos_necessarios(CASO_SAT, prox_sat * G, formas=FORMAS) is None
+      and all("deixam de resolver" in r and f"{u_sat.ay_g:.2f} g" in r for l in sat for r in l.rotulos)
+      and all("sem saturação" not in r for l in sat for r in l.rotulos)
+      and sat_lim[-1].ay_g == u_sat.ay_g and all(l.rotulos and "deixam de resolver" in l.rotulos[0] for l in sat_lim)
+      and cortado[-1].ay_g <= 1.0 + 1e-9 and all("passa de ay_max_g" in l.rotulos[-1] for l in cortado),
+      f"ultima={u_sat.ay_g}, rotulo={sat[0].rotulos}, cortado={cortado[0].rotulos}")
 
 encerrar()
