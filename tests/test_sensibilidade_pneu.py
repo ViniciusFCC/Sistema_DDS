@@ -2,7 +2,7 @@
 
 TC-SEN-001 a 005 não precisam do .tir: catálogo, leitura, edição e gravação do caso, e o x da planilha.
 TC-SEN-016 a 019 (regra de muda decisão e Resultado) também não precisam do .tir.
-TC-SEN-006 a 008, 010 a 015 e 020 a 021 (linha de comando) precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
+TC-SEN-006 a 008, 010 a 015 e 020 a 022 (linha de comando) precisam dos .tir do TTC Round 6 (DDS_TTC_DIR ou references/ttc/..., a regra de
 caso_pneu1.achar_ttc): sem eles, a seção imprime NÃO EXECUTÁVEL e o script sai com o código 3 depois das outras.
 Os dados do teste são SINTÉTICOS de teste, não são dado do carro (números do veiculo_base de tests/test_equilibrio.py).
 """
@@ -243,11 +243,18 @@ k_none_ver, _ = sp.decidir_kt(a_s + serie_rc("b", [10.0, None, 14.0, 16.0],
                                               vereditos=["PUSH", "PUSH", "LOOSE", "PUSH"]))
 k_na_na, c_na_na = sp.decidir_kt(serie_rc("a", [10.0, 12.0, 14.0, 16.0], vereditos=["N/A"] * 4)
                                   + serie_rc("b", [10.0, 12.0, 14.0, 16.0], vereditos=["N/A"] * 4))
+# I4: banda não medida (14 psi, extremo) com |Δa_y| acima dela = "não avaliado: banda só limite inferior", nunca "sim"
+b_ext = serie_rc("b", [10.0, 12.0, 14.0, 19.0])
+k_ext, c_ext = sp.decidir_kt(a_s + b_ext)
+bd_ext = cmp.banda_carro([r for r in a_s])[14.0]
 check("TC-SEN-018 decidir_kt: a = b -> não; |Δa_y| > banda -> sim; veredito difere -> sim; ay None -> não avaliado "
       "(e sim se outro nó dá sim); sem variante b -> não avaliado; N/A nas duas variantes -> critério 1 não avaliado",
       k_ig == "não" and k_ay == "sim" and k_ver == "sim" and k_none == "não avaliado" and k_sem_b == "não avaliado"
       and k_none_ver == "sim" and len(c_ay) >= 1 and k_na_na == "não avaliado"
-      and c_na_na["veredito de a e b a 10,0 psi"].startswith("não avaliado"), f"{k_ig}, {k_ay}, {k_ver}, {k_none}, {k_sem_b}, {k_none_ver}")
+      and c_na_na["veredito de a e b a 10,0 psi"].startswith("não avaliado")
+      and not bd_ext.medida and k_ext == "não avaliado"
+      and c_ext["a_y_lim de a e b a 14,0 psi"].startswith("não avaliado: banda só limite inferior"),
+      f"{k_ext}, {c_ext}, {k_ig}, {k_ay}, {k_ver}, {k_none}, {k_sem_b}, {k_none_ver}")
 
 # TC-SEN-019: Resultado serializável, 18 decisões, rótulos
 tab = sp.tabela_decisoes(("não", {"λ": "não"}), ("sim", {"pressão": "sim: PUSH × LOOSE"}),
@@ -579,5 +586,33 @@ check("TC-SEN-021 estudo saturante: arrasto até o a_y_lim de 12 psi sem rótulo
       and not any(re.search(r"\d\.\d\d g", t) for l in arr_sem + arr21 for t in l.rotulos)
       and "a confirmar" in md20 and "D/(Crr·m·g)" not in md20 and sp.ROTULO_ARRASTO in md21,
       f"ultima={arr21[-1].ay_ms2}, ay_lim={l12_21.ay_lim_ms2}")
+
+# TC-SEN-022: frase com o motivo medido do N/A (I1) e rótulo do fator_neutro por caso (M2)
+class _Res:
+    def __init__(self, motivo): self.motivo = motivo
+
+
+def rc_na(p, motivo):
+    return dataclasses.replace(rc(p, "a", None, veredito="N/A"), par={"pior": "esquerda", "esquerda": _Res(motivo)})
+
+
+M_BORDA, M_SAT = "pico na borda da grade de α em a_y = 0 g", "não satura até 2 g"
+fr_igual = sp._frase_pressao("não avaliado", {}, [rc_na(p, M_BORDA) for p in NOS])
+fr_mista = sp._frase_pressao("não avaliado", {}, [rc_na(p, M_SAT if p < 14 else M_BORDA) for p in NOS])
+linhas_pr = js20.get("pressao", [])
+l14_js = next((l for l in linhas_pr if abs(l["pressao_psi"] - 14.0) < 1e-3), {})
+l8_js = next((l for l in linhas_pr if abs(l["pressao_psi"] - 8.0) < 1e-3), {})
+neutro_x = sp.rotulo_fator_neutro(dataclasses.replace(montado, fator_neutro=1.5))
+check("TC-SEN-022 frase usa o motivo medido (igual em todas: uma vez; diferente: por pressão em psi), sem 'não chega ao "
+      "limite'; motivo_na na linha; rótulo do fator_neutro só quando difere de 1,0, com o valor real",
+      M_BORDA in fr_igual and fr_igual.count(M_BORDA) == 1 and "em todas as pressões" in fr_igual
+      and "não chega ao limite" not in fr_igual
+      and f"{M_SAT} a 8,0, 10,0 e 12,0 psi" in fr_mista and f"{M_BORDA} a 14,0 psi" in fr_mista
+      and "não chega ao limite" not in md20 and "não chega ao limite" not in md21
+      and l14_js.get("motivo_na") == M_BORDA and l8_js.get("motivo_na") == M_SAT and M_SAT in md20 and M_BORDA in md20
+      and sp.rotulo_fator_neutro(dataclasses.replace(montado, fator_neutro=1.0)) == ()
+      and len(neutro_x) == 1 and "1,5" in neutro_x[0]
+      and all(t in md20 for t in sp.rotulo_fator_neutro(montado)) and "4/3" not in md20,
+      f"{fr_igual!r}; {fr_mista!r}; {l14_js.get('motivo_na')!r}")
 
 encerrar()
