@@ -290,14 +290,36 @@ par12 = eq.analise_par_dois_sentidos(dataclasses.replace(montado.caso, ds=ds12),
                                      fator_neutro=montado.fator_neutro)
 res12 = par12[par12["pior"] if par12["pior"] != "empate" else "esquerda"]
 fora_da_base = [l for l in torn[1:] if len(l.fatores) != 1 or any(v == 1.0 for v in l.fatores.values())]
-check("TC-SEN-013 tornado: base = analise_par direto a 12 psi; 7 linhas; só 0,8 e 1,2 fora da base",
+ok13a = (
       len(torn) == 7 and torn[0].ay_lim_ms2 == res12.ay_lim and torn[0].veredito == res12.veredito
       and torn[0].fatores == {} and not fora_da_base
       and {(next(iter(l.fatores)), next(iter(l.fatores.values()))) for l in torn[1:]}
       == {(n, v) for n in sp.FATORES_EXPLORATORIOS for v in (0.8, 1.2)}
       and all(l.pressao_psi == 12.0 and l.variante_kt == "a" for l in torn)
-      and all(r in l.rotulos for l in torn for r in sp.ROTULOS),
-      f"base={torn[0].ay_lim_ms2}, direto={res12.ay_lim}, n={len(torn)}")
+      and all(r in l.rotulos for l in torn for r in sp.ROTULOS)
+      )
+
+# TC-SEN-013 (cont.): caso que satura (CASO_SAT, SINTÉTICO de teste): ay_lim numérico, igual ao direto; λ muda algo;
+# a base é a linha de 12 psi, variante a, de sp.pressao; os rótulos de comparar_carro aparecem.
+montado_sat = dataclasses.replace(montado, caso=CASO_SAT)
+torn_s = sp.tornado(montado_sat, FAM)
+ds12_s, _ = cmp.perfil_ajustado(CASO_SAT.ds, FAM.at_pressure(12.0), tp.teto_comum_fz(FAM))
+par_s = eq.analise_par_dois_sentidos(dataclasses.replace(CASO_SAT, ds=ds12_s), ay_max_g=2.0, passo_g=0.05, n_alfa=25,
+                                     formas=montado.formas, fator_neutro=montado.fator_neutro)
+res_s = par_s[par_s["pior"] if par_s["pior"] != "empate" else "esquerda"]
+b_s = torn_s[0]
+ay_ok = (b_s.ay_lim_ms2 is not None and res_s.ay_lim is not None
+         and abs(b_s.ay_lim_ms2 - res_s.ay_lim) <= 1e-9 * abs(res_s.ay_lim))
+difere = any(l.ay_lim_ms2 != b_s.ay_lim_ms2 or l.k_grau_g != b_s.k_grau_g for l in torn_s[1:])
+pr_s = sp.pressao(montado_sat, FAM)
+l12a = next(r for r in pr_s if r.variante_kt == "a" and abs(r.pressao_psi - 12.0) < 1e-3)
+rot_extra = ("KT do caso, fixo (variante a: só muda a aderência)", "K com roll steer 0 = sem dado",
+             "K com o roll steer do caso")
+check("TC-SEN-013 tornado: base = analise_par direto (sintético e com saturação), 7 linhas, λ muda algo, base = pressao(12 psi, a), rótulos de comparar_carro",
+      ok13a and ay_ok and b_s.veredito == res_s.veredito and difere
+      and b_s.ay_lim_ms2 == l12a.ay_lim_ms2 and b_s.veredito == l12a.veredito
+      and all(any(r in l.rotulos for r in rot_extra[1:]) and rot_extra[0] in l.rotulos for l in torn_s + torn),
+      f"base={b_s.ay_lim_ms2}, direto={res_s.ay_lim}, pressao={l12a.ay_lim_ms2}")
 
 # TC-SEN-014: C_f, C_r > 0; K da linha = para_graus_por_g; gradiente_pneus reproduz k_pneus
 cf, cr, mot = sp.rigidez_eixos(montado.caso, formas=montado.formas)

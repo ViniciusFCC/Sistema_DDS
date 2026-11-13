@@ -220,11 +220,20 @@ def _resultado_12psi(cm: CasoMontado, familia: ts.StaticTireFamily, fatores: dic
     par = eq.analise_par_dois_sentidos(caso_p, **GRADE, formas=cm.formas, fator_neutro=cm.fator_neutro)
     res = par[par["pior"] if par["pior"] != "empate" else "esquerda"]
     pk = _el.parcelas_k(caso_p, 0.0, formas=cm.formas)
+    # Rótulos que `comparar_carro` anexa a cada corrida (roll steer, KT fixo, ds do caso × .tir de 12 psi).
+    rs = cm.caso.roll_steer
+    rot_rs = ("K com o roll steer do caso" if (rs["F"] != 0.0 or rs["R"] != 0.0)
+              else "K com roll steer 0 = sem dado")
+    rot_kt = ("KT do caso, fixo (variante a: só muda a aderência)",)
+    difs = cmp.diferencas_fora_de_lambda(cm.caso.ds, familia.at_pressure(PRESSAO_DO_CASO_PSI))
+    rot_difs = tuple(f"{n} do caso ({a:g}) difere do .tir de 12 psi ({b:g}); o ds de cada pressão usa o do .tir"
+                     for n, (a, b) in difs.items())
     return cmp.ResultadoCarro(
         pressao_psi=PRESSAO_DO_CASO_PSI, variante_kt="a", ay_lim_ms2=res.ay_lim, sentido_pior=par["pior"],
         eixo_satura=cmp._EIXO_POR_VEREDITO.get(res.veredito), veredito=res.veredito, k_rad_ms2=pk.k_total,
         k_motivo=pk.motivo, resolucao_ms2=res.resolucao_ms2, borda_alfa=cmp._borda_alfa(res), robustez=None,
-        rotulos=cmp.ROTULOS_FIXOS + cm.rotulos + rot_p + rot_fatores, par=par, caso=caso_p)
+        rotulos=cmp.ROTULOS_FIXOS + (rot_rs,) + rot_kt + cm.rotulos + rot_p + rot_difs + rot_fatores,
+        par=par, caso=caso_p)
 
 
 def tornado(cm: CasoMontado, familia: ts.StaticTireFamily) -> tuple[LinhaCarro, ...]:
