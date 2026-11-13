@@ -538,6 +538,7 @@ check("TC-SEN-020 relatorio_pneu1: código 0, dois arquivos, h_cg_m editado com 
       cod20 == 0 and existem and vh.get("editado") is True and vh.get("origem") == cp.ORIGEM_EDITADO
       and all(t in md20 for t in sp.ROTULOS)
       and cod_massa == 2 and "chave desconhecida: massa" in msg20 and "Traceback" not in msg20
+      and "7.99999" not in md20 and "`R_m`" in md20 and "Valores marcados como" in md20
       and cod3 == 3 and "NÃO EXECUTÁVEL" in err3.getvalue() and cp.achar_ttc is achar_orig
       and cod_sem_igual == 2 and "chave=valor" in err_eq.getvalue()
       and cod_sem_arq == 2 and "arquivo do caso" in err_arq.getvalue(),
