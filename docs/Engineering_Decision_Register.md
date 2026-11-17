@@ -109,6 +109,7 @@ Total: 72 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DE
 | EDR-070 | Fundação parte 2: V4.4 com as fórmulas das abas 03 a 14 por nome | VERIFIED |
 | EDR-071 | Pneu com variação de pressão: interpolação rotulada de saídas, comparação e escolha | VERIFIED |
 | EDR-075 | pneu-1: estudo de sensibilidade do pneu e arrasto induzido | IMPLEMENTED |
+| EDR-076 | Posicionador de pontos da atuação dianteira (push rod, rocker, amortecedor) | APPROVED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1777,6 +1778,34 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Source_Conversation_or_Document:** Spec e plano do pneu-1 (`docs/superpowers/specs/2026-11-12-pneu-1-sensibilidade-arrasto-design.md`, `docs/superpowers/plans/2026-11-12-pneu-1-sensibilidade-arrasto.md`); decisões do controlador na execução do plano, 2026-11-12. O número 075 foi proposto na spec §11 (os EDR-072 a EDR-074 estão reservados ao incremento 9).
 
 
+### EDR-076 — Posicionador de pontos da atuação dianteira (push rod, rocker, amortecedor)
+
+- **Date:** 2026-11-17
+- **Status:** APPROVED (usuário, 2026-11-17: "Comece"; número EDR-076 e prefixo TC-POS- autorizados; Record_Status APPROVED; Validation = NOT_VALIDATED; implementação da fase 1 em andamento, plano `docs/superpowers/plans/2026-11-17-posicionador-fase1.md`).
+- **Context:** O script de atuação do T11 (Murilo, recebido em 2026-11-17; fora do repositório) otimiza 8 variáveis por Nelder-Mead sobre uma soma de penalidades; a força bruta anterior (1,1 milhão de combinações) não achou solução, e as soluções achadas às vezes não valem. Avaliação de 2026-11-17 (relatórios em `docs/posicionador/pesquisa/`, conselho rigoroso de 7 assentos em `docs/posicionador/conselho/`): o método falha em três camadas independentes: (1) quase-igualdades na formulação (MR ±0,01; comprimento estendido ±1 mm; curso inteiro; reta do tubo a ≤ 8 mm do FH) dão 0 viáveis em 3000, 4000 e 2000 amostras; (2) o CAD não tem nós na caixa dianteira (nó triangulado mais próximo do pivô a 237 mm); (3) "mesmo plano" × "amortecedor a ≤ 30° de X" são incompatíveis (resultado de código com `kinlib` não validado). A v20 não é aprovável: variação de MR ≈ 6,1 % convergida (limite 4 %), curso 61,00/61 mm, folga ao aro medida no segmento errado (`PO = UO`), tubo de montagem sem nó nas pontas.
+- **Question:** Que programa construir para dizer onde os pontos da atuação podem ficar sem colidir com os gabaritos do regulamento e com as outras peças, com resultado confiável?
+- **Alternatives:** (a) corrigir o script atual (penalidade, Nelder-Mead); (b) reformular: metas resolvidas por construção, restrições explícitas com margem, busca com vários pontos de partida, diagnóstico (Fase I) e verificador independente; (c) processo manual com esqueleto no CAD (prática das teses de UPC e TU Brno); (d) otimização com CAD no laço.
+- **Decision:** (b), com as diretrizes do usuário de 2026-11-17 (`docs/posicionador/registro-de-decisoes.md`, U1 a U6):
+  1. **Escopo (U1, U2):** o programa não dita tubos, não pede nós e não faz análise estrutural; diz onde os pontos podem ficar no espaço vazio do CAD, respeitando o regulamento (FSAE Rules 2027 V1.0: T.1.2 com altura livre, F.8.6.1, V.3.2.4) e as metas da equipe.
+  2. **Nó (U3):** preferência, nunca restrição dura; a distância ao nó sai no relatório.
+  3. **Pontos posicionados:** `PUSH_OUT` (só na bandeja inferior, usuário 2026-11-17), `PUSH_IN`, `ROCKER_AXIS_A/B`, `ROCKER_SPRING`, `SPRING_CHASSIS`; bandejas, tirante e roda fixos (v10).
+  4. **Ordem (U4, U5):** fase 1 = validar a cinemática e corrigir o avaliador (E0), leitor de STEP, obstáculos, regulamento e mapa de espaço livre (E1), construção, busca, diagnóstico e varredura com duas resoluções (E2); fase 2 = verificador completo (tolerância de fabricação, geometria exata, mutação); fase 3 = add-in do Fusion. A entrada da fase 1 é `.step`.
+  5. **Local (U6):** código no Sistema_DDS (`python/posicionador/`, `tests/`, `tools/`), sem integração com a planilha.
+  6. **Cinemática:** `kinematics_model.Corner` do repositório, depois de comparado com o `kinlib` do script na v20; o `kinlib` não entra no repositório (só as curvas dele, como referência congelada). A REFERENCE continua o OptimumKinematics (EDR-004).
+  7. **Leitura do STEP:** OpenCascade (`cadquery-ocp`) como dependência opcional; sem ele, os testes que leem STEP saem NÃO EXECUTÁVEL (código 3), que nunca conta como PASS.
+- **Rationale:** Os testes de amostragem mostram que o vazio vem da formulação e do CAD, não do algoritmo; resolver metas por construção e tratar restrições como desigualdades com margem atacam a causa. Separar quem gera de quem aprova (gerador × verificador) é o ponto mais votado no conselho. Nenhuma equipe de topo publica método de empacotamento; as que publicaram (UPC, TU Brno, FEUP, Manresa) fazem colisão como checagem posterior e relatam o mesmo sintoma de restrições demais. A proposta vai além delas em colisão, regulamento e diagnóstico (inferência, confiança média).
+- **Evidence:** `docs/posicionador/pesquisa/` (relatório da geometria do STEP, literatura, regulamento, ferramentas, API do Fusion, comparação com equipes); `docs/posicionador/conselho/SINTESE.md` (Borda com e sem voto próprio); números conferidos pelo assistente: folga ao aro no segmento real 81,5 mm (−30 mm de cremalheira: 44,8 mm); citações conferidas no texto baixado de Peixoto 2026 (eq. 7.1), Urban 2020 e Ventura Lecha 2025 (p. 58).
+- **Assumptions:** Valores da v10 e da v20 são dados do T11 vindos do script do Murilo (PROVISIONAL). Camber e toe estáticos nulos e solo em Z = 0 são hipóteses herdadas do `kinlib`. O aro de 13" (raio interno 158 mm, largura 200 mm) é hipótese do TX até o STEP trazer `RODA_`. Limites da equipe (MR 1,40, variação ≤ 4 %, curso do DNM 61 mm, folgas) ficam em configuração com procedência, "a confirmar" quando não tiverem fonte.
+- **Consequences:** Novo pacote `python/posicionador/`, ferramenta `tools/posicionar_atuacao.py`, testes TC-POS-; documento de exportação do CAD para a equipe. Nada muda na planilha nem nos módulos existentes (só importados).
+- **Affected_Artifacts:** `python/posicionador/`; `tools/posicionar_atuacao.py`; `tools/rodar_testes.py`; `data/posicionador/`; `pyproject.toml` (grupo opcional); `docs/posicionador/`; `docs/superpowers/specs/2026-11-17-posicionador-atuacao-design.md`; `docs/superpowers/plans/2026-11-17-posicionador-fase1.md`; `CLAUDE.md`.
+- **Affected_Tests:** TC-POS-001 em diante (definidos no plano).
+- **Dependencies:** EDR-002, EDR-004, EDR-043.
+- **Approval_Conditions:** Comparação `Corner` × `kinlib` na v20 dentro da tolerância do plano antes de usar o `Corner` na busca; comparação com o OptimumKinematics quando a equipe puder rodá-la.
+- **Reopening_Criteria:** Divergência `Corner` × `kinlib` ou × OptimumKinematics acima da tolerância; o STEP não preservar nomes ou esferas (passa a exportação por API do Fusion); a equipe mudar o conceito do amortecedor; regulamento 2027 V2 ou adendo da SAE Brasil mudar T.1.2, F.8.6.1 ou V.3.2.4.
+- **Related_Decisions:** EDR-002, EDR-004, EDR-008, EDR-043.
+- **Source_Conversation_or_Document:** Conversa de 2026-11-17 (avaliação do script, conselho, comparação com equipes, diretrizes U1 a U6, "Comece", "Autorizado", "Teste só na inferior por enquanto"); `docs/posicionador/`.
+
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1853,6 +1882,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-070 | — | excel/FSAE_EV_Suspension_Fase1_V4_4.xlsx; python/reescrita_nomes.py; python/nomes_v4_4.py; python/gerar_v4_4.py; python/viva.py; data/nomes_V4_4.csv; tools/comparar_planilhas.py; tools/rodar_testes.py; docs/registro-de-versoes-V4_4.md; docs/registro-de-versoes-V4_4-celulas.md; CLAUDE.md. | TC-WB44-001..006, mutação da planilha V4.4 (4) |
 | EDR-071 | — | python/tire_pressure.py; python/comparacao_pressao.py; python/tire_model_static.py; tools/relatorio_pressao.py; tools/rodar_testes.py. | TC-TIRE-011 a TC-TIRE-023 (tests/test_tire_pressure.py) |
 | EDR-075 | — | python/caso_pneu1.py; python/sensibilidade_pneu.py; tools/relatorio_pneu1.py; tools/capturar_caso_pneu1.py; data/casos/caso_pneu1_demonstrativo.json; docs/pneu/sensibilidade-e-arrasto.md; CLAUDE.md. | TC-SEN-001 a 008, 010 a 022 e 012b (tests/test_sensibilidade_pneu.py); TC-SEN-009 (tests/test_caso_pneu1_equivalencia.py) |
+| EDR-076 | — | python/posicionador/; tools/posicionar_atuacao.py; tools/rodar_testes.py; data/posicionador/; pyproject.toml; docs/posicionador/; CLAUDE.md. | TC-POS-001 em diante (plano da fase 1) |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 
