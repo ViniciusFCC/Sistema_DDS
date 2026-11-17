@@ -215,7 +215,9 @@ disponível (figuras opcionais), testes em script com `check()`.
     `margem_curso_amortecedor_m`, `x_face_traseira_aip_m`, `x_ini_t12_m`, `x_fim_t12_m`: `A_CONFIRMAR` com `valor: null`;
     `x_max_olhal_m` 0,400 e `caixa_busca_pivo_m` com X ∈ [−0,150; 0,150] (`META`, limites |Pv_x| ≤ 150 mm e C_x ≤ 400 mm do
     script) e Y, Z `null` (derivados da caixa envolvente das peças `CHASSI`/`FIXO` do lado esquerdo no STEP; sem STEP, a
-    ferramenta exige `--caixa`).
+    ferramenta exige `--caixa`); `transformacao_step_m` (`HIPOTESE`: translação (−0,942; 0; +0,0774) m, sem rotação, ajustada
+    no lado reto do FH com erro ≤ 0,55 mm, `docs/posicionador/pesquisa/relatorio-geo.md`), usada só quando o STEP não traz as
+    esferas `REF_` (caso do `chassi.step` atual); com as esferas, elas mandam.
   - `mecanismo.Variaveis(pivo_m: ndarray 3, az_rad, el_rad, r1_m, phi_b_rad)`;
     `mecanismo.construir(hs_v10, v: Variaveis, cfg, r2_m: float|None = None) -> Construcao(hardpoints: HardpointSet (v10 +
     grupo pushrod), r2_m, motivo: str|None)` (com `r2_m` dado, não resolve o MR): regra do plano e do push rod do script (plano contém a junta `LCA_OUT`, o pivô e a direção do
@@ -260,7 +262,8 @@ disponível (figuras opcionais), testes em script com `check()`.
     `curvas_kinlib_v20.csv` em todos os 401 pontos com erro < 1e-5 m. Se falhar, PARAR e reportar (critério de aprovação do
     EDR-076): não seguir com a busca.
   - TC-POS-061: avaliação convergida da v20 (`cena_sem_cad`): variação de MR entre 0,060 e 0,062 → `VIOLADA`; folga ao aro no
-    segmento real ≥ 0,081 m (relatório: 81,5 mm); veredito `INVIAVEL`.
+    segmento real entre 0,079 e 0,0825 m (relatório: 81,5 mm com o raio de 7,94 mm do kinlib; aqui o raio é R_PROD = 8 mm e a
+    amostragem desconta passo/2); veredito `INVIAVEL`.
   - TC-POS-062: `avaliar` com n = 25 e n = 50 na v20 dá os mesmos estados em todas as restrições, exceto a variação de MR,
     cujo valor converge (|v50 − v400| < |v25 − v400|).
   - TC-POS-063 (Review Focus 3): construção com pivô a 2 m do carro (push rod que não fecha) → `INVIAVEL` com motivo que
