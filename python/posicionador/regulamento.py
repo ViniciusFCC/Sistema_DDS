@@ -57,8 +57,8 @@ def _amostras_gabarito(res=RES_AMOSTRA_M):
     return np.vstack(pts)
 
 
-def _coluna_livre(obstaculos, x, zs, y_centro, amostras):
-    """Para cada z de zs, True se o gabarito (base em z, plano X = x) não toca nenhum obstáculo (sdf > 0 em toda amostra)."""
+def _coluna_livre(obstaculos, x, zs, y_centro, amostras, tol):
+    """Para cada z de zs, True se o gabarito (base em z, plano X = x) não toca nenhum obstáculo (sdf > tol em toda amostra)."""
     n = len(amostras)
     livre = np.ones(len(zs), bool)
     for k0 in range(0, len(zs), 64):   # blocos para limitar a memória
@@ -70,7 +70,7 @@ def _coluna_livre(obstaculos, x, zs, y_centro, amostras):
         P = P.reshape(-1, 3)
         ocupado = np.zeros(len(P), bool)
         for ob in obstaculos:
-            ocupado |= np.asarray(ob.sdf(P)) <= 0.0
+            ocupado |= np.asarray(ob.sdf(P)) <= tol
         livre[k0:k0 + 64] = ~ocupado.reshape(len(zb), n).any(axis=1)
     return livre
 
@@ -82,6 +82,8 @@ def trajetoria_t12(obstaculos, x_ini, x_fim, z_min, z_max, passo_x=0.01, passo_z
     (sdf <= 0 em alguma amostra do contorno ou do interior). Existe trajetória se há caminho 4-conexo de células livres da
     coluna x_ini à coluna x_fim; subir ou descer em z numa coluna é passar por células livres dela (T.1.2.2c: o gabarito
     pode ser movido na vertical). `caminho_z` traz um z por coluna x, o primeiro em que o caminho entra na coluna.
+    O teste é CONSERVADOR: ocupa a célula se alguma amostra tem sdf <= sqrt((RES*raiz(2)/2)^2 + (passo_x/2)^2), ~6,1 mm com
+    RES 5 mm e passo_x 10 mm; pode bloquear a até ~6 mm de um obstáculo, mas não deixa passar obstáculo fino entre amostras.
     `x_ini` ou `x_fim` None (posição da coluna de direção/pedal a confirmar) -> livre None, NÃO VERIFICÁVEL.
     """
     if x_ini is None or x_fim is None:
@@ -91,7 +93,10 @@ def trajetoria_t12(obstaculos, x_ini, x_fim, z_min, z_max, passo_x=0.01, passo_z
     xs = np.linspace(x_ini, x_fim, nx)
     zs = np.linspace(z_min, z_max, max(nz, 1))
     am = _amostras_gabarito()
-    livre = np.array([_coluna_livre(obstaculos, x, zs, y_centro, am) for x in xs])   # (nx, nz)
+    # a sdf é 1-Lipschitz: tol cobre o ponto mais distante de uma amostra em Y/Z (meia diagonal da célula de RES) e a
+    # discretização em x (meio passo_x), então obstáculo fino entre amostras ou entre colunas não passa
+    tol = float(np.hypot(RES_AMOSTRA_M * np.sqrt(2) / 2, passo_x / 2))
+    livre = np.array([_coluna_livre(obstaculos, x, zs, y_centro, am, tol) for x in xs])   # (nx, nz)
     pai = {}
     fila = deque()
     for j in np.flatnonzero(livre[0]):

@@ -42,9 +42,9 @@ args = dict(x_ini=0.0, x_fim=1.0, z_min=0.0, z_max=0.6)
 r0 = trajetoria_t12([], **args)
 # bloqueia toda a faixa de z em x = 0,5 (SINTÉTICO)
 r1 = trajetoria_t12([caixa(0.49, 0.51, -1, 1, -1, 2)], **args)
-# metade de baixo bloqueada em x 0,2-0,4 e metade de cima em x 0,6-0,8 (SINTÉTICO): sobe-e-desce, sem sobreposição em x
-bai = caixa(0.2, 0.4, -1, 1, 0.0, 0.45)
-alt_ = caixa(0.6, 0.8, -1, 1, 0.35, 2.0)
+# metade de baixo (até z 0,40) bloqueada em x 0,2-0,4 e a de cima (de z 0,40) em x 0,6-0,8 (SINTÉTICO): sobe-e-desce, sem sobreposição em x
+bai = caixa(0.2, 0.4, -1, 1, 0.0, 0.40)
+alt_ = caixa(0.6, 0.8, -1, 1, 0.40, 2.0)
 r2 = trajetoria_t12([bai, alt_], **args)
 zs = r2.caminho_z
 ok_alt = (r2.livre is True and len(zs) > 0 and max(zs) - min(zs) > 0.05)
@@ -67,6 +67,13 @@ fn = limite_aip(None)
 check("TC-POS-033 limite da AIP: folga em X (F.8.6.1)",
       abs(a - 0.01) < 1e-12 and abs(b + 0.01) < 1e-12 and np.allclose(f(np.array([[0.48, 0, 0], [0.50, 0, 0]])), [0.01, -0.01])
       and fn is None, f"atrás={a}, à frente={b}, None={fn} (None = NÃO VERIFICÁVEL)")
+
+# --- TC-POS-034 ---
+# SINTÉTICO: obstáculos finos que caíam entre colunas/amostras e davam livre=True indevido
+fina_x = trajetoria_t12([caixa(0.502, 0.506, -1, 1, -1, 2)], **args)    # parede de 4 mm entre as colunas 0,50 e 0,51
+fina_y = trajetoria_t12([caixa(-1, 2, 0.0012, 0.0042, -1, 2)], **args)  # barra de 3 mm em y, entre amostras de 5 mm
+check("TC-POS-034 obstáculo fino entre colunas ou amostras bloqueia (conservador)",
+      fina_x.livre is False and fina_y.livre is False, f"parede 4 mm em x={fina_x.livre}, barra 3 mm em y={fina_y.livre}")
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")
