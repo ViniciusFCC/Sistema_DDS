@@ -110,6 +110,12 @@
       "origem": "MARGEM_EQUIPE",
       "fonte": "t11_atuacao.py (Murilo), bloco CONFIGURAÇÃO, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: R_PROD = 8 mm (raio do envelope do push rod)"
     },
+    "r_perna_bandeja_m": {
+      "valor": 0.008,
+      "unidade": "m",
+      "origem": "MARGEM_EQUIPE",
+      "fonte": "t11_atuacao.py (Murilo), avaliar(): `segseg(...) - 16.` = 8 mm do push rod + 8 mm da perna; sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5 (raio do envelope das pernas das bandejas)"
+    },
     "folga_gabarito_m": {
       "valor": 0.01,
       "unidade": "m",
