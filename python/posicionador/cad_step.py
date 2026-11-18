@@ -52,6 +52,7 @@ _R_TUBO_MIN_MM = 9.0         # cilindro convexo com R >= 9 mm é parede externa 
 _TOL_R_MM = 0.02             # tolerância de raio para juntar faces do mesmo tubo
 _SEP_FACES_MM = (8.0, 60.0)  # separação de faces opostas que formam um tubo quadrado
 _PASSO_MEMBRO_MM = 2.0       # passo do teste "dentro do sólido" ao longo do eixo de um tubo quadrado
+_TOL_PONTA_MM = 1e-3         # precisão da bisseção das pontas dos membros de tubo quadrado
 _DEFLEXAO_MM = 0.05          # deflexão linear da malha (OBB, extensão das caixas e conferência de cobertura)
 _MEIA_MIN_MM = 0.5           # meia-dimensão mínima de uma OBB degenerada (decisão do controlador)
 _TOL_COBERTURA_M = 1e-4      # ponto da malha fora da união dos primitivos por mais que isto → OBB de reserva
@@ -724,6 +725,17 @@ def _membros_planos(tris, planos, vtx):
             desl = np.array([a * A["n"], -a * A["n"], b * B["n"], -b * B["n"]])
             P = (p0 + tt[:, None] * d)[:, None, :] + desl[None, :, :]
             ok = list(_dentro_malha(tris, P.reshape(-1, 3)).reshape(len(tt), 4).all(axis=1))
+
+            def ponta(t_in, t_out):
+                """Bisseção entre um parâmetro dentro (4 pontos de parede no sólido) e um fora, até
+                `_TOL_PONTA_MM`: a ponta do eixo não depende do passo da grade."""
+                while abs(t_out - t_in) > _TOL_PONTA_MM:
+                    tm = 0.5 * (t_in + t_out)
+                    if _dentro_malha(tris, p0 + tm * d + desl).all():
+                        t_in = tm
+                    else:
+                        t_out = tm
+                return t_in
             k = 0
             while k < len(ok):
                 if not ok[k]:
@@ -732,8 +744,10 @@ def _membros_planos(tris, planos, vtx):
                 j = k
                 while j + 1 < len(ok) and ok[j + 1]:
                     j += 1
-                w, L = max(A["w"], B["w"]), tt[j] - tt[k]
-                m = dict(p0=p0 + tt[k] * d, p1=p0 + tt[j] * d, d=d, L=L, secao=(A["w"], B["w"]), n1=A["n"], n2=B["n"])
+                t0 = ponta(tt[k], tt[k] - _PASSO_MEMBRO_MM)
+                t1 = ponta(tt[j], tt[j] + _PASSO_MEMBRO_MM)
+                w, L = max(A["w"], B["w"]), t1 - t0
+                m = dict(p0=p0 + t0 * d, p1=p0 + t1 * d, d=d, L=L, secao=(A["w"], B["w"]), n1=A["n"], n2=B["n"])
                 if L > w:
                     membros.append(m)
                 elif L > 0.5 * w and not (k == 0 and j == len(ok) - 1):

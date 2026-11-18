@@ -161,26 +161,40 @@ gravar_step_sintetico(STEP_SINT)
 gravar_step_sintetico(STEP_UNID, ref_x_local_mm=(100000.0, 0.0, 0.0))     # REF_X a 100 m: unidade errada simulada
 
 # --- TC-POS-020 ----------------------------------------------------------------------------------------------------
+def _assimetria(tubos):
+    """Para cada trecho do eixo: a menor distância (m) entre o seu espelho em Y e outro trecho (pior ponta)."""
+    segs = [(t.nome, a, b) for t in tubos for a, b in zip(t.pontos_eixo_m[:-1], t.pontos_eixo_m[1:])
+            if np.linalg.norm(b - a) > 1e-4]
+    S = np.array([[a, b] for _, a, b in segs])
+    esp = np.array([1.0, -1.0, 1.0])
+    out = []
+    for nome, a, b in segs:
+        ma, mb = a * esp, b * esp
+        d1 = np.maximum(np.linalg.norm(S[:, 0] - ma, axis=1), np.linalg.norm(S[:, 1] - mb, axis=1))
+        d2 = np.maximum(np.linalg.norm(S[:, 0] - mb, axis=1), np.linalg.norm(S[:, 1] - ma, axis=1))
+        out.append((float(np.minimum(d1, d2).min()), nome))
+    return out, len(segs)
+
+
+# o relatório da geometria (§2) registra uma única exceção: a diagonal do FBH (FBH:1/Body7), que não tem par.
+# A simetria tem de valer sem depender do passo da amostragem dos tubos quadrados: roda com 2,0 mm (padrão) e 1,7 mm.
 real = cs.ler_step(STEP_REAL)
 tubos, nos = cs.tubos_e_nos(real, tol_m=0.005)
-n_tri = sum(n.triangulado for n in nos)
-segs = [(t.nome, a, b) for t in tubos for a, b in zip(t.pontos_eixo_m[:-1], t.pontos_eixo_m[1:])
-        if np.linalg.norm(b - a) > 1e-4]
-S = np.array([[a, b] for _, a, b in segs])
-esp = np.array([1.0, -1.0, 1.0])
-assim = []
-for nome, a, b in segs:
-    ma, mb = a * esp, b * esp
-    d1 = np.maximum(np.linalg.norm(S[:, 0] - ma, axis=1), np.linalg.norm(S[:, 1] - mb, axis=1))
-    d2 = np.maximum(np.linalg.norm(S[:, 0] - mb, axis=1), np.linalg.norm(S[:, 1] - ma, axis=1))
-    assim.append((float(np.minimum(d1, d2).min()), nome))
-# o relatório da geometria (§2) registra uma única exceção: a diagonal do FBH (FBH:1/Body7), que não tem par
-sem_par = sorted({n for d, n in assim if d > 0.5e-3 + 1e-12})
-d_max = max(d for d, n in assim if n != "FBH:1/Body7")
+ok20, det20, passo_padrao = True, [], cs._PASSO_MEMBRO_MM
+for passo in (passo_padrao, 1.7):
+    cs._PASSO_MEMBRO_MM = passo
+    m_ = real if passo == passo_padrao else cs.ler_step(STEP_REAL)
+    tb_, nos_ = (tubos, nos) if passo == passo_padrao else cs.tubos_e_nos(m_, tol_m=0.005)
+    assim, n_segs = _assimetria(tb_)
+    sem_par = sorted({n for d, n in assim if d > 0.5e-3})
+    d_max = max(d for d, n in assim if n != "FBH:1/Body7")
+    n_tri = sum(n.triangulado for n in nos_)
+    ok20 &= len(m_.pecas) == 31 and len(nos_) == 28 and n_tri == 14 and sem_par == ["FBH:1/Body7"]
+    det20.append(f"passo {passo} mm: corpos={len(m_.pecas)}; nós={len(nos_)}; triangulados={n_tri}; tubos={len(tb_)}; "
+                 f"trechos={n_segs}; assimetria máx (exceto FBH:1/Body7)={d_max * 1000:.4f} mm; sem par={sem_par}")
+cs._PASSO_MEMBRO_MM = passo_padrao
 check("TC-POS-020 STEP real: 31 corpos, 28 nós com 14 triangulados (tol. 5 mm) e simetria em Y ≤ 0,5 mm",
-      len(real.pecas) == 31 and len(nos) == 28 and n_tri == 14 and sem_par == ["FBH:1/Body7"],
-      f"corpos={len(real.pecas)}; nós={len(nos)}; triangulados={n_tri}; tubos={len(tubos)}; trechos={len(segs)}; "
-      f"assimetria máx (exceto FBH:1/Body7)={d_max * 1000:.4f} mm; sem par={sem_par}")
+      ok20, " | ".join(det20))
 
 # --- TC-POS-021 ----------------------------------------------------------------------------------------------------
 sint = cs.ler_step(STEP_SINT)
