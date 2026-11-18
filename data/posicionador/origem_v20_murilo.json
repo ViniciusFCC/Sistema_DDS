@@ -1,0 +1,61 @@
+{
+  "arquivos": {
+    "t11_atuacao.py": "ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5",
+    "kinlib.py": "dc976bffc61150850feedb8cc56b82295a5b0368eb1ce2e8c791f6aab54f1628",
+    "geometria_T11.json": "0498ad401f2674c9104243c0b3d59796ccaeb5f99f0d771e6cfc5543fa65f748"
+  },
+  "x_semente": [
+    -57.0336,
+    290.2011,
+    475.9892,
+    9.7153,
+    -10.6612,
+    76.6575,
+    122.8196,
+    80.0017
+  ],
+  "config_do_script": {
+    "DROOP": 23.0,
+    "BUMP": 62.4,
+    "EYE": 210.0,
+    "STROKE": 61.0,
+    "MR_ALVO": 1.4,
+    "MR_VAR_MAX": 0.04,
+    "DJ": 35.0,
+    "ARM": "L",
+    "LADO_ROCKER": -1,
+    "BRACO_MIN": 55.0,
+    "BRACO_MAX": 80.0,
+    "GIRO_MAX": 60.0,
+    "AMORT_ANG_MAX": 30.0,
+    "FOLGA_ARO": 10.0,
+    "FOLGA_PERNAS": 5.0,
+    "FOLGA_PROD_AMORT": 5.0,
+    "DENTRO_MIN": 3.0,
+    "Z_GAB": 550.0,
+    "MEIA_LARG": 175.0,
+    "CHANFRO": 50.0,
+    "FOLGA_GAB": 10.0,
+    "R_MOLA": 25.0,
+    "R_JUNTA": 12.0,
+    "R_PIVO": 20.0,
+    "R_PROD": 8.0,
+    "R_TUBO": 12.7,
+    "DOFF": 42.0,
+    "FH0": [
+      -202.0,
+      287.0,
+      285.0
+    ],
+    "FH1": [
+      -202.0,
+      254.0,
+      561.0
+    ],
+    "ERRO_FH_MAX": 8.0,
+    "X_FBH": 490.0,
+    "X_FIM_GABARITO": 350.0
+  },
+  "unidades": "config_do_script nas unidades do script: comprimentos em mm, ângulos em graus (MR_ALVO e MR_VAR_MAX adimensionais; DENTRO_MIN em %; ARM e LADO_ROCKER são seletores); x_semente: [X, Y, Z do pivô do rocker em mm, azimute e elevação do amortecedor em graus, r1 em mm, ângulo entre braços em graus, r2 em mm]",
+  "data": "2026-11-17"
+}
