@@ -15,7 +15,7 @@ Nomes dos itens lidos pelas outras partes do posicionador (Config.valor(nome)):
 - motion ratio: `mr_alvo`, `mr_var_max` (MR [wheel/spring]);
 - mecanismo: `dj_m` (fixação do push rod a DJ da junta), `braco_min_m`, `braco_max_m`, `giro_max_rad`, `amort_ang_max_rad`;
 - folgas: `folga_aro_m`, `folga_pernas_m`, `folga_prod_amort_m`, `folga_gabarito_m`;
-- raios dos envelopes: `r_mola_m`, `r_junta_m`, `r_pivo_m`, `r_prod_m`;
+- raios dos envelopes: `r_mola_m`, `r_junta_m`, `r_pivo_m`, `r_prod_m`, `r_perna_bandeja_m`;
 - aro: `aro_r_int_m`, `aro_meia_largura_m`;
 - busca: `x_max_olhal_m`, `caixa_busca_pivo_m` ({"min_m": [x, y, z], "max_m": [x, y, z]}, com null no eixo que vem
   do STEP ou de --caixa);
