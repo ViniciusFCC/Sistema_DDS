@@ -215,6 +215,18 @@
       "unidade": "m",
       "origem": "A_CONFIRMAR",
       "fonte": "não informado para o T11: X de fim do trecho em que o gabarito T.1.2 vale, a confirmar com a equipe"
+    },
+    "z_min_t12_m": {
+      "valor": null,
+      "unidade": "m",
+      "origem": "A_CONFIRMAR",
+      "fonte": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 — a confirmar"
+    },
+    "z_max_t12_m": {
+      "valor": null,
+      "unidade": "m",
+      "origem": "A_CONFIRMAR",
+      "fonte": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 — a confirmar"
     }
   }
 }
