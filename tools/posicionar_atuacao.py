@@ -4,7 +4,7 @@ Ferramenta do posicionador da atuação dianteira (EDR-076, spec §6): busca can
 
 Uso (na raiz do repositório):
     uv run python -X utf8 tools/posicionar_atuacao.py --step ARQ.step --saida PASTA [--amostras N] [--semente S]
-        [--refinos R] [--caixa xmin,ymin,zmin,xmax,ymax,zmax] [--hardpoints CSV] [--config JSON]
+        [--refinos R] [--caixa=xmin,ymin,zmin,xmax,ymax,zmax] [--hardpoints CSV] [--config JSON]
     uv run python -X utf8 tools/posicionar_atuacao.py --avaliar-v20 --saida PASTA [--step ARQ.step]
 
 Saídas em PASTA:
@@ -17,15 +17,17 @@ Saídas em PASTA:
 - figuras (`curvas.png`, `mapa_espaco_livre.png`) só se o matplotlib existir.
 
 Referencial do STEP: com as esferas `REF_ORIGEM`, `REF_X` e `REF_Y` no STEP, elas mandam (`cad_step.referencial`); sem
-nenhuma esfera `REF_`, vale o item `transformacao_step_m` da configuração (HIPOTESE), e o relatório diz isso.
+nenhuma esfera `REF_`, vale o item `transformacao_step_m` da configuração (HIPOTESE), e o relatório diz isso; a folga aos
+fixos sai então com origem HIPOTESE. Esferas `HP_FL_<chave>` do STEP são comparadas com o CSV de hardpoints (aviso acima
+de 0,5 mm, `cad_step.conferir_hp`); a varredura usa o CSV.
 Caixa de busca do pivô (decisão R8 do controlador, HIPOTESE): X do item `caixa_busca_pivo_m`; Y e Z nulos no item vêm
 do envelope do chassi no STEP (caixa envolvente, no referencial do carro, dos pontos de amostra de TODOS os obstáculos
 fixos), lado esquerdo: Y ∈ [0, y_max], Z ∈ [max(0, z_min), z_max]. `--caixa` sobrepõe tudo; sem `--step`, a busca exige
 `--caixa` (o `--avaliar-v20` não). Sem `--step`, a cena tem só o aro (`varredura.cena_sem_cad`) e a
 ferramenta avisa.
 
-Códigos de saída: 0 = saídas gravadas (qualquer veredito); 2 = entrada inválida (arquivo, caixa, referencial, OCP ausente
-com --step). O progresso da busca vai para o stderr, no máximo a cada INTERVALO_PROGRESSO_S segundos.
+Códigos de saída: 0 = saídas gravadas (qualquer veredito); 2 = entrada inválida (arquivo, configuração com item obrigatório
+nulo, caixa com mín ≥ máx ou não finita, referencial, primitivo não finito no STEP, OCP ausente com --step). O progresso da busca vai para o stderr, no máximo a cada INTERVALO_PROGRESSO_S segundos.
 """
 import argparse
 import hashlib
@@ -84,7 +86,8 @@ def _rel(p):
 
 # ------------------------------------------------------------------ cena
 def cena_do_step(caminho, cfg):
-    """(cena, montagem, texto do referencial). Esferas REF_ mandam; sem nenhuma, a transformação da configuração."""
+    """(cena, montagem, texto do referencial, (R, t), esferas). Esferas REF_ mandam; sem nenhuma, a transformação da
+    configuração (e a cena marca o referencial como HIPOTESE)."""
     if not cs.OCP_DISPONIVEL:
         raise ErroEntrada("cadquery-ocp ausente: a leitura do STEP precisa do extra opcional (uv sync --extra cad)")
     log(f"lendo o STEP {caminho}")
@@ -96,15 +99,24 @@ def cena_do_step(caminho, cfg):
         except cs.ErroReferencial as e:
             raise ErroEntrada(f"esferas REF_ presentes no STEP, mas o referencial é inválido: {e}") from e
         texto = "esferas REF_ORIGEM, REF_X e REF_Y do STEP (cad_step.referencial)"
+        ref_hip = None
     else:
         it = cfg.item("transformacao_step_m")
-        R = np.asarray(it.valor["rotacao"], dtype=float)
-        t = np.asarray(it.valor["translacao_m"], dtype=float)
+        try:
+            R = np.asarray(it.valor["rotacao"], dtype=float).reshape(3, 3)
+            t = np.asarray(it.valor["translacao_m"], dtype=float).reshape(3)
+        except (TypeError, KeyError, ValueError) as e:
+            raise ErroEntrada(f"o STEP não tem esferas REF_ e o item `transformacao_step_m` não dá rotação 3×3 e "
+                              f"translação [3] ({it.origem}, valor {it.valor!r}): {e}") from e
         texto = (f"o STEP não tem esferas REF_: usada a transformação da configuração, item `transformacao_step_m` "
                  f"({it.origem}): rotação {R.tolist()}, translação {t.tolist()} m. Fonte: {it.fonte}")
+        ref_hip = f"{it.origem}: {it.fonte}"
     log("obstáculos fixos e nós do chassi")
-    cena = vr.cena_do_step(montagem, R, t, cfg)
-    return cena, montagem, texto
+    try:
+        cena = vr.cena_do_step(montagem, R, t, cfg, ref_hipotese=ref_hip)
+    except ValueError as e:
+        raise ErroEntrada(f"cena do STEP recusada: {e}") from e
+    return cena, montagem, texto, (R, t), esf
 
 
 def _segmento(a, b):
@@ -135,8 +147,22 @@ def caixa_envelope(fixos):
     return pts.min(axis=0), pts.max(axis=0), len(pts)
 
 
+def validar_caixa(lo, hi, origem):
+    """(mín[3], máx[3]) finitos com mín < máx em cada eixo; senão ErroEntrada (código 2) com a origem da caixa."""
+    lo, hi = np.asarray(lo, dtype=float), np.asarray(hi, dtype=float)
+    if lo.shape != (3,) or hi.shape != (3,) or not (np.all(np.isfinite(lo)) and np.all(np.isfinite(hi))):
+        raise ErroEntrada(f"caixa de busca do pivô ({origem}) inválida: esperado mín[3] e máx[3] finitos em m, veio "
+                          f"{lo.tolist()} a {hi.tolist()}")
+    ruins = [("X", "Y", "Z")[i] for i in range(3) if not lo[i] < hi[i]]
+    if ruins:
+        raise ErroEntrada(f"caixa de busca do pivô ({origem}) com mín ≥ máx em {', '.join(ruins)}: mín {lo.tolist()}, "
+                          f"máx {hi.tolist()} (a ordem do --caixa é xmin,ymin,zmin,xmax,ymax,zmax, em m)")
+    return lo, hi
+
+
 def caixa_de_busca(args, cfg, cena):
-    """((mín[3], máx[3]), texto da origem, origem) com origem ∈ {"LINHA_DE_COMANDO", item da configuração, "HIPOTESE"}."""
+    """((mín[3], máx[3]), texto da origem, origem) com origem ∈ {"LINHA_DE_COMANDO", item da configuração, "HIPOTESE"}.
+    A caixa devolvida sempre tem mín < máx e números finitos (`validar_caixa`)."""
     if args.caixa:
         try:
             v = [float(x) for x in args.caixa.split(",")]
@@ -144,13 +170,19 @@ def caixa_de_busca(args, cfg, cena):
             raise ErroEntrada(f"--caixa inválida ({args.caixa!r}): {e}") from e
         if len(v) != 6:
             raise ErroEntrada(f"--caixa precisa de 6 números (xmin,ymin,zmin,xmax,ymax,zmax em m); veio {len(v)}")
-        return (np.array(v[:3]), np.array(v[3:])), "da linha de comando (--caixa)", "LINHA_DE_COMANDO"
+        return validar_caixa(v[:3], v[3:], "--caixa"), "da linha de comando (--caixa)", "LINHA_DE_COMANDO"
     it = cfg.item("caixa_busca_pivo_m")
-    lo, hi = list(it.valor["min_m"]), list(it.valor["max_m"])
+    try:
+        lo, hi = list(it.valor["min_m"]), list(it.valor["max_m"])
+        if len(lo) != 3 or len(hi) != 3:
+            raise ValueError("min_m e max_m precisam de 3 valores")
+    except (TypeError, KeyError, ValueError) as e:
+        raise ErroEntrada(f"item `caixa_busca_pivo_m` ({it.origem}) sem min_m[3] e max_m[3] (valor {it.valor!r}): {e}; "
+                          "use --caixa") from e
     faltam = [i for i in range(3) if lo[i] is None or hi[i] is None]
     texto = f"item `caixa_busca_pivo_m` ({it.origem}): {it.fonte}"
     if not faltam:
-        return (np.array(lo, dtype=float), np.array(hi, dtype=float)), texto, it.origem
+        return validar_caixa(lo, hi, "caixa_busca_pivo_m"), texto, it.origem
     if args.step is None:
         raise ErroEntrada("sem --step, a busca exige --caixa xmin,ymin,zmin,xmax,ymax,zmax (m): a configuração não tem "
                           "Y nem Z da caixa de busca do pivô")
@@ -166,7 +198,7 @@ def caixa_de_busca(args, cfg, cena):
              f"todos os obstáculos fixos (envelope Y [{emin[1]:.4f}; {emax[1]:.4f}] m, Z [{emin[2]:.4f}; {emax[2]:.4f}] m), "
              f"lado esquerdo: Y ∈ [0, y_max], Z ∈ [max(0, z_min), z_max] (pontos no eixo das cápsulas e nas 12 arestas "
              f"das caixas, a cada {PASSO_AMOSTRA_M * 1e3:.0f} mm no máximo; o raio das cápsulas não entra)")
-    return (np.array(lo, dtype=float), np.array(hi, dtype=float)), texto, "HIPOTESE"
+    return validar_caixa(lo, hi, "derivada do envelope do chassi"), texto, "HIPOTESE"
 
 
 # ------------------------------------------------------------------ figuras
@@ -233,7 +265,8 @@ def argumentos(argv):
     ap.add_argument("--amostras", type=int, default=2000)
     ap.add_argument("--refinos", type=int, default=20)
     ap.add_argument("--semente", type=int, default=0)
-    ap.add_argument("--caixa", help="caixa de busca do pivô xmin,ymin,zmin,xmax,ymax,zmax (m)")
+    ap.add_argument("--caixa", help="caixa de busca do pivô xmin,ymin,zmin,xmax,ymax,zmax (m); com xmin negativo, use "
+                    "--caixa=xmin,... (o argparse lê \"-0.15,...\" como opção)")
     return ap.parse_args(argv)
 
 
@@ -264,7 +297,7 @@ def principal(argv=None):
            "config": _rel(args.config), "config_sha256": sha256(args.config), "hardpoints": _rel(args.hardpoints),
            "hardpoints_sha256": sha256(args.hardpoints), "semente": args.semente, "avisos": [], "avisos_step": []}
     if args.step:
-        cena, montagem, ref = cena_do_step(args.step, cfg)
+        cena, montagem, ref, (R_step, t_step), esf_step = cena_do_step(args.step, cfg)
         ctx.update(step=_rel(args.step), step_sha256=sha256(args.step), referencial=ref,
                    avisos_step=list(montagem.avisos))
     else:
@@ -281,10 +314,19 @@ def principal(argv=None):
              "a_confirmar": {n: cfg.item(n).fonte for n in cfg.a_confirmar()}, "avisos_step": ctx["avisos_step"],
              "nao_modelado": ctx["nao_modelado"], "avisos": ctx["avisos"]}
 
+    hs20 = None
     if args.avaliar_v20:
         if not os.path.isfile(args.hardpoints_v20):
             raise ErroEntrada(f"--hardpoints-v20: arquivo {args.hardpoints_v20} não encontrado")
         hs20 = hp.load_hardpoints(args.hardpoints_v20, meta_de(args.hardpoints_v20))
+    if args.step:
+        av_hp, comp_hp = cs.conferir_hp(esf_step, R_step, t_step, hs20 if hs20 is not None else hs_v10)
+        ctx["avisos"].extend(av_hp)
+        dados["esferas_hp"] = [{"point_id": k, "distancia_m": d} for k, d in comp_hp]
+        for a in av_hp:
+            log(a)
+
+    if args.avaliar_v20:
         log("avaliando a v20 (varredura convergida)")
         c = mec.Construcao(hs20, None, None)
         cand = bu.Candidato(None, c, bu.avaliar_convergido(c, cena, cfg), origem="v20")
@@ -298,8 +340,13 @@ def principal(argv=None):
         ctx.update(caixa=caixa, caixa_origem=origem_caixa)
         log(f"busca: {args.amostras} amostras, {args.refinos} refinos, semente {args.semente}; caixa {caixa[0].round(4)}"
             f" a {caixa[1].round(4)} m")
-        res = bu.buscar(hs_v10, cena, cfg, caixa, n_amostras=args.amostras, n_refinos=args.refinos,
-                        semente=args.semente, progresso=progresso_fn())
+        try:
+            res = bu.buscar(hs_v10, cena, cfg, caixa, n_amostras=args.amostras, n_refinos=args.refinos,
+                            semente=args.semente, progresso=progresso_fn())
+        except ValueError as e:
+            if str(e).startswith("caixa_m"):
+                raise ErroEntrada(f"caixa de busca do pivô inválida: {e}") from e
+            raise
         ctx["resultado"] = res
         resumo, cands_json = [], []
         for k, c in enumerate(res.candidatos, start=1):

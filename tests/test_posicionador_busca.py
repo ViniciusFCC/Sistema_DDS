@@ -1,5 +1,5 @@
 """
-Testes do mapa de espaço livre e da busca com diagnóstico do posicionador (EDR-076, TC-POS-070 a 073).
+Testes do mapa de espaço livre e da busca com diagnóstico do posicionador (EDR-076, TC-POS-070 a 076).
 TC-POS-070: cena SINTÉTICA sem obstáculos e metas folgadas (MR_VAR_MAX 0,5; curso do amortecedor livre) → pelo menos um
             candidato VIAVEL ou CONDICIONAL, e todos os devolvidos foram reavaliados por `avaliar_convergido`.
 TC-POS-071: metas impossíveis (MR_VAR_MAX 0,0001) → nenhum viável e `fase1` cita a variação de MR entre os conflitos.
@@ -8,6 +8,12 @@ TC-POS-072: `mapa` numa cena com uma `Capsula` SINTÉTICA: a folga de um ponto d
 TC-POS-073: mesma `semente` → mesma lista de candidatos (determinismo).
 TC-POS-074: na ordem dos viáveis (e no corte dos finalistas), VIAVEL sempre vem antes de CONDICIONAL, mesmo com variação de
             MR maior; dentro do mesmo veredito vale a ordem de `chave_ordem` (lista SINTÉTICA, sem busca).
+TC-POS-075: regressão da propriedade de segurança na busca (revisão final, I4): com uma esfera SINTÉTICA sobre parte da
+            caixa e metas folgadas, a busca devolve ao menos um candidato e todo candidato devolvido tem folga aos fixos
+            ≥ 0 (estado OK) nos três corpos, e o pivô fora da esfera.
+TC-POS-076: Fase I com viáveis rápidos que não convergem (M4): com `avaliar_convergido` trocado no teste por um que devolve
+            INVIAVEL (SINTÉTICO), a busca não devolve candidato e o motivo da Fase I diz que houve viáveis na avaliação
+            rápida e que nenhum finalista continuou viável.
 Dados: v10 de data/posicionador/ e a configuração do T11; as configurações alteradas, as caixas de busca, as cenas e os
 nós são SINTÉTICOS de teste, não do carro (a caixa de busca do T11 não tem Y nem Z sem o STEP).
 Roda como script: uv run python -X utf8 tests/test_posicionador_busca.py
@@ -26,7 +32,7 @@ from posicionador import config as pc
 from posicionador import espaco_livre as el
 from posicionador import varredura as vr
 from posicionador.cad_step import No
-from posicionador.geometria import Capsula
+from posicionador.geometria import Capsula, Esfera
 
 RAIZ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DADOS = os.path.join(RAIZ, "data", "posicionador")
@@ -176,6 +182,43 @@ try:
 except Exception as e:  # noqa: BLE001
     ok74, det74 = False, f"{type(e).__name__}: {e}"
 check("TC-POS-074 VIAVEL antes de CONDICIONAL na ordem e no corte dos finalistas (lista SINTÉTICA)", ok74, det74)
+
+# --- TC-POS-075 ---------------------------------------------------------------------------------------------------
+t0 = time.perf_counter()
+bola = Esfera(np.array([-0.10, 0.29, 0.475]), 0.06)          # SINTÉTICA: ocupa parte da CAIXA (X de −0,15 a −0,04)
+cena75 = vr.Cena(fixos=[bola], nos=[], aro=cena70.aro, regras=dict(cena70.regras))
+res75 = bu.buscar(hs_v10, cena75, cfg70, CAIXA, n_amostras=60, n_refinos=2, semente=1, max_aval_refino=25)
+fol75 = [[c.avaliacao.restricao(f"folga aos fixos: {k}") for k in vr.CORPOS] for c in res75.candidatos]
+ruins75 = [i for i, fs in enumerate(fol75) if not all(r is not None and r.estado == "OK" and r.valor >= 0 for r in fs)]
+dentro75 = [i for i, c in enumerate(res75.candidatos) if np.linalg.norm(c.variaveis.pivo_m - bola.c) < bola.r]
+ok75 = len(res75.candidatos) >= 1 and not ruins75 and not dentro75
+check("TC-POS-075 busca com esfera SINTÉTICA na caixa: todo candidato com folga aos fixos ≥ 0", ok75,
+      f"{len(res75.candidatos)} candidatos; com folga aos fixos não OK: {ruins75}; pivô dentro da esfera: {dentro75}; "
+      f"menor folga aos fixos: {min((r.valor for fs in fol75 for r in fs if r is not None), default=None)}; "
+      f"{time.perf_counter() - t0:.1f} s")
+
+# --- TC-POS-076 ---------------------------------------------------------------------------------------------------
+t0 = time.perf_counter()
+original = bu.vr.avaliar_convergido
+
+
+def convergida_inviavel(construcao, cena, cfg, n0=25):
+    av = original(construcao, cena, cfg, n0)
+    av.veredito, av.motivo = "INVIAVEL", "SINTÉTICO de teste (TC-POS-076): reavaliação forçada a INVIAVEL"
+    return av
+
+
+bu.vr.avaliar_convergido = convergida_inviavel
+try:
+    res76 = bu.buscar(hs_v10, cena70, cfg70, CAIXA, n_amostras=30, n_refinos=0, semente=7, n_finalistas=3)
+finally:
+    bu.vr.avaliar_convergido = original
+m76 = res76.fase1.motivo if res76.fase1 is not None else ""
+ok76 = (not res76.candidatos and res76.estatisticas.get("n_viaveis_rapidos", 0) >= 1 and "avaliação rápida" in m76
+        and f"nenhum dos {res76.estatisticas.get('n_finalistas')} finalistas" in m76)
+check("TC-POS-076 viáveis rápidos sem finalista convergido: a Fase I diz isso", ok76,
+      f"viáveis rápidos {res76.estatisticas.get('n_viaveis_rapidos')}; candidatos {len(res76.candidatos)}; motivo: "
+      f"{m76[:220]!r}; {time.perf_counter() - t0:.1f} s")
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")

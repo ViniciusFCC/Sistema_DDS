@@ -1,5 +1,5 @@
 """
-Testes do leitor de STEP do posicionador (EDR-076, TC-POS-020 a 024).
+Testes do leitor de STEP do posicionador (EDR-076, TC-POS-020 a 025).
 TC-POS-020: STEP real do chassi (data/cad/T11_chassi_2026-11-17.step): 31 corpos, 28 nós com 14 triangulados
             (tolerância de 5 mm) e simetria em Y ≤ 0,5 mm (números do docs/posicionador/pesquisa/relatorio-geo.md).
 TC-POS-021: STEP SINTÉTICO gerado aqui com o OCP (XCAF, mm, nomes preservados): categorias, centros das esferas e
@@ -9,18 +9,26 @@ TC-POS-023: STEP SINTÉTICO com REF_X a 100 m (unidade errada simulada): ErroRef
 TC-POS-024: folga da Caixa do tubo quadrado SINTÉTICO nunca supera a distância exata do OCP em mais de 0,2 mm; a
             Capsula do tubo redondo SINTÉTICO bate com o OCP em 0,01 mm; no STEP real, os primitivos de todos os
             corpos cobrem a malha (nenhum aviso de cobertura).
+TC-POS-025: revisão final (I7, I2, I5): `conferir_hp` compara a esfera HP_FL_LCA_OUT do STEP SINTÉTICO com o CSV (sem aviso
+            com o ponto no mesmo lugar; aviso a 1 mm, acima da tolerância de 0,5 mm; aviso se o ponto não está no CSV);
+            `varredura.cena_do_step` numa montagem SINTÉTICA com uma peça RODA_FE marca `pecas_moveis`, guarda o
+            `ref_hipotese` e põe a lista fixa do que não está modelado.
 Todas as peças, posições e dimensões dos STEPs gerados aqui são SINTÉTICAS de teste (não do carro); os STEPs vão para
 uma pasta temporária, nunca para o repositório.
 Precisa do extra opcional "cad" (`uv sync --extra cad`); sem ele, sai NÃO EXECUTÁVEL (código 3).
 Roda como script: uv run python -X utf8 tests/test_posicionador_cad.py
 """
+import dataclasses
 import math
 import os
 import tempfile
 
 import numpy as np
 
+import hardpoints as hp
 from posicionador import cad_step as cs
+from posicionador import config as pc
+from posicionador import varredura as vr
 from posicionador.geometria import Caixa, Capsula
 
 if not cs.OCP_DISPONIVEL:
@@ -286,6 +294,36 @@ check("TC-POS-024 Caixa do tubo quadrado ≤ distância do OCP + 0,2 mm; Capsula
       f"caixas={len(caixas_q)}; cápsulas={len(caps)}; quadrado: (caixa − OCP) de {min(dif_q) * 1000:.4f} a "
       f"{max(dif_q) * 1000:.4f} mm, violações={viol_q}; redondo: |cápsula − OCP| máx="
       f"{max(abs(d) for d in dif_r) * 1000:.5f} mm; STEP real: {len(obs_real)} primitivos, avisos de cobertura={av_cob}")
+
+# --- TC-POS-025 ----------------------------------------------------------------------------------------------------
+DADOS = os.path.join(RAIZ, "data", "posicionador")
+hs10 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v10.csv"), os.path.join(DADOS, "hardpoints_T11_v10.meta.json"))
+pos_hp = R @ esf["HP_FL_LCA_OUT"] + t                         # posição da esfera HP_ no referencial do carro
+
+
+def conjunto_com_lca_out(xyz):
+    """Cópia SINTÉTICA da v10 com FL_LCA_OUT em xyz."""
+    linhas = [[pid, repr(float(q[0])), repr(float(q[1])), repr(float(q[2])), p.component, "SYNTHETIC"]
+              for pid, p in hs10.points.items() for q in [xyz if pid == "FL_LCA_OUT" else p.xyz]]
+    return hp.build_hardpoint_set(linhas, dict(hs10.meta, geometry_rev="SINTÉTICO (TC-POS-025)"))
+
+
+av_igual, cmp_igual = cs.conferir_hp(esf, R, t, conjunto_com_lca_out(pos_hp))
+av_1mm, cmp_1mm = cs.conferir_hp(esf, R, t, conjunto_com_lca_out(pos_hp + np.array([0.001, 0.0, 0.0])))
+esf_sem = dict(esf, HP_FL_PONTO_SINTETICO=esf["HP_FL_LCA_OUT"])     # SINTÉTICA: esfera sem ponto no CSV
+av_sem, _ = cs.conferir_hp(esf_sem, R, t, conjunto_com_lca_out(pos_hp))
+cfg = pc.carregar(os.path.join(DADOS, "config_T11.json"))
+roda = cs.Peca(nome_componente="RODA_FE_SINT", nome_corpo="RODA_FE_SINT", categoria="RODA_FE", shape=None)  # SINTÉTICA
+m25 = dataclasses.replace(sint, pecas=list(sint.pecas) + [roda], avisos=list(sint.avisos))
+cena25 = vr.cena_do_step(m25, R, t, cfg, ref_hipotese="HIPOTESE: SINTÉTICO de teste (TC-POS-025)")
+ok25 = (av_igual == [] and cmp_igual[0][1] < 1e-9 and len(av_1mm) == 1 and "0.5 mm" in av_1mm[0]
+        and abs(cmp_1mm[0][1] - 0.001) < 1e-9 and len(av_sem) == 1 and "não está no CSV" in av_sem[0]
+        and cena25.pecas_moveis == ["RODA_FE"] and cena25.ref_hipotese.endswith("(TC-POS-025)")
+        and all(x in cena25.nao_modelado for x in vr.NAO_MODELADO_FASE1)
+        and any("RODA_FE" in x for x in cena25.nao_modelado) and len(cena25.fixos) > 0)
+check("TC-POS-025 esferas HP_ × CSV (tolerância 0,5 mm); cena com RODA_ e referencial da configuração", ok25,
+      f"mesmo lugar: {av_igual} (d = {cmp_igual[0][1]:.2e} m); a 1 mm: {av_1mm}; sem o ponto: {av_sem}; "
+      f"peças móveis {cena25.pecas_moveis}; ref_hipotese {cena25.ref_hipotese!r}; {len(cena25.fixos)} fixos")
 
 tmp.cleanup()
 print("\n--- Resumo ---")

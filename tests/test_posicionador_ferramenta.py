@@ -8,10 +8,19 @@ TC-POS-081: STEP real do chassi (data/cad/T11_chassi_2026-11-17.step), `--amostr
             carrega o SHA-256 do STEP e diz que a transformação STEP → carro é a HIPÓTESE da configuração. A caixa de busca
             derivada do envelope do chassi (decisão R8, HIPOTESE) contém o pivô da v20 (`FL_ROCKER_AXIS_A` de
             data/posicionador/hardpoints_T11_v20_murilo.csv).
+TC-POS-082: busca sem STEP com configuração SINTÉTICA folgada e `--caixa` SINTÉTICA (revisão final, M8, M3, I2, M5) →
+            código 0 e ao menos um candidato; cada `candidato_NN.csv` carrega com `load_hardpoints` (Status PROVISIONAL) e
+            tem um sufixo só no `geometry_rev`; `candidatos.csv` tem uma linha por candidato; nenhum candidato é VIAVEL;
+            o relatório traz os limites da fase (por que não há VIAVEL e a incerteza) e o `resultado.json` traz a lista
+            fixa do que não está modelado.
+TC-POS-083: entrada inválida → código 2 com mensagem (M2, I3): `--caixa` invertida (mín > máx) e com mín = máx num eixo, e
+            configuração SINTÉTICA com item obrigatório `mr_alvo` nulo (A_CONFIRMAR).
 As saídas vão para uma pasta temporária, nunca para o repositório. O TC-POS-081 precisa do extra opcional "cad"
-(`uv sync --extra cad`); sem ele, o TC-POS-080 roda e o script sai NÃO EXECUTÁVEL (código 3), que nunca conta como PASS.
+(`uv sync --extra cad`); sem ele, os TC-POS-080, 082 e 083 rodam e o script sai NÃO EXECUTÁVEL (código 3), que nunca conta
+como PASS (ou com código 1, se algum deles falhou).
 Roda como script: uv run python -X utf8 tests/test_posicionador_ferramenta.py
 """
+import copy
 import csv
 import hashlib
 import json
@@ -24,6 +33,7 @@ import time
 import hardpoints as hp
 from posicionador import cad_step as cs
 from posicionador import config as pc
+from posicionador import varredura as vr
 
 RAIZ = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 FERRAMENTA = os.path.join(RAIZ, "tools", "posicionar_atuacao.py")
@@ -81,9 +91,80 @@ with tempfile.TemporaryDirectory() as tmp:
           f"{[n for n in a_confirmar if n in rel]}; veredito no JSON={(res.get('v20') or {}).get('veredito')}; "
           f"{dt80:.1f} s; stderr: {r80.stderr.strip()[-300:]!r}")
 
+# --- TC-POS-082 ---------------------------------------------------------------------------------------------------
+with open(CFG, encoding="utf-8") as f:
+    bruto = json.load(f)
+
+
+def cfg_sintetica(pasta, valores, tc, origem="HIPOTESE"):
+    """Grava em `pasta` uma cópia SINTÉTICA da configuração do T11 com os valores trocados; devolve o caminho."""
+    d = copy.deepcopy(bruto)
+    for nome, valor in valores.items():
+        d["itens"][nome].update(valor=valor, origem=origem, fonte=f"SINTÉTICO de teste ({tc})")
+    p = os.path.join(pasta, f"config_{tc}.json")
+    with open(p, "w", encoding="utf-8") as g:
+        json.dump(d, g)
+    return p
+
+
+CAIXA = "-0.15,0.24,0.42,0.15,0.34,0.53"     # SINTÉTICA (a mesma do tests/test_posicionador_busca.py)
+meta10 = json.loads(ler(os.path.join(RAIZ, "data", "posicionador", "hardpoints_T11_v10.meta.json")))
+with tempfile.TemporaryDirectory() as tmp:
+    cfg82 = cfg_sintetica(tmp, {"mr_var_max": 0.5, "curso_amortecedor_m": 0.21}, "TC-POS-082")
+    saida = os.path.join(tmp, "saida")
+    r82, dt82 = rodar("--config", cfg82, "--saida", saida, f"--caixa={CAIXA}", "--amostras", "60", "--refinos", "2",
+                      "--semente", "1")
+    rel = ler(os.path.join(saida, "relatorio.md"))
+    try:
+        res = json.loads(ler(os.path.join(saida, "resultado.json")))
+    except json.JSONDecodeError:
+        res = {}
+    cands = res.get("candidatos") or []
+    erros, revs = [], []
+    for k, c in enumerate(cands, start=1):
+        try:
+            hs = hp.load_hardpoints(os.path.join(saida, c["arquivo_csv"]), os.path.join(saida, c["arquivo_meta"]))
+            revs.append(hs.meta["geometry_rev"])
+            if set(p.status for p in hs.points.values()) != {"PROVISIONAL"}:
+                erros.append(f"{c['arquivo_csv']}: Status {hs.status_summary()}")
+            if hs.meta["geometry_rev"] != f"{meta10['geometry_rev']} + atuação do posicionador, candidato {k:02d}":
+                erros.append(f"{c['arquivo_csv']}: geometry_rev {hs.meta['geometry_rev']!r}")
+        except Exception as e:  # noqa: BLE001
+            erros.append(f"{c.get('arquivo_csv')}: {type(e).__name__}: {e}")
+    linhas = []
+    if os.path.exists(os.path.join(saida, "candidatos.csv")):
+        with open(os.path.join(saida, "candidatos.csv"), newline="", encoding="utf-8") as f:
+            linhas = list(csv.DictReader(f))
+    vered = [(c.get("avaliacao") or {}).get("veredito") for c in cands]
+    nm = res.get("nao_modelado") or []
+    ok82 = (r82.returncode == 0 and len(cands) >= 1 and not erros and len(linhas) == len(cands)
+            and all(v == "CONDICIONAL" for v in vered) and "Limites desta fase" in rel and vr.NOME_MANGA in rel
+            and "δ" in rel and all(x in nm for x in vr.NAO_MODELADO_FASE1))
+    check("TC-POS-082 busca sem STEP, configuração SINTÉTICA folgada: conjuntos por candidato e não modelado", ok82,
+          f"código {r82.returncode}; {len(cands)} candidatos {vered}; erros {erros[:3]}; linhas do candidatos.csv "
+          f"{len(linhas)}; geometry_rev {revs[:1]}; limites da fase no relatório={'Limites desta fase' in rel}; "
+          f"não modelado no JSON: {sum(x in nm for x in vr.NAO_MODELADO_FASE1)}/{len(vr.NAO_MODELADO_FASE1)}; {dt82:.1f} s; "
+          f"stderr (fim): {r82.stderr.strip()[-200:]!r}")
+
+# --- TC-POS-083 ---------------------------------------------------------------------------------------------------
+with tempfile.TemporaryDirectory() as tmp:
+    inv, _ = rodar("--config", CFG, "--saida", os.path.join(tmp, "a"), "--caixa=0.15,0.24,0.42,-0.15,0.34,0.53",
+                   "--amostras", "1", timeout=300)
+    igual, _ = rodar("--config", CFG, "--saida", os.path.join(tmp, "b"), "--caixa=-0.15,0.30,0.42,0.15,0.30,0.53",
+                     "--amostras", "1", timeout=300)
+    cfg83 = cfg_sintetica(tmp, {"mr_alvo": None}, "TC-POS-083", origem="A_CONFIRMAR")
+    nulo, _ = rodar("--config", cfg83, "--saida", os.path.join(tmp, "c"), "--avaliar-v20", timeout=300)
+ok83 = (inv.returncode == 2 and "mín ≥ máx em X" in inv.stderr and igual.returncode == 2 and "mín ≥ máx em Y"
+        in igual.stderr and nulo.returncode == 2 and "'mr_alvo'" in nulo.stderr and "Traceback" not in
+        inv.stderr + igual.stderr + nulo.stderr)
+check("TC-POS-083 --caixa invertida ou com mín = máx e item obrigatório nulo: código 2 com mensagem", ok83,
+      f"invertida: {inv.returncode} {inv.stderr.strip()[-160:]!r}; mín = máx: {igual.returncode} "
+      f"{igual.stderr.strip()[-120:]!r}; mr_alvo nulo: {nulo.returncode} {nulo.stderr.strip()[-160:]!r}")
+
 if not cs.OCP_DISPONIVEL:
     print("NÃO EXECUTÁVEL: cadquery-ocp ausente para o TC-POS-081 (instale com `uv sync --extra cad`)")
-    raise SystemExit(3)
+    n_fail = sum(1 for _, s, _ in results if s == "FAIL")
+    raise SystemExit(1 if n_fail else 3)
 
 # --- TC-POS-081 ---------------------------------------------------------------------------------------------------
 with tempfile.TemporaryDirectory() as tmp:

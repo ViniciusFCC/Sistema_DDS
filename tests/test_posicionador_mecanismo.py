@@ -1,13 +1,16 @@
 """
-Testes do mecanismo por construção e da configuração com procedência do posicionador (EDR-076, TC-POS-050 a 054).
+Testes do mecanismo por construção e da configuração com procedência do posicionador (EDR-076, TC-POS-050 a 055).
 TC-POS-050: a regra de construção, com a semente da v20 e o r2 da v20, reproduz PUSH_OUT, PUSH_IN, ROCKER_AXIS_A e
             ROCKER_SPRING do arquivo v20 (o SPRING_CHASSIS não entra: o plano trocou a regra do olhal do script).
 TC-POS-051: com o r2 resolvido, MR [wheel/spring] no estático = MR_ALVO (1,40) ± 1e-4.
 TC-POS-052: comprimento do amortecedor no droop máximo = olho a olho (EYE) ± 1e-6 m.
 TC-POS-053: config.carregar recusa item sem fonte, sem origem ou com origem desconhecida; a_confirmar() lista os 7 itens.
 TC-POS-054: pivô sobre a junta LCA_OUT (plano degenerado) → hardpoints None e motivo não vazio.
+TC-POS-055: config.carregar recusa, com ConfigError que cita o nome do item, item obrigatório (config.OBRIGATORIOS) com valor
+            null (A_CONFIRMAR) ou ausente, e número não finito (NaN, Infinity) em qualquer item; a configuração do T11
+            carrega com todos os obrigatórios numéricos (revisão final da fase 1, I3).
 A semente e o r2 vêm de data/posicionador/origem_v20_murilo.json (saída do script do Murilo, com SHA-256); os arquivos de
-configuração inválidos do TC-POS-053 são SINTÉTICOS de teste.
+configuração inválidos do TC-POS-053 e do TC-POS-055 são SINTÉTICOS de teste.
 Roda como script: uv run python -X utf8 tests/test_posicionador_mecanismo.py
 """
 import copy
@@ -139,6 +142,26 @@ c54b = mec.construir(hs_v10, v54, cfg, r2_m=r2_v20)
 check("TC-POS-054 pivô sobre a junta: geometria degenerada sem exceção",
       c54.hardpoints is None and bool(c54.motivo) and c54b.hardpoints is None and bool(c54b.motivo),
       f"motivo: {c54.motivo!r}")
+
+# --- TC-POS-055 ---------------------------------------------------------------------------------------------------
+def a_confirmar(nome):
+    def f(it):
+        it[nome].update(valor=None, origem="A_CONFIRMAR", fonte="SINTÉTICO de teste (TC-POS-055)")
+    return f
+
+
+casos55 = {nome: recusa(a_confirmar(nome)) for nome in pc.OBRIGATORIOS}
+ruins55 = [n for n, (rec, msg) in casos55.items() if not (rec and repr(n) in msg)]
+ausente = recusa(lambda it: it.pop("r_prod_m"))
+nan55 = recusa(lambda it: it["folga_aro_m"].update(valor=float("nan")))
+inf55 = recusa(lambda it: it["transformacao_step_m"]["valor"]["translacao_m"].__setitem__(0, float("inf")))
+obrig_ok = all(isinstance(cfg.valor(n), (int, float)) and not isinstance(cfg.valor(n), bool) for n in pc.OBRIGATORIOS)
+ok55 = (not ruins55 and len(casos55) == 22 and ausente[0] and "'r_prod_m'" in ausente[1] and nan55[0]
+        and "'folga_aro_m'" in nan55[1] and inf55[0] and "'transformacao_step_m'" in inf55[1] and obrig_ok)
+check("TC-POS-055 item obrigatório null ou ausente e número não finito: ConfigError com o nome do item", ok55,
+      f"{len(casos55)} obrigatórios, recusados com o nome: {len(casos55) - len(ruins55)} (falharam: {ruins55}); "
+      f"ex.: {casos55['mr_alvo'][1]!r}; ausente: {ausente[1]!r}; NaN: {nan55[1]!r}; inf: {inf55[1]!r}; "
+      f"T11 com todos numéricos={obrig_ok}")
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")

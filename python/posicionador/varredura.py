@@ -1,5 +1,5 @@
 """
-Varredura do curso e avaliação de um candidato do posicionador (EDR-076, TC-POS-060 a 064).
+Varredura do curso e avaliação de um candidato do posicionador (EDR-076, TC-POS-060 a 069).
 
 Um candidato é uma `mecanismo.Construcao` (canto FL completo, com o grupo pushrod). `avaliar` resolve o canto com
 `kinematics_model.Corner` em n pontos do curso da roda, dz ∈ [−curso_droop_m, +curso_bump_m] (continuação a partir do
@@ -29,10 +29,19 @@ estático), e confere cada restrição em todos os estados:
 - esterçamento: com curso_cremalheira_m, os mesmos estados com a cremalheira em ±curso (deslocamento máximo para cada
   lado a partir do centro; se o dado da equipe for o curso total, a configuração recebe a metade), folga ao aro e ao
   eixo do tirante. Sem o curso: NAO_VERIFICAVEL.
+- não modelado na fase 1 (spec §4, §10 e §12 J4), sempre NAO_VERIFICAVEL: "folga à manga/freio/pinça dentro do aro"
+  (sem RODA_ modelado, o barril do aro trata o miolo como livre e o push rod nasce dentro dele); com peças RODA_, BANDEJA_
+  ou DIR_ no STEP, também "folga às peças móveis do STEP (não modeladas na fase 1)". Por isso nenhum candidato sai VIAVEL
+  na fase 1 (no máximo CONDICIONAL). A lista fixa `NAO_MODELADO_FASE1` vai em toda `Cena.nao_modelado`.
 Item nulo da configuração (x_ini_t12_m, x_fim_t12_m, z_min_t12_m, z_max_t12_m, x_face_traseira_aip_m,
 curso_cremalheira_m) → a restrição sai NAO_VERIFICAVEL. Veredito: INVIAVEL se alguma restrição é VIOLADA; CONDICIONAL
 se nenhuma é VIOLADA mas alguma é NAO_VERIFICAVEL, parcial ou há item A_CONFIRMAR na configuração; VIAVEL só sem nada
 disso.
+
+Falha fechada: a `Cena` recusa primitivo fixo ou aro com número não finito (ValueError); na avaliação, toda folga não
+finita (NaN, ±inf) levanta ValueError, que `avaliar` devolve como INVIAVEL "avaliação sem resultado: …" (o mínimo de
+Python ignora NaN conforme a ordem: min(inf, nan) = inf, e uma colisão passaria como OK). Com o referencial STEP → carro
+vindo da configuração (`Cena.ref_hipotese`, sem esferas REF_), a origem da folga aos fixos é HIPOTESE.
 
 `avaliar` nunca levanta exceção: construção sem hardpoints → INVIAVEL "construção: …"; qualquer exceção do solver num
 ponto da varredura → INVIAVEL "cinemática sem solução em dz = … mm …".
@@ -54,6 +63,24 @@ PASSOS_CREMALHEIRA = 4    # continuação em esterço: 0 → ±curso em 4 passos
 ESTADOS = ("OK", "VIOLADA", "NAO_VERIFICAVEL")
 FORCA_ORIGEM = ("REGRA", "META", "MARGEM_EQUIPE", "HIPOTESE", "A_CONFIRMAR")   # da mais forte para a mais fraca
 CORPOS = ("push rod", "rocker", "amortecedor")
+CATEGORIAS_MOVEIS = ("RODA_FE", "RODA_FD", "BANDEJA_FE", "BANDEJA_FD", "DIR")
+MOTIVO_CHASSI_BLOQUEIA = "o chassi sozinho já bloqueia o gabarito: a atuação não é a causa"
+NOME_MANGA = "folga à manga/freio/pinça dentro do aro"
+NOME_MOVEIS = "folga às peças móveis do STEP (não modeladas na fase 1)"
+FONTE_SEM_COLIDIR = ("spec do posicionador §1 (EDR-076): sem colidir com nenhuma peça do CAD (folga ≥ 0; a configuração "
+                     "não declara margem ao chassi)")
+# O que a spec §4 pede e a fase 1 não modela (I2 da revisão final): vai em toda Cena.nao_modelado.
+NAO_MODELADO_FASE1 = (
+    "manga, freio e pinça dentro do aro (sem RODA_ modelado): o barril do aro trata o miolo como livre e o push rod nasce "
+    "dentro dele; restrição NAO_VERIFICAVEL em todo candidato",
+    "pneu (V.3.2.4): só o aro entra, como barril da configuração",
+    "V.3.2.4 além do aro: roda e pneu contra suspensão e chassi em todo o curso × esterço até os batentes",
+    "coluna de direção: só a posição em X do início do gabarito T.1.2 (x_ini_t12_m), sem o corpo da coluna",
+    "pedais e F.8.6.3 (folga ≥ 25 mm do conjunto de pedais)",
+    "volume reservado do atenuador de impacto (F.8.4.2): só a face traseira da AIP (F.8.6.1)",
+    "sinalizações T.1.3.3 (exige escudo), V.3.1.3 (visibilidade) e F.5.3.1 (furo em tubo regulado → SES)",
+    "faixa de ajuste de camber, toe e altura (spec §12 J2): só a geometria estática da v10",
+)
 PERNAS = (("LCA_OUT", "LCA_IN_F"), ("LCA_OUT", "LCA_IN_R"), ("UCA_OUT", "UCA_IN_F"), ("UCA_OUT", "UCA_IN_R"))
 
 
@@ -70,13 +97,35 @@ class Restricao:
     completa: bool = True  # False: verificada com valor provisório (margem 0, raio 0) → veredito no máximo CONDICIONAL
 
 
+def _finitos(obj):
+    """True se todos os números do primitivo (atributos numéricos e arrays) são finitos."""
+    for v in vars(obj).values():
+        try:
+            a = np.asarray(v, dtype=float)
+        except (TypeError, ValueError):
+            continue
+        if not np.all(np.isfinite(a)):
+            return False
+    return True
+
+
 @dataclass
 class Cena:
     fixos: list           # primitivos fixos (m, referencial do carro)
     nos: list             # cad_step.No com pos_m no referencial do carro
     aro: tuple            # (r_int_m, meia_largura_m)
     regras: dict          # x_ini_t12_m, x_fim_t12_m, z_min_t12_m, z_max_t12_m, y_centro_t12_m, x_face_traseira_aip_m
-    nao_modelado: list = field(default_factory=list)   # o que a cena não representa (texto)
+    nao_modelado: list = field(default_factory=list)   # o que a cena não representa (texto); NAO_MODELADO_FASE1 sempre
+    pecas_moveis: list = field(default_factory=list)   # categorias RODA_/BANDEJA_/DIR do STEP (não modeladas na fase 1)
+    ref_hipotese: str | None = None                    # fonte da transformação STEP → carro, se veio da configuração
+
+    def __post_init__(self):
+        ruins = [i for i, ob in enumerate(self.fixos) if not _finitos(ob)]
+        if ruins:
+            raise ValueError(f"cena com primitivo fixo não finito (NaN ou inf) nos índices {ruins[:10]}: falha fechada")
+        if not np.all(np.isfinite(np.asarray(self.aro, dtype=float))):
+            raise ValueError(f"cena com aro não finito: {self.aro!r}")
+        self.nao_modelado = [t for t in NAO_MODELADO_FASE1 if t not in self.nao_modelado] + list(self.nao_modelado)
 
 
 @dataclass
@@ -131,11 +180,13 @@ def cena_sem_cad(cfg):
                 nao_modelado=["CAD ausente: chassi e peças fixas não modelados"])
 
 
-def cena_do_step(montagem, R, t, cfg, z_t12_m=None):
+def cena_do_step(montagem, R, t, cfg, z_t12_m=None, ref_hipotese=None):
     """Cena do STEP: obstáculos fixos (`cad_step.obstaculos_fixos`) e nós do chassi, no referencial do carro
     (p = R @ p_step + t). A folga vem só dos primitivos de `obstaculos_fixos` (nunca de `Tubo.r_ext_m`). As peças RODA_,
-    BANDEJA_ e DIR_ ainda não entram (o aro vem da configuração); ficam em `nao_modelado`. `z_t12_m` = (z_min, z_max) da
-    base do gabarito T.1.2, se a equipe a declarar."""
+    BANDEJA_ e DIR_ ainda não entram (o aro vem da configuração); ficam em `nao_modelado` e em `pecas_moveis` (restrição
+    NAO_VERIFICAVEL). `z_t12_m` = (z_min, z_max) da base do gabarito T.1.2, se a equipe a declarar. `ref_hipotese`: fonte
+    da transformação (R, t) quando ela vem da configuração (sem esferas REF_); a folga aos fixos fica com origem HIPOTESE.
+    Primitivo não finito → ValueError (Cena)."""
     from posicionador import cad_step
     R, t = np.asarray(R, dtype=float), np.asarray(t, dtype=float)
     fixos = cad_step.obstaculos_fixos(montagem, R, t)
@@ -145,10 +196,10 @@ def cena_do_step(montagem, R, t, cfg, z_t12_m=None):
     regras = regras_da_config(cfg)
     if z_t12_m is not None:
         regras.update(z_min_t12_m=float(z_t12_m[0]), z_max_t12_m=float(z_t12_m[1]))
-    moveis = sorted({p.categoria for p in montagem.pecas if p.categoria in ("RODA_FE", "RODA_FD", "BANDEJA_FE",
-                                                                              "BANDEJA_FD", "DIR")})
+    moveis = sorted({p.categoria for p in montagem.pecas if p.categoria in CATEGORIAS_MOVEIS})
     nao = [f"peças móveis do STEP ({', '.join(moveis)}) não entram na varredura; o aro vem da configuração"] if moveis else []
-    return Cena(fixos=fixos, nos=nos_c, aro=_aro(cfg), regras=regras, nao_modelado=nao)
+    return Cena(fixos=fixos, nos=nos_c, aro=_aro(cfg), regras=regras, nao_modelado=nao, pecas_moveis=moveis,
+                ref_hipotese=ref_hipotese)
 
 
 # ------------------------------------------------------------------ procedência
@@ -159,9 +210,20 @@ def _proc(cfg, *nomes):
     return origem, "; ".join(f"{n} ({it.origem}): {it.fonte}" for n, it in its)
 
 
+def _finita(v, o_que):
+    """v como float; ValueError se não for finito (falha fechada: nenhuma folga NaN/inf vira OK)."""
+    v = float(v)
+    if not np.isfinite(v):
+        raise ValueError(f"{o_que} não finita ({v}): falha fechada")
+    return v
+
+
 def _r(nome, valor, limite, folga, cfg, itens, motivo=None, completa=True, estado=None):
-    """Restrição com a procedência dos itens da configuração; estado pela folga (≥ 0 = OK) se não for dado."""
+    """Restrição com a procedência dos itens da configuração; estado pela folga (≥ 0 = OK) se não for dado.
+    Folga não finita → ValueError (vira INVIAVEL "avaliação sem resultado" em `avaliar`)."""
     origem, fonte = _proc(cfg, *itens)
+    if folga is not None:
+        folga = _finita(folga, f"folga de {nome!r}")
     if estado is None:
         estado = "OK" if folga >= 0.0 else "VIOLADA"
     return Restricao(nome, valor, limite, folga, estado, origem, fonte, motivo, completa)
@@ -229,7 +291,7 @@ def _folga_aro(p, pecas, aro):
     b = _barril(p, aro)
     out = {}
     for corpo, a, bb, r in pecas:
-        f = folga_segmento(b, a, bb, r, PASSO_FOLGA_M)
+        f = _finita(folga_segmento(b, a, bb, r, PASSO_FOLGA_M), f"folga ao aro ({corpo})")
         out[corpo] = min(out.get(corpo, np.inf), f)
     return out
 
@@ -237,13 +299,14 @@ def _folga_aro(p, pecas, aro):
 def _folga_tirante(p, pecas):
     out = {}
     for corpo, a, b, r in pecas:
-        f = dist_seg_seg(a, b, p["TIE_IN"], p["TIE_OUT"]) - r
+        f = _finita(dist_seg_seg(a, b, p["TIE_IN"], p["TIE_OUT"]) - r, f"folga ao tirante ({corpo})")
         out[corpo] = min(out.get(corpo, np.inf), f)
     return out
 
 
 def _min_por_corpo(acum, novos, dz):
     for corpo, v in novos.items():
+        v = _finita(v, f"folga mínima ({corpo}, dz = {float(dz) * 1e3:.2f} mm)")
         if corpo not in acum or v < acum[corpo][0]:
             acum[corpo] = (v, dz)
 
@@ -376,7 +439,8 @@ def _avaliar(construcao, cena, cfg, n):
         if cena.fixos:
             fx = {}
             for c, a, b, r in pc_:
-                f = min(folga_segmento(ob, a, b, r, PASSO_FOLGA_M) for ob in cena.fixos)
+                f = min(_finita(folga_segmento(ob, a, b, r, PASSO_FOLGA_M), f"folga aos fixos ({c})")
+                        for ob in cena.fixos)
                 fx[c] = min(fx.get(c, np.inf), f)
             _min_por_corpo(m_fix, fx, dz)
         _min_por_corpo(m_aro, _folga_aro(p, pc_, cena.aro), dz)
@@ -385,25 +449,29 @@ def _avaliar(construcao, cena, cfg, n):
         for c, a, b, r in pc_:
             if c == "push rod":       # a fixação em O (primeiros r_junta_m) não conta contra a própria bandeja
                 a = a + rj * _unit(b - a)
-            f = min(dist_seg_seg(a, b, p[ext], p[inn]) for ext, inn in PERNAS) - r - rpb
+            f = min(_finita(dist_seg_seg(a, b, p[ext], p[inn]) - r - rpb, f"folga às pernas ({c})")
+                    for ext, inn in PERNAS)
             fp[c] = min(fp.get(c, np.inf), f)
         _min_por_corpo(m_per, fp, dz)
         O, A, B, C = p["PUSH_OUT"], p["PUSH_IN"], p["ROCKER_SPRING"], p["SPRING_CHASSIS"]
-        f = dist_seg_seg(O, A, B, C) - float(cfg.valor("r_prod_m")) - float(cfg.valor("r_mola_m"))
+        f = _finita(dist_seg_seg(O, A, B, C) - float(cfg.valor("r_prod_m")) - float(cfg.valor("r_mola_m")),
+                    "folga push rod × amortecedor")
         if f < m_pa[0]:
             m_pa = (f, dz)
 
+    org_fix, fonte_fix = "META", FONTE_SEM_COLIDIR
+    if cena.ref_hipotese:
+        org_fix = "HIPOTESE"
+        fonte_fix = (f"{FONTE_SEM_COLIDIR}; referencial STEP → carro da configuração, item transformacao_step_m "
+                     f"(HIPOTESE, sem esferas REF_): {cena.ref_hipotese}")
     for corpo in CORPOS:
         nome = f"folga aos fixos: {corpo}"
         if not cena.fixos:
-            R.append(Restricao(nome, None, 0.0, None, "NAO_VERIFICAVEL", "META",
-                               "spec do posicionador §1 (EDR-076): sem colidir com nenhuma peça do CAD (folga ≥ 0; a "
-                               "configuração não declara margem ao chassi)", "sem CAD: nenhum obstáculo fixo na cena"))
+            R.append(Restricao(nome, None, 0.0, None, "NAO_VERIFICAVEL", "META", FONTE_SEM_COLIDIR,
+                               "sem CAD: nenhum obstáculo fixo na cena"))
         else:
             v, dz = m_fix[corpo]
-            R.append(Restricao(nome, v, 0.0, v, "OK" if v >= 0.0 else "VIOLADA", "META",
-                               "spec do posicionador §1 (EDR-076): sem colidir com nenhuma peça do CAD (folga ≥ 0; a "
-                               "configuração não declara margem ao chassi)",
+            R.append(Restricao(nome, v, 0.0, v, "OK" if v >= 0.0 else "VIOLADA", org_fix, fonte_fix,
                                f"mínimo em dz = {dz * 1e3:.2f} mm, a {len(cena.fixos)} primitivos fixos"))
     faro = float(cfg.valor("folga_aro_m"))
     for corpo in CORPOS:
@@ -434,6 +502,7 @@ def _avaliar(construcao, cena, cfg, n):
     R.append(_gabarito(cena, cfg, pecas))
     R.append(_aip(cena, cfg, pecas))
     R.extend(_esterçamento(canto, sols, cena, cfg))
+    R.extend(_nao_modelados(cena))
 
     dist = {"pivo": None, "olhal": None}
     if cena.nos:
@@ -442,6 +511,20 @@ def _avaliar(construcao, cena, cfg, n):
                 "olhal": float(np.linalg.norm(pos - canto.p0["SPRING_CHASSIS"], axis=1).min())}
     veredito, motivo = _veredito(R, cfg)
     return Avaliacao(R, veredito, motivo, curvas, dist, n)
+
+
+def _nao_modelados(cena):
+    """Restrições que a fase 1 não verifica (spec §4, §10, §12 J4): sempre a manga/freio/pinça; com peças móveis no
+    STEP, a folga a elas. As duas saem NAO_VERIFICAVEL (veredito no máximo CONDICIONAL)."""
+    out = [Restricao(NOME_MANGA, None, 0.0, None, "NAO_VERIFICAVEL", "META",
+                     f"{FONTE_SEM_COLIDIR}; spec §10 e §12 J4 (peças ausentes deixam a regra NÃO VERIFICÁVEL)",
+                     "sem RODA_ modelado: o barril do aro trata o miolo como livre e o push rod nasce dentro dele "
+                     "(fase 1)")]
+    if cena.pecas_moveis:
+        out.append(Restricao(NOME_MOVEIS, None, 0.0, None, "NAO_VERIFICAVEL", "META",
+                             f"{FONTE_SEM_COLIDIR}; spec §5 item 4 (folga contra as peças RODA_/DIR_ movidas)",
+                             f"peças {', '.join(cena.pecas_moveis)} do STEP não entram na varredura da fase 1"))
+    return out
 
 
 def _lateral_ao_gabarito(cena, pecas, folga_gab):
@@ -506,8 +589,7 @@ def _gabarito(cena, cfg, pecas):
         return _r(nome, True, folga_gab, None, cfg, itens, estado="OK", motivo=f"há altura livre com a atuação {info}")
     so = reg.trajetoria_t12(fixos, x_ini, x_fim, z_min, z_max, y_centro=yc)
     if not so.livre:
-        return _r(nome, False, folga_gab, None, cfg, itens, estado="NAO_VERIFICAVEL",
-                  motivo="o chassi sozinho já bloqueia o gabarito: a atuação não é a causa")
+        return _r(nome, False, folga_gab, None, cfg, itens, estado="NAO_VERIFICAVEL", motivo=MOTIVO_CHASSI_BLOQUEIA)
     return _r(nome, False, folga_gab, None, cfg, itens, estado="VIOLADA",
               motivo=f"a atuação bloqueia a passagem do gabarito ({len(rel)} cápsulas na região) {info}")
 
@@ -518,7 +600,7 @@ def _aip(cena, cfg, pecas):
     if f is None:
         return _r(nome, None, 0.0, None, cfg, ["x_face_traseira_aip_m"], estado="NAO_VERIFICAVEL",
                   motivo="X da face traseira da AIP a confirmar")
-    v = min(float(min(f(a), f(b))) - r for pc_ in pecas for _, a, b, r in pc_)
+    v = min(_finita(float(min(f(a), f(b))) - r, "folga à AIP") for pc_ in pecas for _, a, b, r in pc_)
     return _r(nome, v, 0.0, v, cfg, ["x_face_traseira_aip_m"],
               motivo="folga em X do ponto mais à frente dos corpos (com raio) à face traseira da AIP")
 

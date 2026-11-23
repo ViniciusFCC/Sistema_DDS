@@ -17,10 +17,23 @@ import math
 import numpy as np
 
 import hardpoints as hp
+from posicionador import mecanismo as mec
+from posicionador import varredura as vr
 
 ROTULO = "VERIFIED ≠ validado; cinemática NOT_VALIDATED contra o OptimumKinematics (REFERENCE, EDR-004)"
 STALE = ("O resultado vale só para o STEP e a configuração com os SHA-256 acima: se um deles mudar, o resultado fica "
          "STALE e a ferramenta tem de rodar de novo.")
+# Textos fixos do relatório (revisão final da fase 1: I5, M5, M6).
+INCERTEZA = ("Incerteza geométrica da fase 1, abaixo de 1 mm e sem margem: a transformação STEP → carro da configuração "
+             "(sem esferas REF_) foi ajustada só no lado reto do FH, com erro ≤ 0,55 mm; os primitivos dos obstáculos "
+             "podem deixar um furo de cobertura de até ~0,15 mm (tolerância de cobertura de 0,1 mm + deflexão da malha de "
+             "0,05 mm); a folga é o mínimo nos n estados do curso (discretização em dz, convergida em n e 2n, mas sem "
+             "cota entre estados). Uma folga positiva menor que isso não garante ausência de toque. A margem de fabricação "
+             "δ é da fase 2 (certificador), não está nas restrições desta fase.")
+POR_QUE_NAO_VIAVEL = ("Na fase 1 nenhum candidato chega a VIAVEL: a folga ao tirante é sempre parcial (raio do tirante "
+                      "A_CONFIRMAR: só o eixo é conferido), a folga à manga/freio/pinça dentro do aro é sempre "
+                      "NAO_VERIFICAVEL (sem RODA_ modelado) e há itens A_CONFIRMAR na configuração. O melhor veredito "
+                      "possível é CONDICIONAL; ele não dispensa a conferência do que está listado abaixo.")
 COLUNAS_RESUMO = ["rank", "arquivo_csv", "veredito", "origem", "variacao_MR", "MR0", "dist_no_pivo_m", "dist_no_olhal_m",
                   "angulo_fora_plano_max_rad", "menor_folga_m", "restricao_menor_folga", "pivo_X_m", "pivo_Y_m",
                   "pivo_Z_m", "r1_m", "r2_m", "resolucoes", "motivo"]
@@ -90,7 +103,9 @@ def conjunto_do_candidato(c, rank, contexto):
     """HardpointSet do candidato (todos os pontos PROVISIONAL), com sufixo no geometry_rev e procedência no source."""
     base = c.construcao.hardpoints
     meta = dict(base.meta)
-    meta["geometry_rev"] = f"{base.meta['geometry_rev']} + atuação do posicionador, candidato {rank:02d}"
+    rev = str(base.meta["geometry_rev"])
+    rev = rev[:-len(mec.SUFIXO_REV)] if rev.endswith(mec.SUFIXO_REV) else rev     # um sufixo só (o do candidato)
+    meta["geometry_rev"] = f"{rev} + atuação do posicionador, candidato {rank:02d}"
     meta["source"] = (f"posicionador EDR-076 (tools/posicionar_atuacao.py), candidato {rank:02d}, veredito "
                       f"{c.avaliacao.veredito}, semente {contexto.get('semente')}; STEP sha256 "
                       f"{contexto.get('step_sha256') or 'sem STEP'}; configuração sha256 {contexto['config_sha256']}; "
@@ -199,6 +214,30 @@ def bloco_candidato(titulo, c):
     return ln
 
 
+def _avaliacoes(ctx):
+    """Avaliações citadas no relatório (v20, candidatos ou melhor da Fase I)."""
+    if ctx.get("cand_v20") is not None:
+        return [ctx["cand_v20"].avaliacao]
+    res = ctx.get("resultado")
+    if res is None:
+        return []
+    out = [c.avaliacao for c in res.candidatos]
+    if res.fase1 is not None and res.fase1.melhor is not None:
+        out.append(res.fase1.melhor.avaliacao)
+    return out
+
+
+def alertas_regulamento(avaliacoes):
+    """Alertas que independem da atuação: o chassi sozinho bloqueia o gabarito T.1.2 (o carro reprova T.1.2)."""
+    for av in avaliacoes:
+        r = av.restricao("gabarito T.1.2")
+        if r is not None and (r.motivo or "").startswith(vr.MOTIVO_CHASSI_BLOQUEIA):
+            return ["**ATENÇÃO: o chassi sozinho (obstáculos fixos, sem a atuação) bloqueia o gabarito T.1.2. O carro "
+                    "reprova o T.1.2 independentemente de onde a atuação ficar; a restrição sai NAO_VERIFICAVEL nos "
+                    "candidatos porque a atuação não é a causa.**"]
+    return []
+
+
 def markdown(ctx):
     """Relatório completo. `ctx`: dicionário montado pela ferramenta (ver tools/posicionar_atuacao.py)."""
     cfg = ctx["cfg"]
@@ -219,6 +258,10 @@ def markdown(ctx):
         ln.append(f"- Caixa de busca do pivô (m): mín ({', '.join(f'{x:.4f}' for x in lo)}), máx "
                   f"({', '.join(f'{x:.4f}' for x in hi)}); {ctx['caixa_origem']}")
     ln += ["", STALE, ""]
+    alertas = alertas_regulamento(_avaliacoes(ctx))
+    if alertas:
+        ln += [*alertas, ""]
+    ln += ["## Limites desta fase", "", f"- {POR_QUE_NAO_VIAVEL}", f"- {INCERTEZA}", ""]
 
     if ctx["modo"] == "avaliar-v20":
         ln += ["## Avaliação da v20 (Murilo)", "",

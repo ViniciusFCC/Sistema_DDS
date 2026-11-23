@@ -1097,6 +1097,30 @@ def referencial(esferas):
     return R, -R @ O
 
 
+HP_TOL_M = 0.0005    # 0,5 mm: tolerância das esferas HP_ do documento de exportação do CAD (a mesma do REF_)
+
+
+def conferir_hp(esferas, R, t, hs, tol_m=HP_TOL_M):
+    """Compara as esferas `HP_<Point_ID>` (centro em m, coordenadas do STEP) com o conjunto de hardpoints `hs` (CSV), no
+    referencial do carro (p = R @ p_step + t). Devolve (avisos, comparações): aviso para cada esfera a mais de `tol_m` do
+    ponto do CSV e para cada esfera sem ponto no CSV; comparações = [(Point_ID, distância_m | None)]. Só informa: os
+    hardpoints usados continuam os do CSV."""
+    R, t = np.asarray(R, dtype=float), np.asarray(t, dtype=float)
+    avisos, comp = [], []
+    for nome in sorted(k for k in esferas if k.startswith("HP_")):
+        pid = nome[len("HP_"):]
+        if pid not in hs.points:
+            avisos.append(f"esfera {nome}: o ponto {pid} não está no CSV de hardpoints (não comparada)")
+            comp.append((pid, None))
+            continue
+        d = float(np.linalg.norm(R @ np.asarray(esferas[nome], dtype=float) + t - hs.points[pid].xyz))
+        comp.append((pid, d))
+        if not d <= tol_m:
+            avisos.append(f"esfera {nome} a {d * 1e3:.2f} mm do {pid} do CSV (tolerância {tol_m * 1e3:.1f} mm do "
+                          "documento de exportação): o STEP e o CSV divergem; a varredura usa o CSV")
+    return avisos, comp
+
+
 # ================================================================== 6. obstáculos fixos
 def _obb(shape, nome, avisos):
     """Caixa orientada (mm) do OCP (`BRepBndLib.AddOBB`, sobre a triangulação já feita em `_malha`), aumentada da

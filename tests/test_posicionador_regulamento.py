@@ -1,5 +1,5 @@
 """
-Testes do gabarito T.1.2 e do limite da AIP do posicionador (EDR-076, TC-POS-030 a 033).
+Testes do gabarito T.1.2 e do limite da AIP do posicionador (EDR-076, TC-POS-030 a 034).
 Todas as cenas são SINTÉTICAS de teste (não do carro). A regra é a FSAE Rules 2027 V1.0, T.1.2 e F.8.6.1.
 Roda como script: uv run python -X utf8 tests/test_posicionador_regulamento.py
 """

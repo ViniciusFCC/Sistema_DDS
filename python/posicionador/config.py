@@ -22,12 +22,23 @@ Nomes dos itens lidos pelas outras partes do posicionador (Config.valor(nome)):
 - STEP: `transformacao_step_m` ({"rotacao": 3×3, "translacao_m": [x, y, z]}, STEP em m → canto);
 - a confirmar (null): `curso_cremalheira_m`, `margem_curso_amortecedor_m`, `x_face_traseira_aip_m`, `x_ini_t12_m`,
   `x_fim_t12_m`, `z_min_t12_m`, `z_max_t12_m` (faixa vertical do gabarito T.1.2, T.1.2.2c).
+
+Itens obrigatórios (`OBRIGATORIOS`): o núcleo não tem caminho para eles nulos (não há verificação a desligar), então
+`carregar` exige que estejam presentes, com número finito, e recusa (ConfigError com o nome do item) se faltarem ou
+vierem A_CONFIRMAR. Todo número da configuração (também dentro de listas e dicionários) tem de ser finito: NaN e
+Infinity do JSON são recusados.
 """
 import json
+import math
 from dataclasses import dataclass
 from typing import Any
 
 ORIGENS = frozenset({"REGRA", "META", "MARGEM_EQUIPE", "HIPOTESE", "A_CONFIRMAR"})
+# lidos com float(cfg.valor(...)) por mecanismo e varredura, sem verificação a desligar quando nulos
+OBRIGATORIOS = ("curso_droop_m", "curso_bump_m", "olho_a_olho_m", "curso_amortecedor_m", "mr_alvo", "mr_var_max", "dj_m",
+                "braco_min_m", "braco_max_m", "giro_max_rad", "amort_ang_max_rad", "folga_aro_m", "folga_pernas_m",
+                "folga_prod_amort_m", "folga_gabarito_m", "r_mola_m", "r_junta_m", "r_pivo_m", "r_prod_m",
+                "r_perna_bandeja_m", "aro_r_int_m", "aro_meia_largura_m")
 CAMPOS = ("valor", "unidade", "origem", "fonte")
 
 
@@ -63,6 +74,19 @@ class Config:
         return sorted(n for n, it in self.itens.items() if it.origem == "A_CONFIRMAR")
 
 
+def _nao_finitos(v):
+    """True se há algum número não finito em v (número, lista ou dicionário)."""
+    if isinstance(v, bool):
+        return False
+    if isinstance(v, (int, float)):
+        return not math.isfinite(v)
+    if isinstance(v, (list, tuple)):
+        return any(_nao_finitos(x) for x in v)
+    if isinstance(v, dict):
+        return any(_nao_finitos(x) for x in v.values())
+    return False
+
+
 def _item(nome, d):
     if not isinstance(d, dict):
         raise ConfigError(f"item {nome!r}: esperado objeto com {list(CAMPOS)}, veio {type(d).__name__}")
@@ -83,6 +107,8 @@ def _item(nome, d):
         raise ConfigError(f"item {nome!r}: valor null só com origem A_CONFIRMAR (veio {origem})")
     if origem == "A_CONFIRMAR" and d["valor"] is not None:
         raise ConfigError(f"item {nome!r}: A_CONFIRMAR exige valor null (valor provisório com fonte é HIPOTESE)")
+    if _nao_finitos(d["valor"]):
+        raise ConfigError(f"item {nome!r}: valor com número não finito (NaN ou infinito): {d['valor']!r}")
     return Item(valor=d["valor"], unidade=unidade, origem=origem, fonte=fonte)
 
 
@@ -93,4 +119,14 @@ def carregar(caminho):
     itens = bruto.get("itens") if isinstance(bruto, dict) else None
     if not isinstance(itens, dict) or not itens:
         raise ConfigError(f"{caminho}: esperado objeto com a chave 'itens' (nome -> item)")
-    return Config(itens={n: _item(n, d) for n, d in itens.items()}, caminho=str(caminho))
+    cfg = Config(itens={n: _item(n, d) for n, d in itens.items()}, caminho=str(caminho))
+    for nome in OBRIGATORIOS:
+        if nome not in cfg.itens:
+            raise ConfigError(f"{caminho}: item obrigatório {nome!r} ausente")
+        v = cfg.itens[nome].valor
+        if v is None:
+            raise ConfigError(f"item obrigatório {nome!r} sem valor (A_CONFIRMAR): o posicionador não tem verificação a "
+                              "desligar para ele; dê um valor com origem e fonte (HIPOTESE, se provisório)")
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            raise ConfigError(f"item obrigatório {nome!r}: esperado número, veio {type(v).__name__}")
+    return cfg

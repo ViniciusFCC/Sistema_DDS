@@ -30,6 +30,8 @@ EIXO_B_M = 0.05           # ROCKER_AXIS_B = Pv + 0,05 m · n (o comprimento só 
 JUNTA = "FL_LCA_OUT"
 TOL_PLANO_M = 1e-9        # |(Pv − J) × ud| abaixo disso: plano degenerado
 FAIXA_R2 = (0.2, 3.0)     # r2 em [0,2·r1; 3·r1]
+SUFIXO_REV = " + atuação por construção (posicionador)"    # no geometry_rev do conjunto construído (uma vez só)
+SUFIXO_FONTE = "; grupo pushrod por posicionador.mecanismo.construir (EDR-076)"
 
 
 @dataclass(frozen=True)
@@ -79,8 +81,10 @@ def _montar_conjunto(hs_v10, pontos):
     for chave, (xyz, comp) in pontos.items():
         linhas.append([f"FL_{chave}", repr(float(xyz[0])), repr(float(xyz[1])), repr(float(xyz[2])), comp, st])
     meta = dict(hs_v10.meta)
-    meta["geometry_rev"] = f"{meta['geometry_rev']} + atuação por construção (posicionador)"
-    meta["source"] = f"{meta['source']}; grupo pushrod por posicionador.mecanismo.construir (EDR-076)"
+    if not str(meta["geometry_rev"]).endswith(SUFIXO_REV):
+        meta["geometry_rev"] = f"{meta['geometry_rev']}{SUFIXO_REV}"
+    if not str(meta["source"]).endswith(SUFIXO_FONTE):
+        meta["source"] = f"{meta['source']}{SUFIXO_FONTE}"
     return hp.build_hardpoint_set(linhas, meta)
 
 

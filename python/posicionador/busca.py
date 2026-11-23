@@ -45,7 +45,8 @@ nó + distância do olhal ao nó), depois ângulo máximo fora do plano.
 Progresso: `progresso(fase, i, n, melhor_violacao)` (opcional) é chamado depois de cada amostra (fase "amostras") e de
 cada refino (fase "refinos"); só informa, não muda o resultado.
 
-Fase I (sem viável): `Diagnostico` com o candidato de menor violação máxima (reavaliado por `avaliar_convergido`), os pares
+Fase I (sem viável): `Diagnostico` com o candidato de menor violação máxima (reavaliado por `avaliar_convergido`; se houve
+viáveis rápidos e nenhum finalista convergiu viável, o motivo diz isso), os pares
 de restrições que mais vezes ficam VIOLADA juntas nas amostras (fração das amostras com resultado), a fração de cada
 restrição violada e a contagem das falhas por tipo.
 """
@@ -388,6 +389,10 @@ def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0,
             motivo = (f"nenhum candidato viável em {len(amostras)} amostras e {len(refinos)} refinos; menor violação "
                       f"máxima normalizada (avaliação rápida, n = {n_rapido}) = {b.violacao:.4g}; convergida: "
                       f"{av.veredito} ({av.motivo})")
+            if rapidos:
+                motivo = (f"{len(rapidos)} candidatos foram VIAVEL ou CONDICIONAL na avaliação rápida (n = {n_rapido}), "
+                          f"mas nenhum dos {est['n_finalistas']} finalistas reavaliados por avaliar_convergido continuou "
+                          f"VIAVEL ou CONDICIONAL; {motivo}")
         else:
             motivo = (f"nenhuma das {len(amostras)} amostras teve resultado: falhas {est['falhas']}")
         fase1 = Diagnostico(melhor, conflitos, violacoes, est["falhas"], len(amostras), n_com, motivo)
