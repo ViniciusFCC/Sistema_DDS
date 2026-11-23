@@ -34,11 +34,13 @@ uv run python -X utf8 tools/posicionar_atuacao.py --avaliar-v20 --saida PASTA [-
 - Sem `--step`, a cena tem só o aro (a folga ao chassi não é conferida) e a busca exige `--caixa`.
 - Referencial: com as esferas `REF_ORIGEM`, `REF_X` e `REF_Y` no STEP, elas mandam; sem nenhuma esfera `REF_` (caso do
   STEP atual), vale o item `transformacao_step_m` da configuração (HIPOTESE), e o relatório diz isso.
-- Caixa de busca do pivô: X do item `caixa_busca_pivo_m`; Y e Z nulos vêm do STEP (caixa envolvente dos pontos de amostra
-  dos obstáculos fixos com X na faixa e Y ≥ 0). No STEP atual só as duas travessas do FBH caem na faixa de X, e a caixa
-  derivada fica estreita (Y 170 a 219 mm, Z 530 a 644 mm; o pivô da v20 está em Y 290 mm): use `--caixa` para explorar
-  outra região.
-- O progresso da busca vai para o stderr. Com o STEP atual, 200 amostras levam de 10 a 13 min; o padrão (2000) é ~10 vezes
+- Caixa de busca do pivô (HIPOTESE, "caixa derivada do envelope do chassi"): X do item `caixa_busca_pivo_m`; Y e Z nulos
+  vêm da caixa envolvente de todos os obstáculos fixos do STEP, lado esquerdo: Y ∈ [0, y_max], Z ∈ [max(0, z_min), z_max].
+  No STEP atual: X −150 a +150 mm, Y 0 a 325,7 mm, Z 60,1 a 1257,4 mm (contém o pivô da v20). `--caixa` sobrepõe.
+- Resultado de 2026-11-23 (STEP atual, 200 amostras, semente 0, essa caixa): nenhum candidato viável; Fase I com a
+  variação de MR violada em 99 % das amostras com resultado; o melhor (variação 4,09 %) viola ainda o comprimento mínimo do
+  amortecedor e o braço r2. Amostragem curta: não prova que não existe posição viável.
+- O progresso da busca vai para o stderr. Com o STEP atual, 200 amostras levam cerca de 11 min; o padrão (2000) é ~10 vezes
   mais.
 - Código de saída 0 = saídas gravadas (qualquer veredito); 2 = entrada inválida.
 
