@@ -121,3 +121,5 @@ TC-POS-081 do `ferramenta` precisam do OCP; sem ele saem NÃO EXECUTÁVEL (códi
 `ferramenta` sai com 1 se algum dos outros falhou). A revisão final da fase 1 acrescentou a regressão da propriedade de
 segurança: NaN nos fixos (TC-POS-065), colisão, gabarito e AIP SINTÉTICOS (066), busca com obstáculo na caixa (075),
 itens obrigatórios (055), não modelado (068, 025) e referencial da configuração (069).
+
+- `pendencias-fase1.md`: decisões do controlador na execução da fase 1 (R1 a R11) e pendências menores adiadas, para a fase 2.
