@@ -38,8 +38,12 @@ ponto avaliado em cada refino vira candidato.
 
 Viáveis: os candidatos (amostras e refinos) com veredito rápido VIAVEL ou CONDICIONAL, na ordem abaixo, até
 `n_finalistas`, são reavaliados por `varredura.avaliar_convergido` (n0 = 25); só os que continuam VIAVEL ou CONDICIONAL
-são devolvidos, com a avaliação convergida. Ordem: variação de MR, depois (distância do pivô ao nó + distância do olhal
-ao nó), depois ângulo máximo fora do plano (o veredito não entra na ordem).
+são devolvidos, com a avaliação convergida. Ordem (`ordenar_viaveis`, na lista dos rápidos, no corte dos finalistas e na
+lista final): VIAVEL sempre antes de CONDICIONAL; dentro do mesmo veredito, variação de MR, depois (distância do pivô ao
+nó + distância do olhal ao nó), depois ângulo máximo fora do plano.
+
+Progresso: `progresso(fase, i, n, melhor_violacao)` (opcional) é chamado depois de cada amostra (fase "amostras") e de
+cada refino (fase "refinos"); só informa, não muda o resultado.
 
 Fase I (sem viável): `Diagnostico` com o candidato de menor violação máxima (reavaliado por `avaliar_convergido`), os pares
 de restrições que mais vezes ficam VIOLADA juntas nas amostras (fração das amostras com resultado), a fração de cada
@@ -144,6 +148,12 @@ def chave_ordem(av):
     return var, dn, fo
 
 
+def ordenar_viaveis(cands, n_max=None):
+    """Candidatos em ordem: VIAVEL antes de CONDICIONAL, depois `chave_ordem`; com `n_max`, só os n_max primeiros."""
+    out = sorted(cands, key=lambda c: (c.avaliacao.veredito != "VIAVEL", *chave_ordem(c.avaliacao)))
+    return out if n_max is None else out[:max(0, int(n_max))]
+
+
 def _objetivo(av):
     v = violacao(av)
     if not np.isfinite(v):
@@ -171,6 +181,12 @@ def _com_olhal(av, construcao, cfg):
     av.restricoes = [q for q in av.restricoes if q.nome != NOME_OLHAL] + [r]
     av.veredito, av.motivo = _veredito_mantido(av, r)
     return av
+
+
+def avaliar_convergido(construcao, cena, cfg, n0=25):
+    """`varredura.avaliar_convergido` com a restrição da busca (X do olhal no chassi): a mesma avaliação dos finalistas,
+    para um conjunto dado de fora da busca (ex.: a v20)."""
+    return _com_olhal(vr.avaliar_convergido(construcao, cena, cfg, n0), construcao, cfg)
 
 
 def _veredito_mantido(av, r):
@@ -299,7 +315,7 @@ def _caixa_explicita(caixa_m):
 
 # ------------------------------------------------------------------ busca
 def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0, *, passo_m=0.01, n_rapido=N_RAPIDO,
-           max_aval_refino=60, n_finalistas=20, escala_no_m=ESCALA_NO_M, n_conflitos=10):
+           max_aval_refino=60, n_finalistas=20, escala_no_m=ESCALA_NO_M, n_conflitos=10, progresso=None):
     """Busca candidatos viáveis (ver o docstring do módulo). Levanta ValueError se `caixa_m` tem None."""
     t0 = time.perf_counter()
     caixa = _caixa_explicita(caixa_m)
@@ -322,15 +338,24 @@ def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0,
     u = _lhs(rng, int(n_amostras), 4)
     X = np.column_stack([livres[idx], fx.lo[3:] + u * (fx.hi[3:] - fx.lo[3:])])
 
-    amostras = [_avaliar_x(hs_v10, x, fx, cena, cfg, n_rapido, "amostra") for x in X]
+    amostras, melhor_v = [], float("inf")
+    for i, x in enumerate(X, start=1):
+        amostras.append(_avaliar_x(hs_v10, x, fx, cena, cfg, n_rapido, "amostra"))
+        melhor_v = min(melhor_v, amostras[-1].violacao)
+        if progresso is not None:
+            progresso("amostras", i, len(X), melhor_v)
     est["falhas"] = _falhas(amostras)
 
     # refino das melhores amostras com violação finita
     ordem = sorted((i for i, c in enumerate(amostras) if np.isfinite(c.violacao)),
                    key=lambda i: (amostras[i].violacao, chave_ordem(amostras[i].avaliacao), i))
     refinos = []
-    for i in ordem[:max(0, int(n_refinos))]:
+    sel = ordem[:max(0, int(n_refinos))]
+    for k, i in enumerate(sel, start=1):
         refinos.append(_refinar(hs_v10, amostras[i], X[i].copy(), fx, cena, cfg, n_rapido, max_aval_refino))
+        melhor_v = min(melhor_v, refinos[-1].violacao)
+        if progresso is not None:
+            progresso("refinos", k, len(sel), melhor_v)
     est["n_refinos"] = len(refinos)
 
     # viáveis rápidos → avaliação convergida
@@ -340,14 +365,14 @@ def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0,
         if k not in vistos:
             vistos.add(k)
             todos.append(c)
-    rapidos = sorted((c for c in todos if c.avaliacao.veredito in VIAVEIS), key=lambda c: chave_ordem(c.avaliacao))
+    rapidos = ordenar_viaveis(c for c in todos if c.avaliacao.veredito in VIAVEIS)
     est["n_viaveis_rapidos"] = len(rapidos)
     finais = []
-    for c in rapidos[:max(0, int(n_finalistas))]:
+    for c in ordenar_viaveis(rapidos, n_max=n_finalistas):
         av = _com_olhal(vr.avaliar_convergido(c.construcao, cena, cfg), c.construcao, cfg)
         if av.veredito in VIAVEIS:
             finais.append(Candidato(c.variaveis, c.construcao, av, violacao(av), c.origem))
-    finais.sort(key=lambda c: chave_ordem(c.avaliacao))
+    finais = ordenar_viaveis(finais)
     est["n_finalistas"] = min(len(rapidos), max(0, int(n_finalistas)))
     est["n_viaveis"] = len(finais)
 

@@ -21,7 +21,7 @@ Nomes dos itens lidos pelas outras partes do posicionador (Config.valor(nome)):
   do STEP ou de --caixa);
 - STEP: `transformacao_step_m` ({"rotacao": 3×3, "translacao_m": [x, y, z]}, STEP em m → canto);
 - a confirmar (null): `curso_cremalheira_m`, `margem_curso_amortecedor_m`, `x_face_traseira_aip_m`, `x_ini_t12_m`,
-  `x_fim_t12_m`.
+  `x_fim_t12_m`, `z_min_t12_m`, `z_max_t12_m` (faixa vertical do gabarito T.1.2, T.1.2.2c).
 """
 import json
 from dataclasses import dataclass

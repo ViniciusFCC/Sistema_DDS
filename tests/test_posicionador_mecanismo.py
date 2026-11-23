@@ -4,7 +4,7 @@ TC-POS-050: a regra de construção, com a semente da v20 e o r2 da v20, reprodu
             ROCKER_SPRING do arquivo v20 (o SPRING_CHASSIS não entra: o plano trocou a regra do olhal do script).
 TC-POS-051: com o r2 resolvido, MR [wheel/spring] no estático = MR_ALVO (1,40) ± 1e-4.
 TC-POS-052: comprimento do amortecedor no droop máximo = olho a olho (EYE) ± 1e-6 m.
-TC-POS-053: config.carregar recusa item sem fonte, sem origem ou com origem desconhecida; a_confirmar() lista os 5 itens.
+TC-POS-053: config.carregar recusa item sem fonte, sem origem ou com origem desconhecida; a_confirmar() lista os 7 itens.
 TC-POS-054: pivô sobre a junta LCA_OUT (plano degenerado) → hardpoints None e motivo não vazio.
 A semente e o r2 vêm de data/posicionador/origem_v20_murilo.json (saída do script do Murilo, com SHA-256); os arquivos de
 configuração inválidos do TC-POS-053 são SINTÉTICOS de teste.
@@ -117,14 +117,15 @@ fonte_vazia = recusa(lambda it: it["mr_alvo"].update(fonte="  "))
 sem_origem = recusa(lambda it: it["dj_m"].pop("origem"))
 origem_ruim = recusa(lambda it: it["dj_m"].update(origem="CHUTE"))
 nulo_sem_ac = recusa(lambda it: it["dj_m"].update(valor=None))
-esperados = {"curso_cremalheira_m", "margem_curso_amortecedor_m", "x_face_traseira_aip_m", "x_ini_t12_m", "x_fim_t12_m"}
+esperados = {"curso_cremalheira_m", "margem_curso_amortecedor_m", "x_face_traseira_aip_m", "x_ini_t12_m", "x_fim_t12_m",
+             "z_min_t12_m", "z_max_t12_m"}
 lista = cfg.a_confirmar()
 nulos_ok = all(cfg.valor(n) is None for n in esperados)
 sha = origem["arquivos"]["t11_atuacao.py"]
 procedencia = all(it.origem in pc.ORIGENS and it.fonte.strip() for it in cfg.itens.values())
 sha_ok = all(sha in cfg.item(n).fonte for n in ("curso_droop_m", "olho_a_olho_m", "mr_alvo", "folga_gabarito_m"))
 ok53 = (sem_fonte[0] and fonte_vazia[0] and sem_origem[0] and origem_ruim[0] and nulo_sem_ac[0]
-        and set(lista) == esperados and len(lista) == 5 and nulos_ok and procedencia and sha_ok)
+        and set(lista) == esperados and len(lista) == 7 and nulos_ok and procedencia and sha_ok)
 check("TC-POS-053 configuração com procedência", ok53,
       f"recusa sem fonte={sem_fonte[0]} ({sem_fonte[1]!r}), fonte vazia={fonte_vazia[0]}, sem origem={sem_origem[0]}, "
       f"origem desconhecida={origem_ruim[0]}, null fora de A_CONFIRMAR={nulo_sem_ac[0]}; a_confirmar()={sorted(lista)}; "

@@ -29,9 +29,10 @@ estático), e confere cada restrição em todos os estados:
 - esterçamento: com curso_cremalheira_m, os mesmos estados com a cremalheira em ±curso (deslocamento máximo para cada
   lado a partir do centro; se o dado da equipe for o curso total, a configuração recebe a metade), folga ao aro e ao
   eixo do tirante. Sem o curso: NAO_VERIFICAVEL.
-Item nulo da configuração (x_ini_t12_m, x_fim_t12_m, x_face_traseira_aip_m, curso_cremalheira_m) → a restrição sai
-NAO_VERIFICAVEL. Veredito: INVIAVEL se alguma restrição é VIOLADA; CONDICIONAL se nenhuma é VIOLADA mas alguma é
-NAO_VERIFICAVEL, parcial ou há item A_CONFIRMAR na configuração; VIAVEL só sem nada disso.
+Item nulo da configuração (x_ini_t12_m, x_fim_t12_m, z_min_t12_m, z_max_t12_m, x_face_traseira_aip_m,
+curso_cremalheira_m) → a restrição sai NAO_VERIFICAVEL. Veredito: INVIAVEL se alguma restrição é VIOLADA; CONDICIONAL
+se nenhuma é VIOLADA mas alguma é NAO_VERIFICAVEL, parcial ou há item A_CONFIRMAR na configuração; VIAVEL só sem nada
+disso.
 
 `avaliar` nunca levanta exceção: construção sem hardpoints → INVIAVEL "construção: …"; qualquer exceção do solver num
 ponto da varredura → INVIAVEL "cinemática sem solução em dz = … mm …".
@@ -105,11 +106,18 @@ class _SemSolucao(Exception):
 
 
 # ------------------------------------------------------------------ cena
+def _valor_opcional(cfg, nome):
+    """Valor do item, ou None se ele é A_CONFIRMAR ou não está na configuração."""
+    return cfg.valor(nome) if nome in cfg.itens else None
+
+
 def regras_da_config(cfg):
-    """Regras do regulamento a partir da configuração (None = a confirmar). A faixa de Z da base do gabarito T.1.2 não
-    está na configuração: None até a cena trazê-la; o gabarito fica centrado em Y = 0 (plano de simetria do carro)."""
+    """Regras do regulamento a partir da configuração (None = a confirmar). A faixa de Z da base do gabarito T.1.2 vem de
+    `z_min_t12_m` e `z_max_t12_m` (T.1.2.2c; None se A_CONFIRMAR ou ausentes, e a cena pode trazê-la); o gabarito fica
+    centrado em Y = 0 (plano de simetria do carro)."""
     return {"x_ini_t12_m": cfg.valor("x_ini_t12_m"), "x_fim_t12_m": cfg.valor("x_fim_t12_m"),
-            "z_min_t12_m": None, "z_max_t12_m": None, "y_centro_t12_m": 0.0,
+            "z_min_t12_m": _valor_opcional(cfg, "z_min_t12_m"), "z_max_t12_m": _valor_opcional(cfg, "z_max_t12_m"),
+            "y_centro_t12_m": 0.0,
             "x_face_traseira_aip_m": cfg.valor("x_face_traseira_aip_m")}
 
 
@@ -469,7 +477,8 @@ def _gabarito(cena, cfg, pecas):
     nome = "gabarito T.1.2"
     rg = cena.regras
     folga_gab = float(cfg.valor("folga_gabarito_m"))
-    itens = ["x_ini_t12_m", "x_fim_t12_m", "folga_gabarito_m"]
+    itens = ["x_ini_t12_m", "x_fim_t12_m", "folga_gabarito_m"] + [n for n in ("z_min_t12_m", "z_max_t12_m")
+                                                                    if n in cfg.itens]
     lat = _lateral_ao_gabarito(cena, pecas, folga_gab)
     info = f"(informativo: lateralmente, o corpo mais próximo fica a {lat * 1e3:.1f} mm da borda do gabarito, com raio e folga)"
     x_ini, x_fim = rg.get("x_ini_t12_m"), rg.get("x_fim_t12_m")

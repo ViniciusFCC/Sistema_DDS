@@ -6,6 +6,8 @@ TC-POS-071: metas impossíveis (MR_VAR_MAX 0,0001) → nenhum viável e `fase1` 
 TC-POS-072: `mapa` numa cena com uma `Capsula` SINTÉTICA: a folga de um ponto da grade é a sdf analítica; os pontos dentro
             da cápsula ficam fora de `livres(0)`.
 TC-POS-073: mesma `semente` → mesma lista de candidatos (determinismo).
+TC-POS-074: na ordem dos viáveis (e no corte dos finalistas), VIAVEL sempre vem antes de CONDICIONAL, mesmo com variação de
+            MR maior; dentro do mesmo veredito vale a ordem de `chave_ordem` (lista SINTÉTICA, sem busca).
 Dados: v10 de data/posicionador/ e a configuração do T11; as configurações alteradas, as caixas de busca, as cenas e os
 nós são SINTÉTICOS de teste, não do carro (a caixa de busca do T11 não tem Y nem Z sem o STEP).
 Roda como script: uv run python -X utf8 tests/test_posicionador_busca.py
@@ -150,6 +152,30 @@ ok73 = len(ra) >= 1 and ra == rb and iguais_vars and erro_none is not None and "
 check("TC-POS-073 mesma semente → mesma lista de candidatos; caixa com None → ValueError", ok73,
       f"{len(ra)} e {len(rb)} candidatos; primeiros: {ra[:2]}; ValueError: {erro_none!r}; "
       f"{time.perf_counter() - t0:.1f} s")
+
+# --- TC-POS-074 ---------------------------------------------------------------------------------------------------
+def cand_sintetico(veredito, var_mr, dn):
+    """Candidato SINTÉTICO: só o veredito, a variação de MR e as distâncias ao nó (nenhuma busca)."""
+    r = vr.Restricao("variação de MR", var_mr, 0.04, 0.04 - var_mr, "OK", "META", "SINTÉTICO de teste (TC-POS-074)")
+    av = vr.Avaliacao([r], veredito, None, {}, {"pivo": dn, "olhal": 0.0}, 11)
+    return bu.Candidato(None, None, av, 0.0, "amostra")
+
+
+lista74 = [cand_sintetico("CONDICIONAL", 0.001, 0.0), cand_sintetico("VIAVEL", 0.030, 0.5),
+           cand_sintetico("CONDICIONAL", 0.002, 0.0), cand_sintetico("VIAVEL", 0.010, 0.9),
+           cand_sintetico("VIAVEL", 0.010, 0.1)]
+try:
+    ord74 = bu.ordenar_viaveis(lista74)
+    obt74 = [(c.avaliacao.veredito, c.avaliacao.restricao("variação de MR").valor, c.avaliacao.dist_no_m["pivo"])
+             for c in ord74]
+    esp74 = [("VIAVEL", 0.010, 0.1), ("VIAVEL", 0.010, 0.9), ("VIAVEL", 0.030, 0.5), ("CONDICIONAL", 0.001, 0.0),
+             ("CONDICIONAL", 0.002, 0.0)]
+    ok74 = obt74 == esp74 and len(bu.ordenar_viaveis(lista74, n_max=2)) == 2 and all(
+        c.avaliacao.veredito == "VIAVEL" for c in bu.ordenar_viaveis(lista74, n_max=3))
+    det74 = f"ordem obtida {obt74}"
+except Exception as e:  # noqa: BLE001
+    ok74, det74 = False, f"{type(e).__name__}: {e}"
+check("TC-POS-074 VIAVEL antes de CONDICIONAL na ordem e no corte dos finalistas (lista SINTÉTICA)", ok74, det74)
 
 print("\n--- Resumo ---")
 n_pass = sum(1 for _, s, _ in results if s == "PASS")

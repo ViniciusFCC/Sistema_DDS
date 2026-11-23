@@ -57,12 +57,25 @@ TESTES = [
     ("estudo do NEUTRO", "tests/test_neutro.py", 2, "plano do inc. 7 (TC-NEU-001 e 002)"),
     ("V4.3 (estrutura, CA-07, migração e verificações)", "tests/test_v4_3.py", 3, "plano do inc. 7 (TC-WB43-001, 002 e 006)"),
     ("V4.4 (regeneração, regra, invariante e migração)", "tests/test_v4_4.py", 4, "plano do inc. 8 (TC-WB44-001 a 004)"),
+    ("posicionador: dados", "tests/test_posicionador_dados.py", 2, "EDR-076; plano da fase 1 do posicionador (TC-POS-001 e 002)"),
+    ("posicionador: geometria", "tests/test_posicionador_geometria.py", 5, "EDR-076 (TC-POS-010 a 014)"),
+    ("posicionador: leitor de STEP", "tests/test_posicionador_cad.py", 5,
+     "EDR-076 (TC-POS-020 a 024; precisa do extra opcional cad, sem ele NÃO EXECUTÁVEL)"),
+    ("posicionador: regulamento", "tests/test_posicionador_regulamento.py", 5, "EDR-076 (TC-POS-030 a 034)"),
+    ("posicionador: mecanismo e configuração", "tests/test_posicionador_mecanismo.py", 5, "EDR-076 (TC-POS-050 a 054)"),
+    ("posicionador: varredura", "tests/test_posicionador_varredura.py", 5, "EDR-076 (TC-POS-060 a 064)"),
+    ("posicionador: busca", "tests/test_posicionador_busca.py", 5, "EDR-076 (TC-POS-070 a 074)"),
+    ("posicionador: ferramenta", "tests/test_posicionador_ferramenta.py", 2,
+     "EDR-076 (TC-POS-080 e 081; o 081 precisa do extra opcional cad, sem ele NÃO EXECUTÁVEL)"),
 ]
 MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
            "origens", "gerar_v4_2", "metas", "aba_metas", "viva", "mmm", "escada", "executor_testes", "skidpad",
            "aba_curva", "gerar_v4_3",
-           "estudo_neutro", "reescrita_nomes", "nomes_v4_4", "gerar_v4_4"]
+           "estudo_neutro", "reescrita_nomes", "nomes_v4_4", "gerar_v4_4",
+           "posicionador.geometria", "posicionador.cad_step", "posicionador.regulamento", "posicionador.config",
+           "posicionador.mecanismo", "posicionador.varredura", "posicionador.espaco_livre", "posicionador.busca",
+           "posicionador.relatorio"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
            ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5),
            ("tests/mutation_inc7.py", 5), ("tests/mutation_planilha_v43.py", 4),
@@ -92,6 +105,10 @@ PLANILHAS = [("tests/test_workbook.py", 19, "pneu (10_TIRE) da V3.0; registro-de
 _X = "excel/FSAE_EV_Suspension_Fase1_"
 # O .tir (data/Hoosier_R25B_13x7_TTC_provisional.tir) não é rastreado: declará-lo impediria todo pulo; fica fora da conferência.
 _HP = ("data/hardpoints_synthetic_V2.0.csv", "data/hardpoints_synthetic_V2.0.meta.json")
+_POS = tuple(f"data/posicionador/{a}" for a in ("config_T11.json", "curvas_kinlib_v20.csv", "hardpoints_T11_v10.csv",
+                                                 "hardpoints_T11_v10.meta.json", "hardpoints_T11_v20_murilo.csv",
+                                                 "hardpoints_T11_v20_murilo.meta.json", "origem_v20_murilo.json"))
+_STEP = "data/cad/T11_chassi_2026-11-17.step"
 # Entradas DECLARADAS de cada item para o --pular-recentes: o que o script abre por caminho (módulos que a mutação troca, testes que
 # ela dispara, planilhas .xlsx, dados) e que o ast não vê. Entram, com o script e os imports locais, no diff contra o commit.
 # Os imports de cada arquivo declarado também são seguidos. Planilhas lidas da tag Git (imutáveis) não precisam constar. O .tir do
@@ -130,6 +147,14 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
     "tests/test_kinematics_model.py": _HP + ("data/hardpoints_synthetic_4cantos_V2.0.csv",
                                              "data/hardpoints_synthetic_4cantos_V2.0.meta.json"),
     "tests/test_suspension_model.py": _HP,
+    # Posicionador (EDR-076): dados de data/posicionador/, o STEP do chassi e, no teste da ferramenta, o script que ele roda.
+    "tests/test_posicionador_dados.py": _POS,
+    "tests/test_posicionador_cad.py": (_STEP,),
+    "tests/test_posicionador_regulamento.py": _POS,
+    "tests/test_posicionador_mecanismo.py": _POS,
+    "tests/test_posicionador_varredura.py": _POS,
+    "tests/test_posicionador_busca.py": _POS,
+    "tests/test_posicionador_ferramenta.py": _POS + (_STEP, "tools/posicionar_atuacao.py"),
 }
 
 
