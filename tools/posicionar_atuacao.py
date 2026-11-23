@@ -18,9 +18,10 @@ Saídas em PASTA:
 
 Referencial do STEP: com as esferas `REF_ORIGEM`, `REF_X` e `REF_Y` no STEP, elas mandam (`cad_step.referencial`); sem
 nenhuma esfera `REF_`, vale o item `transformacao_step_m` da configuração (HIPOTESE), e o relatório diz isso.
-Caixa de busca do pivô: X do item `caixa_busca_pivo_m`; Y e Z nulos no item vêm do STEP (caixa envolvente, no referencial
-do carro, dos pontos de amostra dos obstáculos fixos com X dentro da faixa de X e Y ≥ 0, o lado esquerdo); sem `--step`,
-a busca exige `--caixa` (o `--avaliar-v20` não). Sem `--step`, a cena tem só o aro (`varredura.cena_sem_cad`) e a
+Caixa de busca do pivô (decisão R8 do controlador, HIPOTESE): X do item `caixa_busca_pivo_m`; Y e Z nulos no item vêm
+do envelope do chassi no STEP (caixa envolvente, no referencial do carro, dos pontos de amostra de TODOS os obstáculos
+fixos), lado esquerdo: Y ∈ [0, y_max], Z ∈ [max(0, z_min), z_max]. `--caixa` sobrepõe tudo; sem `--step`, a busca exige
+`--caixa` (o `--avaliar-v20` não). Sem `--step`, a cena tem só o aro (`varredura.cena_sem_cad`) e a
 ferramenta avisa.
 
 Códigos de saída: 0 = saídas gravadas (qualquer veredito); 2 = entrada inválida (arquivo, caixa, referencial, OCP ausente
@@ -126,8 +127,16 @@ def pontos_de_amostra(prim):
     return np.asarray(c, dtype=float).reshape(1, 3) if c is not None else np.zeros((0, 3))
 
 
+def caixa_envelope(fixos):
+    """(mín[3], máx[3]) [m]: caixa envolvente dos pontos de amostra de todos os obstáculos fixos (referencial do carro)."""
+    pts = np.vstack([pontos_de_amostra(p) for p in fixos]) if fixos else np.zeros((0, 3))
+    if not len(pts):
+        raise ErroEntrada("o STEP não tem obstáculos fixos: use --caixa")
+    return pts.min(axis=0), pts.max(axis=0), len(pts)
+
+
 def caixa_de_busca(args, cfg, cena):
-    """((mín[3], máx[3]), texto da origem)."""
+    """((mín[3], máx[3]), texto da origem, origem) com origem ∈ {"LINHA_DE_COMANDO", item da configuração, "HIPOTESE"}."""
     if args.caixa:
         try:
             v = [float(x) for x in args.caixa.split(",")]
@@ -135,29 +144,29 @@ def caixa_de_busca(args, cfg, cena):
             raise ErroEntrada(f"--caixa inválida ({args.caixa!r}): {e}") from e
         if len(v) != 6:
             raise ErroEntrada(f"--caixa precisa de 6 números (xmin,ymin,zmin,xmax,ymax,zmax em m); veio {len(v)}")
-        return (np.array(v[:3]), np.array(v[3:])), "da linha de comando (--caixa)"
+        return (np.array(v[:3]), np.array(v[3:])), "da linha de comando (--caixa)", "LINHA_DE_COMANDO"
     it = cfg.item("caixa_busca_pivo_m")
     lo, hi = list(it.valor["min_m"]), list(it.valor["max_m"])
     faltam = [i for i in range(3) if lo[i] is None or hi[i] is None]
     texto = f"item `caixa_busca_pivo_m` ({it.origem}): {it.fonte}"
     if not faltam:
-        return (np.array(lo, dtype=float), np.array(hi, dtype=float)), texto
+        return (np.array(lo, dtype=float), np.array(hi, dtype=float)), texto, it.origem
     if args.step is None:
         raise ErroEntrada("sem --step, a busca exige --caixa xmin,ymin,zmin,xmax,ymax,zmax (m): a configuração não tem "
                           "Y nem Z da caixa de busca do pivô")
     if 0 in faltam:
         raise ErroEntrada("o X da caixa de busca do pivô tem de vir da configuração ou de --caixa")
-    pts = np.vstack([pontos_de_amostra(p) for p in cena.fixos]) if cena.fixos else np.zeros((0, 3))
-    sel = pts[(pts[:, 0] >= lo[0]) & (pts[:, 0] <= hi[0]) & (pts[:, 1] >= 0.0)]
-    if not len(sel):
-        raise ErroEntrada("nenhum ponto dos obstáculos fixos do STEP com X na faixa da caixa e Y ≥ 0: use --caixa")
+    emin, emax, n = caixa_envelope(cena.fixos)
+    deriv = {1: (0.0, float(emax[1])), 2: (max(0.0, float(emin[2])), float(emax[2]))}
     for i in faltam:
-        lo[i], hi[i] = float(sel[:, i].min()), float(sel[:, i].max())
+        lo[i], hi[i] = deriv[i]
     eixos = ", ".join("XYZ"[i] for i in faltam)
-    texto += (f". {eixos} derivados do STEP: caixa envolvente (referencial do carro) dos {len(sel)} pontos de amostra "
-              f"dos obstáculos fixos com X em [{lo[0]:.3f}; {hi[0]:.3f}] m e Y ≥ 0 (pontos no eixo das cápsulas e nas 12 "
-              f"arestas das caixas, a cada {PASSO_AMOSTRA_M * 1e3:.0f} mm no máximo; o raio das cápsulas não entra)")
-    return (np.array(lo, dtype=float), np.array(hi, dtype=float)), texto
+    texto = (f"HIPOTESE: caixa derivada do envelope do chassi (decisão R8). X do item `caixa_busca_pivo_m` ({it.origem}): "
+             f"{it.fonte}. {eixos} derivados do STEP: caixa envolvente (referencial do carro) dos {n} pontos de amostra de "
+             f"todos os obstáculos fixos (envelope Y [{emin[1]:.4f}; {emax[1]:.4f}] m, Z [{emin[2]:.4f}; {emax[2]:.4f}] m), "
+             f"lado esquerdo: Y ∈ [0, y_max], Z ∈ [max(0, z_min), z_max] (pontos no eixo das cápsulas e nas 12 arestas "
+             f"das caixas, a cada {PASSO_AMOSTRA_M * 1e3:.0f} mm no máximo; o raio das cápsulas não entra)")
+    return (np.array(lo, dtype=float), np.array(hi, dtype=float)), texto, "HIPOTESE"
 
 
 # ------------------------------------------------------------------ figuras
@@ -285,7 +294,7 @@ def principal(argv=None):
                      v20=rl.candidato_dict(cand)["avaliacao"] | {"pontos_m": rl.pontos_atuacao(hs20)})
         ctx["figuras"] = figuras(str(pasta), [("v20", cand)])
     else:
-        caixa, origem_caixa = caixa_de_busca(args, cfg, cena)
+        caixa, origem_caixa, rotulo_caixa = caixa_de_busca(args, cfg, cena)
         ctx.update(caixa=caixa, caixa_origem=origem_caixa)
         log(f"busca: {args.amostras} amostras, {args.refinos} refinos, semente {args.semente}; caixa {caixa[0].round(4)}"
             f" a {caixa[1].round(4)} m")
@@ -301,7 +310,8 @@ def principal(argv=None):
             cands_json.append(rl.candidato_dict(c, k, arq))
         if resumo:
             rl.gravar_resumo(str(pasta / "candidatos.csv"), resumo)
-        dados.update(caixa_busca_pivo_m={"min_m": caixa[0], "max_m": caixa[1], "origem": origem_caixa},
+        dados.update(caixa_busca_pivo_m={"min_m": caixa[0], "max_m": caixa[1], "origem": rotulo_caixa,
+                                         "fonte": origem_caixa},
                      semente=args.semente, amostras=args.amostras, refinos=args.refinos,
                      estatisticas=res.estatisticas, candidatos=cands_json, fase1=rl.diagnostico_dict(res.fase1),
                      mapa_nao_modelado=None if res.mapa is None else res.mapa.nao_modelado)

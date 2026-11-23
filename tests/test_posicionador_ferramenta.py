@@ -5,7 +5,9 @@ TC-POS-080: `--avaliar-v20` sem STEP → código 0; `relatorio.md` diz INVIAVEL 
 TC-POS-081: STEP real do chassi (data/cad/T11_chassi_2026-11-17.step), `--amostras 200 --semente 0` → código 0; cada
             conjunto `candidato_NN.csv`, com o seu meta, carrega com `hardpoints.load_hardpoints` (Status PROVISIONAL), e
             `candidatos.csv` lista um conjunto por linha; sem candidato, `resultado.json` traz só a `fase1`. O relatório
-            carrega o SHA-256 do STEP e diz que a transformação STEP → carro é a HIPÓTESE da configuração.
+            carrega o SHA-256 do STEP e diz que a transformação STEP → carro é a HIPÓTESE da configuração. A caixa de busca
+            derivada do envelope do chassi (decisão R8, HIPOTESE) contém o pivô da v20 (`FL_ROCKER_AXIS_A` de
+            data/posicionador/hardpoints_T11_v20_murilo.csv).
 As saídas vão para uma pasta temporária, nunca para o repositório. O TC-POS-081 precisa do extra opcional "cad"
 (`uv sync --extra cad`); sem ele, o TC-POS-080 roda e o script sai NÃO EXECUTÁVEL (código 3), que nunca conta como PASS.
 Roda como script: uv run python -X utf8 tests/test_posicionador_ferramenta.py
@@ -112,11 +114,23 @@ with tempfile.TemporaryDirectory() as tmp:
         saidas_ok = res.get("fase1") is not None and not linhas
         modo = f"sem candidato; fase1: {(res.get('fase1') or {}).get('motivo', '')[:200]!r}"
     sha_step = sha256(STEP_REAL)
+    hs20 = hp.load_hardpoints(os.path.join(RAIZ, "data", "posicionador", "hardpoints_T11_v20_murilo.csv"),
+                              os.path.join(RAIZ, "data", "posicionador", "hardpoints_T11_v20_murilo.meta.json"))
+    pv20 = hs20.points["FL_ROCKER_AXIS_A"].xyz
+    cx = res.get("caixa_busca_pivo_m") or {}
+    try:
+        lo, hi = [float(v) for v in cx["min_m"]], [float(v) for v in cx["max_m"]]
+        dentro = all(a <= p <= b for a, p, b in zip(lo, pv20, hi))
+    except (KeyError, TypeError, ValueError):
+        lo = hi = None
+        dentro = False
     ok81 = (r81.returncode == 0 and saidas_ok and sha_step in rel and res.get("step_sha256") == sha_step
-            and "transformacao_step_m" in rel and ROTULO in rel and sha_cfg in rel)
+            and "transformacao_step_m" in rel and ROTULO in rel and sha_cfg in rel and dentro
+            and cx.get("origem") == "HIPOTESE")
     check("TC-POS-081 STEP real, 200 amostras, semente 0: conjuntos carregam com load_hardpoints (ou só fase1)", ok81,
           f"código {r81.returncode}; {modo}; erros {erros[:3]}; SHA do STEP no relatório={sha_step in rel}; "
-          f"transformação da configuração citada={'transformacao_step_m' in rel}; {dt81:.1f} s; "
+          f"transformação da configuração citada={'transformacao_step_m' in rel}; caixa {lo} a {hi} m "
+          f"({cx.get('origem')}), pivô da v20 {[round(float(v), 4) for v in pv20]} dentro={dentro}; {dt81:.1f} s; "
           f"stderr (fim): {r81.stderr.strip()[-300:]!r}")
 
 print("\n--- Resumo ---")
