@@ -6,12 +6,13 @@ Mesmo juiz (varredura convergida, sem CAD: só o aro), mesmo orçamento (≤ 150
 Segundo juiz independente: a mesma solução reavaliada com 401 pontos no curso (o juiz principal converge até 8 × 25); a
 concordância entre os dois entra no relatório. Perturbações dos inícios do script e da robustez são SINTÉTICAS (não são dado do carro).
 
-Uso: uv run python -X utf8 tools/benchmark_v2.py --script-atuacao PASTA --saida PASTA_DE_SAIDA [--inicios 20] [--ablacao 10] [--jobs 4]
+Uso: uv run python -X utf8 tools/benchmark_v2.py --script-atuacao PASTA --saida PASTA_DE_SAIDA [--inicios 20] [--ablacao 10] [--processos 4]
+Progresso por tarefa no stderr; resultados_v2.jsonl é gravado tarefa a tarefa e a execução retoma sozinha se for interrompida
+(`tools/paralelo.py`); mudou algum argumento, apague o .jsonl.
 Relatório: <python com matplotlib> tools/benchmark_v2_relatorio.py --saida PASTA_DE_SAIDA
 """
 import argparse
 import json
-import multiprocessing as mp
 import os
 import platform
 import sys
@@ -23,6 +24,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import benchmark_posicionador as B  # noqa: E402
+import paralelo  # noqa: E402
 
 # braço: (δ máximo em °, margem como objetivo, caixa dinâmica, amostras, refinos, avaliações por refino). Todos somam ≈ 1500
 # avaliações rápidas; o v2 usa menos amostras e refinos mais fundos (a alocação é parte do método novo).
@@ -51,7 +53,7 @@ def juiz2(x):
                 margem=float(bu.margem_normalizada(av)))
 
 
-def _job(a):
+def _tarefa(a):
     kind = a[0]
     if kind == "script":
         r = B._job_script(a[1:])
@@ -89,6 +91,10 @@ def _job(a):
     return r
 
 
+def _descrever(tarefa):
+    return tarefa[2] if tarefa[0] == "script" else f"{tarefa[1]} · semente {tarefa[2]}"
+
+
 def rodar(a):
     pasta = str(Path(a.script_atuacao).resolve())
     saida = Path(a.saida)
@@ -102,15 +108,14 @@ def rodar(a):
                             [rng.normal(0, B.SIGMA_INICIO["braco_mm"])], [rng.normal(0, B.SIGMA_INICIO["graus"])],
                             [rng.normal(0, B.SIGMA_INICIO["braco_mm"])]])
         inicios.append((f"início {i} (v20 + perturbação SINTÉTICA)", x0 + d))
-    jobs = [("script", pasta, f"{r} · mesmo orçamento", x, a.maxfev, 100000) for r, x in inicios]
-    jobs += [("script", pasta, f"{r} · sem as restrições do tubo", x, a.maxfev, 100000, True) for r, x in inicios]
+    tarefas = [("script", pasta, f"{r} · mesmo orçamento", x, a.maxfev, 100000) for r, x in inicios]
+    tarefas += [("script", pasta, f"{r} · sem as restrições do tubo", x, a.maxfev, 100000, True) for r, x in inicios]
     for braco in BRACOS:
         n = a.ablacao if braco in ABLACOES else a.inicios
-        jobs += [("nosso", braco, s) for s in range(n)]
-    print(f"{len(jobs)} jobs em {a.jobs} processos", file=sys.stderr)
+        tarefas += [("nosso", braco, s) for s in range(n)]
     t0 = time.perf_counter()
-    with mp.get_context("spawn").Pool(a.jobs) as pool:
-        res = pool.map(_job, jobs, chunksize=1)
+    res = paralelo.mapear(_tarefa, tarefas, a.jobs, "benchmark 2", saida / "resultados_v2.jsonl", descrever=_descrever)
+    print("[benchmark 2] avaliando o v20 (sozinho, depois das buscas)...", file=sys.stderr, flush=True)
     v20 = B.exp_v20(pasta, x0)
     dados = dict(gerado_em=time.strftime("%Y-%m-%d %H:%M:%S"), maquina=f"{platform.platform()} · {os.cpu_count()} núcleos",
                  python=sys.version.split()[0], bracos={k: dict(zip(("delta_max_graus", "margem", "caixa_dinamica", "amostras",
@@ -127,6 +132,6 @@ if __name__ == "__main__":
     ap.add_argument("--saida", required=True)
     ap.add_argument("--inicios", type=int, default=20)
     ap.add_argument("--ablacao", type=int, default=10)
-    ap.add_argument("--jobs", type=int, default=4)
+    ap.add_argument("--processos", "--jobs", dest="jobs", type=int, default=4)
     ap.add_argument("--maxfev", type=int, default=1500)
     rodar(ap.parse_args())

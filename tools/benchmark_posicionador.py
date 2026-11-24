@@ -7,7 +7,7 @@ busca com o posicionador. O script de atuação nunca entra no repositório: `--
 
 Uso (na raiz do repositório):
     uv run python -X utf8 tools/benchmark_posicionador.py rodar --script-atuacao PASTA --saida PASTA_DE_SAIDA
-        [--inicios 6] [--jobs 4] [--amostras 300] [--refinos 20] [--maxfev 1500] [--robustez 60]
+        [--inicios 6] [--processos 4] [--amostras 300] [--refinos 20] [--maxfev 1500] [--robustez 60]
     <python com matplotlib> tools/benchmark_posicionador.py relatorio --saida PASTA_DE_SAIDA
 
 `rodar` grava `resultados.json`; `relatorio` lê o JSON e grava `figuras/*.png` e `relatorio.md`. Os números do relatório
@@ -24,7 +24,6 @@ aproximadamente as mesmas restrições. Sem esse controle, a comparação favore
 """
 import argparse
 import json
-import multiprocessing as mp
 import os
 import platform
 import sys
@@ -37,6 +36,8 @@ import numpy as np
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "python"))
 sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import paralelo  # noqa: E402
 
 DADOS = RAIZ / "data" / "posicionador"
 CUSTO_CUMPRIDO = 0.1
@@ -118,7 +119,7 @@ def curva_mr_script(T, c, x, n):
     return dzs / 1e3, mr, float(mr.max() / mr.min() - 1.0)
 
 
-# ------------------------------------------------------------------ jobs (em processos separados)
+# ------------------------------------------------------------------ tarefas (em processos separados)
 def _job_script(a):
     """Nelder-Mead do script de atuação. `sem_tubo` (controle): o mesmo custo, com satisfeitas as restrições que o posicionador
     NÃO tem (reta ao Front Hoop, folga do tubo ao gabarito, triângulo da bandeja superior e gabarito projetado). O controle
@@ -278,14 +279,13 @@ def rodar(args):
                             [rng.normal(0, SIGMA_INICIO["braco_mm"])], [rng.normal(0, SIGMA_INICIO["graus"])],
                             [rng.normal(0, SIGMA_INICIO["braco_mm"])]])
         inicios.append((f"início {i} (v20 + perturbação SINTÉTICA)", x0 + d))
-    jobs = [("script", pasta, f"{r} · mesmo orçamento", x, args.maxfev, 100000) for r, x in inicios]
-    jobs.append(("script", pasta, "v20 · configuração original do script (maxiter 2000)", x0, None, 2000))
-    jobs += [("script", pasta, f"{r} · sem as restrições do tubo", x, args.maxfev, 100000, True) for r, x in inicios]
-    jobs += [("nosso", s, args.amostras, args.refinos, CAIXA_PADRAO) for s in range(args.inicios)]
-    print(f"{len(jobs)} jobs em {args.jobs} processos; isto leva alguns minutos", file=sys.stderr)
+    tarefas = [("script", pasta, f"{r} · mesmo orçamento", x, args.maxfev, 100000) for r, x in inicios]
+    tarefas.append(("script", pasta, "v20 · configuração original do script (maxiter 2000)", x0, None, 2000))
+    tarefas += [("script", pasta, f"{r} · sem as restrições do tubo", x, args.maxfev, 100000, True) for r, x in inicios]
+    tarefas += [("nosso", s, args.amostras, args.refinos, CAIXA_PADRAO) for s in range(args.inicios)]
     t0 = time.perf_counter()
-    with mp.get_context("spawn").Pool(args.jobs) as pool:
-        resultados = pool.map(_despachar, jobs, chunksize=1)
+    resultados = paralelo.mapear(_despachar, tarefas, args.jobs, "benchmark 1", saida / "resultados.jsonl",
+                                 descrever=lambda j: j[2] if j[0] == "script" else f"posicionador · semente {j[1]}")
     print(f"busca: {time.perf_counter() - t0:.0f} s", file=sys.stderr)
 
     v20 = exp_v20(pasta, x0)
@@ -314,7 +314,7 @@ def main():
     r.add_argument("--script-atuacao", required=True)
     r.add_argument("--saida", required=True)
     r.add_argument("--inicios", type=int, default=6)
-    r.add_argument("--jobs", type=int, default=4)
+    r.add_argument("--processos", "--jobs", dest="jobs", type=int, default=4)
     r.add_argument("--amostras", type=int, default=300)
     r.add_argument("--refinos", type=int, default=20)
     r.add_argument("--maxfev", type=int, default=1500)
