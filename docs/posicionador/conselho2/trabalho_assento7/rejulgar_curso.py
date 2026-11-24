@@ -25,7 +25,7 @@ def cfg_com(bump_mm, margem_mm):
     p = OUT / f"cfg_b{bump_mm}_m{margem_mm}.json"; json.dump(d, open(p, "w"), indent=1)
     c = pc.carregar(str(p)); return (c, hs, vr.cena_sem_cad(c))
 
-cen = [(62.4, None), (61.4, None), (60.4, None), (62.4, 1.0), (62.4, 2.0), (59.4, 2.0), (58.0, 3.0), (56.6, 4.0)]
+cen = [(62.4, None), (61.4, None), (60.4, None), (62.4, 1.0), (62.4, 2.0), (59.4, 2.0), (58.6, 2.0), (58.0, 2.0), (58.0, 3.0), (56.6, 4.0)]
 linhas = []
 t0 = time.time()
 for bump, marg in cen:

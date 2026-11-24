@@ -465,6 +465,148 @@
   "curso_roda_total_mm": 82.4
  },
  {
+  "bump": 58.6,
+  "margem": 2.0,
+  "semente": "semente 0",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.03697008620965936,
+  "lmin_mm": 151.0327100395284,
+  "folga_lmin_mm": 0.03271103952842744,
+  "violadas": [],
+  "curso_roda_total_mm": 81.6
+ },
+ {
+  "bump": 58.6,
+  "margem": 2.0,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.039136889936352004,
+  "lmin_mm": 151.08770009810397,
+  "folga_lmin_mm": 0.08770109810396551,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 81.6
+ },
+ {
+  "bump": 58.6,
+  "margem": 2.0,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03719596886913967,
+  "lmin_mm": 150.9757075283344,
+  "folga_lmin_mm": -0.024291471665604556,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 81.6
+ },
+ {
+  "bump": 58.6,
+  "margem": 2.0,
+  "semente": "semente 3",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.03469238476183101,
+  "lmin_mm": 151.03744657605898,
+  "folga_lmin_mm": 0.037447576058974835,
+  "violadas": [],
+  "curso_roda_total_mm": 81.6
+ },
+ {
+  "bump": 58.6,
+  "margem": 2.0,
+  "semente": "semente 4",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.030413800221360754,
+  "lmin_mm": 151.0369209215975,
+  "folga_lmin_mm": 0.036921921597516366,
+  "violadas": [],
+  "curso_roda_total_mm": 81.6
+ },
+ {
+  "bump": 58.6,
+  "margem": 2.0,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029627897575535966,
+  "lmin_mm": 151.21070828812023,
+  "folga_lmin_mm": 0.21070928812022602,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 81.6
+ },
+ {
+  "bump": 58.0,
+  "margem": 2.0,
+  "semente": "semente 0",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.036955052942136746,
+  "lmin_mm": 151.4642078260362,
+  "folga_lmin_mm": 0.4642088260361782,
+  "violadas": [],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 2.0,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03916086672618335,
+  "lmin_mm": 151.5177322856419,
+  "folga_lmin_mm": 0.517733285641892,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 2.0,
+  "semente": "semente 2",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.037197553355126534,
+  "lmin_mm": 151.4083813780374,
+  "folga_lmin_mm": 0.40838237803742017,
+  "violadas": [],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 2.0,
+  "semente": "semente 3",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.03468208093239222,
+  "lmin_mm": 151.47065266324725,
+  "folga_lmin_mm": 0.4706536632472508,
+  "violadas": [],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 2.0,
+  "semente": "semente 4",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.030387729331599056,
+  "lmin_mm": 151.46885398165753,
+  "folga_lmin_mm": 0.4688549816575244,
+  "violadas": [],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 2.0,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029625722526034348,
+  "lmin_mm": 151.6418618391719,
+  "folga_lmin_mm": 0.6418628391718922,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
   "bump": 58.0,
   "margem": 3.0,
   "semente": "semente 0",
