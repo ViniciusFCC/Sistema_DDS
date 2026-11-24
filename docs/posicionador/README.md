@@ -116,10 +116,21 @@ ao tirante confere só o eixo (restrição parcial).
 ## Testes
 
 `tests/test_posicionador_{dados,geometria,cad,regulamento,mecanismo,varredura,busca,ferramenta}.py` (2, 5, 6, 5, 6, 10, 7
-e 4 verificações; registrados em `tools/rodar_testes.py`; cerca de 18 min no total, 11 deles no TC-POS-081). O `cad` e o
+e 4 verificações; registrados em `tools/rodar_testes.py`; cerca de 15 min medidos em 2026-11-23, quase todo no TC-POS-081). O `cad` e o
 TC-POS-081 do `ferramenta` precisam do OCP; sem ele saem NÃO EXECUTÁVEL (código 3), que nunca conta como PASS (o
 `ferramenta` sai com 1 se algum dos outros falhou). A revisão final da fase 1 acrescentou a regressão da propriedade de
 segurança: NaN nos fixos (TC-POS-065), colisão, gabarito e AIP SINTÉTICOS (066), busca com obstáculo na caixa (075),
 itens obrigatórios (055), não modelado (068, 025) e referencial da configuração (069).
 
 - `pendencias-fase1.md`: decisões do controlador na execução da fase 1 (R1 a R11) e pendências menores adiadas, para a fase 2.
+- `proposta-troca-fases-2-3.md`: proposta (PENDING_CONFIRMATION) de fazer o add-in do Fusion antes do verificador completo.
+- `benchmark/`: benchmark da ferramenta do Murilo contra o posicionador (`relatorio.md` com gráficos, `resultados.json`,
+  `figuras/`); reproduzível com `tools/benchmark_posicionador.py`. O script do Murilo nunca entra no repositório.
+
+## Pacote portátil para Windows
+
+`tools/empacotar_windows.py` monta, a partir do `HEAD`, a pasta e o zip `posicionador_T11_win64_<commit>.zip` (Python embutido da
+python.org, rodas `win_amd64`, lançadores `.bat`, `LEIA-ME.txt` e autoteste `verificar_instalacao.bat`). Não é um `.exe` único:
+o OpenCascade traz o vtk e o pacote tem cerca de 730 MB descompactados (211 MB de zip). O build roda em qualquer sistema com `uv`
+e `git` (`--conferir PYTHON` prova que o código empacotado não depende de nada fora do pacote), mas o pacote só executa em Windows
+10/11 x64, e a prova de que as DLLs carregam é a primeira execução de `verificar_instalacao.bat` num Windows.
