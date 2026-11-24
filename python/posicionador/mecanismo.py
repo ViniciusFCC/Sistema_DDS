@@ -9,6 +9,8 @@ Reproduz a regra `montar(x, J)` do script de atuação do script de atuação (t
 - ponto do push rod no rocker A0: o push rod, saindo de J, é tangente ao círculo de raio r1 em volta de Pv (fica
   perpendicular ao braço r1 no estático), na tangente LADO_ROCKER = −1 do script;
 - ponto do push rod na bandeja O0 = J + DJ · unit(A0 − J) (sobre a linha que passa pelo centro da junta);
+- com `delta_rad` ≠ 0, A0 gira em volta do eixo do rocker (n, por Pv) a partir da tangência: o push rod deixa de ser
+  perpendicular ao braço r1 no estático (conselho 2: a tangência não é meta, é escolha de construção; δ = 0 reproduz o script);
 - olhal do rocker B0 = Pv + r2 · Rot(n, φB) · (A0 − Pv)/r1;
 - r2: dado, ou resolvido para MR(0) = MR_ALVO (brentq em [0,2·r1; 3·r1]); MR(0) não depende de onde o olhal C fica na
   reta do amortecedor, só da direção ud;
@@ -41,6 +43,7 @@ class Variaveis:
     el_rad: float         # elevação do amortecedor (+ = subindo para a frente)
     r1_m: float           # braço do rocker do lado do push rod
     phi_b_rad: float      # ângulo entre os braços do rocker, no plano (em volta de n)
+    delta_rad: float = 0.0  # giro do ponto do push rod no rocker (A0) em volta do eixo, a partir da tangência (0 = tangente)
 
     @classmethod
     def da_semente_do_script(cls, x):
@@ -121,6 +124,8 @@ def construir(hs_v10, v: Variaveis, cfg, r2_m=None):
     u = d / L
     perp = np.cross(n, u)
     A0 = J + np.sqrt(L * L - r1 * r1) * (np.cos(beta) * u + LADO_ROCKER * np.sin(beta) * perp)
+    if v.delta_rad:
+        A0 = Pv + _rot(n, float(v.delta_rad)) @ (A0 - Pv)    # A0 continua a r1 de Pv, no plano do rocker
     lj = float(np.linalg.norm(A0 - J))
     if dj >= lj:
         return Construcao(None, r2_m, f"DJ = {dj * 1e3:.1f} mm ≥ distância junta–rocker {lj * 1e3:.3f} mm: "

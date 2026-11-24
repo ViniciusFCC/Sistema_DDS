@@ -77,7 +77,8 @@ def pontos_atuacao(hs):
 def variaveis_dict(v):
     if v is None:
         return None
-    return {"pivo_m": v.pivo_m, "az_rad": v.az_rad, "el_rad": v.el_rad, "r1_m": v.r1_m, "phi_b_rad": v.phi_b_rad}
+    return {"pivo_m": v.pivo_m, "az_rad": v.az_rad, "el_rad": v.el_rad, "r1_m": v.r1_m, "phi_b_rad": v.phi_b_rad,
+            "delta_rad": v.delta_rad}
 
 
 def candidato_dict(c, rank=None, arquivos=None):
@@ -198,7 +199,7 @@ def bloco_candidato(titulo, c):
     if c.variaveis is not None:
         v = c.variaveis
         ln.append(f"- Pivô do rocker: ({', '.join(f'{x * 1e3:.1f}' for x in v.pivo_m)}) mm; r1 = {v.r1_m * 1e3:.1f} mm; "
-                  f"r2 = {_mm(c.construcao.r2_m)}; φB = {math.degrees(v.phi_b_rad):.1f}°; azimute = "
+                  f"r2 = {_mm(c.construcao.r2_m)}; φB = {math.degrees(v.phi_b_rad):.1f}°; δ = {math.degrees(v.delta_rad):.1f}°; azimute = "
                   f"{math.degrees(v.az_rad):.1f}°; elevação = {math.degrees(v.el_rad):.1f}°")
     ln.append(f"- Distância ao nó do chassi mais próximo: pivô {_mm(av.dist_no_m.get('pivo'))}, olhal "
               f"{_mm(av.dist_no_m.get('olhal'))} (preferência U3, não restrição)")

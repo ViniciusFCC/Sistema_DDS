@@ -1,0 +1,22 @@
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+[posicionador] lendo o STEP data/cad/T11_chassi_2026-11-17.step
+[posicionador] obstáculos fixos e nós do chassi
+[posicionador] busca: 100 amostras, 10 refinos, semente 2; caixa [-0.15    0.      0.0601] a [0.15   0.3257 1.2574] m
+[posicionador] amostras: 1/100; menor violação máxima normalizada até aqui = 653.7
+[posicionador] amostras: 19/100; menor violação máxima normalizada até aqui = 2.103
+[posicionador] amostras: 43/100; menor violação máxima normalizada até aqui = 1.972
+[posicionador] amostras: 66/100; menor violação máxima normalizada até aqui = 0.4834
+[posicionador] amostras: 81/100; menor violação máxima normalizada até aqui = 0.4834
+[posicionador] amostras: 95/100; menor violação máxima normalizada até aqui = 0.4834
+[posicionador] amostras: 100/100; menor violação máxima normalizada até aqui = 0.4834
+[posicionador] refinos: 1/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 2/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 3/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 4/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 5/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 6/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 7/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 8/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 9/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] refinos: 10/10; menor violação máxima normalizada até aqui = 0.03054
+[posicionador] saídas em docs/posicionador/conselho2/experimento_delta/d0_s2 (308.9 s)

@@ -112,3 +112,8 @@ Fase 3 — recomendação ao usuário: método, arquitetura do script novo, o qu
   https://claude.ai/artifact/KsGc2RBr3KhkZ3c9y5eZuz): prefixos CHASSI_/FIXO_/RODA_FE_/BANDEJA_FE_/DIR_/REF_/HP_/IGNORAR_,
   esferas Ø5 mm REF_ORIGEM/REF_X/REF_Y e HP_FL_<chave do schema>, posição estática, sem juntas, checklist e .txt de dados.
 - Pendente de autorização: número de EDR e prefixo de TC para o posicionador (CLAUDE.md: IDs só com autorização).
+
+## Diretrizes do usuário (2026-11-24, após o conselho 2) — prevalecem sobre a síntese
+- Sem tolerância nova: não relaxar a tolerância de MR(0) nem usar tolerância de fabricação por ora. Seguir a construção: δ livre (giro do push rod no rocker),
+  mantendo MR(0) = 1,40 e as metas. Implementado (`delta_rad`, `--delta-max`, `--aval-refino`); resultado em `conselho2/experimento_delta/RESULTADO.md`.
+- Fable indisponível; usar tokens de modo eficiente (decisão do usuário).

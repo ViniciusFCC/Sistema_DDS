@@ -204,17 +204,19 @@ def _veredito_mantido(av, r):
 # ------------------------------------------------------------------ faixas e variáveis
 @dataclass(frozen=True)
 class Faixas:
-    lo: np.ndarray       # [px, py, pz, u, ψ, r1, φB]
+    lo: np.ndarray       # [px, py, pz, u, ψ, r1, φB] (+ δ, se a busca libera o giro do push rod)
     hi: np.ndarray
     amax_rad: float
 
 
-def faixas(cfg, caixa_m):
+def faixas(cfg, caixa_m, delta_max_rad=0.0):
     lo_c, hi_c = (np.asarray(c, dtype=float) for c in caixa_m)
     bmin, bmax = float(cfg.valor("braco_min_m")), float(cfg.valor("braco_max_m"))
     amax = float(cfg.valor("amort_ang_max_rad"))
     lo = np.concatenate([lo_c, [0.0, -np.pi, bmin, EPS_PHI]])
     hi = np.concatenate([hi_c, [1.0, np.pi, bmax, np.pi - EPS_PHI]])
+    if delta_max_rad > 0.0:                       # 8ª variável: giro do push rod no rocker a partir da tangência
+        lo, hi = np.append(lo, -delta_max_rad), np.append(hi, delta_max_rad)
     return Faixas(lo, hi, amax)
 
 
@@ -226,7 +228,8 @@ def variaveis_de(x, fx):
     ud = np.array([cos_t, sin_t * np.cos(x[4]), sin_t * np.sin(x[4])])
     az = float(np.arctan2(ud[1], ud[0]))
     elv = float(np.arcsin(np.clip(ud[2], -1.0, 1.0)))
-    return mec.Variaveis(pivo_m=x[0:3].copy(), az_rad=az, el_rad=elv, r1_m=float(x[5]), phi_b_rad=float(x[6]))
+    return mec.Variaveis(pivo_m=x[0:3].copy(), az_rad=az, el_rad=elv, r1_m=float(x[5]), phi_b_rad=float(x[6]),
+                         delta_rad=float(x[7]) if len(x) > 7 else 0.0)
 
 
 def _lhs(rng, n, d):
@@ -274,7 +277,8 @@ def _x_de(v, fx):
     den = 1.0 - np.cos(fx.amax_rad)
     u = (1.0 - cos_t) / den if den > 0.0 else 0.0
     psi = float(np.arctan2(ud[2], ud[1]))
-    return np.concatenate([np.asarray(v.pivo_m, dtype=float), [u, psi, v.r1_m, v.phi_b_rad]])
+    x = np.concatenate([np.asarray(v.pivo_m, dtype=float), [u, psi, v.r1_m, v.phi_b_rad]])
+    return np.append(x, v.delta_rad) if len(fx.lo) > 7 else x
 
 
 # ------------------------------------------------------------------ diagnóstico
@@ -316,11 +320,12 @@ def _caixa_explicita(caixa_m):
 
 # ------------------------------------------------------------------ busca
 def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0, *, passo_m=0.01, n_rapido=N_RAPIDO,
-           max_aval_refino=60, n_finalistas=20, escala_no_m=ESCALA_NO_M, n_conflitos=10, progresso=None):
+           max_aval_refino=60, n_finalistas=20, escala_no_m=ESCALA_NO_M, n_conflitos=10, progresso=None,
+           delta_max_rad=0.0):
     """Busca candidatos viáveis (ver o docstring do módulo). Levanta ValueError se `caixa_m` tem None."""
     t0 = time.perf_counter()
     caixa = _caixa_explicita(caixa_m)
-    fx = faixas(cfg, caixa)
+    fx = faixas(cfg, caixa, delta_max_rad)
     m = el.mapa(cena, caixa, passo_m=passo_m, raio_m=0.0)
     r_pivo = float(cfg.valor("r_pivo_m"))
     livres = m.livres(r_pivo)
@@ -336,7 +341,7 @@ def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0,
     w = np.ones(len(livres)) if not np.any(np.isfinite(d)) else 1.0 / (1.0 + np.where(np.isfinite(d), d, np.inf)
                                                                          / float(escala_no_m))
     idx = rng.choice(len(livres), size=int(n_amostras), p=w / w.sum())
-    u = _lhs(rng, int(n_amostras), 4)
+    u = _lhs(rng, int(n_amostras), len(fx.lo) - 3)
     X = np.column_stack([livres[idx], fx.lo[3:] + u * (fx.hi[3:] - fx.lo[3:])])
 
     amostras, melhor_v = [], float("inf")
