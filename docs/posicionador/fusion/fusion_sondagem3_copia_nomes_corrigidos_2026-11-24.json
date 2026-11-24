@@ -9,6 +9,7 @@
       "C:\\Users\\vferr\\AppData\\Roaming\\Autodesk\\Autodesk Fusion 360\\API\\Scripts\\T11_sondagem",
       "C:\\Users\\vferr\\AppData\\Roaming\\Autodesk\\Autodesk Fusion 360\\API\\Scripts\\T11_sondagem",
       "C:\\Users\\vferr\\AppData\\Roaming\\Autodesk\\Autodesk Fusion 360\\API\\Scripts\\T11_sondagem",
+      "C:\\Users\\vferr\\AppData\\Roaming\\Autodesk\\Autodesk Fusion 360\\API\\Scripts\\T11_sondagem",
       "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e",
       "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e\\Python\\lib",
       "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e",
@@ -62,76 +63,10 @@
     "preferredLanguage": "3"
   },
   "documentos": {
-    "n": 26,
+    "n": 25,
     "lista": [
       {
-        "name": "RODA_FE_ARO_13X7_TX",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_ROCKER_TE_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_ROCKER_TD_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "DIR_FD_TIRANTE_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_ROCKER_FE_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_ROCKER_FD_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TE_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_TOE_LINK_TD_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "BANDEJA_FD_SUPERIOR_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_TOE_LINK_TE_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "DIR_FE_TIRANTE_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TD_V20_1",
+        "name": "IGNORAR_TRAS_RODA_TX",
         "isSaved": true,
         "isModified": false,
         "isActive": false
@@ -143,25 +78,7 @@
         "isActive": false
       },
       {
-        "name": "BANDEJA_FE_INFERIOR_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_PUSHROD_TD_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "BANDEJA_FD_INFERIOR_V20_1",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_PUSHROD_FD_V20_1",
+        "name": "IGNORAR_TRAS_TOE_LINK_TD_V20_1",
         "isSaved": true,
         "isModified": false,
         "isActive": false
@@ -173,13 +90,61 @@
         "isActive": false
       },
       {
-        "name": "IGNORAR_TRAS_BANDEJA_INFERIOR_TE_V20_1",
+        "name": "BANDEJA_FD_SUPERIOR_V20_1",
         "isSaved": true,
         "isModified": false,
         "isActive": false
       },
       {
-        "name": "BANDEJA_FE_SUPERIOR_V20_1",
+        "name": "IGNORAR_ROCKER_FD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_ROCKER_FE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_PUSHROD_FD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "BANDEJA_FE_INFERIOR_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "DIR_FD_TIRANTE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "DIR_FE_TIRANTE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_TOE_LINK_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_PUSHROD_TD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_ROCKER_TE_V20_1",
         "isSaved": true,
         "isModified": false,
         "isActive": false
@@ -191,7 +156,43 @@
         "isActive": false
       },
       {
-        "name": "amortecedor DNM RCP-2S dianteiro (L 182)",
+        "name": "BANDEJA_FE_SUPERIOR_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "BANDEJA_FD_INFERIOR_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_RODA_TX",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_ROCKER_TD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_BANDEJA_INFERIOR_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TD_V20_1",
         "isSaved": true,
         "isModified": false,
         "isActive": false
@@ -203,22 +204,16 @@
         "isActive": false
       },
       {
+        "name": "amortecedor DNM RCP-2S dianteiro (L 182)",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
         "name": "T11_atuacao_v20_1_murilo_teste_nomes_corrigidos",
         "isSaved": true,
         "isModified": false,
         "isActive": true
-      },
-      {
-        "name": "IGNORAR_TRAS_RODA_ARO_13X7_TX",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
-      },
-      {
-        "name": "IGNORAR_TRAS_RODA_ARO_13X7_TX",
-        "isSaved": true,
-        "isModified": false,
-        "isActive": false
       }
     ]
   },
@@ -572,7 +567,7 @@
         "faces": 14
       },
       {
-        "onde": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_ARO_13X7_TX:1",
+        "onde": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_TX:1",
         "nome": "aro 13x7 TX",
         "isSolid": true,
         "isTemporary": false,
@@ -580,7 +575,7 @@
         "faces": 204
       },
       {
-        "onde": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_ARO_13X7_TX:2",
+        "onde": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_TX:2",
         "nome": "aro 13x7 TX",
         "isSolid": true,
         "isTemporary": false,
@@ -1853,7 +1848,7 @@
   },
   "medida_distancia_minima": {
     "n": 200,
-    "media_ms": 1.116411999992124,
+    "media_ms": 1.578552499995567,
     "primeiro_valor": 1.4431828635259016,
     "corpos": [
       "gabarito_T1_2_350x350",
@@ -1863,7 +1858,7 @@
   },
   "medida_distancia_ponto_corpo": {
     "n": 200,
-    "media_ms": 0.38178400000106194,
+    "media_ms": 0.49968350000199285,
     "primeiro_valor": 113.75158380248666,
     "corpos": [
       "gabarito_T1_2_350x350"
@@ -1874,7 +1869,7 @@
     "cilindro_isTemporary": true,
     "tempo_criar_cilindro": {
       "n": 200,
-      "media_ms": 0.03935199998522876,
+      "media_ms": 0.04471049998755916,
       "primeiro_valor": true
     },
     "measure_temporario_vs_corpo": {
@@ -1883,7 +1878,7 @@
     },
     "tempo_measure_temporario_vs_corpo": {
       "n": 200,
-      "media_ms": 0.424840999985463,
+      "media_ms": 0.5156444999920495,
       "primeiro_valor": 132.09400000000002
     },
     "booleana_intersecao_temporaria": {
@@ -1896,7 +1891,7 @@
   },
   "analyzeInterference": {
     "n_interferencias": 0,
-    "tempo_ms_1_chamada": 2.2511999995913357,
+    "tempo_ms_1_chamada": 3.5074000006716233,
     "corpos": [
       "gabarito_T1_2_350x350",
       "braceFBHdir"
@@ -2791,15 +2786,15 @@
     "chassi": {
       "n_corpos": 27,
       "repeticoes": 5,
-      "tempo_total_ms_por_varredura": 5.998080000426853,
-      "tempo_medio_por_corpo_ms": 0.2221511111269205,
+      "tempo_total_ms_por_varredura": 9.385720000136644,
+      "tempo_medio_por_corpo_ms": 0.34761925926432014,
       "menor_distancia_cm": 0.10900284331284738
     },
     "todos_os_solidos": {
       "n_corpos": 320,
       "repeticoes": 3,
-      "tempo_total_ms_por_varredura": 429.11129999993136,
-      "tempo_medio_por_corpo_ms": 1.3409728124997855,
+      "tempo_total_ms_por_varredura": 839.3667333342213,
+      "tempo_medio_por_corpo_ms": 2.6230210416694417,
       "menor_distancia_cm": 0.10900284331284738
     },
     "contra_ocorrencia_inteira": {
@@ -3518,9 +3513,9 @@
       "IGNORAR_TRASEIRA:1": {
         "ocorrencias": [
           {
-            "caminho": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_ARO_13X7_TX:1",
+            "caminho": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_TX:1",
             "profundidade": 1,
-            "nome": "IGNORAR_TRAS_RODA_ARO_13X7_TX:1",
+            "nome": "IGNORAR_TRAS_RODA_TX:1",
             "corpos": [
               {
                 "nome": "aro 13x7 TX",
@@ -3539,9 +3534,9 @@
             ]
           },
           {
-            "caminho": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_ARO_13X7_TX:2",
+            "caminho": "IGNORAR_TRASEIRA:1+IGNORAR_TRAS_RODA_TX:2",
             "profundidade": 1,
-            "nome": "IGNORAR_TRAS_RODA_ARO_13X7_TX:2",
+            "nome": "IGNORAR_TRAS_RODA_TX:2",
             "corpos": [
               {
                 "nome": "aro 13x7 TX",
