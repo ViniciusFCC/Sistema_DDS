@@ -102,6 +102,11 @@ def _lado(tokens):
     return None
 
 
+def lado_do_nome(nome):
+    """'FE' (esquerda, +Y), 'FD' (direita, −Y) ou None, pelas palavras de lado do nome (FE/FD/ESQ/DIREITA...)."""
+    return _lado(_tokens(nome))
+
+
 def _inferir(nome):
     """(categoria, motivo) por palavra-chave, ou (None, motivo) se nenhuma regra serviu."""
     t = _tokens(nome)

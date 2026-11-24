@@ -21,7 +21,7 @@ import adsk.fusion
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import reconhecimento as rc  # noqa: E402
 
-SAIDA = r"C:\Projetos\fusion_sondagem2.json"
+SAIDA = r"C:\Projetos\fusion_sondagem3.json"
 MAPA_COMPONENTES = r"C:\Projetos\mapa_componentes.json"   # opcional: {"nome do componente": "CATEGORIA"}
 VARRER = ("REF_REFERENCIAS", "HP_FRENTE", "IGNORAR_PONTOS_V20_11")   # ocorrencias de primeiro nivel a abrir
 PROF_MAX = 4
@@ -371,6 +371,31 @@ def run(_context):
                 except Exception as e:  # pylint:disable=broad-except
                     out["contra_ocorrencia_inteira"] = {"erro": f"{type(e).__name__}: {e}"}
             return out
+
+        # ---- geometria de todos os corpos agrupados pelo componente de primeiro nivel (para a verificacao de identificacao) ----
+        @etapa("geometria_por_componente")
+        def _():
+            topos, n_occ = {}, 0
+            for occ in raiz.allOccurrences:
+                n_occ += 1
+                partes = occ.fullPathName.split("+")
+                g = topos.setdefault(partes[0], {"ocorrencias": []})
+                corpos_occ = []
+                for b in occ.bRepBodies:
+                    bb = b.boundingBox
+                    c = {"nome": b.name, "isSolid": b.isSolid,
+                         "min_mm": [bb.minPoint.x * 10, bb.minPoint.y * 10, bb.minPoint.z * 10],
+                         "max_mm": [bb.maxPoint.x * 10, bb.maxPoint.y * 10, bb.maxPoint.z * 10]}
+                    if b.faces.count == 1:
+                        sph = adsk.core.Sphere.cast(b.faces.item(0).geometry)
+                        if sph:
+                            c["esfera"] = {"centro_mm": [sph.origin.x * 10, sph.origin.y * 10, sph.origin.z * 10],
+                                           "raio_mm": sph.radius * 10}
+                    corpos_occ.append(c)
+                g["ocorrencias"].append({"caminho": occ.fullPathName, "profundidade": len(partes) - 1,
+                                         "nome": occ.name, "corpos": corpos_occ})
+            return {"unidade": "mm (a API usa cm; convertido aqui)", "n_ocorrencias": n_occ,
+                    "n_corpos_raiz": raiz.bRepBodies.count, "topos": topos}
 
         res["concluido"] = True
         gravar()
