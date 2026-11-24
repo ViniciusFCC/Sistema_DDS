@@ -418,7 +418,7 @@ def _avaliar(construcao, cena, cfg, n):
     for nome, chave in (("braço r1 (push rod)", "PUSH_IN"), ("braço r2 (amortecedor)", "ROCKER_SPRING")):
         w = canto.p0[chave] - a_ax
         rb = float(np.linalg.norm(w - (w @ eixo) * eixo))
-        R.append(_r(nome, rb, (bmin, bmax), min(rb - bmin, bmax - rb), cfg, ["braco_min_m", "braco_max_m"]))
+        R.append(_r(nome, rb, (bmin, bmax), min(rb - bmin, bmax - rb) + TOL_NUM_M, cfg, ["braco_min_m", "braco_max_m"]))
 
     # giro e ângulo do amortecedor
     giro = float(th.max() - th.min())
