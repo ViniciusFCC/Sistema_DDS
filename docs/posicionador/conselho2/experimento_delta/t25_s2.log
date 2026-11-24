@@ -2,3 +2,13 @@ warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be remo
 [posicionador] lendo o STEP data/cad/T11_chassi_2026-11-17.step
 [posicionador] obstáculos fixos e nós do chassi
 [posicionador] busca: 60 amostras, 4 refinos, semente 2; caixa [-0.15    0.      0.0601] a [0.15   0.3257 1.2574] m
+[posicionador] amostras: 1/60; menor violação máxima normalizada até aqui = 20.61
+[posicionador] amostras: 19/60; menor violação máxima normalizada até aqui = 5.996
+[posicionador] amostras: 42/60; menor violação máxima normalizada até aqui = 0.9549
+[posicionador] amostras: 56/60; menor violação máxima normalizada até aqui = 0.9549
+[posicionador] amostras: 60/60; menor violação máxima normalizada até aqui = 0.9549
+[posicionador] refinos: 1/4; menor violação máxima normalizada até aqui = 0.001243
+[posicionador] refinos: 2/4; menor violação máxima normalizada até aqui = 0
+[posicionador] refinos: 3/4; menor violação máxima normalizada até aqui = 0
+[posicionador] refinos: 4/4; menor violação máxima normalizada até aqui = 0
+[posicionador] saídas em docs/posicionador/conselho2/experimento_delta/t25_s2 (1228.1 s)

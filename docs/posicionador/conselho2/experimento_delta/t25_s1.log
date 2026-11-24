@@ -3,3 +3,12 @@ warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be remo
 [posicionador] obstáculos fixos e nós do chassi
 [posicionador] busca: 60 amostras, 4 refinos, semente 1; caixa [-0.15    0.      0.0601] a [0.15   0.3257 1.2574] m
 [posicionador] amostras: 1/60; menor violação máxima normalizada até aqui = 240.4
+[posicionador] amostras: 15/60; menor violação máxima normalizada até aqui = 10.03
+[posicionador] amostras: 30/60; menor violação máxima normalizada até aqui = 2.266
+[posicionador] amostras: 53/60; menor violação máxima normalizada até aqui = 2.266
+[posicionador] amostras: 60/60; menor violação máxima normalizada até aqui = 0.8232
+[posicionador] refinos: 1/4; menor violação máxima normalizada até aqui = 0
+[posicionador] refinos: 2/4; menor violação máxima normalizada até aqui = 0
+[posicionador] refinos: 3/4; menor violação máxima normalizada até aqui = 0
+[posicionador] refinos: 4/4; menor violação máxima normalizada até aqui = 0
+[posicionador] saídas em docs/posicionador/conselho2/experimento_delta/t25_s1 (1213.9 s)

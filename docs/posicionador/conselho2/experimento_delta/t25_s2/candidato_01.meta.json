@@ -1,0 +1,11 @@
+{
+  "schema_version": "V2.0",
+  "geometry_rev": "T11-v10 (LR −6 mm) + atuação do posicionador, candidato 01",
+  "coordinate_system": "ISO8855_X_FORWARD_Y_LEFT_Z_UP",
+  "units": "m",
+  "ground_plane_z_m": 0.0,
+  "kop": "altura estática de projeto (v10)",
+  "source": "posicionador EDR-076 (tools/posicionar_atuacao.py), candidato 01, veredito CONDICIONAL, semente 2; STEP sha256 a3cbf4b8bfd670a3df1892241a04341a9e315ad17ef01de220f655ea2287e9c0; configuração sha256 a05928ea5650ad6d6bee77cf1e17d0f08b2fb2f3279a9c35ad65295b0ff8db44; VERIFIED ≠ validado; cinemática NOT_VALIDATED contra o OptimumKinematics (REFERENCE, EDR-004). Base: geometria_T11.json do script de atuação (script de atuação), recebido 2026-11-17; SPINDLE_PT e CONTACT_PATCH são HIPÓTESE do kinlib (camber e toe estáticos nulos, solo em Z = 0); grupo pushrod por posicionador.mecanismo.construir (EDR-076)",
+  "freeze_level": "F0",
+  "timestamp": "2026-11-24T11:46:50+00:00"
+}
