@@ -117,3 +117,7 @@ Fase 3 — recomendação ao usuário: método, arquitetura do script novo, o qu
 - Sem tolerância nova: não relaxar a tolerância de MR(0) nem usar tolerância de fabricação por ora. Seguir a construção: δ livre (giro do push rod no rocker),
   mantendo MR(0) = 1,40 e as metas. Implementado (`delta_rad`, `--delta-max`, `--aval-refino`); resultado em `conselho2/experimento_delta/RESULTADO.md`.
 - Fable indisponível; usar tokens de modo eficiente (decisão do usuário).
+
+## Decisão do usuário (2026-11-24): escopo da fase 2
+- Sem medições de tolerância ainda, a **fase 2 passa a ser a implementação do posicionador diretamente no Fusion** (o que o spec §U5 chamava de fase 3, adaptador Fusion). O certificador completo (margem de fabricação, BRep exato, mutação) fica para depois das medições de tolerância. Status: DECIDIDO pelo usuário; antes era PENDING_CONFIRMATION (troca de fases).
+- Consequências: o conflito de nome do "δ" (margem de fabricação × ângulo do push rod) deixa de ser imediato; scipy (brentq, Nelder-Mead) precisa sair para rodar no Python do Fusion (R9); a investigação do que o Fusion permite (API, bibliotecas, geometria) vira o primeiro passo e depende da máquina do usuário.
