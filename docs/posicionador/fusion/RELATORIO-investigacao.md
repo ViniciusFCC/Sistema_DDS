@@ -85,3 +85,57 @@ Defeito do script: a etapa `fusion` falhou com `AttributeError: 'Application' ob
 ## 5. Próximo passo sugerido
 
 Estender a sondagem para varrer as ocorrências `REF_REFERENCIAS`, `HP_FRENTE` e `IGNORAR_PONTOS_V20_11` (pontos de construção, croquis, corpos) e medir `measureMinimumDistance` contra o conjunto dos corpos do chassi. Ainda só leitura.
+
+## 6. Sondagem estendida e reconhecimento de componentes (2026-11-24, segunda execução)
+
+Script `T11_sondagem` v0.2, mesma regra (só leitura; nada salvo nem alterado). Saída bruta: `fusion_sondagem2_2026-11-24.json`. Executou até o fim (`concluido: true`, nenhuma etapa com erro).
+
+### 6.1 Correção do relatório: os pontos `REF_` e `HP_` existem, como esferas
+
+Na seção 2 (fatos 16 e 17) a contagem de zero `REF_` valia só para **pontos de construção na raiz**. Dentro das ocorrências, os pontos estão como **corpos esféricos** (1 face, raio 2,5 mm = Ø5 mm):
+
+| Ocorrência | Conteúdo medido |
+|---|---|
+| `REF_REFERENCIAS:1` | `REF_ORIGEM` (1002,0; 0,0; −141,57 mm no CAD), `REF_X` (+100,0 mm em X) e `REF_Y` (+100,0 mm em Y): distâncias nominais de 100 mm e eixos ortogonais, como o documento de exportação pede |
+| `HP_FRENTE:1` | 18 esferas `HP_FL_*` e `HP_FR_*` (9 de cada lado: `LCA_IN_F`, `LCA_IN_R`, `LCA_OUT`, `TIE_IN`, `TIE_OUT`, `UCA_IN_F`, `UCA_IN_R`, `UCA_OUT`, `WHEEL_CENTER`) |
+| `IGNORAR_PONTOS_V20_1:1` | não varrida: o nome real termina em `V20_1`, não `V20_11` (erro de transcrição do roteiro; está na lista de componentes reconhecidos) |
+
+Nenhuma dessas ocorrências tem pontos de construção nem croquis. Os centros das esferas saem da face esférica (`Sphere.origin`), não do centro da caixa envolvente.
+
+Conferência com `data/posicionador/hardpoints_T11_v20_script.csv` (coordenadas do CAD menos `REF_ORIGEM`, sem rotação, porque `REF_X` e `REF_Y` são paralelos aos eixos do CAD; conferido só pelos 9 pontos `FL`):
+`FL_LCA_OUT`, `FL_UCA_OUT` e `FL_WHEEL_CENTER` batem exatamente (0,0 mm); `FL_TIE_IN` e `FL_UCA_IN_F` diferem 0,18 mm; os outros quatro diferem de 7,6 a 20,6 mm (`FL_TIE_OUT` 7,6; `FL_UCA_IN_R` 13,0; `FL_LCA_IN_F` 14,8; `FL_LCA_IN_R` 20,6). Interpretação **a confirmar**: o CAD é posterior ao CSV do script (v20); isto não foi investigado. O CSV não tem pontos `FR` e tem 8 pontos que o CAD não traz (`PUSH_IN/OUT`, `ROCKER_*`, `SPRING_*`, `SPINDLE_PT`, `CONTACT_PATCH`): são os da atuação, que o posicionador deve calcular.
+
+### 6.2 Reconhecimento de componentes pelo nome (funcionalidade nova)
+
+Motivo: os componentes do T11 não seguem em tudo os nomes do documento de exportação. O módulo `python/posicionador/reconhecimento.py` (só biblioteca padrão, roda no Python 3.13 dos testes e no 3.14 do Fusion) classifica cada componente de primeiro nível e diz **com que confiança**:
+
+| Nível | Regra | Usável sem confirmação? |
+|---|---|---|
+| `exata` | prefixo do documento, sensível a caixa (os mesmos de `cad_step.PREFIXOS`) | sim |
+| `normalizada` | igual, ignorando caixa, acento, espaço e hífen | sim |
+| `mapa` | decisão do usuário em `C:\Projetos\mapa_componentes.json` (`{"nome": "CATEGORIA"}`); vence qualquer regra | sim |
+| `inferida` | palavras-chave (TIRANTE, WISHBONE, PUSHROD, lado FE/FD...) | **não**: é sugestão |
+| `nao_reconhecido` | nenhuma regra serviu (sem categoria inventada) | não |
+
+Cuidado de projeto: o leitor de STEP trata nome sem prefixo como `FIXO` (obstáculo). Uma peça da suspensão sem nome reconhecido viraria obstáculo e colidiria, por isso `nao_reconhecido` traz `padrao_se_ignorado: "FIXO"`. O resumo devolve `a_confirmar`, `nao_reconhecidos` e `modelo_de_mapa` (esqueleto de JSON já com as sugestões, para o usuário corrigir).
+
+Resultado no T11 aberto (31 ocorrências de primeiro nível): **31 `exata`**, 0 normalizada, 0 inferida, 0 não reconhecida. Por categoria: IGNORAR 20, DIR 2, BANDEJA_FE 2, BANDEJA_FD 2, CHASSI 1, RODA_FE 1, RODA_FD 1, REF 1, HP 1. Ou seja, **no nível dos componentes o T11 já segue o documento**; as regras de normalização e inferência existem para versões futuras do modelo e não foram exercitadas no CAD real (só nos testes com nomes sintéticos). Se a divergência que o usuário percebe estiver em outro nível (nomes dos corpos dentro dos componentes, nomes dos `HP_` contra as chaves do schema), o reconhecimento ainda não cobre isso: ver 6.4.
+
+Testes: `tests/test_posicionador_reconhecimento.py`, 5 PASS (inclui os nomes reais do T11 lidos do JSON, o mapa do usuário e a igualdade com `cad_step.PREFIXOS`; a cópia do módulo em `T11_sondagem/` é conferida por SHA-256). Registrado em `tools/rodar_testes.py`. **Sem ID de TC**: prefixo e numeração aguardam autorização do usuário.
+
+### 6.3 Desempenho da API com geometria do chassi
+
+| Medida | Resultado |
+|---|---|
+| Cilindro temporário × 27 corpos do chassi (5 varreduras) | 9,4 ms por varredura (0,35 ms por corpo) |
+| Cilindro temporário × os 320 sólidos (3 varreduras) | 618 ms por varredura (1,9 ms por corpo) |
+| Cilindro temporário × **ocorrência inteira** `CHASSI_T11_V20` | **falha**: `RuntimeError: 3 : measurement failed` (a medida contra componente inteiro não funciona; é preciso medir corpo a corpo) |
+
+Implicação (proposta): medir contra a lista de corpos relevantes e, se preciso, filtrar antes por caixa envolvente; 320 corpos por candidato custariam ~0,6 s, caro para milhares de avaliações.
+
+### 6.4 Ainda a confirmar
+
+- Que divergência de nomes o usuário vê (a sondagem acha os 31 componentes corretos); pedir um exemplo para decidir se o reconhecimento deve cobrir nomes de corpos ou chaves `HP_`.
+- Diferenças de 7 a 21 mm entre o CAD e o CSV do script em quatro hardpoints `FL` (6.1).
+- Rotação do referencial `REF_` em relação ao CAD (aqui assumida nula pelos eixos paralelos medidos).
+- Custo de `analyzeInterference` com o conjunto e de `booleanOperation` com geometria do chassi.

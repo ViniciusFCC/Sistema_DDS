@@ -16,7 +16,15 @@ import traceback
 import adsk.core
 import adsk.fusion
 
-SAIDA = r"C:\Projetos\fusion_sondagem.json"
+# Reconhecimento de componentes pelo nome (modulo em Python puro, copia de python/posicionador/reconhecimento.py,
+# na mesma pasta deste script).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import reconhecimento as rc  # noqa: E402
+
+SAIDA = r"C:\Projetos\fusion_sondagem2.json"
+MAPA_COMPONENTES = r"C:\Projetos\mapa_componentes.json"   # opcional: {"nome do componente": "CATEGORIA"}
+VARRER = ("REF_REFERENCIAS", "HP_FRENTE", "IGNORAR_PONTOS_V20_11")   # ocorrencias de primeiro nivel a abrir
+PROF_MAX = 4
 N_CHAMADAS = 200
 MAX_LISTA = 200
 
@@ -252,6 +260,117 @@ def run(_context):
             dt = (time.perf_counter() - t0) * 1000.0
             return {"n_interferencias": r.count, "tempo_ms_1_chamada": dt,
                     "corpos": [solidos[0][1].name, solidos[1][1].name]}
+
+        # ---- reconhecimento dos componentes pelo nome (somente leitura) ----
+        mapa_usuario = None
+        if os.path.exists(MAPA_COMPONENTES):
+            try:
+                mapa_usuario = rc.carregar_mapa(MAPA_COMPONENTES)
+            except Exception:  # pylint:disable=broad-except
+                res["mapa_componentes_ERRO"] = traceback.format_exc()
+
+        @etapa("reconhecimento_componentes")
+        def _():
+            lista, itens = [], []
+            for occ in raiz.occurrences:
+                r = rc.reconhecer(occ.name, mapa_usuario)
+                lista.append(r)
+                item = {"ocorrencia": occ.name, "componente": occ.component.name, "categoria": r.categoria,
+                        "nivel": r.nivel, "usavel": r.usavel, "motivo": r.motivo,
+                        "n_corpos": occ.component.bRepBodies.count, "n_filhos": occ.childOccurrences.count,
+                        "visivel": getattr(occ, "isLightBulbOn", None)}
+                if rc.nome_base(occ.component.name) != rc.nome_base(occ.name):
+                    rcomp = rc.reconhecer(occ.component.name, mapa_usuario)
+                    item["pelo_nome_do_componente"] = {"categoria": rcomp.categoria, "nivel": rcomp.nivel}
+                itens.append(item)
+            return {"mapa_usado": mapa_usuario is not None, "arquivo_do_mapa": MAPA_COMPONENTES,
+                    "n": len(itens), "resumo": rc.resumo(lista), "modelo_de_mapa": rc.modelo_de_mapa(lista),
+                    "itens": itens}
+
+        # ---- conteudo das ocorrencias que deveriam guardar os pontos REF_ e HP_ ----
+        def xyz(p):
+            return [p.x, p.y, p.z]
+
+        def info_corpo(b):
+            d = {"nome": b.name, "isSolid": b.isSolid, "n_faces": b.faces.count}
+            bb = b.boundingBox
+            d["bbox_centro_cm"] = [(bb.minPoint.x + bb.maxPoint.x) / 2, (bb.minPoint.y + bb.maxPoint.y) / 2,
+                                   (bb.minPoint.z + bb.maxPoint.z) / 2]
+            d["bbox_dim_cm"] = [bb.maxPoint.x - bb.minPoint.x, bb.maxPoint.y - bb.minPoint.y,
+                                bb.maxPoint.z - bb.minPoint.z]
+            if b.faces.count == 1:
+                sph = adsk.core.Sphere.cast(b.faces.item(0).geometry)
+                if sph:
+                    d["esfera"] = {"centro_cm": xyz(sph.origin), "raio_cm": sph.radius}
+            return d
+
+        def varrer(occ, prof):
+            comp = occ.component
+            out = {"ocorrencia": occ.fullPathName, "componente": comp.name, "n_corpos": occ.bRepBodies.count,
+                   "corpos": [info_corpo(b) for b in list(occ.bRepBodies)[:MAX_LISTA]]}
+            pontos = []
+            for cp in comp.constructionPoints:
+                try:
+                    g, ctx = cp.createForAssemblyContext(occ).geometry, "raiz"
+                except Exception:  # pylint:disable=broad-except
+                    g, ctx = cp.geometry, "local"
+                pontos.append({"nome": cp.name, "xyz_cm": xyz(g), "contexto": ctx})
+            out["pontos_de_construcao"] = pontos[:MAX_LISTA]
+            croquis = []
+            for sk in comp.sketches:
+                try:
+                    sx, ctx = sk.createForAssemblyContext(occ), "raiz"
+                except Exception:  # pylint:disable=broad-except
+                    sx, ctx = sk, "local"
+                pts = []
+                for sp in sx.sketchPoints:
+                    try:
+                        g = sp.worldGeometry
+                    except Exception:  # pylint:disable=broad-except
+                        g = sp.geometry
+                    pts.append(xyz(g))
+                croquis.append({"nome": sk.name, "n_pontos": sx.sketchPoints.count, "contexto": ctx,
+                                "pontos_xyz_cm": pts[:MAX_LISTA]})
+            out["croquis"] = croquis
+            if prof < PROF_MAX:
+                out["filhos"] = [varrer(ch, prof + 1) for ch in occ.childOccurrences]
+            return out
+
+        @etapa("varredura_ref_hp")
+        def _():
+            achadas, resultado = [], []
+            for occ in raiz.occurrences:
+                if rc.nome_base(occ.name).startswith(VARRER):
+                    achadas.append(occ.name)
+                    resultado.append(varrer(occ, 0))
+            return {"procuradas": list(VARRER), "achadas": achadas, "conteudo": resultado}
+
+        # ---- distancia de um corpo temporario contra o chassi e contra todos os solidos ----
+        @etapa("distancia_temporario_vs_chassi")
+        def _():
+            tbm = adsk.fusion.TemporaryBRepManager.get()
+            cil = tbm.createCylinderOrCone(P3.create(0, 0, 0), 1.25, P3.create(0, 0, 30.0), 1.25)
+
+            def varre(alvos, reps):
+                t0, menor = time.perf_counter(), None
+                for _ in range(reps):
+                    for b in alvos:
+                        v = mm.measureMinimumDistance(cil, b).value
+                        menor = v if menor is None or v < menor else menor
+                dt = (time.perf_counter() - t0) * 1000.0
+                return {"n_corpos": len(alvos), "repeticoes": reps, "tempo_total_ms_por_varredura": dt / reps,
+                        "tempo_medio_por_corpo_ms": dt / reps / max(len(alvos), 1), "menor_distancia_cm": menor}
+
+            chassi = [b for o, b in solidos if o.startswith("CHASSI_T11_V20")]
+            out = {"chassi": varre(chassi, 5), "todos_os_solidos": varre([b for _, b in solidos], 3)}
+            occs = [o for o in raiz.occurrences if o.name.startswith("CHASSI_T11_V20")]
+            if occs:
+                try:
+                    out["contra_ocorrencia_inteira"] = media_ms(
+                        lambda: mm.measureMinimumDistance(cil, occs[0]).value, n=20)
+                except Exception as e:  # pylint:disable=broad-except
+                    out["contra_ocorrencia_inteira"] = {"erro": f"{type(e).__name__}: {e}"}
+            return out
 
         res["concluido"] = True
         gravar()

@@ -68,6 +68,8 @@ TESTES = [
     ("posicionador: melhorias do conselho 2", "tests/test_posicionador_melhorias.py", 5, "EDR-076 (TC-POS-090 a 094)"),
     ("posicionador: ferramenta", "tests/test_posicionador_ferramenta.py", 4,
      "EDR-076 (TC-POS-080 a 083; o 081 precisa do extra opcional cad, sem ele NÃO EXECUTÁVEL)"),
+    ("posicionador: reconhecimento de componentes", "tests/test_posicionador_reconhecimento.py", 5,
+     "fase 2 (Fusion); sem ID de TC até o usuário autorizar o prefixo"),
 ]
 MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
@@ -76,7 +78,7 @@ MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_mo
            "estudo_neutro", "reescrita_nomes", "nomes_v4_4", "gerar_v4_4",
            "posicionador.geometria", "posicionador.cad_step", "posicionador.regulamento", "posicionador.config",
            "posicionador.mecanismo", "posicionador.varredura", "posicionador.espaco_livre", "posicionador.busca",
-           "posicionador.relatorio"]
+           "posicionador.relatorio", "posicionador.reconhecimento"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
            ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5),
            ("tests/mutation_inc7.py", 5), ("tests/mutation_planilha_v43.py", 4),

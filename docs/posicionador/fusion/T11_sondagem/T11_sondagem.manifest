@@ -3,9 +3,9 @@
     "type": "script",
     "author": "Equipe Tupa (posicionador)",
     "description": {
-        "": "Sondagem somente leitura do Fusion para o posicionador T11: versao do Python, bibliotecas, pontos REF_ e tempo da API de distancia."
+        "": "Sondagem somente leitura do Fusion para o posicionador T11: versao do Python, bibliotecas, pontos REF_ e tempo da API de distancia, reconhecimento dos componentes pelo nome e varredura das ocorrencias REF_/HP_."
     },
-    "version": "0.1",
+    "version": "0.2",
     "supportedOS": "windows",
     "editEnabled": true
 }

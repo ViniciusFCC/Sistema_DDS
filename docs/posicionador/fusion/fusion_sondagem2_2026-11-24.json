@@ -1,0 +1,2796 @@
+{
+  "script": "T11_sondagem",
+  "somente_leitura": true,
+  "python": {
+    "sys.version": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
+    "sys.executable": "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e\\Fusion360.exe",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "sys.path": [
+      "C:\\Users\\vferr\\AppData\\Roaming\\Autodesk\\Autodesk Fusion 360\\API\\Scripts\\T11_sondagem",
+      "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e",
+      "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e\\Python\\lib",
+      "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e",
+      "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e\\Python\\lib\\site-packages",
+      "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e\\Python\\DLLs",
+      "C:\\Users\\vferr\\AppData\\Local\\Autodesk\\webdeploy\\production\\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e\\Python",
+      "C:/Users/vferr/AppData/Local/Autodesk/webdeploy/production/39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e/",
+      "C:/Users/vferr/AppData/Local/Autodesk/webdeploy/production/39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e/nspylib.zip",
+      "C:/Users/vferr/AppData/Local/Autodesk/webdeploy/production/39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e/Api/Python/packages",
+      "C:/Users/vferr/AppData/Roaming/Autodesk/Autodesk Fusion 360/MyScripts/",
+      "C:/Users/vferr/AppData/Roaming/Autodesk/Autodesk Fusion 360/MyScripts/Autorun/",
+      "C:/Users/vferr/AppData/Roaming/Autodesk/Autodesk Fusion 360/MyScripts/Samples/",
+      "C:/Users/vferr/AppData/Roaming/Autodesk/Autodesk Fusion 360/MyScripts/ProgramData/",
+      "C:/Users/vferr/AppData/Roaming/Autodesk/Autodesk Fusion 360/MyScripts/AppData/",
+      "C:/Users/vferr/AppData/Roaming/Autodesk/Autodesk Fusion 360/MyScripts/ManuallyInstalled/"
+    ]
+  },
+  "bibliotecas": {
+    "numpy": {
+      "ok": false,
+      "erro": "ModuleNotFoundError: No module named 'numpy'"
+    },
+    "scipy": {
+      "ok": false,
+      "erro": "ModuleNotFoundError: No module named 'scipy'"
+    },
+    "scipy.optimize": {
+      "ok": false,
+      "erro": "ModuleNotFoundError: No module named 'scipy'"
+    },
+    "OCP": {
+      "ok": false,
+      "erro": "ModuleNotFoundError: No module named 'OCP'"
+    },
+    "cadquery": {
+      "ok": false,
+      "erro": "ModuleNotFoundError: No module named 'cadquery'"
+    },
+    "pip": {
+      "ok": false,
+      "erro": "ModuleNotFoundError: No module named 'pip'"
+    },
+    "setuptools": {
+      "ok": false,
+      "erro": "ModuleNotFoundError: No module named 'setuptools'"
+    }
+  },
+  "fusion": {
+    "version": "2706.1.17",
+    "isStartupComplete": true,
+    "preferredLanguage": "3"
+  },
+  "documentos": {
+    "n": 24,
+    "lista": [
+      {
+        "name": "RODA_FE_ARO_13X7_TX",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_ROCKER_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_ROCKER_TD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "DIR_FD_TIRANTE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_ROCKER_FE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_ROCKER_FD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_TOE_LINK_TD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "BANDEJA_FD_SUPERIOR_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_TOE_LINK_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "DIR_FE_TIRANTE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_PUSHROD_FE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "BANDEJA_FE_INFERIOR_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_PUSHROD_TD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "BANDEJA_FD_INFERIOR_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_PUSHROD_FD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_PUSHROD_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_BANDEJA_INFERIOR_TE_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "BANDEJA_FE_SUPERIOR_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "IGNORAR_TRAS_BANDEJA_INFERIOR_TD_V20_1",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "amortecedor DNM RCP-2S dianteiro (L 182)",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "amortecedor DNM RCP-2S traseiro (L 182)",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": false
+      },
+      {
+        "name": "T11_atuacao_v20_1_murilo_teste",
+        "isSaved": true,
+        "isModified": false,
+        "isActive": true
+      }
+    ]
+  },
+  "design": {
+    "ativo": true,
+    "documento": "T11_atuacao_v20_1_murilo_teste",
+    "designType": "1",
+    "unidade_comprimento_padrao": "mm",
+    "nota_unidades_api": "a API usa centimetros internamente",
+    "n_componentes": 46,
+    "n_ocorrencias": 46
+  },
+  "corpos": {
+    "n_total": 320,
+    "n_listados": 200,
+    "lista": [
+      {
+        "onde": "IGNORAR_GABARITO_T1_2:1",
+        "nome": "gabarito_T1_2_350x350",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "braceFBHdir",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 15
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "braceFBHesq",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 15
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo85",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 10
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo86",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 10
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo87",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo88",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo89",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo90",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo91",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo92",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo93",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo94",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo95",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo96",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo97",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 10
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo98",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 10
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo99",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 18
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo101",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 18
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1",
+        "nome": "Corpo102",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 18
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_FBH:1",
+        "nome": "CHASSI_FBH_01",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 20
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_FBH:1",
+        "nome": "CHASSI_FBH_02",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 12
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_FBH:1",
+        "nome": "CHASSI_FBH_03",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_FBH:1",
+        "nome": "CHASSI_FBH_04",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_FBH:1",
+        "nome": "CHASSI_FBH_05",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_FBH:1",
+        "nome": "CHASSI_FBH_06",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_FH:1",
+        "nome": "CHASSI_FH",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 24
+      },
+      {
+        "onde": "CHASSI_T11_V20:1+CHASSI_MH:1",
+        "nome": "CHASSI_MH",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 28
+      },
+      {
+        "onde": "RODA_FE_CONJUNTO:1+RODA_FE_ARO:1",
+        "nome": "RODA_FE_ARO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 204
+      },
+      {
+        "onde": "RODA_FE_CONJUNTO:1",
+        "nome": "RODA_FE_PNEU",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "RODA_FD_CONJUNTO:1+RODA_FD_ARO:1",
+        "nome": "RODA_FD_ARO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 204
+      },
+      {
+        "onde": "RODA_FD_CONJUNTO:1",
+        "nome": "RODA_FD_PNEU",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Esq_corpo_e_reservatorio_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Esq_haste_e_olhal_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Esq_prato_da_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Esq_prato_da_mola_1_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Esq_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Dir_corpo_e_reservatorio_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Dir_haste_e_olhal_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Dir_prato_da_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Dir_prato_da_mola_1_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "nome": "DNM_dianteira_Dir_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1+RODA_FE_ARO_13X7_TX:3",
+        "nome": "aro 13x7 TX",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 204
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1+RODA_FE_ARO_13X7_TX:4",
+        "nome": "aro 13x7 TX",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 204
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "pneu_traseira_Esq",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "pneu_traseira_Dir",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Esq_corpo_e_reservatorio_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Esq_haste_e_olhal_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Esq_prato_da_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Esq_prato_da_mola_1_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Esq_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Dir_corpo_e_reservatorio_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Dir_haste_e_olhal_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Dir_prato_da_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Dir_prato_da_mola_1_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRASEIRA:1",
+        "nome": "DNM_traseira_Dir_mola_v9",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "REF_REFERENCIAS:1",
+        "nome": "REF_ORIGEM",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "REF_REFERENCIAS:1",
+        "nome": "REF_X",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "REF_REFERENCIAS:1",
+        "nome": "REF_Y",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_LCA_IN_F",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_LCA_IN_R",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_LCA_OUT",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_TIE_IN",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_TIE_OUT",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_UCA_IN_F",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_UCA_IN_R",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_UCA_OUT",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FL_WHEEL_CENTER",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_LCA_IN_F",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_LCA_IN_R",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_LCA_OUT",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_TIE_IN",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_TIE_OUT",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_UCA_IN_F",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_UCA_IN_R",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_UCA_OUT",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "HP_FRENTE:1",
+        "nome": "HP_FR_WHEEL_CENTER",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 1
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Esq - corpo e reservatório (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Esq - haste e olhal (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Esq - prato da mola (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Esq - prato da mola (L 182.0) (1)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Esq - mola (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Dir - corpo e reservatório (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Dir - haste e olhal (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Dir - prato da mola (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Dir - prato da mola (L 182.0) (1)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S dianteiro (L 182):1",
+        "nome": "DNM dianteira Dir - mola (L 182.0)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Esq - corpo e reservatório (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Esq - haste e olhal (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Esq - prato da mola (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Esq - prato da mola (L 181.8) (1)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Esq - mola (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Dir - corpo e reservatório (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 159
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Dir - haste e olhal (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 29
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Dir - prato da mola (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 3
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Dir - prato da mola (L 181.8) (1)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1+amortecedor DNM RCP-2S traseiro (L 182):1",
+        "nome": "DNM traseira Dir - mola (L 181.8)",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": false,
+        "faces": 14
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "SEXTAVADO_6061_13",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 21
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "CONTRAPORCA_MANGA_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "DIR_FE_TIRANTE_V20_1:1",
+        "nome": "CONTRAPORCA_DENTRO_M8",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "SEXTAVADO_6061_13",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 21
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "CONTRAPORCA_MANGA_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M8_ESQ_MCMASTER_2458K423_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "DIR_FD_TIRANTE_V20_1:1",
+        "nome": "CONTRAPORCA_DENTRO_M8",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "SEXTAVADO_6061_11",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 21
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "CONTRAPORCA_MANGA_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 108
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "nome": "CONTRAPORCA_DENTRO_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "SEXTAVADO_6061_11",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 21
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_MANGA_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "CONTRAPORCA_MANGA_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "TERMINAL_DENTRO_M6_ESQ_MCMASTER_2458K422_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 108
+      },
+      {
+        "onde": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "nome": "CONTRAPORCA_DENTRO_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "BANDEJA_4130_SOLDADA",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 71
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "ROTULA_GE6E_SKF_MODELADA_ANEL_EXTERNO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "ROTULA_GE6E_SKF_MODELADA_ANEL_INTERNO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "CHAPA_NO_ROD_4130_4MM",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 8
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "ORELHA_U_ROD_4130_4MM",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 62
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "CONTRAPORCA_PIVO_DIANT_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "nome": "CONTRAPORCA_PIVO_TRAS_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "BANDEJA_4130_SOLDADA",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 66
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "ROTULA_GE6E_SKF_MODELADA_ANEL_EXTERNO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "ROTULA_GE6E_SKF_MODELADA_ANEL_INTERNO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "CONTRAPORCA_PIVO_DIANT_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "nome": "CONTRAPORCA_PIVO_TRAS_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TUBO_CARBONO_16x13",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "INSERTO_7075_BANDEJA",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 7
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_BANDEJA_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_BANDEJA_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_BANDEJA_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_BANDEJA_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "CONTRAPORCA_BANDEJA_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "INSERTO_7075_ROCKER",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 7
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_ROCKER_M6_ESQ_MCMASTER_2458K422_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_ROCKER_M6_ESQ_MCMASTER_2458K422_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_ROCKER_M6_ESQ_MCMASTER_2458K422_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "TERMINAL_ROCKER_M6_ESQ_MCMASTER_2458K422_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 108
+      },
+      {
+        "onde": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "nome": "CONTRAPORCA_ROCKER_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "IGNORAR_ROCKER_FE_V20_1:1",
+        "nome": "PLACA_7075_4MM_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 46
+      },
+      {
+        "onde": "IGNORAR_ROCKER_FE_V20_1:1",
+        "nome": "PLACA_7075_4MM_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 45
+      },
+      {
+        "onde": "IGNORAR_ROCKER_FE_V20_1:1",
+        "nome": "CUBO_PIVO_7075_6202",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "BANDEJA_4130_SOLDADA",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 71
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "ROTULA_GE6E_SKF_MODELADA_ANEL_EXTERNO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "ROTULA_GE6E_SKF_MODELADA_ANEL_INTERNO",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 4
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "CHAPA_NO_ROD_4130_4MM",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 8
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "ORELHA_U_ROD_4130_4MM",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 62
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_DIANT_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "CONTRAPORCA_PIVO_DIANT_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_1",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_2",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 6
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_3",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 14
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "TERMINAL_PIVO_TRAS_M6_DIR_MCMASTER_2458K437_4",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 114
+      },
+      {
+        "onde": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "nome": "CONTRAPORCA_PIVO_TRAS_M6",
+        "isSolid": true,
+        "isTemporary": false,
+        "isVisible": true,
+        "faces": 9
+      }
+    ]
+  },
+  "pontos_de_construcao": {
+    "n_total": 0,
+    "n_REF": 0,
+    "REF": [],
+    "amostra_outros_ate_50": []
+  },
+  "parametros_do_usuario": {
+    "n": 0,
+    "lista": []
+  },
+  "croquis_e_planos": {
+    "n_croquis_raiz": 0,
+    "nomes_croquis_raiz": []
+  },
+  "medida_distancia_minima": {
+    "n": 200,
+    "media_ms": 1.0588780000034603,
+    "primeiro_valor": 1.4431828635259016,
+    "corpos": [
+      "gabarito_T1_2_350x350",
+      "braceFBHdir"
+    ],
+    "unidade_valor": "cm"
+  },
+  "medida_distancia_ponto_corpo": {
+    "n": 200,
+    "media_ms": 0.3775415000018256,
+    "primeiro_valor": 113.75158380248666,
+    "corpos": [
+      "gabarito_T1_2_350x350"
+    ]
+  },
+  "corpo_temporario_na_api": {
+    "cilindro_temporario_criado": true,
+    "cilindro_isTemporary": true,
+    "tempo_criar_cilindro": {
+      "n": 200,
+      "media_ms": 0.03506600000036997,
+      "primeiro_valor": true
+    },
+    "measure_temporario_vs_corpo": {
+      "ok": true,
+      "valor_cm": 132.09400000000002
+    },
+    "tempo_measure_temporario_vs_corpo": {
+      "n": 200,
+      "media_ms": 0.4096794999895792,
+      "primeiro_valor": 132.09400000000002
+    },
+    "booleana_intersecao_temporaria": {
+      "ok": true,
+      "resultado_tem_volume": false
+    }
+  },
+  "medida_pontos_construcao": {
+    "obs": "menos de 2 pontos de construcao"
+  },
+  "analyzeInterference": {
+    "n_interferencias": 0,
+    "tempo_ms_1_chamada": 1.9564999965950847,
+    "corpos": [
+      "gabarito_T1_2_350x350",
+      "braceFBHdir"
+    ]
+  },
+  "reconhecimento_componentes": {
+    "mapa_usado": false,
+    "arquivo_do_mapa": "C:\\Projetos\\mapa_componentes.json",
+    "n": 31,
+    "resumo": {
+      "por_nivel": {
+        "exata": 31
+      },
+      "por_categoria": {
+        "IGNORAR": 20,
+        "CHASSI": 1,
+        "RODA_FE": 1,
+        "RODA_FD": 1,
+        "REF": 1,
+        "HP": 1,
+        "DIR": 2,
+        "BANDEJA_FE": 2,
+        "BANDEJA_FD": 2
+      },
+      "a_confirmar": [],
+      "nao_reconhecidos": []
+    },
+    "modelo_de_mapa": {
+      "_comentario": "Preencha a categoria de cada componente. Categorias: CHASSI, FIXO, RODA_FE, RODA_FD, BANDEJA_FE, BANDEJA_FD, DIR, REF, HP, IGNORAR"
+    },
+    "itens": [
+      {
+        "ocorrencia": "IGNORAR_PONTOS_V20_1:1",
+        "componente": "IGNORAR_PONTOS_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 0,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_PLANOS:1",
+        "componente": "IGNORAR_PLANOS",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 0,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_GABARITO_T1_2:1",
+        "componente": "IGNORAR_GABARITO_T1_2",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 1,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "CHASSI_T11_V20:1",
+        "componente": "CHASSI_T11_V20",
+        "categoria": "CHASSI",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo CHASSI_",
+        "n_corpos": 0,
+        "n_filhos": 4,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "RODA_FE_CONJUNTO:1",
+        "componente": "RODA_FE_CONJUNTO",
+        "categoria": "RODA_FE",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo RODA_FE_",
+        "n_corpos": 1,
+        "n_filhos": 1,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "RODA_FD_CONJUNTO:1",
+        "componente": "RODA_FD_CONJUNTO",
+        "categoria": "RODA_FD",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo RODA_FD_",
+        "n_corpos": 1,
+        "n_filhos": 1,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "componente": "IGNORAR_ATUACAO_DIANTEIRA",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 10,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRASEIRA:1",
+        "componente": "IGNORAR_TRASEIRA",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 12,
+        "n_filhos": 2,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "REF_REFERENCIAS:1",
+        "componente": "REF_REFERENCIAS",
+        "categoria": "REF",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo REF_",
+        "n_corpos": 3,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "HP_FRENTE:1",
+        "componente": "HP_FRENTE",
+        "categoria": "HP",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo HP_",
+        "n_corpos": 18,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1",
+        "componente": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 0,
+        "n_filhos": 2,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "DIR_FE_TIRANTE_V20_1:1",
+        "componente": "DIR_FE_TIRANTE_V20_1",
+        "categoria": "DIR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo DIR_",
+        "n_corpos": 11,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "DIR_FD_TIRANTE_V20_1:1",
+        "componente": "DIR_FD_TIRANTE_V20_1",
+        "categoria": "DIR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo DIR_",
+        "n_corpos": 11,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "componente": "IGNORAR_TRAS_TOE_LINK_TE_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 11,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "componente": "IGNORAR_TRAS_TOE_LINK_TD_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 11,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "BANDEJA_FE_INFERIOR_V20_1:1",
+        "componente": "BANDEJA_FE_INFERIOR_V20_1",
+        "categoria": "BANDEJA_FE",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo BANDEJA_FE_",
+        "n_corpos": 15,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "BANDEJA_FE_SUPERIOR_V20_1:1",
+        "componente": "BANDEJA_FE_SUPERIOR_V20_1",
+        "categoria": "BANDEJA_FE",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo BANDEJA_FE_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "componente": "IGNORAR_PUSHROD_FE_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_ROCKER_FE_V20_1:1",
+        "componente": "IGNORAR_ROCKER_FE_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 3,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "BANDEJA_FD_INFERIOR_V20_1:1",
+        "componente": "BANDEJA_FD_INFERIOR_V20_1",
+        "categoria": "BANDEJA_FD",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo BANDEJA_FD_",
+        "n_corpos": 15,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "BANDEJA_FD_SUPERIOR_V20_1:1",
+        "componente": "BANDEJA_FD_SUPERIOR_V20_1",
+        "categoria": "BANDEJA_FD",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo BANDEJA_FD_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_PUSHROD_FD_V20_1:1",
+        "componente": "IGNORAR_PUSHROD_FD_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_ROCKER_FD_V20_1:1",
+        "componente": "IGNORAR_ROCKER_FD_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 3,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_BANDEJA_INFERIOR_TE_V20_1:1",
+        "componente": "IGNORAR_TRAS_BANDEJA_INFERIOR_TE_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TE_V20_1:1",
+        "componente": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TE_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 15,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_PUSHROD_TE_V20_1:1",
+        "componente": "IGNORAR_TRAS_PUSHROD_TE_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_ROCKER_TE_V20_1:1",
+        "componente": "IGNORAR_TRAS_ROCKER_TE_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 3,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_BANDEJA_INFERIOR_TD_V20_1:1",
+        "componente": "IGNORAR_TRAS_BANDEJA_INFERIOR_TD_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TD_V20_1:1",
+        "componente": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TD_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 15,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_PUSHROD_TD_V20_1:1",
+        "componente": "IGNORAR_TRAS_PUSHROD_TD_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 13,
+        "n_filhos": 0,
+        "visivel": true
+      },
+      {
+        "ocorrencia": "IGNORAR_TRAS_ROCKER_TD_V20_1:1",
+        "componente": "IGNORAR_TRAS_ROCKER_TD_V20_1",
+        "categoria": "IGNORAR",
+        "nivel": "exata",
+        "usavel": true,
+        "motivo": "prefixo IGNORAR_",
+        "n_corpos": 3,
+        "n_filhos": 1,
+        "visivel": true
+      }
+    ]
+  },
+  "varredura_ref_hp": {
+    "procuradas": [
+      "REF_REFERENCIAS",
+      "HP_FRENTE",
+      "IGNORAR_PONTOS_V20_11"
+    ],
+    "achadas": [
+      "REF_REFERENCIAS:1",
+      "HP_FRENTE:1"
+    ],
+    "conteudo": [
+      {
+        "ocorrencia": "REF_REFERENCIAS:1",
+        "componente": "REF_REFERENCIAS",
+        "n_corpos": 3,
+        "corpos": [
+          {
+            "nome": "REF_ORIGEM",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              100.2,
+              0.0,
+              -14.157
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                100.2,
+                0.0,
+                -14.157
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "REF_X",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              110.2,
+              0.0,
+              -14.157
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                110.2,
+                0.0,
+                -14.157
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "REF_Y",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              100.2,
+              10.0,
+              -14.157
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                100.2,
+                10.0,
+                -14.157
+              ],
+              "raio_cm": 0.25
+            }
+          }
+        ],
+        "pontos_de_construcao": [],
+        "croquis": [],
+        "filhos": []
+      },
+      {
+        "ocorrencia": "HP_FRENTE:1",
+        "componente": "HP_FRENTE",
+        "n_corpos": 18,
+        "corpos": [
+          {
+            "nome": "HP_FL_LCA_IN_F",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              112.46,
+              22.271,
+              0.41899999999999993
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                112.46,
+                22.271,
+                0.41899999999999993
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_LCA_IN_R",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              80.0,
+              24.915,
+              -0.355
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                80.0,
+                24.915,
+                -0.355
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_LCA_OUT",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              99.99,
+              61.61,
+              1.9329999999999998
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                99.99,
+                61.61,
+                1.9329999999999998
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_TIE_IN",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              93.2,
+              18.0,
+              3.771
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                93.2,
+                18.0,
+                3.771
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_TIE_OUT",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              93.459,
+              60.58,
+              8.540000000000001
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                93.459,
+                60.58,
+                8.540000000000001
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_UCA_IN_F",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              109.85,
+              30.5,
+              13.175
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                109.85,
+                30.5,
+                13.175
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_UCA_IN_R",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              82.483,
+              30.127999999999997,
+              10.025
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                82.483,
+                30.127999999999997,
+                10.025
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_UCA_OUT",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              98.64,
+              59.160000000000004,
+              17.433
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                98.64,
+                59.160000000000004,
+                17.433
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FL_WHEEL_CENTER",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              100.2,
+              65.0,
+              10.843
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                100.2,
+                65.0,
+                10.843
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_LCA_IN_F",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              112.46,
+              -22.271,
+              0.41899999999999993
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                112.46,
+                -22.271,
+                0.41899999999999993
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_LCA_IN_R",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              80.0,
+              -24.915,
+              -0.355
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                80.0,
+                -24.915,
+                -0.355
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_LCA_OUT",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              99.99,
+              -61.61,
+              1.9329999999999998
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                99.99,
+                -61.61,
+                1.9329999999999998
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_TIE_IN",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              93.2,
+              -18.0,
+              3.771
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                93.2,
+                -18.0,
+                3.771
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_TIE_OUT",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              93.459,
+              -60.58,
+              8.540000000000001
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                93.459,
+                -60.58,
+                8.540000000000001
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_UCA_IN_F",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              109.85,
+              -30.5,
+              13.175
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                109.85,
+                -30.5,
+                13.175
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_UCA_IN_R",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              82.483,
+              -30.127999999999997,
+              10.025
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                82.483,
+                -30.127999999999997,
+                10.025
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_UCA_OUT",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              98.64,
+              -59.160000000000004,
+              17.433
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                98.64,
+                -59.160000000000004,
+                17.433
+              ],
+              "raio_cm": 0.25
+            }
+          },
+          {
+            "nome": "HP_FR_WHEEL_CENTER",
+            "isSolid": true,
+            "n_faces": 1,
+            "bbox_centro_cm": [
+              100.2,
+              -65.0,
+              10.843
+            ],
+            "bbox_dim_cm": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "esfera": {
+              "centro_cm": [
+                100.2,
+                -65.0,
+                10.843
+              ],
+              "raio_cm": 0.25
+            }
+          }
+        ],
+        "pontos_de_construcao": [],
+        "croquis": [],
+        "filhos": []
+      }
+    ]
+  },
+  "distancia_temporario_vs_chassi": {
+    "chassi": {
+      "n_corpos": 27,
+      "repeticoes": 5,
+      "tempo_total_ms_por_varredura": 9.440019999601645,
+      "tempo_medio_por_corpo_ms": 0.3496303703556165,
+      "menor_distancia_cm": 0.10900284331284738
+    },
+    "todos_os_solidos": {
+      "n_corpos": 320,
+      "repeticoes": 3,
+      "tempo_total_ms_por_varredura": 617.9095999990144,
+      "tempo_medio_por_corpo_ms": 1.93096749999692,
+      "menor_distancia_cm": 0.10900284331284738
+    },
+    "contra_ocorrencia_inteira": {
+      "erro": "RuntimeError: 3 : measurement failed"
+    }
+  },
+  "concluido": true
+}
