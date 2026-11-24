@@ -72,6 +72,12 @@ TESTES = [
      "fase 2 (Fusion); sem ID de TC até o usuário autorizar o prefixo"),
     ("posicionador: identificação por geometria", "tests/test_posicionador_identificacao.py", 13,
      "fase 2 (Fusion); dados reais mais 12 mutações; sem ID de TC até o usuário autorizar o prefixo"),
+    ("posicionador: núcleo puro, mecanismo", "tests/test_posicionador_puro_mecanismo.py", 4,
+     "fase 2 (Fusion); núcleo sem numpy contra o pacote de referência; sem ID de TC até o usuário autorizar o prefixo"),
+    ("posicionador: núcleo puro, varredura", "tests/test_posicionador_puro_varredura.py", 3,
+     "fase 2 (Fusion); cena real do STEP; precisa do extra cad, sem ele NÃO EXECUTÁVEL; sem ID de TC"),
+    ("posicionador: núcleo puro, busca", "tests/test_posicionador_puro_busca.py", 5,
+     "fase 2 (Fusion); cena real do STEP (~70 s); precisa do extra cad, sem ele NÃO EXECUTÁVEL; sem ID de TC"),
 ]
 MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",
@@ -80,7 +86,10 @@ MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_mo
            "estudo_neutro", "reescrita_nomes", "nomes_v4_4", "gerar_v4_4",
            "posicionador.geometria", "posicionador.cad_step", "posicionador.regulamento", "posicionador.config",
            "posicionador.mecanismo", "posicionador.varredura", "posicionador.espaco_livre", "posicionador.busca",
-           "posicionador.relatorio", "posicionador.reconhecimento", "posicionador.identificacao"]
+           "posicionador.relatorio", "posicionador.reconhecimento", "posicionador.identificacao",
+           "posicionador.puro.linalg", "posicionador.puro.otimizacao", "posicionador.puro.cinematica",
+           "posicionador.puro.mecanismo", "posicionador.puro.geometria", "posicionador.puro.regulamento",
+           "posicionador.puro.varredura", "posicionador.puro.espaco_livre", "posicionador.puro.busca"]
 MUTACAO = [("tests/mutation_tire.py", 25), ("tests/mutation_equilibrio.py", 6),
            ("tests/mutation_planilha_equilibrio.py", 5), ("tests/mutation_mmm.py", 5),
            ("tests/mutation_inc7.py", 5), ("tests/mutation_planilha_v43.py", 4),
