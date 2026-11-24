@@ -4,8 +4,7 @@ Data: 2026-11-24. Máquina do usuário (Windows 11). Roteiro: `ROTEIRO-investiga
 **Só leitura:** nada do Fusion, do CAD nem do posicionador foi alterado. A única escrita fora do repositório foi criar a pasta do
 script de sondagem em `%APPDATA%\Autodesk\Autodesk Fusion 360\API\Scripts\T11_sondagem\` (o que o roteiro manda).
 
-**Estado das etapas:** A feita e medida. B **pendente**: o script está pronto e instalado, mas só roda com o T11 aberto no Fusion
-(uma ação do usuário, descrita no fim). C é este relatório; as linhas marcadas "a confirmar" dependem da B.
+**Estado das etapas:** A e B feitas e medidas (B em 2026-11-24, seção 2). C é este relatório. Restam as linhas "a confirmar" da seção 3.
 
 Convenção: `B` = `%LOCALAPPDATA%\Autodesk\webdeploy\production\39e8a3d5e919c70b05ef3ebfe9c6bfc8d9ee001e`;
 `U` = `%APPDATA%\Autodesk\Autodesk Fusion 360`.
@@ -39,40 +38,50 @@ Convenção: `B` = `%LOCALAPPDATA%\Autodesk\webdeploy\production\39e8a3d5e919c70
 | `fusion.Design.analyzeInterference(InterferenceInput)` (fusion.py:54693) | interferência entre BRepBody/Occurrence no contexto do componente raiz (a docstring de `entities` não menciona corpos temporários: a confirmar). |
 | `fusion.Occurrence` (27421), `fusion.Sketch` (36876) | leitura de ocorrências e croquis. |
 
-## 2. O que ainda é desconhecido (a confirmar)
+## 2. Etapa B: medido dentro do Fusion (2026-11-24)
 
-| Pergunta do roteiro | Estado |
+Executada no T11 aberto (`T11_atuacao_v20_1_murilo_teste`, modo Design) com `T11_sondagem`, em *Utilities > Scripts and Add-Ins*. Só leitura: nada foi salvo nem
+alterado no T11. Saída bruta: `fusion_sondagem_2026-11-24.json` (cópia do `C:\Projetos\fusion_sondagem.json`). O script terminou (`concluido: true`).
+
+| # | Fato | Valor medido | Chave no JSON |
+|---|---|---|---|
+| 13 | Python em execução no script | 3.14.7 (MSC v.1944, AMD64), executável `Fusion360.exe` | `python` |
+| 14 | numpy, scipy, OCP, cadquery, pip, setuptools | **nenhum importável** (`ModuleNotFoundError`) | `bibliotecas` |
+| 15 | Modelo T11 | 46 componentes e 46 ocorrências; **320 corpos sólidos** (o script listou 200); tubos do chassi são corpos reais (ex.: `braceFBHdir` em `CHASSI_T11_V20:1+CHASSI_V20_TUBOS:1`) | `design`, `corpos` |
+| 16 | Pontos de construção `REF_` na raiz | **0** (0 pontos de construção no total) | `pontos_de_construcao` |
+| 17 | Parâmetros do usuário | 0 | `parametros_do_usuario` |
+| 18 | Croquis na raiz | 0 | `croquis_e_planos` |
+| 19 | `measureMinimumDistance` corpo×corpo | **1,14 ms** em média (200 chamadas; valor em cm) | `medida_distancia_minima` |
+| 20 | `measureMinimumDistance` ponto×corpo | **0,36 ms** em média (200 chamadas) | `medida_distancia_ponto_corpo` |
+| 21 | Cilindro temporário (`TemporaryBRepManager.createCylinderOrCone`) | criado (`isTemporary` verdadeiro); **0,04 ms** em média (200) | `corpo_temporario_na_api` |
+| 22 | `measureMinimumDistance` temporário × corpo real | **aceito** (a docstring dizia que não); **0,42 ms** em média (200) | idem |
+| 23 | `booleanOperation` de interseção entre temporários | executou sem erro; resultado sem volume (não houve interseção no par testado) | idem |
+| 24 | `analyzeInterference` | 4,7 ms em **1** chamada (par `gabarito_T1_2_350x350` × `braceFBHdir`, 0 interferências) | `analyzeInterference` |
+| 25 | Documentos abertos | 24 (as peças do T11 aparecem como documentos abertos, todos salvos e sem modificação) | `documentos` |
+
+Defeito do script: a etapa `fusion` falhou com `AttributeError: 'Application' object has no attribute 'name'`, então a versão do Fusion **não** saiu no JSON
+(vale a do fato 1, 2706.1.17, lida de arquivo). Corrigido nesta versão do script (linha `productName` removida); a correção não foi reexecutada.
+
+## 3. O que ainda é desconhecido (a confirmar)
+
+| Pergunta | Estado |
 |---|---|
-| Existem pontos `REF_` no T11? Quais nomes e coordenadas? | **a confirmar** (B) |
-| Quantos corpos tem o T11; os tubos do chassi são corpos sólidos? | **a confirmar** (B) |
-| Parâmetros do usuário do T11 | **a confirmar** (B) |
-| Tempo de uma chamada de `measureMinimumDistance` (corpo×corpo, ponto×corpo, ponto de construção×ponto) | **a confirmar** (B); o roteiro pede a média de 200 chamadas |
-| `measureMinimumDistance` aceita corpo temporário de `TemporaryBRepManager`? | docstring diz que não; **a confirmar** (B tenta e registra o erro) |
-| Custo de criar cilindro temporário e de `booleanOperation` de interseção | **a confirmar** (B) |
-| Custo de uma `analyzeInterference` | **a confirmar** (B) |
-| O add-in (diferente do script) tem as mesmas bibliotecas e o mesmo Python? | **a confirmar**; os scripts e os add-ins rodam no mesmo interpretador embutido, mas isso não foi medido |
-| `pip install` de numpy no Python do Fusion funcionaria atrás do Norton, e sobreviveria a uma atualização do Fusion? | **a confirmar**; não foi tentado (roteiro proíbe instalar). Risco conhecido: o Python fica numa pasta com hash da build, que muda a cada atualização |
-| Pontos do CAD que o STEP não trouxe (`REF_`): estão como ConstructionPoint ou como pontos de croqui? | **a confirmar** (B lista só ConstructionPoint) |
+| Onde estão os pontos de referência (`REF_`, `HP_`)? | A raiz não tem nenhum. O T11 tem as ocorrências `REF_REFERENCIAS`, `HP_FRENTE` e `IGNORAR_PONTOS_V20_11`: **a confirmar** se ali são pontos de construção, pontos de croqui ou esferas (a sondagem só varreu a raiz). |
+| Tempo de `measureMinimumDistance` entre pontos de construção | não medido (menos de 2 pontos na raiz) |
+| Custo da `booleanOperation` e de `analyzeInterference` com geometria do chassi | `booleanOperation` sem tempo medido; `analyzeInterference` só 1 chamada, em par de corpos sem interferência |
+| `measureMinimumDistance` com corpo temporário contra **componente inteiro** ou contra o conjunto dos 320 corpos | a confirmar (medido só contra um corpo) |
+| O add-in (diferente do script) tem o mesmo Python e as mesmas bibliotecas? | a confirmar |
+| `pip install` de numpy sobreviveria a uma atualização do Fusion? | a confirmar; não tentado (não há pip no Python do Fusion, fato 14) |
+| Distribuição em outra máquina | não testada |
 
-## 3. Recomendação de arquitetura (PROPOSTA, não decisão; vale só até a Etapa B confirmar os tempos)
+## 4. Recomendação de arquitetura (PROPOSTA, não decisão)
 
-1. **Sem scipy nem numpy dentro do add-in.** Fato 5: o Python do Fusion não tem nenhum dos dois, e o `site-packages` mora na pasta da build.
-   Proposta: o núcleo que roda no Fusion usa só a biblioteca padrão do Python 3.14 (`math`, listas e tuplas), com bisseção própria no lugar do
-   `brentq` e um Nelder-Mead próprio (R9). Antes de decidir, medir se o custo em Python puro é aceitável; só então considerar vendorizar numpy
-   dentro da pasta do add-in (wheel para Python 3.14 win_amd64, a confirmar disponibilidade), o que também não depende de escrever no `site-packages` da build.
-2. **Distância mínima pela API do Fusion, não pelo OCP.** `MeasureManager.measureMinimumDistance` já trabalha sobre os corpos do modelo e não exige
-   biblioteca extra. Se o teste da Etapa B mostrar que ela recusa corpo temporário, a busca do posicionador deve medir contra corpos **reais** do
-   modelo (chassi, tubos) e tratar o elemento móvel como pontos (`Point3D`, que é aceito) ou como geometria analítica própria (tubo = segmento + raio).
-3. **Leitura do T11:** pontos `REF_` e parâmetros do usuário lidos pela API (`ConstructionPoint.geometry`, `UserParameters`), em cm convertido para m na fronteira,
-   para respeitar a convenção SI do núcleo.
-4. **Núcleo testável fora do Fusion:** manter a lógica do posicionador num módulo Python puro (sem `import adsk`) e deixar o add-in como camada fina que lê o
-   modelo, chama o núcleo e grava o resultado. Isso preserva os testes no Python 3.13 da máquina.
-5. **Instalação:** pasta `U\API\AddIns\<nome>\` (ou `Scripts\`) sem administrador (fato 10); distribuição à equipe por cópia da pasta ou por repositório. A distribuição não foi testada em outra máquina.
+1. **Sem scipy nem numpy no add-in** (fatos 5 e 14, agora confirmados em execução). Núcleo em Python puro (`math`, listas e tuplas), com bisseção própria no lugar do `brentq` e Nelder-Mead próprio (R9); vendorizar numpy só se o Python puro se mostrar lento.
+2. **Distância mínima pela API.** Custo medido ~1 ms (fatos 19 a 22) é compatível com milhares de avaliações por busca. Como o corpo temporário é aceito (fato 22), o elemento móvel pode ser um cilindro temporário medido contra os corpos reais do chassi, sem precisar do OCP. A contradição com a docstring significa que o comportamento deve ser coberto por teste de regressão no add-in (pode mudar entre builds).
+3. **Leitura do T11:** os `REF_` não estão na raiz; antes de projetar a leitura, varrer as ocorrências citadas na seção 3. Unidades da API em cm, convertidas para m na fronteira (convenção SI do núcleo).
+4. **Núcleo testável fora do Fusion:** módulo Python puro (sem `import adsk`); add-in como camada fina.
+5. **Instalação:** `U\API\AddIns\<nome>\` ou `Scripts\`, sem administrador (fato 10).
 
-## 4. Etapa B: script de sondagem pronto, execução pendente
+## 5. Próximo passo sugerido
 
-- Arquivos: `docs/posicionador/fusion/T11_sondagem/T11_sondagem.py` e `.manifest` (cópia idêntica instalada em `U\API\Scripts\T11_sondagem\`).
-- Só lê. Os corpos temporários dos testes ficam em memória e não entram no documento; nada é salvo nem fechado.
-- Saída: `C:\Projetos\fusion_sondagem.json`, reescrito a cada etapa (se uma etapa travar, as anteriores ficam gravadas).
-- Verificado por mim: sintaxe compila (`py_compile`) e cada nome de API usado existe nos stubs da build 2706. **Não foi executado** (precisa do Fusion com o T11 aberto), então o comportamento em tempo de execução é desconhecido.
-- Ação única do usuário: abrir o T11 no Fusion (modo Design) e, em *Utilities > Scripts and Add-Ins* (atalho Shift+S), selecionar `T11_sondagem` em *Scripts* e clicar em *Run*.
+Estender a sondagem para varrer as ocorrências `REF_REFERENCIAS`, `HP_FRENTE` e `IGNORAR_PONTOS_V20_11` (pontos de construção, croquis, corpos) e medir `measureMinimumDistance` contra o conjunto dos corpos do chassi. Ainda só leitura.

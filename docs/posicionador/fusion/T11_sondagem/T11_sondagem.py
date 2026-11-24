@@ -95,7 +95,6 @@ def run(_context):
         def _():
             return {
                 "version": app.version,
-                "productName": app.name,
                 "isStartupComplete": app.isStartupComplete,
                 "preferredLanguage": str(app.preferences.generalPreferences.userLanguage)
                 if hasattr(app.preferences, "generalPreferences") else None,
