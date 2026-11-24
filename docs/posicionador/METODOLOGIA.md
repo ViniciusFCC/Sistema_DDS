@@ -37,12 +37,12 @@ hardpoints v10 + configuração ──► mecanismo ──► varredura ─┘
    - o braço r2 do lado do amortecedor sai de uma equação de uma incógnita: `MR(0) = 1,40` (método de bisseção sobre `kinematics_model.motion_ratio`);
    - o olhal do amortecedor no chassi (C) fica na reta do amortecedor, onde `|B(−23 mm) − C| = 210 mm`.
 
-   Assim, as metas que antes eram "quase igualdades" (e quase nunca se cumpriam por sorteio) passam a valer por construção.
+   Com `--delta-max` > 0 (padrão 25°), o ponto do push rod no rocker pode girar δ em volta do eixo a partir da tangência (8ª variável da busca); com 0, a construção é a do script de atuação. Assim, as metas que antes eram "quase igualdades" (e quase nunca se cumpriam por sorteio) passam a valer por construção.
 5. **Varredura** (`varredura.py`). Para cada ponto do curso da roda (e do esterçamento, se o curso da cremalheira for informado), a cinemática do repositório (`kinematics_model.Corner`) resolve a posição de todas as peças. Em cada estado, o programa confere as restrições (tabela abaixo).
 6. **Busca** (`busca.py`).
-   - **Amostragem:** sorteia pivôs no espaço livre, com mais peso perto de nós (preferência, nunca exigência), e as demais variáveis por hipercubo latino.
-   - **Refino:** as melhores amostras são refinadas por Nelder-Mead sobre a violação máxima normalizada.
-   - **Convergência:** só vira candidato quem continua VIAVEL ou CONDICIONAL na avaliação com resolução convergida.
+   - **Amostragem:** sorteia pivôs no espaço livre, com mais peso perto de nós (preferência, nunca exigência), e as demais variáveis por hipercubo latino. Com a **caixa dinâmica** (padrão), a amostragem tem três rodadas (50 %, 30 % e 20 % das amostras): da segunda em diante, 80 % das amostras caem numa caixa em volta dos 10 % melhores (alargada em 25 %, no mínimo 20 mm) e 20 % na caixa inteira.
+   - **Refino:** as melhores amostras são refinadas por Nelder-Mead. Sem violação, o objetivo passa a ser **maximizar a margem** (menor folga normalizada entre as restrições, sem as fixadas pela construção: MR(0) e comprimento máximo); a margem é objetivo, nunca exigência.
+   - **Convergência:** só vira candidato quem continua VIAVEL ou CONDICIONAL na avaliação com resolução convergida. A convergência é também **por valor**: enquanto uma folga positiva for menor que a diferença entre n e 2n pontos, o programa dobra n (até 8 vezes o inicial); o que sobrar vai em `indeterminadas` (folga não certificada), sem tolerância nova.
    - **Fase I (diagnóstico):** se não há candidato, devolve o de menor violação e os pares de restrições que mais vezes violam juntos.
 7. **Relatório** (`relatorio.py`). Veredito, cada restrição com valor, limite, folga e **origem do limite**, itens a confirmar, avisos do STEP, hash do STEP e da configuração.
 
@@ -111,4 +111,6 @@ Para o STEP ser lido do jeito certo, os componentes precisam de prefixo e o mode
 - **Itens a confirmar:** curso da cremalheira, margem de curso do amortecedor, face da AIP, início e fim do gabarito (coluna e pedais) e sua faixa vertical.
 - **Incerteza abaixo de 1 mm** (transformação do STEP, cobertura da malha, discretização do curso); a margem de fabricação δ é de uma fase posterior.
 - **Busca por amostragem:** "nenhum candidato" não prova que não existe posição viável.
+- **Margem de micrômetros:** com as metas atuais o curso do amortecedor não tem folga por construção (bump = 61 × 1,40 − 23), e a maior margem achada é da ordem de 0,03 a 0,07 mm. Um candidato assim é CONDICIONAL e frágil, não é solução; a margem de fim de curso é decisão da equipe.
+- **Fixação:** a distância ao nó do chassi é só preferência; os pivôs achados podem ficar longe de qualquer tubo existente.
 - **Aro** de 13" (raio interno 158 mm, largura 200 mm) é hipótese até o STEP trazer as peças da roda.
