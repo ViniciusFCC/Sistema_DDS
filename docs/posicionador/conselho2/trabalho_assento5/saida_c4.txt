@@ -1,0 +1,6 @@
+[13] obj=+0.1294 juiz=INVIAVEL var=0.0406 Lmin folga=-0.129 mm violadas=['variação de MR', 'comprimento do amortecedor (mínimo)', 'braço r2 (amortecedor)'] apertadas(<2e-3 SI)=[('comprimento do amortecedor (máximo)', 0.0)] x=[-15.39, 278.75, 419.42, -12.61, 19.72, 75.18, 83.37] r2=90.34 54s
+[15] obj=+0.0742 juiz=INVIAVEL var=0.0403 Lmin folga=-0.074 mm violadas=['variação de MR', 'comprimento do amortecedor (mínimo)', 'braço r2 (amortecedor)'] apertadas(<2e-3 SI)=[('comprimento do amortecedor (máximo)', 0.0)] x=[78.3, 301.86, 347.71, 19.67, 12.43, 58.29, 98.8] r2=85.92 53s
+[16] obj=+0.0846 juiz=INVIAVEL var=0.0405 Lmin folga=-0.085 mm violadas=['variação de MR', 'comprimento do amortecedor (mínimo)', 'braço r2 (amortecedor)', 'folga às pernas das bandejas: push rod'] apertadas(<2e-3 SI)=[('comprimento do amortecedor (máximo)', 0.0)] x=[-61.23, 305.01, 417.44, -4.36, 7.76, 74.65, 102.85] r2=86.77 55s
+[17] obj=+0.1154 juiz=INVIAVEL var=0.0405 Lmin folga=-0.115 mm violadas=['variação de MR', 'comprimento do amortecedor (mínimo)', 'braço r2 (amortecedor)'] apertadas(<2e-3 SI)=[('comprimento do amortecedor (máximo)', 0.0)] x=[3.02, 253.53, 370.68, 3.85, 23.29, 59.51, 93.17] r2=89.24 51s
+
+[exited with code 0]
