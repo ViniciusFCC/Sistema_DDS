@@ -31,7 +31,7 @@ TC-POS-068: não modelado (I2): toda avaliação tem "folga à manga/freio/pinç
             F.5.3.1); o candidato SINTÉTICO do TC-POS-064 com todos os itens nulos preenchidos não chega a VIAVEL.
 TC-POS-069: referencial da configuração (I5): com `Cena.ref_hipotese` (STEP sem esferas REF_), a folga aos fixos sai com
             origem HIPOTESE e a fonte cita `transformacao_step_m`; sem ele, META.
-Dados: v20 e curvas do kinlib de data/posicionador/ (saídas do script do Murilo, com SHA-256 em origem_v20_murilo.json).
+Dados: v20 e curvas do kinlib de data/posicionador/ (saídas do script de atuação, com SHA-256 em origem_v20_script.json).
 Os candidatos, as configurações alteradas e a cena do TC-POS-063/064 são SINTÉTICOS de teste, não do carro.
 Roda como script: uv run python -X utf8 tests/test_posicionador_varredura.py
 """
@@ -65,9 +65,9 @@ def check(name, condition, detail=""):
 
 hs_v10 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v10.csv"),
                             os.path.join(DADOS, "hardpoints_T11_v10.meta.json"))
-hs_v20 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v20_murilo.csv"),
-                            os.path.join(DADOS, "hardpoints_T11_v20_murilo.meta.json"))
-with open(os.path.join(DADOS, "origem_v20_murilo.json"), encoding="utf-8") as f:
+hs_v20 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v20_script.csv"),
+                            os.path.join(DADOS, "hardpoints_T11_v20_script.meta.json"))
+with open(os.path.join(DADOS, "origem_v20_script.json"), encoding="utf-8") as f:
     origem = json.load(f)
 CAMINHO_CFG = os.path.join(DADOS, "config_T11.json")
 cfg = pc.carregar(CAMINHO_CFG)

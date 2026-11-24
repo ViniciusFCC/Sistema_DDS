@@ -90,7 +90,7 @@ A recomendação é reformular o problema, não só trocar o algoritmo. Em ordem
      viabilidade de Deb.
    - É o caminho do OptimumKinematics (algoritmo genético) e de Borowski & Rudolph 2025 (enxame de partículas com
      detecção de colisão 3D) [F].
-2. **Conjunto viável vazio.** Pelos relatos (a) a (e) do Murilo, é provável [H]. Nenhum algoritmo resolve.
+2. **Conjunto viável vazio.** Pelos relatos (a) a (e) do script de atuação, é provável [H]. Nenhum algoritmo resolve.
    - O produto útil passa a ser a fase I: a solução de menor violação e a lista das restrições em conflito.
    - Com isso a equipe decide o que relaxar: tolerância do MR, curso, gabarito, ou um nó novo no chassi.
 3. **Chassi ainda livre.** Se a equipe aceita mover ou criar nós, o problema vira codesign (seção 5).

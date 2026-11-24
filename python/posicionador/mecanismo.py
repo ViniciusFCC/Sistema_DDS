@@ -1,8 +1,8 @@
 """
 Mecanismo de atuação por construção (push rod + rocker + amortecedor) do posicionador (EDR-076).
 
-Reproduz a regra `montar(x, J)` do script de atuação do Murilo (t11_atuacao.py, sha256 na origem da v20,
-`data/posicionador/origem_v20_murilo.json`), em SI e nos eixos ISO 8855 do canto FL:
+Reproduz a regra `montar(x, J)` do script de atuação do script de atuação (t11_atuacao.py, sha256 na origem da v20,
+`data/posicionador/origem_v20_script.json`), em SI e nos eixos ISO 8855 do canto FL:
 - J = junta `LCA_OUT` (push rod só na bandeja inferior, usuário 2026-11-17);
 - direção do amortecedor ud = (cos el · cos az, cos el · sin az, sin el);
 - plano do mecanismo contém J, o pivô Pv e ud; eixo do rocker = n = unit((Pv − J) × ud);

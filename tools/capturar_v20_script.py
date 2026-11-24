@@ -1,8 +1,8 @@
-"""Captura, uma vez, os dados do T11 e a solução v20 do script de atuação (Murilo) para o posicionador (EDR-076).
+"""Captura, uma vez, os dados do T11 e a solução v20 do script de atuação (script de atuação) para o posicionador (EDR-076).
 
-Uso: uv run python -I -X utf8 tools/capturar_v20_murilo.py PASTA_DO_SCRIPT [--saida data/posicionador]
+Uso: uv run python -I -X utf8 tools/capturar_v20_script.py PASTA_DO_SCRIPT [--saida data/posicionador]
 O script (t11_atuacao.py, kinlib.py, geometria_T11.json) nunca entra no repositório: só as saídas e o SHA-256 da origem.
-Escreve hardpoints_T11_v10, hardpoints_T11_v20_murilo (csv + meta), curvas_kinlib_v20.csv e origem_v20_murilo.json.
+Escreve hardpoints_T11_v10, hardpoints_T11_v20_script (csv + meta), curvas_kinlib_v20.csv e origem_v20_script.json.
 """
 import argparse
 import csv
@@ -78,13 +78,13 @@ def main(argv=None):
     v20 = v10 + [("FL_PUSH_OUT", mm("O0"), "LCA"), ("FL_PUSH_IN", mm("A0"), "ROCKER"), ("FL_ROCKER_AXIS_A", pv, "CHASSIS"),
                  ("FL_ROCKER_AXIS_B", pv + 0.05 * n, "CHASSIS"), ("FL_ROCKER_SPRING", mm("B0"), "ROCKER"),
                  ("FL_SPRING_CHASSIS", mm("C"), "CHASSIS")]
-    src10 = ("geometria_T11.json do script de atuação (Murilo), recebido 2026-11-17; SPINDLE_PT e CONTACT_PATCH são HIPÓTESE "
+    src10 = ("geometria_T11.json do script de atuação (script de atuação), recebido 2026-11-17; SPINDLE_PT e CONTACT_PATCH são HIPÓTESE "
              "do kinlib (camber e toe estáticos nulos, solo em Z = 0)")
-    src20 = ("v10 mais a solução v20 (semente de t11_atuacao.py, avaliar(final=True)) do script de atuação (Murilo), recebido "
+    src20 = ("v10 mais a solução v20 (semente de t11_atuacao.py, avaliar(final=True)) do script de atuação (script de atuação), recebido "
              "2026-11-17; " + src10.split("; ", 1)[1])
     os.makedirs(a.saida, exist_ok=True)
     for nome, pts, rev, src in (("hardpoints_T11_v10", v10, "T11-v10 (LR −6 mm)", src10),
-                                ("hardpoints_T11_v20_murilo", v20, "T11-v20 (Murilo)", src20)):
+                                ("hardpoints_T11_v20_script", v20, "T11-v20 (script de atuação)", src20)):
         hs = hp.build_hardpoint_set(_linhas(pts), _meta(rev, src))
         hp.write_hardpoints(os.path.join(a.saida, nome + ".csv"), os.path.join(a.saida, nome + ".meta.json"), hs)
 
@@ -101,7 +101,7 @@ def main(argv=None):
                           "adimensionais; DENTRO_MIN em %; ARM e LADO_ROCKER são seletores); x_semente: [X, Y, Z do pivô do rocker em mm, "
                           "azimute e elevação do amortecedor em graus, r1 em mm, ângulo entre braços em graus, r2 em mm]",
               "data": "2026-11-17"}
-    with open(os.path.join(a.saida, "origem_v20_murilo.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(a.saida, "origem_v20_script.json"), "w", encoding="utf-8") as f:
         json.dump(origem, f, indent=2, ensure_ascii=False)
     print(f"gerado em {os.path.abspath(a.saida)}: MR={g['MR']:.4f}, {len(r)} pontos de curva")
 

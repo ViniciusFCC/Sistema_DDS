@@ -23,7 +23,7 @@ Proximidade a nó/tubo existente entra como preferência (U3). V1 lê .step; ver
    (esferas Ø 5 mm dos hardpoints, `HP_FL_<chave do schema>`), `IGNORAR_` (fora da análise). Sem prefixo = `FIXO_`, com
    aviso. Envoltória de peça não desenhada: sufixo `_ENVELOPE`.
 3. Hardpoints fixos (bandejas, tirante, centro da roda): CSV no schema `hardpoint-schema-V2.0` na V1 (dados do T11 v10,
-   `geometria_T11.json` do script do Murilo); lidos das esferas `HP_` quando o STEP as trouxer (o programa confere a
+   `geometria_T11.json` do script de atuação); lidos das esferas `HP_` quando o STEP as trouxer (o programa confere a
    coerência entre os dois e avisa). Referencial: esferas `REF_`; sem elas, transformação declarada na configuração.
 4. Configuração com procedência obrigatória em cada limite: REGRA (artigo + versão R27 V1.0), MARGEM DA EQUIPE, META,
    PREFERÊNCIA. Valor sem fonte = "a confirmar" e o programa avisa.

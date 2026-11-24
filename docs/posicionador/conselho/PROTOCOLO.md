@@ -13,7 +13,7 @@ síntese do presidente (linha principal). Modelo de cada assento: opus, esforço
 7. Regulamento, segurança e manufatura (gabaritos, inspeção técnica, fabricação e montagem).
 
 ## Perguntas (iguais para todos)
-Q1. O método atual (script do Murilo) é adequado para o problema? Por quê (com evidência dos relatórios)?
+Q1. O método atual (script de atuação) é adequado para o problema? Por quê (com evidência dos relatórios)?
 Q2. Que método e arquitetura de script você recomenda? Variáveis, restrições (duras × objetivos), algoritmo, saída.
 Q3. Como o script deve usar tubos e nós do CAD, sabendo que o chassi está incompleto e muda junto com a suspensão?
 Q4. Que processo de coordenação chassi × suspensão você recomenda (quem decide o quê, em que ordem, com que dados)?

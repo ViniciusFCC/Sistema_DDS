@@ -4,7 +4,7 @@ Autoteste do pacote portátil do posicionador (vai para a raiz do pacote como `v
 Confere, nesta ordem, e imprime PASS ou FAIL por passo:
 1. versões de numpy e scipy (obrigatórios) e de matplotlib e OCP (OCP: leitura de STEP; matplotlib: figuras);
 2. leitura do STEP de exemplo: 31 corpos (prova que o OpenCascade e as DLLs dele carregam neste computador);
-3. a v20 do Murilo na ferramenta: código de saída 0, relatório com INVIAVEL (resultado esperado, EDR-076) e variação de MR.
+3. a v20 na ferramenta: código de saída 0, relatório com INVIAVEL (resultado esperado, EDR-076) e variação de MR.
 Grava `verificar_instalacao.log` na raiz do pacote. Código de saída: 0 = tudo certo; 1 = algum passo falhou (mande o .log).
 """
 import importlib
@@ -65,7 +65,7 @@ def avaliar_v20():
 def main():
     dizer("Autoteste do pacote do posicionador (EDR-076)")
     oks = [passo("bibliotecas", versoes), passo("leitura do STEP de exemplo", ler_exemplo),
-           passo("avaliação da v20 do Murilo", avaliar_v20)]
+           passo("avaliação da v20", avaliar_v20)]
     dizer("RESULTADO: TUDO OK" if all(oks) else "RESULTADO: FALHOU — mande o arquivo verificar_instalacao.log")
     (RAIZ / "verificar_instalacao.log").write_text("\n".join(LOG) + "\n", encoding="utf-8")
     return 0 if all(oks) else 1

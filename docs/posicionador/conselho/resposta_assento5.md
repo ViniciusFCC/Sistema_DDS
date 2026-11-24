@@ -36,7 +36,7 @@ caixa em torno da v20 dá [C v4]:
 - 28 viáveis sem MR e sem as duas restrições de curso;
 - 123 viáveis sem MR, curso e erro ao FH.
 
-Isso apoia o achado 6 (quase-igualdades estrangulam o espaço). Mas os motivos do Murilo ("perto de um nó", "sem nó
+Isso apoia o achado 6 (quase-igualdades estrangulam o espaço). Mas os motivos do script de atuação ("perto de um nó", "sem nó
 na outra ponta", "saía do chassi") apontam para outra explicação, mais simples. Entre o FH e o FBH, abaixo dos braces,
 **não existe nó**: o nó triangulado mais próximo do pivô está a 237 mm [F GEO §3, §6a]. Uma restrição de nó contra um
 conjunto de nós vazio dá conjunto viável vazio para qualquer algoritmo [I].
@@ -113,5 +113,5 @@ foi modelado; antes de otimizar, conferir o kinlib contra a referência e rodar 
 chassi ou falta método.
 
 **Confiança e principal incerteza:** média. A principal incerteza é se a falha da força bruta vem da formulação ou
-da ausência de nós na caixa dianteira (o código e os dados do Murilo não estão disponíveis), e se o kinlib bate com
+da ausência de nós na caixa dianteira (o código e os dados do script de atuação não estão disponíveis), e se o kinlib bate com
 a REFERENCE.

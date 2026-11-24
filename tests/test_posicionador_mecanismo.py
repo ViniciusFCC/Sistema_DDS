@@ -9,7 +9,7 @@ TC-POS-054: pivô sobre a junta LCA_OUT (plano degenerado) → hardpoints None e
 TC-POS-055: config.carregar recusa, com ConfigError que cita o nome do item, item obrigatório (config.OBRIGATORIOS) com valor
             null (A_CONFIRMAR) ou ausente, e número não finito (NaN, Infinity) em qualquer item; a configuração do T11
             carrega com todos os obrigatórios numéricos (revisão final da fase 1, I3).
-A semente e o r2 vêm de data/posicionador/origem_v20_murilo.json (saída do script do Murilo, com SHA-256); os arquivos de
+A semente e o r2 vêm de data/posicionador/origem_v20_script.json (saída do script de atuação, com SHA-256); os arquivos de
 configuração inválidos do TC-POS-053 e do TC-POS-055 são SINTÉTICOS de teste.
 Roda como script: uv run python -X utf8 tests/test_posicionador_mecanismo.py
 """
@@ -39,9 +39,9 @@ def check(name, condition, detail=""):
 
 hs_v10 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v10.csv"),
                             os.path.join(DADOS, "hardpoints_T11_v10.meta.json"))
-hs_v20 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v20_murilo.csv"),
-                            os.path.join(DADOS, "hardpoints_T11_v20_murilo.meta.json"))
-with open(os.path.join(DADOS, "origem_v20_murilo.json"), encoding="utf-8") as f:
+hs_v20 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v20_script.csv"),
+                            os.path.join(DADOS, "hardpoints_T11_v20_script.meta.json"))
+with open(os.path.join(DADOS, "origem_v20_script.json"), encoding="utf-8") as f:
     origem = json.load(f)
 cfg = pc.carregar(os.path.join(DADOS, "config_T11.json"))
 x = origem["x_semente"]

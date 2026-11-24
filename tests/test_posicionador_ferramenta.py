@@ -7,7 +7,7 @@ TC-POS-081: STEP real do chassi (data/cad/T11_chassi_2026-11-17.step), `--amostr
             `candidatos.csv` lista um conjunto por linha; sem candidato, `resultado.json` traz só a `fase1`. O relatório
             carrega o SHA-256 do STEP e diz que a transformação STEP → carro é a HIPÓTESE da configuração. A caixa de busca
             derivada do envelope do chassi (decisão R8, HIPOTESE) contém o pivô da v20 (`FL_ROCKER_AXIS_A` de
-            data/posicionador/hardpoints_T11_v20_murilo.csv).
+            data/posicionador/hardpoints_T11_v20_script.csv).
 TC-POS-082: busca sem STEP com configuração SINTÉTICA folgada e `--caixa` SINTÉTICA (revisão final, M8, M3, I2, M5) →
             código 0 e ao menos um candidato; cada `candidato_NN.csv` carrega com `load_hardpoints` (Status PROVISIONAL) e
             tem um sufixo só no `geometry_rev`; `candidatos.csv` tem uma linha por candidato; nenhum candidato é VIAVEL;
@@ -195,8 +195,8 @@ with tempfile.TemporaryDirectory() as tmp:
         saidas_ok = res.get("fase1") is not None and not linhas
         modo = f"sem candidato; fase1: {(res.get('fase1') or {}).get('motivo', '')[:200]!r}"
     sha_step = sha256(STEP_REAL)
-    hs20 = hp.load_hardpoints(os.path.join(RAIZ, "data", "posicionador", "hardpoints_T11_v20_murilo.csv"),
-                              os.path.join(RAIZ, "data", "posicionador", "hardpoints_T11_v20_murilo.meta.json"))
+    hs20 = hp.load_hardpoints(os.path.join(RAIZ, "data", "posicionador", "hardpoints_T11_v20_script.csv"),
+                              os.path.join(RAIZ, "data", "posicionador", "hardpoints_T11_v20_script.meta.json"))
     pv20 = hs20.points["FL_ROCKER_AXIS_A"].xyz
     cx = res.get("caixa_busca_pivo_m") or {}
     try:

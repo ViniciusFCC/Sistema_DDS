@@ -1,7 +1,7 @@
 # Relatório GEO: chassi.step em tubos e nós, e confronto com a v20
 
-Data: 2026-11-17. Pasta: `geo/` (dentro de `atuacao/`). Nada foi escrito fora de `geo/`. Os arquivos do Murilo
-(`script_murilo/*.py`, `geometria_T11.json`) foram conferidos por SHA-256 antes e depois e não mudaram.
+Data: 2026-11-17. Pasta: `geo/` (dentro de `atuacao/`). Nada foi escrito fora de `geo/`. Os arquivos do script de atuação
+(`script_script/*.py`, `geometria_T11.json`) foram conferidos por SHA-256 antes e depois e não mudaram.
 
 Rótulos usados: **[código]** = resultado de código rodado aqui; **[cálculo]** = conta feita à mão sobre números do código;
 **[inferência]** = conclusão minha a partir dos dados; **[hipótese]** = não verificável com o que existe.
@@ -15,7 +15,7 @@ Rótulos usados: **[código]** = resultado de código rodado aqui; **[cálculo]*
   matriz da ocorrência. O XCAF (`STEPCAFControl`) dava segfault ao ler os sub-shapes com nome (bug do binding), então
   ele foi usado só como conferência: as 7 matrizes de ocorrência lidas do texto são iguais às do XCAF
   (diferença máxima de 2e-32). **[código]**
-- Tudo rodou com `python -I -B`. O script do Murilo foi importado como biblioteca, sem `__main__` e sem gravar `.pyc`.
+- Tudo rodou com `python -I -B`. O script de atuação foi importado como biblioteca, sem `__main__` e sem gravar `.pyc`.
 
 Arquivos:
 
@@ -247,7 +247,7 @@ As folgas reais dependem dos tubos que faltam.
 - Membros de tubo quadrado são achados pelos planos-médios de faces opostas mais teste de ponto dentro do sólido
   (passo de 2 mm). Seções não retangulares, chapas dobradas e perfis abertos caem em "outro" ou "chapa".
 - As orelhas do pack foram classificadas como "suporte" (furo Ø8). A face de B-spline delas não foi analisada.
-- O script do Murilo foi tratado como dado: os números da v20 vêm dele sem alteração. Não validei o `kinlib`.
+- O script de atuação foi tratado como dado: os números da v20 vêm dele sem alteração. Não validei o `kinlib`.
 
 ## 8. O que um script de posicionamento precisa do CAD que este STEP ainda não tem
 

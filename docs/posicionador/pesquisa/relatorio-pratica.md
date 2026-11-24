@@ -14,7 +14,7 @@ O que não foi conferido está escrito "não verificado".
 | Altair MotionView/MotionSolve | A doc oficial descreve o processo: o time de cinemática faz empacotamento com hardpoints, define folgas entre componentes durante o curso, e geometria CAD de suspensão e chassi pode ser importada no HyperView para medir folga e contato durante o movimento da suspensão; há exemplo de otimização de hardpoints com 26 variáveis. Licença: **não verificado**. | Sim, por pós-processamento em CAD importado (doc). | não verificado | [OFICIAL] help.altair.com (Suspension Design Process; Application Area 3 e 5) |
 | SusProg3D | Não achei página oficial nem doc. Tudo sobre ele: **não verificado**. | — | — | — |
 
-Leitura para o T11: nenhuma das ferramentas lidas escolhe nós do chassi. As que otimizam (OptimumKinematics, MotionSolve) otimizam pontos dentro de volumes que o projetista define; a colisão com tubos é checada no CAD. Isso coincide com o que o seu script do Murilo já faz (otimizar dentro de caixas) e muda só onde a colisão é calculada.
+Leitura para o T11: nenhuma das ferramentas lidas escolhe nós do chassi. As que otimizam (OptimumKinematics, MotionSolve) otimizam pontos dentro de volumes que o projetista define; a colisão com tubos é checada no CAD. Isso coincide com o que o seu script de atuação já faz (otimizar dentro de caixas) e muda só onde a colisão é calculada.
 
 ## 2. Bibliotecas abertas em Python (GitHub)
 

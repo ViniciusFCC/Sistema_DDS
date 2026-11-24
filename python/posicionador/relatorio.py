@@ -264,7 +264,7 @@ def markdown(ctx):
     ln += ["## Limites desta fase", "", f"- {POR_QUE_NAO_VIAVEL}", f"- {INCERTEZA}", ""]
 
     if ctx["modo"] == "avaliar-v20":
-        ln += ["## Avaliação da v20 (Murilo)", "",
+        ln += ["## Avaliação da v20 (script de atuação)", "",
                f"Conjunto `{ctx['v20']}`, avaliado como está (sem construção), com a varredura convergida e a restrição "
                "do olhal da busca.", ""]
         ln += bloco_candidato("v20", ctx["cand_v20"])

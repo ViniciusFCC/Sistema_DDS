@@ -115,10 +115,10 @@ Premissas: a SPEC aprovável é a de `SPEC_posicionador.md` com U1–U4; escopo 
 |---|---|---|
 | Mapa de espaço livre dos pontos do chassi + varredura curso × esterço contra peças RODA_/DIR_ e volumes do regulamento | Responde exatamente "onde posso pôr", que Yaeger descreve como o que "se projeta sozinho" e o que a equipe hoje faz à mão. Útil e novo (nenhuma ferramenta pública faz isso, segundo `pratica/`). | Nenhum, é o núcleo (E1 + parte de E2). |
 | Volumes do regulamento gerados do R27 (T.1.2, F.8.x, V.3.2.4) | Evita retrabalho e erro de inspeção. | Moderado: manter só os que dependem de posição de ponto da atuação. |
-| Fase I (diagnóstico de conflito) | Compatível com o histórico do Murilo (1,1 milhão de combinações sem solução): diz *por que* é vazio. | Nenhum. |
+| Fase I (diagnóstico de conflito) | Compatível com o histórico do script de atuação (1,1 milhão de combinações sem solução): diz *por que* é vazio. | Nenhum. |
 | Certificador independente com malha n e 2n, tolerância δ, geometria exata nos finalistas | Dá confiança num modelo que muda toda semana? Só se o CAD estiver completo. | **Excesso no estágio atual**: chassi incompleto, manga/pinça/disco/cremalheira não modelados (o achado 4 do REGISTRO) e δ desconhecido. Certificar sobre modelo incompleto produz falsa confiança. Manter n e 2n (barato); adiar geometria exata e δ. |
 | Mutação do certificador 100 %, hash do CAD, status STALE | Disciplina de verificação do projeto; compatível com o padrão do Sistema_DDS. | Nenhum juiz cobra; custo de manutenção alto para equipe com rotatividade (o próprio Borowski/Rudolph cita "alta rotatividade" como problema das equipes). |
-| CA-7: kinlib × `kinematics_model` × OptimumKinematics | Importante porque a cinemática do script do Murilo não foi validada. | Tolerar OptimumKinematics só se a licença existir; senão comparar com `kinematics_model` e com `suspension-explorer-core` como verificador externo (já em `pratica/`). |
+| CA-7: kinlib × `kinematics_model` × OptimumKinematics | Importante porque a cinemática do script de atuação não foi validada. | Tolerar OptimumKinematics só se a licença existir; senão comparar com `kinematics_model` e com `suspension-explorer-core` como verificador externo (já em `pratica/`). |
 | Adaptador Fusion (E3), rodando dentro do design vivo | Reduz iteração humana (U4). | Maior risco de prazo: ambiente Python do Fusion, `analyzeInterference` lento e exige design direto (já no relatório anterior). Nenhuma equipe de topo descreve fazer isso. |
 
 ### 5.3 Riscos de sobre-engenharia (diretos)

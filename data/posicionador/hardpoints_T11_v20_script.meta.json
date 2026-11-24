@@ -1,0 +1,11 @@
+{
+  "schema_version": "V2.0",
+  "geometry_rev": "T11-v20 (script de atuação)",
+  "coordinate_system": "ISO8855_X_FORWARD_Y_LEFT_Z_UP",
+  "units": "m",
+  "ground_plane_z_m": 0.0,
+  "kop": "altura estática de projeto (v10)",
+  "source": "v10 mais a solução v20 (semente de t11_atuacao.py, avaliar(final=True)) do script de atuação (script de atuação), recebido 2026-11-17; SPINDLE_PT e CONTACT_PATCH são HIPÓTESE do kinlib (camber e toe estáticos nulos, solo em Z = 0)",
+  "freeze_level": "F0",
+  "timestamp": "2026-11-17T00:00:00-03:00"
+}

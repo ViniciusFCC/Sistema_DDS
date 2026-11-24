@@ -92,7 +92,7 @@ PRIMEIRO PASSO
   Esperado: "RESULTADO: TUDO OK". Se aparecer FALHOU, mande o arquivo `verificar_instalacao.log` (fica nesta pasta).
 
 COMO USAR
-  1. `avaliar_v20.bat`  — avalia a v20 (a solução do script do Murilo) com a ferramenta; leva segundos.
+  1. `avaliar_v20.bat`  — avalia a v20 (a solução do script de atuação) com a ferramenta; leva segundos.
      Resultado esperado: INVIAVEL (variação de MR de 6,2 % contra o limite de 4 %, entre outros). Relatório: resultados\\v20\\relatorio.md
   2. `buscar_com_step.bat ARQUIVO.step [amostras]` — busca posições (padrão 200 amostras; leva cerca de 11 minutos).
      Pode arrastar o .step em cima do arquivo. Relatório e candidatos: resultados\\busca\\.

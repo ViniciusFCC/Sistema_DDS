@@ -29,7 +29,7 @@ uv run python -X utf8 tools/posicionar_atuacao.py --avaliar-v20 --saida PASTA [-
 ```
 
 - `--hardpoints` (padrão `data/posicionador/hardpoints_T11_v10.csv`, meta ao lado) e `--config` (padrão
-  `data/posicionador/config_T11.json`) trocam as entradas; `--avaliar-v20` avalia `hardpoints_T11_v20_murilo.csv` como
+  `data/posicionador/config_T11.json`) trocam as entradas; `--avaliar-v20` avalia `hardpoints_T11_v20_script.csv` como
   está, em vez de buscar.
 - Sem `--step`, a cena tem só o aro (a folga ao chassi não é conferida) e a busca exige `--caixa`. Escreva
   `--caixa=xmin,...` com o sinal de igual: com `xmin` negativo, `--caixa -0.15,...` é lido como outra opção. A caixa
@@ -124,8 +124,8 @@ itens obrigatórios (055), não modelado (068, 025) e referencial da configuraç
 
 - `pendencias-fase1.md`: decisões do controlador na execução da fase 1 (R1 a R11) e pendências menores adiadas, para a fase 2.
 - `proposta-troca-fases-2-3.md`: proposta (PENDING_CONFIRMATION) de fazer o add-in do Fusion antes do verificador completo.
-- `benchmark/`: benchmark da ferramenta do Murilo contra o posicionador (`relatorio.md` com gráficos, `resultados.json`,
-  `figuras/`); reproduzível com `tools/benchmark_posicionador.py`. O script do Murilo nunca entra no repositório.
+- `benchmark/`: benchmark da script de atuação contra o posicionador (`relatorio.md` com gráficos, `resultados.json`,
+  `figuras/`); reproduzível com `tools/benchmark_posicionador.py`. O script de atuação nunca entra no repositório.
 
 ## Pacote portátil para Windows
 

@@ -64,7 +64,7 @@ def cfg_sintetica(valores, tc):
         return pc.carregar(p)
 
 
-# Caixa SINTÉTICA de busca do pivô: X da configuração do T11 (±150 mm); Y e Z em volta do pivô da v20 do Murilo
+# Caixa SINTÉTICA de busca do pivô: X da configuração do T11 (±150 mm); Y e Z em volta do pivô da v20
 # (−57; 290; 476 mm), porque sem STEP a configuração não tem Y nem Z.
 CAIXA = (np.array([-0.15, 0.24, 0.42]), np.array([0.15, 0.34, 0.53]))
 # Metas SINTÉTICAS folgadas (TC-POS-070 e 073): variação de MR 0,5 e curso do amortecedor igual ao olho a olho (o

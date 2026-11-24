@@ -1,7 +1,7 @@
 """
 Testes dos dados do T11 e das curvas de referência do script atual (posicionador, EDR-076, Task 1).
 TC-POS-001: load_hardpoints aceita v10 e v20 e o Corner resolve; o v20 tem push.
-TC-POS-002: origem_v20_murilo.json com os três SHA-256 e a semente de 8 números.
+TC-POS-002: origem_v20_script.json com os três SHA-256 e a semente de 8 números.
 Roda como script: uv run python -X utf8 tests/test_posicionador_dados.py
 """
 import json
@@ -28,7 +28,7 @@ def p(nome):
 # --- TC-POS-001 ---------------------------------------------------------------------------------------------------
 try:
     hs10 = hp.load_hardpoints(p("hardpoints_T11_v10.csv"), p("hardpoints_T11_v10.meta.json"))
-    hs20 = hp.load_hardpoints(p("hardpoints_T11_v20_murilo.csv"), p("hardpoints_T11_v20_murilo.meta.json"))
+    hs20 = hp.load_hardpoints(p("hardpoints_T11_v20_script.csv"), p("hardpoints_T11_v20_script.meta.json"))
     c10, c20 = km.Corner(hs10, "FL"), km.Corner(hs20, "FL")
     s10, s20 = c10.solve(0.0), c20.solve(0.0)
     ok1 = (s10 is not None and s20 is not None and c20.has_push and not c10.has_push)
@@ -38,7 +38,7 @@ except Exception as e:   # noqa: BLE001
 check("TC-POS-001 v10 e v20 carregam e resolvem em dz=0", ok1, det1)
 
 # --- TC-POS-002 ---------------------------------------------------------------------------------------------------
-o = json.load(open(p("origem_v20_murilo.json"), encoding="utf-8"))
+o = json.load(open(p("origem_v20_script.json"), encoding="utf-8"))
 hexa = all(isinstance(v, str) and re.fullmatch(r"[0-9a-f]{64}", v) for v in o["arquivos"].values())
 ok2 = (set(o["arquivos"]) == {"t11_atuacao.py", "kinlib.py", "geometria_T11.json"} and hexa and len(o["x_semente"]) == 8
        and all(isinstance(v, (int, float)) for v in o["x_semente"]) and "unidades" in o and "config_do_script" in o)

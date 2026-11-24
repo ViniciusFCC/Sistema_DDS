@@ -10,8 +10,8 @@ Data: 2026-11-17. Fora do repositório Sistema_DDS (nada é commitado; nenhum ID
   como fica o empacotamento.
 - Desejo do usuário: um script que **reconheça a posição dos tubos e dos nós** e **sugira posicionamento cabível** para
   os pontos de fixação (push rod, rocker, amortecedor) encontrados.
-- O usuário não sabe se o método atual (script do Murilo) é o ideal e pede avaliação, usando tudo o que houver.
-- Murilo (autor do script) relatou: (a) 1,1 milhão de combinações testadas por força bruta sem nenhuma solução válida
+- O usuário não sabe se o método atual (script de atuação) é o ideal e pede avaliação, usando tudo o que houver.
+- Relato sobre o script de atuação: (a) 1,1 milhão de combinações testadas por força bruta sem nenhuma solução válida
   (pontos perto de um nó, amortecedor sem nó na outra ponta, batia no gabarito, saía do chassi); (b) mesmo as
   soluções achadas às vezes não valem (conflito com outra parte); (c) os pontos não consideram esforço interno, só
   colocam as coisas no mesmo plano; (d) a direção estava muito inclinada e a barra de direção teria que ir mais para a
@@ -19,7 +19,7 @@ Data: 2026-11-17. Fora do repositório Sistema_DDS (nada é commitado; nenhum ID
 - Freio dentro da roda, em volta do cubo; motor no chassi, atrás (usuário, 2026-10-19, a confirmar para o T11).
 
 ## Entradas
-- `script_murilo/` : `t11_atuacao.py` (Nelder-Mead em 8 variáveis, custo = soma de penalidades), `kinlib.py`
+- `script_script/` : `t11_atuacao.py` (Nelder-Mead em 8 variáveis, custo = soma de penalidades), `kinlib.py`
   (cinemática do duplo A), `geometria_T11.json` (bandejas e tirante da dianteira, lado esquerdo, mm, X frente, Y
   esquerda, Z cima, origem no eixo dianteiro/linha de centro/chão; semente v20), `LEIA-ME.md`.
 - `geo/chassi.step` : STEP AP214 exportado do Fusion em 2026-11-17, mm. Montagem "chassi" com FH, FBH, MH-estreito,

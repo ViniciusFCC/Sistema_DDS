@@ -9,14 +9,14 @@ LEIA, nesta ordem:
 2. `conselho/PROTOCOLO.md` (perguntas Q1–Q5 e regras).
 3. Os cinco relatórios da fase 1: `geo/RELATORIO_GEO.md`, `lit/RELATORIO_LIT.md`, `regras/RELATORIO_REGRAS.md`,
    `pratica/RELATORIO_PRATICA.md`, `skills/RELATORIO_SKILLS.md`. Veja `geo/vistas_dianteira.png`.
-4. O código, se precisar: `script_murilo/t11_atuacao.py`, `script_murilo/kinlib.py`, `geo/step_tubos.py`,
+4. O código, se precisar: `script_script/t11_atuacao.py`, `script_script/kinlib.py`, `geo/step_tubos.py`,
    `geo/tubos.json`, `geo/nos.json`, `geo/confronto_v20.json`.
 
 PODE rodar verificações rápidas (minutos, não horas) com `geo/.venv/bin/python -I -B` (tem numpy, scipy, matplotlib,
 OCP), gravando scripts e saídas só em `conselho/assento<N>_trabalho/`. Não altere nenhum outro arquivo da pasta, não
 escreva fora dela, não faça commits, não acesse a internet salvo para conferir uma fonte já citada nos relatórios.
 
-O QUE O USUÁRIO QUER: avaliar se o método atual (script do Murilo) é o ideal e qual método/arquitetura adotar para um
+O QUE O USUÁRIO QUER: avaliar se o método atual (script de atuação) é o ideal e qual método/arquitetura adotar para um
 script que reconheça tubos e nós do chassi (CAD incompleto, em evolução junto com a suspensão) e sugira posições
 cabíveis para push rod, rocker e amortecedor da dianteira, com confiabilidade (o que ele aprova tem de ser válido).
 

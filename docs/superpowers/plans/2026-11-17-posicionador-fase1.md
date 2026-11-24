@@ -30,7 +30,7 @@ disponível (figuras opcionais), testes em script com `check()`.
   rodapé de `tests/test_skidpad.py`). Teste que precisa de OCP e não o encontra imprime uma linha começando por
   `NÃO EXECUTÁVEL` e sai com código 3.
 - Rodar sempre com `uv run python -X utf8 ...` (no Windows, `export UV_SYSTEM_CERTS=1` antes). OCP: `uv sync --extra cad`.
-- Não importar nada de fora do repositório; o script do Murilo (`t11_atuacao.py`, `kinlib.py`) nunca entra no repositório:
+- Não importar nada de fora do repositório; o script de atuação (`t11_atuacao.py`, `kinlib.py`) nunca entra no repositório:
   só as saídas dele, capturadas uma vez com o SHA-256 dos arquivos de origem.
 - Commits separados por propósito: `dados:` para arquivos de dados, `deps:` para `pyproject.toml`/`uv.lock`, `feat(posicionador):`
   para código e testes de uma tarefa, `docs:` para documentação. Mensagens terminam com as linhas de atribuição da sessão.
@@ -54,36 +54,36 @@ disponível (figuras opcionais), testes em script com `check()`.
 ### Task 1: Dados do T11 e curvas de referência do script atual (E0, parte 1)
 
 **Files:**
-- Create: `tools/capturar_v20_murilo.py`
+- Create: `tools/capturar_v20_script.py`
 - Create (gerados pela ferramenta, commit `dados:`): `data/posicionador/hardpoints_T11_v10.csv` e `.meta.json`,
-  `data/posicionador/hardpoints_T11_v20_murilo.csv` e `.meta.json`, `data/posicionador/curvas_kinlib_v20.csv`,
-  `data/posicionador/origem_v20_murilo.json`
+  `data/posicionador/hardpoints_T11_v20_script.csv` e `.meta.json`, `data/posicionador/curvas_kinlib_v20.csv`,
+  `data/posicionador/origem_v20_script.json`
 - Create (cópia, commit `dados:`): `data/cad/T11_chassi_2026-11-17.step` (STEP recebido em 2026-11-17)
 - Test: `tests/test_posicionador_dados.py`
 
 **Interfaces:**
-- Produces: os arquivos acima. `origem_v20_murilo.json` = `{"arquivos": {"t11_atuacao.py": "<sha256>", "kinlib.py": "<sha256>",
+- Produces: os arquivos acima. `origem_v20_script.json` = `{"arquivos": {"t11_atuacao.py": "<sha256>", "kinlib.py": "<sha256>",
   "geometria_T11.json": "<sha256>"}, "x_semente": [8 números], "config_do_script": {...}, "data": "2026-11-17"}`.
   `curvas_kinlib_v20.csv` com colunas `dz_m,Ls_m,theta_rocker_rad` em 401 pontos uniformes de −0,023 a +0,0624 m.
 
-- [ ] **Step 1: Escrever `tools/capturar_v20_murilo.py PASTA_DO_SCRIPT`.** Importa `t11_atuacao` e `kinlib` da pasta dada
+- [ ] **Step 1: Escrever `tools/capturar_v20_script.py PASTA_DO_SCRIPT`.** Importa `t11_atuacao` e `kinlib` da pasta dada
   (sys.path), roda `avaliar(carregar_x(), corner(), final=True)` e `varrer` nos 401 pontos, e grava:
   - v10: os 9 pontos de `geometria_T11.json` (mm → m) como `FL_LCA_IN_F`=LF, `FL_LCA_IN_R`=LR, `FL_LCA_OUT`=LO,
     `FL_UCA_IN_F`=UF, `FL_UCA_IN_R`=UR, `FL_UCA_OUT`=UO, `FL_TIE_IN`=TI, `FL_TIE_OUT`=TO, `FL_WHEEL_CENTER`=WC, mais
     `FL_SPINDLE_PT` = WC + (0; 0,05; 0) m e `FL_CONTACT_PATCH` = (WC_x; WC_y; 0). Status `PROVISIONAL`. Meta: `geometry_rev`
-    "T11-v10 (LR −6 mm)", `ground_plane_z_m` 0,0, `source` "geometria_T11.json do script de atuação (Murilo), recebido
+    "T11-v10 (LR −6 mm)", `ground_plane_z_m` 0,0, `source` "geometria_T11.json do script de atuação (script de atuação), recebido
     2026-11-17; SPINDLE_PT e CONTACT_PATCH são HIPÓTESE do kinlib (camber e toe estáticos nulos, solo em Z = 0)".
   - v20: v10 + `FL_PUSH_OUT`=O0 (Component `LCA`), `FL_PUSH_IN`=A0, `FL_ROCKER_AXIS_A`=Pv, `FL_ROCKER_AXIS_B`=Pv + 0,05·n,
     `FL_ROCKER_SPRING`=B0 (`ROCKER`), `FL_SPRING_CHASSIS`=C (`CHASSIS`). Meta `source` cita a saída do script.
   - curvas: `Ls = |B(dz) − C|` e θ do rocker de `varrer`, em m e rad.
-  - `origem_v20_murilo.json` com o SHA-256 dos três arquivos de origem e o bloco CONFIGURAÇÃO do script lido como valores.
+  - `origem_v20_script.json` com o SHA-256 dos três arquivos de origem e o bloco CONFIGURAÇÃO do script lido como valores.
   Rodar com `-I` e `PYTHONDONTWRITEBYTECODE=1` sobre a cópia do script na pasta de trabalho da sessão
-  (`.../scratchpad/atuacao/script_murilo/`).
+  (`.../scratchpad/atuacao/script_script/`).
 - [ ] **Step 2: Rodar a ferramenta e conferir que gerou os 6 arquivos de dados.**
 - [ ] **Step 3: Escrever `tests/test_posicionador_dados.py`:**
   - TC-POS-001: `hardpoints.load_hardpoints` aceita v10 e v20 (sem exceção); `Corner(hs, "FL").solve(0.0)` resolve nos dois;
     o v20 tem `has_push`.
-  - TC-POS-002: `origem_v20_murilo.json` tem os três SHA-256 com 64 caracteres hex e `x_semente` com 8 números.
+  - TC-POS-002: `origem_v20_script.json` tem os três SHA-256 com 64 caracteres hex e `x_semente` com 8 números.
 - [ ] **Step 4: Rodar `uv run python -X utf8 tests/test_posicionador_dados.py`. Esperado: `2 PASS, 0 FAIL, de 2 testes`.**
 - [ ] **Step 5: Commits:** `dados:` (os arquivos de `data/`), depois `feat(posicionador):` (ferramenta e teste).
 
@@ -204,13 +204,13 @@ disponível (figuras opcionais), testes em script com `check()`.
 - Test: `tests/test_posicionador_mecanismo.py`
 
 **Interfaces:**
-- Consumes: `hardpoints`, `kinematics_model.Corner`, `kinematics_model.motion_ratio`, `data/posicionador/origem_v20_murilo.json`.
+- Consumes: `hardpoints`, `kinematics_model.Corner`, `kinematics_model.motion_ratio`, `data/posicionador/origem_v20_script.json`.
 - Produces:
   - `config.carregar(caminho) -> Config`; cada item `Item(valor, unidade, origem, fonte)`; `Config.valor(nome)` em SI;
     `Config.a_confirmar() -> list[str]`; erro se faltar `origem` ou `fonte` ou se `origem` for desconhecida.
   - `config_T11.json`: os limites do bloco CONFIGURAÇÃO do script (DROOP 23 mm e BUMP 62,4 mm, EYE 210 mm, STROKE 61 mm,
     MR_ALVO 1,40, MR_VAR_MAX 0,04, DJ 35 mm, braços 55–80 mm, GIRO_MAX 60°, AMORT_ANG_MAX 30°, folgas 10/5/5 mm, raios
-    25/12/20/8 mm, FOLGA_GAB 10 mm) com `origem: "META"` ou `"MARGEM_EQUIPE"` e `fonte: "t11_atuacao.py (Murilo), bloco
+    25/12/20/8 mm, FOLGA_GAB 10 mm) com `origem: "META"` ou `"MARGEM_EQUIPE"` e `fonte: "t11_atuacao.py (script de atuação), bloco
     CONFIGURAÇÃO, sha256 …"`; aro `HIPOTESE` (r_int 0,158 m, meia largura 0,100 m, kinlib); `curso_cremalheira_m`,
     `margem_curso_amortecedor_m`, `x_face_traseira_aip_m`, `x_ini_t12_m`, `x_fim_t12_m`: `A_CONFIRMAR` com `valor: null`;
     `x_max_olhal_m` 0,400 e `caixa_busca_pivo_m` com X ∈ [−0,150; 0,150] (`META`, limites |Pv_x| ≤ 150 mm e C_x ≤ 400 mm do
@@ -258,7 +258,7 @@ disponível (figuras opcionais), testes em script com `check()`.
   - `avaliar_convergido(construcao, cena, cfg, n0=25) -> Avaliacao`: avalia com n e 2n; se algum estado mudar, dobra até 8·n0;
     se ainda mudar, veredito `INVIAVEL` com motivo "resolução não convergiu".
 - [ ] **Step 1: Teste que falha:**
-  - TC-POS-060: `Corner` × `kinlib` na v20: `Ls(dz)` de `hardpoints_T11_v20_murilo.csv` com `Corner` bate com
+  - TC-POS-060: `Corner` × `kinlib` na v20: `Ls(dz)` de `hardpoints_T11_v20_script.csv` com `Corner` bate com
     `curvas_kinlib_v20.csv` em todos os 401 pontos com erro < 1e-5 m. Se falhar, PARAR e reportar (critério de aprovação do
     EDR-076): não seguir com a busca.
   - TC-POS-061: avaliação convergida da v20 (`cena_sem_cad`): variação de MR entre 0,060 e 0,062 → `VIOLADA`; folga ao aro no

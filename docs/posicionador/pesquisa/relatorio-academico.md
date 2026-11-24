@@ -136,7 +136,7 @@ trata o chassi como fixo nem como totalmente livre. O esqueleto paramétrico no 
   approach without any optimization algorithms, simplifying the kinematics to a 2D representation" (p. 44).
   - O processo era demorado e "prone to suboptimal outcomes" (p. 45).
   - Com o DEFT-Funnel, a iteração passou "from several weeks to only a few days" (p. 45).
-  - É a mesma transição que a Tupã vive com o script do Murilo.
+  - É a mesma transição que a Tupã vive com o script de atuação.
 
 - **Restrições demais impedem a solução.** [F] A ETSEIB descreve o mesmo sintoma de 1,1 milhão de combinações sem
   solução. Nas bandejas, as restrições "often resulted in the algorithm failing to find a solution that satisfied all the
@@ -274,7 +274,7 @@ trata o chassi como fixo nem como totalmente livre. O esqueleto paramétrico no 
    - ETSEIB, FEUP, TU Brno e Manresa resolvem a colisão com caixas de variáveis e checagem posterior, manual ou no
      Adams/CAD, e entregam carros.
    - [I] Para uma equipe estudante, um laço "otimizador sem derivada + caixas + portão de colisão no CAD" pode bastar. O
-     caminho mais barato seria corrigir o script do Murilo nessa direção, antes de construir o certificador e os volumes
+     caminho mais barato seria corrigir o script de atuação nessa direção, antes de construir o certificador e os volumes
      de regra.
 2. **Recomendação explícita a favor do manual.** Pagerols recomenda à equipe o Lotus Shark, de movimento manual, porque
    ajuda a entender o efeito de cada ponto (p. 90 do PDF). É argumento de formação, relevante para equipe com rotatividade
