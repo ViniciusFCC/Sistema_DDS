@@ -1,0 +1,7 @@
+semente 0  MR(-23)=1.4099 MR(0)=1.3999 MR(+62.4)=1.4128 min=1.3601 max=1.4128 var=0.0387 incl=-0.52476/mm  curso amort=61.678 mm ∫dz/MR=61.678 mm  MR harm=1.3846  Lmin=148.322
+semente 1  MR(-23)=1.4151 MR(0)=1.3999 MR(+62.4)=1.4181 min=1.3618 max=1.4181 var=0.0414 incl=-0.50307/mm  curso amort=61.614 mm ∫dz/MR=61.614 mm  MR harm=1.3861  Lmin=148.386
+semente 2  MR(-23)=1.4066 MR(0)=1.3999 MR(+62.4)=1.4092 min=1.3578 max=1.4092 var=0.0378 incl=-0.55553/mm  curso amort=61.743 mm ∫dz/MR=61.743 mm  MR harm=1.3832  Lmin=148.257
+semente 3  MR(-23)=1.4076 MR(0)=1.3999 MR(+62.4)=1.4032 min=1.3614 max=1.4086 var=0.0347 incl=-0.54122/mm  curso amort=61.688 mm ∫dz/MR=61.688 mm  MR harm=1.3844  Lmin=148.312
+semente 4  MR(-23)=1.3978 MR(0)=1.4000 MR(+62.4)=1.4113 min=1.3622 max=1.4113 var=0.0361 incl=-0.43682/mm  curso amort=61.677 mm ∫dz/MR=61.677 mm  MR harm=1.3846  Lmin=148.323
+semente 5  MR(-23)=1.4107 MR(0)=1.4000 MR(+62.4)=1.4060 min=1.3701 max=1.4107 var=0.0296 incl=-0.42483/mm  curso amort=61.506 mm ∫dz/MR=61.506 mm  MR harm=1.3885  Lmin=148.494
+v20        MR(-23)=1.4046 MR(0)=1.4011 MR(+62.4)=1.4693 min=1.3835 max=1.4693 var=0.0620 incl=+0.14739/mm  curso amort=60.999 mm ∫dz/MR=60.998 mm  MR harm=1.4000  Lmin=149.001

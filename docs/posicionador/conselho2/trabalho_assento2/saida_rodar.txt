@@ -1,0 +1,10 @@
+v20 {"Fpr": -1.4602734186818442, "Fpiv": 2.488664129573129, "Fax": 6.412815535189195e-16, "Fs": 1.4, "ang_pr_rocker_graus": null, "LCA_IN_F": [325, "FH:1/Body2", 0.3, 72, 325], "LCA_IN_R": [14, "FH:1/Body2", 0.47, 72, 32], "UCA_IN_F": [299, "FH:1/Body2", 0.95, 11, 303], "UCA_IN_R": [23, "FH:1/Body2", 0.51, 11, 33], "AXIS_A": [147, "FH:1/Body2", 0.68, 278, 181], "AXIS_B": [155, "chassi/braceFBHesq", 0.78, 705, 210], "SPRING_CHASSIS": [97, "chassi/braceFBHesq", 0.48, 705, 364], "M_mola_Nm_por_kN": 246.41625073175774, "M_pivo_Nm_por_kN": 75.02615029466585}
+script v20 (sem perturbação)  Fpr=-1.54 Fpiv=2.70 SC (201, 358) A 177 181 B 193 M_mola 237 M_piv 93
+script v20 · configuração ori Fpr=-1.54 Fpiv=2.70 SC (201, 358) A 177 181 B 193 M_mola 238 M_piv 93
+script v20 (sem perturbação)  Fpr=-1.81 Fpiv=2.57 SC (128, 333) A 120 123 B 124 M_mola 247 M_piv 86
+posicionador semente 0 Fpr=-1.51 Fpiv=1.95 SC (14, 323) A 161 181 B 170 M_mola 243 M_piv 65
+posicionador semente 1 Fpr=-1.78 Fpiv=2.71 SC (14, 350) A 131 191 B 97 M_mola 246 M_piv 168
+posicionador semente 2 Fpr=-1.88 Fpiv=2.53 SC (148, 265) A 216 281 B 200 M_mola 205 M_piv 222
+posicionador semente 3 Fpr=-1.54 Fpiv=2.28 SC (103, 356) A 175 179 B 192 M_mola 246 M_piv 77
+posicionador semente 4 Fpr=-2.02 Fpiv=2.51 SC (51, 337) A 199 199 B 178 M_mola 245 M_piv 79
+posicionador semente 5 Fpr=-1.69 Fpiv=2.76 SC (209, 348) A 182 182 B 198 M_mola 232 M_piv 81

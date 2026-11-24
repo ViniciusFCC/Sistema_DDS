@@ -1,0 +1,9 @@
+nós do lado esquerdo no vão: [(np.float64(495.0), np.float64(155.0), np.float64(131.0)), (np.float64(495.0), np.float64(155.0), np.float64(441.0)), (np.float64(-202.0), np.float64(198.0), np.float64(131.0)), (np.float64(-202.0), np.float64(210.0), np.float64(646.0)), (np.float64(-202.0), np.float64(277.0), np.float64(369.0)), (np.float64(-202.0), np.float64(281.0), np.float64(225.0))]
+8 arestas-fantasma FH–FBH
+v20 {'LCA_IN_F': (325, 33), 'LCA_IN_R': (14, 14), 'UCA_IN_F': (299, 79), 'UCA_IN_R': (23, 23), 'ROCKER_AXIS_A': (147, 100), 'ROCKER_AXIS_B': (155, 129), 'SPRING_CHASSIS': (97, 97)}
+semente 0 {'LCA_IN_F': (325, 33), 'LCA_IN_R': (14, 14), 'UCA_IN_F': (299, 79), 'UCA_IN_R': (23, 23), 'ROCKER_AXIS_A': (161, 84), 'ROCKER_AXIS_B': (170, 133), 'SPRING_CHASSIS': (14, 14)}
+semente 1 {'LCA_IN_F': (325, 33), 'LCA_IN_R': (14, 14), 'UCA_IN_F': (299, 79), 'UCA_IN_R': (23, 23), 'ROCKER_AXIS_A': (131, 66), 'ROCKER_AXIS_B': (97, 41), 'SPRING_CHASSIS': (14, 14)}
+semente 2 {'LCA_IN_F': (325, 33), 'LCA_IN_R': (14, 14), 'UCA_IN_F': (299, 79), 'UCA_IN_R': (23, 23), 'ROCKER_AXIS_A': (216, 71), 'ROCKER_AXIS_B': (200, 89), 'SPRING_CHASSIS': (148, 108)}
+semente 3 {'LCA_IN_F': (325, 33), 'LCA_IN_R': (14, 14), 'UCA_IN_F': (299, 79), 'UCA_IN_R': (23, 23), 'ROCKER_AXIS_A': (175, 79), 'ROCKER_AXIS_B': (192, 124), 'SPRING_CHASSIS': (103, 62)}
+semente 4 {'LCA_IN_F': (325, 33), 'LCA_IN_R': (14, 14), 'UCA_IN_F': (299, 79), 'UCA_IN_R': (23, 23), 'ROCKER_AXIS_A': (199, 15), 'ROCKER_AXIS_B': (178, 45), 'SPRING_CHASSIS': (51, 51)}
+semente 5 {'LCA_IN_F': (325, 33), 'LCA_IN_R': (14, 14), 'UCA_IN_F': (299, 79), 'UCA_IN_R': (23, 23), 'ROCKER_AXIS_A': (182, 56), 'ROCKER_AXIS_B': (198, 85), 'SPRING_CHASSIS': (209, 60)}

@@ -1,0 +1,627 @@
+[
+ {
+  "bump": 62.4,
+  "margem": null,
+  "semente": "semente 0",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03869164681205062,
+  "lmin_mm": 148.3215805225168,
+  "folga_lmin_mm": -0.6784184774832053,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": null,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.04137999558609273,
+  "lmin_mm": 148.3863444712475,
+  "folga_lmin_mm": -0.6136545287525047,
+  "violadas": [
+   "variação de MR",
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": null,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.0378381770390559,
+  "lmin_mm": 148.25736744117378,
+  "folga_lmin_mm": -0.7426315588262006,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": null,
+  "semente": "semente 3",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03468534924213085,
+  "lmin_mm": 148.3116702253678,
+  "folga_lmin_mm": -0.6883287746321792,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": null,
+  "semente": "semente 4",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03606537262493004,
+  "lmin_mm": 148.32288298465326,
+  "folga_lmin_mm": -0.6771160153467287,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": null,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029624114269433788,
+  "lmin_mm": 148.49421337060747,
+  "folga_lmin_mm": -0.5057856293925184,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 61.4,
+  "margem": null,
+  "semente": "semente 0",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.036983322318844714,
+  "lmin_mm": 149.03100708340094,
+  "folga_lmin_mm": 0.031008083400952374,
+  "violadas": [],
+  "curso_roda_total_mm": 84.4
+ },
+ {
+  "bump": 61.4,
+  "margem": null,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03915630650531754,
+  "lmin_mm": 149.09312823875212,
+  "folga_lmin_mm": 0.09312923875212706,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 84.4
+ },
+ {
+  "bump": 61.4,
+  "margem": null,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03716737241807366,
+  "lmin_mm": 148.96862894465048,
+  "folga_lmin_mm": -0.031370055349505016,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 84.4
+ },
+ {
+  "bump": 61.4,
+  "margem": null,
+  "semente": "semente 3",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.034682618351052685,
+  "lmin_mm": 149.0256564629752,
+  "folga_lmin_mm": 0.025657462975198744,
+  "violadas": [],
+  "curso_roda_total_mm": 84.4
+ },
+ {
+  "bump": 61.4,
+  "margem": null,
+  "semente": "semente 4",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.03142088351009842,
+  "lmin_mm": 149.0330600382299,
+  "folga_lmin_mm": 0.03306103822992065,
+  "violadas": [],
+  "curso_roda_total_mm": 84.4
+ },
+ {
+  "bump": 61.4,
+  "margem": null,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.02961659983417264,
+  "lmin_mm": 149.2064795549891,
+  "folga_lmin_mm": 0.20648055498911963,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 84.4
+ },
+ {
+  "bump": 60.4,
+  "margem": null,
+  "semente": "semente 0",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.036954639949958734,
+  "lmin_mm": 149.74346719627465,
+  "folga_lmin_mm": 0.7434681962746609,
+  "violadas": [],
+  "curso_roda_total_mm": 83.4
+ },
+ {
+  "bump": 60.4,
+  "margem": null,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03915490118780385,
+  "lmin_mm": 149.80299128619654,
+  "folga_lmin_mm": 0.8029922861965416,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 83.4
+ },
+ {
+  "bump": 60.4,
+  "margem": null,
+  "semente": "semente 2",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.03719927346597318,
+  "lmin_mm": 149.68297792198427,
+  "folga_lmin_mm": 0.682978921984268,
+  "violadas": [],
+  "curso_roda_total_mm": 83.4
+ },
+ {
+  "bump": 60.4,
+  "margem": null,
+  "semente": "semente 3",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.03469060360142451,
+  "lmin_mm": 149.74214699136328,
+  "folga_lmin_mm": 0.7421479913632961,
+  "violadas": [],
+  "curso_roda_total_mm": 83.4
+ },
+ {
+  "bump": 60.4,
+  "margem": null,
+  "semente": "semente 4",
+  "veredito": "CONDICIONAL",
+  "var_mr": 0.030406068779068374,
+  "lmin_mm": 149.7462979607726,
+  "folga_lmin_mm": 0.7462989607726073,
+  "violadas": [],
+  "curso_roda_total_mm": 83.4
+ },
+ {
+  "bump": 60.4,
+  "margem": null,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029628031447807013,
+  "lmin_mm": 149.92069427331444,
+  "folga_lmin_mm": 0.9206952733144541,
+  "violadas": [
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 83.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 1.0,
+  "semente": "semente 0",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03869164681205062,
+  "lmin_mm": 148.3215805225168,
+  "folga_lmin_mm": -1.6784184774832063,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 1.0,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.04137999558609273,
+  "lmin_mm": 148.3863444712475,
+  "folga_lmin_mm": -1.6136545287525057,
+  "violadas": [
+   "variação de MR",
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 1.0,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.0378381770390559,
+  "lmin_mm": 148.25736744117378,
+  "folga_lmin_mm": -1.7426315588262016,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 1.0,
+  "semente": "semente 3",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03468534924213085,
+  "lmin_mm": 148.3116702253678,
+  "folga_lmin_mm": -1.6883287746321802,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 1.0,
+  "semente": "semente 4",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03606537262493004,
+  "lmin_mm": 148.32288298465326,
+  "folga_lmin_mm": -1.6771160153467297,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 1.0,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029624114269433788,
+  "lmin_mm": 148.49421337060747,
+  "folga_lmin_mm": -1.5057856293925194,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 2.0,
+  "semente": "semente 0",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03869164681205062,
+  "lmin_mm": 148.3215805225168,
+  "folga_lmin_mm": -2.6784184774832074,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 2.0,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.04137999558609273,
+  "lmin_mm": 148.3863444712475,
+  "folga_lmin_mm": -2.6136545287525066,
+  "violadas": [
+   "variação de MR",
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 2.0,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.0378381770390559,
+  "lmin_mm": 148.25736744117378,
+  "folga_lmin_mm": -2.7426315588262025,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 2.0,
+  "semente": "semente 3",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03468534924213085,
+  "lmin_mm": 148.3116702253678,
+  "folga_lmin_mm": -2.6883287746321813,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 2.0,
+  "semente": "semente 4",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03606537262493004,
+  "lmin_mm": 148.32288298465326,
+  "folga_lmin_mm": -2.677116015346731,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 62.4,
+  "margem": 2.0,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029624114269433788,
+  "lmin_mm": 148.49421337060747,
+  "folga_lmin_mm": -2.5057856293925203,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 85.4
+ },
+ {
+  "bump": 59.4,
+  "margem": 2.0,
+  "semente": "semente 0",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03698019764185512,
+  "lmin_mm": 150.4586973887763,
+  "folga_lmin_mm": -0.541301611223704,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 82.4
+ },
+ {
+  "bump": 59.4,
+  "margem": 2.0,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.0391630433942971,
+  "lmin_mm": 150.5156783343767,
+  "folga_lmin_mm": -0.48432066562328846,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 82.4
+ },
+ {
+  "bump": 59.4,
+  "margem": 2.0,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03717032402070464,
+  "lmin_mm": 150.40013516941985,
+  "folga_lmin_mm": -0.5998638305801379,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 82.4
+ },
+ {
+  "bump": 59.4,
+  "margem": 2.0,
+  "semente": "semente 3",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03467477956135756,
+  "lmin_mm": 150.46092155203024,
+  "folga_lmin_mm": -0.539077447969743,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 82.4
+ },
+ {
+  "bump": 59.4,
+  "margem": 2.0,
+  "semente": "semente 4",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03042156365005888,
+  "lmin_mm": 150.46230463159392,
+  "folga_lmin_mm": -0.5376943684060603,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 82.4
+ },
+ {
+  "bump": 59.4,
+  "margem": 2.0,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029608734453561825,
+  "lmin_mm": 150.63670462833343,
+  "folga_lmin_mm": -0.3632943716665721,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 82.4
+ },
+ {
+  "bump": 58.0,
+  "margem": 3.0,
+  "semente": "semente 0",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.036955052942136746,
+  "lmin_mm": 151.4642078260362,
+  "folga_lmin_mm": -0.5357911739638227,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 3.0,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03916086672618335,
+  "lmin_mm": 151.5177322856419,
+  "folga_lmin_mm": -0.48226671435810886,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 3.0,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.037197553355126534,
+  "lmin_mm": 151.4083813780374,
+  "folga_lmin_mm": -0.5916176219625807,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 3.0,
+  "semente": "semente 3",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03468208093239222,
+  "lmin_mm": 151.47065266324725,
+  "folga_lmin_mm": -0.5293463367527501,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 3.0,
+  "semente": "semente 4",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.030387729331599056,
+  "lmin_mm": 151.46885398165753,
+  "folga_lmin_mm": -0.5311450183424765,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 58.0,
+  "margem": 3.0,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029625722526034348,
+  "lmin_mm": 151.6418618391719,
+  "folga_lmin_mm": -0.35813716082810865,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 81.0
+ },
+ {
+  "bump": 56.6,
+  "margem": 4.0,
+  "semente": "semente 0",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.036970450837181534,
+  "lmin_mm": 152.47404462246192,
+  "folga_lmin_mm": -0.5259543775380787,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 79.6
+ },
+ {
+  "bump": 56.6,
+  "margem": 4.0,
+  "semente": "semente 1",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03914169263090095,
+  "lmin_mm": 152.52424834078687,
+  "folga_lmin_mm": -0.475750659213125,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 79.6
+ },
+ {
+  "bump": 56.6,
+  "margem": 4.0,
+  "semente": "semente 2",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.037194149193960246,
+  "lmin_mm": 152.42096851491206,
+  "folga_lmin_mm": -0.5790304850879219,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 79.6
+ },
+ {
+  "bump": 56.6,
+  "margem": 4.0,
+  "semente": "semente 3",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.03469019343019264,
+  "lmin_mm": 152.48393392909207,
+  "folga_lmin_mm": -0.5160650709079279,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 79.6
+ },
+ {
+  "bump": 56.6,
+  "margem": 4.0,
+  "semente": "semente 4",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.030409456269369528,
+  "lmin_mm": 152.47962428113917,
+  "folga_lmin_mm": -0.5203747188608215,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)"
+  ],
+  "curso_roda_total_mm": 79.6
+ },
+ {
+  "bump": 56.6,
+  "margem": 4.0,
+  "semente": "semente 5",
+  "veredito": "INVIAVEL",
+  "var_mr": 0.029626959553429755,
+  "lmin_mm": 152.64988459234453,
+  "folga_lmin_mm": -0.3501144076554491,
+  "violadas": [
+   "comprimento do amortecedor (mínimo)",
+   "braço r2 (amortecedor)"
+  ],
+  "curso_roda_total_mm": 79.6
+ }
+]

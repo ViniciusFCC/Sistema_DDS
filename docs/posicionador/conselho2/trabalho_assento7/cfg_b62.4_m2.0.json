@@ -1,0 +1,232 @@
+{
+ "descricao": "Configura\u00e7\u00e3o do posicionador para o T11 (EDR-076). Valores em SI (a unidade de cada item documenta). Cada item tem origem (REGRA, META, MARGEM_EQUIPE, HIPOTESE, A_CONFIRMAR) e fonte; valor null s\u00f3 com A_CONFIRMAR, que desliga a verifica\u00e7\u00e3o correspondente.",
+ "data": "2026-11-18",
+ "itens": {
+  "curso_droop_m": {
+   "valor": 0.023,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: DROOP = 23 mm (curso da roda em droop, pela pr\u00e9-carga)"
+  },
+  "curso_bump_m": {
+   "valor": 0.0624,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "CENARIO assento 7"
+  },
+  "olho_a_olho_m": {
+   "valor": 0.21,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: EYE = 210 mm (DNM RCP2S, olho a olho estendido)"
+  },
+  "curso_amortecedor_m": {
+   "valor": 0.061,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: STROKE = 61 mm (DNM RCP2S, curso)"
+  },
+  "mr_alvo": {
+   "valor": 1.4,
+   "unidade": "-",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: MR_ALVO = 1,40 (MR [wheel/spring], curso da roda / curso do amortecedor)"
+  },
+  "mr_var_max": {
+   "valor": 0.04,
+   "unidade": "-",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: MR_VAR_MAX = 0,04 (varia\u00e7\u00e3o m\u00e1xima de MR no curso, 4 %)"
+  },
+  "dj_m": {
+   "valor": 0.035,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: DJ = 35 mm (fixa\u00e7\u00e3o do push rod a 35 mm do centro da junta inferior, sobre a linha dela)"
+  },
+  "braco_min_m": {
+   "valor": 0.055,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: BRACO_MIN = 55 mm (bra\u00e7os do rocker r1 e r2)"
+  },
+  "braco_max_m": {
+   "valor": 0.08,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: BRACO_MAX = 80 mm (bra\u00e7os do rocker r1 e r2)"
+  },
+  "giro_max_rad": {
+   "valor": 1.0471975511965976,
+   "unidade": "rad",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: GIRO_MAX = 60\u00b0 (giro m\u00e1ximo do rocker no curso), convertido para rad"
+  },
+  "amort_ang_max_rad": {
+   "valor": 0.5235987755982988,
+   "unidade": "rad",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: AMORT_ANG_MAX = 30\u00b0 (amortecedor at\u00e9 30\u00b0 do eixo X, para a frente), convertido para rad"
+  },
+  "folga_aro_m": {
+   "valor": 0.01,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: FOLGA_ARO = 10 mm"
+  },
+  "folga_pernas_m": {
+   "valor": 0.005,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: FOLGA_PERNAS = 5 mm (push rod \u00e0s pernas da bandeja)"
+  },
+  "folga_prod_amort_m": {
+   "valor": 0.005,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: FOLGA_PROD_AMORT = 5 mm (push rod ao amortecedor)"
+  },
+  "r_mola_m": {
+   "valor": 0.025,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: R_MOLA = 25 mm (raio do envelope da mola/amortecedor)"
+  },
+  "r_junta_m": {
+   "valor": 0.012,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: R_JUNTA = 12 mm (raio do envelope da junta)"
+  },
+  "r_pivo_m": {
+   "valor": 0.02,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: R_PIVO = 20 mm (raio do envelope do piv\u00f4 do rocker)"
+  },
+  "r_prod_m": {
+   "valor": 0.008,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: R_PROD = 8 mm (raio do envelope do push rod)"
+  },
+  "r_perna_bandeja_m": {
+   "valor": 0.008,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), avaliar(): `segseg(...) - 16.` = 8 mm do push rod + 8 mm da perna; sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5 (raio do envelope das pernas das bandejas)"
+  },
+  "folga_gabarito_m": {
+   "valor": 0.01,
+   "unidade": "m",
+   "origem": "MARGEM_EQUIPE",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), bloco CONFIGURA\u00c7\u00c3O, sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: FOLGA_GAB = 10 mm (folga ao gabarito T.1.2 al\u00e9m do raio de cada pe\u00e7a)"
+  },
+  "aro_r_int_m": {
+   "valor": 0.158,
+   "unidade": "m",
+   "origem": "HIPOTESE",
+   "fonte": "kinlib.py (script de atua\u00e7\u00e3o), sha256 dc976bffc61150850feedb8cc56b82295a5b0368eb1ce2e8c791f6aab54f1628: RIM_R_IN = 158 mm (aro 13\", raio interno do barril)"
+  },
+  "aro_meia_largura_m": {
+   "valor": 0.1,
+   "unidade": "m",
+   "origem": "HIPOTESE",
+   "fonte": "kinlib.py (script de atua\u00e7\u00e3o), sha256 dc976bffc61150850feedb8cc56b82295a5b0368eb1ce2e8c791f6aab54f1628: RIM_HALF_W = 100 mm (largura total 200 mm centrada no centro da roda)"
+  },
+  "x_max_olhal_m": {
+   "valor": 0.4,
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: penalidade do custo, C_x \u2264 400 mm (X m\u00e1ximo do olhal do amortecedor no chassi)"
+  },
+  "caixa_busca_pivo_m": {
+   "valor": {
+    "min_m": [
+     -0.15,
+     null,
+     null
+    ],
+    "max_m": [
+     0.15,
+     null,
+     null
+    ]
+   },
+   "unidade": "m",
+   "origem": "META",
+   "fonte": "t11_atuacao.py (script de atua\u00e7\u00e3o), sha256 ceaea43831aa6d23d8caa3db88423dbdad26f39595fb9346107b7ba93227e5a5: penalidade do custo, |Pv_x| \u2264 150 mm (X do piv\u00f4 do rocker em [\u2212150; 150] mm). Y e Z null: derivados da caixa envolvente das pe\u00e7as CHASSI/FIXO do lado esquerdo no STEP; sem STEP, a ferramenta exige --caixa"
+  },
+  "transformacao_step_m": {
+   "valor": {
+    "rotacao": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "translacao_m": [
+     -0.942,
+     0.0,
+     0.0774
+    ]
+   },
+   "unidade": "m",
+   "origem": "HIPOTESE",
+   "fonte": "docs/posicionador/pesquisa/relatorio-geo.md, \u00a75 (hip\u00f3tese H2): transla\u00e7\u00e3o STEP \u2192 canto (\u2212942,0; 0; +77,4) mm, sem rota\u00e7\u00e3o, ajustada no lado reto do FH com erro \u2264 0,55 mm. Usada s\u00f3 quando o STEP n\u00e3o traz as esferas REF_ (caso do chassi.step atual); com as esferas, elas mandam"
+  },
+  "curso_cremalheira_m": {
+   "valor": null,
+   "unidade": "m",
+   "origem": "A_CONFIRMAR",
+   "fonte": "n\u00e3o informado para o T11: curso da cremalheira a confirmar com a equipe (desliga a verifica\u00e7\u00e3o de ester\u00e7amento)"
+  },
+  "margem_curso_amortecedor_m": {
+   "valor": 0.002,
+   "unidade": "m",
+   "origem": "HIPOTESE",
+   "fonte": "CENARIO assento 7 (valor a confirmar)"
+  },
+  "x_face_traseira_aip_m": {
+   "valor": null,
+   "unidade": "m",
+   "origem": "A_CONFIRMAR",
+   "fonte": "n\u00e3o informado para o T11: X da face traseira do atenuador de impacto (AIP) a confirmar com a equipe"
+  },
+  "x_ini_t12_m": {
+   "valor": null,
+   "unidade": "m",
+   "origem": "A_CONFIRMAR",
+   "fonte": "n\u00e3o informado para o T11: X de in\u00edcio do trecho em que o gabarito T.1.2 vale, a confirmar com a equipe"
+  },
+  "x_fim_t12_m": {
+   "valor": null,
+   "unidade": "m",
+   "origem": "A_CONFIRMAR",
+   "fonte": "n\u00e3o informado para o T11: X de fim do trecho em que o gabarito T.1.2 vale, a confirmar com a equipe"
+  },
+  "z_min_t12_m": {
+   "valor": null,
+   "unidade": "m",
+   "origem": "A_CONFIRMAR",
+   "fonte": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 \u2014 a confirmar"
+  },
+  "z_max_t12_m": {
+   "valor": null,
+   "unidade": "m",
+   "origem": "A_CONFIRMAR",
+   "fonte": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 \u2014 a confirmar"
+  }
+ }
+}

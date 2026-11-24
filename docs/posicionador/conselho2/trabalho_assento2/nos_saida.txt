@@ -1,0 +1,65 @@
+32 tubos 28 nos
+no     495    -155     131 ramos=3 tri=False esp=0.0mm
+no     495    -155     441 ramos=3 tri=True esp=0.0mm
+no     495     155     131 ramos=2 tri=False esp=0.0mm
+no     495     155     441 ramos=4 tri=True esp=0.0mm
+no    -202    -281     225 ramos=4 tri=True esp=0.0mm
+no    -202    -277     369 ramos=3 tri=False esp=0.0mm
+no    -202    -210     646 ramos=4 tri=True esp=0.0mm
+no    -202    -197     131 ramos=3 tri=True esp=0.0mm
+no    -202     198     131 ramos=3 tri=True esp=0.0mm
+no    -202     210     646 ramos=4 tri=True esp=0.0mm
+no    -202     277     369 ramos=3 tri=False esp=0.0mm
+no    -202     281     225 ramos=4 tri=True esp=0.0mm
+no    -942    -313     385 ramos=6 tri=True esp=1.3mm
+no    -942    -295      77 ramos=5 tri=True esp=0.0mm
+no    -942     295      77 ramos=5 tri=True esp=0.0mm
+no    -942     313     385 ramos=6 tri=True esp=1.3mm
+no   -1005    -313     385 ramos=3 tri=False esp=0.0mm
+no   -1005    -313     455 ramos=2 tri=False esp=0.0mm
+no   -1005     313     385 ramos=3 tri=False esp=0.0mm
+no   -1005     313     455 ramos=2 tri=False esp=0.0mm
+no   -1165    -313     385 ramos=3 tri=False esp=0.0mm
+no   -1165    -313     455 ramos=2 tri=False esp=0.0mm
+no   -1165     313     385 ramos=3 tri=False esp=0.0mm
+no   -1165     313     455 ramos=2 tri=False esp=0.0mm
+no   -1260    -313     385 ramos=4 tri=True esp=0.0mm
+no   -1260    -313     413 ramos=2 tri=False esp=0.0mm
+no   -1260     313     385 ramos=4 tri=True esp=0.0mm
+no   -1260     313     413 ramos=2 tri=False esp=0.0mm
+FL_ROCKER_AXIS_A v20 no mais prox 181 mm tubo [(147, 'FH:1/Body2'), (154, 'chassi/braceFBHesq'), (181, 'chassi/Body93')]
+FL_ROCKER_AXIS_B v20 no mais prox 210 mm tubo [(155, 'chassi/braceFBHesq'), (159, 'FH:1/Body2'), (210, 'chassi/Body93')]
+FL_SPRING_CHASSIS v20 no mais prox 364 mm tubo [(97, 'chassi/braceFBHesq'), (355, 'FH:1/Body2'), (364, 'FBH:1/Body6[0]')]
+v10 pts: []
+chassi/braceFBHdir quadrada 12.5 ext [-191. -209.  445.] [ 483. -156.  643.]
+chassi/braceFBHesq quadrada 12.5 ext [-191.  156.  445.] [483. 209. 643.]
+chassi/Body85 quadrada 12.5 ext [-942. -313.  385.] [-202. -210.  646.]
+chassi/Body86 quadrada 12.5 ext [-942.  210.  385.] [-202.  313.  646.]
+chassi/Body87 redonda 12.7 ext [-942. -313.  369.] [-202. -277.  385.]
+chassi/Body88 redonda 12.7 ext [-942. -313.  225.] [-202. -281.  385.]
+chassi/Body89 redonda 12.7 ext [-942. -295.   77.] [-202. -197.  131.]
+chassi/Body90 redonda 12.7 ext [-942.  281.  225.] [-202.  313.  385.]
+chassi/Body91 redonda 12.7 ext [-942.  281.   77.] [-202.  295.  225.]
+chassi/Body92 redonda 12.7 ext [-942.  198.   77.] [-202.  295.  131.]
+chassi/Body93 redonda 12.7 ext [-942.  277.  369.] [-202.  313.  385.]
+chassi/Body94 redonda 12.7 ext [-942. -295.   77.] [-202. -281.  225.]
+chassi/Body128 redonda 12.7 ext [-1342.   295.    77.] [-942.  295.   77.]
+chassi/Body129 redonda 12.7 ext [-1342.  -295.    77.] [-942. -295.   77.]
+chassi/Body130 quadrada 12.5 ext [-1342.  -313.   385.] [-942. -313.  385.]
+chassi/Body131 quadrada 12.5 ext [-1342.   313.   385.] [-942.  313.  385.]
+chassi/tubo inversor 1[0] quadrada 12.5 ext [-1005.  -313.   385.] [-1005.  -313.   455.]
+chassi/tubo inversor 1[1] quadrada 12.5 ext [-1005.  -313.   455.] [-1005.   313.   455.]
+chassi/tubo inversor 1[2] quadrada 12.5 ext [-1005.   313.   385.] [-1005.   313.   455.]
+chassi/tubo inversor 2[0] quadrada 12.5 ext [-1165.  -313.   385.] [-1165.  -313.   455.]
+chassi/tubo inversor 2[1] quadrada 12.5 ext [-1165.  -313.   455.] [-1165.   313.   455.]
+chassi/tubo inversor 2[2] quadrada 12.5 ext [-1165.   313.   385.] [-1165.   313.   455.]
+chassi/tubo orelhas pack[0] quadrada 12.5 ext [-1260.  -313.   413.] [-1260.   313.   413.]
+chassi/tubo orelhas pack[1] quadrada 12.5 ext [-1260.  -313.   385.] [-1260.  -313.   413.]
+chassi/tubo orelhas pack[2] quadrada 12.5 ext [-1260.   313.   385.] [-1260.   313.   413.]
+FH:1/Body2 redonda 12.7 ext [-202. -288.  128.] [-202.  288.  680.]
+FBH:1/Body7 quadrada 12.5 ext [ 495. -134.  152.] [495. 134. 420.]
+FBH:1/Body6[0] quadrada 12.5 ext [ 495. -155.  441.] [495. 155. 441.]
+FBH:1/Body6[1] quadrada 12.5 ext [ 495. -155.  131.] [ 495. -155.  441.]
+FBH:1/Body6[2] quadrada 12.5 ext [ 495. -155.  131.] [495. 155. 131.]
+FBH:1/Body6[3] quadrada 12.5 ext [495. 155. 131.] [495. 155. 441.]
+MH-estreito:1/Body4 redonda 12.7 ext [-942. -313.   65.] [-942.  313. 1257.]
