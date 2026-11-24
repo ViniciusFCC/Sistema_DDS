@@ -46,3 +46,10 @@ correções (commits 6b53511 e 3247dc5). Suíte do posicionador em 2026-11-23: 4
 
 ## Pendências residuais da re-revisão final
 - CLAUDE.md "~18 min" estimado (controlador troca pelo medido); HP_ de atuação comparadas com a v10 viram aviso "não está no CSV"; _finitos ignora atributo não convertível (2ª barreira existe); gabarito sem corpo da atuação na região não roda o chassi sozinho (comportamento anterior).
+
+## Fechamento da fase 1 (2026-11-24)
+- Entregue: posicionador com δ (rotação do push rod), margem como objetivo, convergência por valor e caixa dinâmica (TC-POS-090 a 094); executável Windows, compilado e testado no CI (run do commit f6336e0: success); benchmark 2 no Windows (110 buscas, `docs/posicionador/benchmark2/`); METODOLOGIA.md atualizada. Veredito máximo continua CONDICIONAL (NOT_VALIDATED).
+- A pendência "NaN vira OK" da Task 6 já estava corrigida (falha fechada em `varredura._finito`, commits 6b53511 e 3247dc5); esta lista não a remove, só registra.
+- **Não é da fase 1 e depende de dado da equipe** (nada foi inventado): margem de fim de curso, tolerância de MR(0), σ de fabricação, curso de roda exigido, r2 máximo, limite da variação de MR, envelope de cargas, d_max do caminho de carga, curso da cremalheira; validação no OptimumKinematics; esferas REF_ no CAD.
+- **Fase 2** (spec §U5 = certificador completo: margem de fabricação, BRep exato, mutação) não foi iniciada. Atenção ao nome: o "δ" da fase 2 do spec (margem de fabricação) NÃO é o δ implementado aqui (ângulo do push rod); renomear um deles antes de começar.
+- Adiado: custo de fixação como informação (nunca filtro), otimizações exatas de velocidade (cache da cena, folga vetorizada; teste bit a bit), controle com 30 sementes, ordenar tarefas mais lentas primeiro (usar os tempos de `tools/paralelo.py`).

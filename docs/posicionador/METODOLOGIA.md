@@ -94,6 +94,11 @@ Falhas de cálculo (cinemática sem solução, geometria que não fecha, valor n
 
 A cinemática vem do módulo `kinematics_model` do repositório (comparada com o script de atuação em 401 pontos: diferença máxima de 1e-9 m no comprimento do amortecedor).
 
+### Evidência medida (benchmark 2, 2026-11-24, Windows, 110 buscas)
+Sem nenhuma restrição violada: script de atuação 0/20, posicionador anterior 0/20, posicionador novo 15/20. Nas ablações (10 buscas cada) o ângulo δ
+é o fator decisivo (sem δ: 0/10); a caixa dinâmica ajuda (sem ela: 5/10); a margem como objetivo não mudou a taxa de acerto. Folga física dos candidatos
+viáveis: dezenas de micrômetros (veredito CONDICIONAL). Perturbações sintéticas; nada validado no OptimumKinematics. Relatório: `docs/posicionador/benchmark2/relatorio_v2.md`.
+
 ## 7. Como usar o executável
 
 - **Dois cliques:** abre um menu (avaliar a v20; buscar num STEP; buscar no STEP de exemplo).

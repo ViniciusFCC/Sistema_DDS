@@ -31,9 +31,11 @@ Rótulos: **[código]** resultado desta rodada; **[inferência]** conclusão min
 
 - **[inferência]** O gargalo do método do script de atuação, nesta rodada, é a resolução em que ele mede a variação de MR: o otimizador para
   onde vê 4 %, e ali o MR real é 6 %. Com poucos pontos ele não tem como saber.
-- **[hipótese]** Há um conflito pequeno entre "variação de MR ≤ 4 %" e "usar o curso inteiro de 61 mm do amortecedor": nas melhores
-  buscas ele vale cerca de 0,7 mm de curso. Reduzir a exigência de curso nessa ordem, ou o curso de bump em cerca de 1 mm, pode
-  tornar o problema viável. Não foi testado: é decisão da equipe e pode ser verificado trocando o valor em `config_T11.json`.
+- **[hipótese corrigida em 2026-11-24, após o conselho 2 e o benchmark 2]** A leitura anterior ("falta cerca de 1 mm de curso; reduzir a
+  exigência pode tornar viável") estava errada quanto à causa. O conflito é uma identidade: com MR(0) fixo em 1,40, o curso do amortecedor
+  é a integral de dz/MR e o bump de 62,4 mm leva a 85,4 mm de curso de roda = 61 × 1,40; cumprir o comprimento mínimo exige média harmônica de
+  MR ≥ MR(0), ou seja, **margem zero por construção**. A variação de MR de 4 % não é a restrição ativa. O que destravou foi liberar uma
+  variável (o ângulo δ do push rod), não relaxar o curso. Ver `docs/posicionador/conselho2/SINTESE.md` e `docs/posicionador/benchmark2/`.
 
 ### O que o benchmark não prova
 
