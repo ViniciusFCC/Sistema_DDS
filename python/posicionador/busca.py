@@ -403,8 +403,8 @@ def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0,
             elite = X[fin[:max(5, len(fin) // 10)], :3] if fin else None
             if elite is not None and len(elite):
                 lo, hi = elite.min(axis=0), elite.max(axis=0)
-                m = np.maximum(0.25 * (hi - lo), 0.02)
-                lo, hi = lo - m, hi + m
+                folga_cx = np.maximum(0.25 * (hi - lo), 0.02)     # (não chamar de `m`: é o mapa de espaço livre)
+                lo, hi = lo - folga_cx, hi + folga_cx
                 est["caixas_dinamicas"].append({"rodada": k, "lo_m": [float(t) for t in lo], "hi_m": [float(t) for t in hi]})
                 mask = np.all((livres >= lo) & (livres <= hi), axis=1)
         n_cx = nk if mask is None else int(round(0.8 * nk))

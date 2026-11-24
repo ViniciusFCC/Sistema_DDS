@@ -1,0 +1,4 @@
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+[posicionador] lendo o STEP data/cad/T11_chassi_2026-11-17.step
+[posicionador] obstáculos fixos e nós do chassi
+[posicionador] busca: 60 amostras, 4 refinos, semente 2; caixa [-0.15    0.      0.0601] a [0.15   0.3257 1.2574] m

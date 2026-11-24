@@ -47,10 +47,11 @@ class Variaveis:
 
     @classmethod
     def da_semente_do_script(cls, x):
-        """x do script (8 números: pivô em mm, az e el em °, r1 em mm, φB em °, r2 em mm) → Variaveis em SI.
-        O r2 (x[7]) não entra: passe `r2_m = x[7]/1000` a `construir` para forçá-lo."""
+        """x do script (8 números: pivô em mm, az e el em °, r1 em mm, φB em °, r2 em mm) → Variaveis em SI; um 9º número
+        opcional é δ em °. O r2 (x[7]) não entra: passe `r2_m = x[7]/1000` a `construir` para forçá-lo."""
         return cls(pivo_m=np.asarray(x[0:3], dtype=float) / 1000.0, az_rad=float(np.radians(x[3])),
-                   el_rad=float(np.radians(x[4])), r1_m=float(x[5]) / 1000.0, phi_b_rad=float(np.radians(x[6])))
+                   el_rad=float(np.radians(x[4])), r1_m=float(x[5]) / 1000.0, phi_b_rad=float(np.radians(x[6])),
+                   delta_rad=float(np.radians(x[8])) if len(x) > 8 else 0.0)
 
 
 @dataclass

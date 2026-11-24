@@ -87,7 +87,7 @@ rf = bu.buscar(hs, cena, cfg, cx, caixa_dinamica=False, **kw)
 cd = rd1.estatisticas["caixas_dinamicas"]
 check("TC-POS-094 caixa dinâmica: 2 caixas, 40 amostras, determinística; sem ela nenhuma caixa",
       len(cd) == 2 and rd1.estatisticas["n_amostras"] == 40 and cd == rd2.estatisticas["caixas_dinamicas"]
-      and rf.estatisticas["caixas_dinamicas"] == [] and all(c["hi_m"][0] > c["lo_m"][0] for c in cd),
+      and rf.estatisticas["caixas_dinamicas"] == [] and hasattr(rd1.mapa, "folga_m") and all(c["hi_m"][0] > c["lo_m"][0] for c in cd),
       f"caixas: {[[round(t, 3) for t in c['lo_m']] for c in cd]}")
 
 print("\n--- Resumo ---")
