@@ -17,6 +17,10 @@ Valores SINTÉTICOS de teste (não são dado do carro nem tolerância da equipe)
 - perturbação dos pontos de partida do método do Murilo: σ = 10 mm no pivô, 2° em azimute, elevação e φB, 3 mm em r1 e r2;
 - perturbação da robustez: ±1 mm no pivô, ±0,5° em azimute, elevação e φB, ±0,5 mm em r1 e r2 (uniforme);
 - critério "a ferramenta do Murilo declara cumprido": custo final ≤ 0,1 (a v20 que ele aceitou tem custo 0,073).
+
+Controle (`sem_tubo`): o método do Murilo com as restrições que o posicionador não tem (tubo ao Front Hoop, folga do tubo ao
+gabarito, triângulo da bandeja superior, gabarito projetado) satisfeitas por construção, para que os dois otimizem
+aproximadamente as mesmas restrições. Sem esse controle, a comparação favorece o posicionador.
 """
 import argparse
 import json
@@ -116,19 +120,36 @@ def curva_mr_murilo(T, c, x, n):
 
 # ------------------------------------------------------------------ jobs (em processos separados)
 def _job_murilo(a):
+    """Nelder-Mead do script do Murilo. `sem_tubo` (controle): o mesmo custo, com satisfeitas as restrições que o posicionador
+    NÃO tem (reta ao Front Hoop, folga do tubo ao gabarito, triângulo da bandeja superior e gabarito projetado). O controle
+    não copia nem altera o script: só põe, na saída do `avaliar()` dele, valores que cumprem esses termos."""
     from scipy.optimize import minimize
-    pasta, rotulo, x0, maxfev, maxiter = a
+    pasta, rotulo, x0, maxfev, maxiter, *resto = a
+    sem_tubo = bool(resto and resto[0])
     T, c = _murilo(pasta)
+    original = T.avaliar
+
+    def avaliar_sem_tubo(x, cc, final=False):
+        g = original(x, cc, final)
+        if g is not None:
+            g["erro_fh"], g["tubo_gab"], g["dentro"], g["gab"] = 0.0, 99.0, 99.0, 99.0
+        return g
+
     opts = dict(maxiter=maxiter, xatol=0.05, fatol=1e-6, adaptive=True)
     if maxfev:
         opts["maxfev"] = maxfev
-    f0 = float(T.custo(x0, c))
-    t0 = time.perf_counter()
-    res = minimize(T.custo, x0, args=(c,), method="Nelder-Mead", options=opts)
-    dt = time.perf_counter() - t0
+    if sem_tubo:
+        T.avaliar = avaliar_sem_tubo
+    try:
+        f0 = float(T.custo(x0, c))
+        t0 = time.perf_counter()
+        res = minimize(T.custo, x0, args=(c,), method="Nelder-Mead", options=opts)
+        dt = time.perf_counter() - t0
+    finally:
+        T.avaliar = original
     g = T.avaliar(res.x, c, final=True)
     var_fina = None if g is None else float(g["MRmax"] / g["MRmin"] - 1.0)
-    return dict(ferramenta="murilo", rotulo=rotulo, x=[float(v) for v in res.x], x0=[float(v) for v in x0],
+    return dict(ferramenta="murilo", rotulo=rotulo, sem_tubo=sem_tubo, x=[float(v) for v in res.x], x0=[float(v) for v in x0],
                 custo_inicial=f0, custo_final=float(res.fun), nfev=int(res.nfev), tempo_s=dt,
                 var_mr_propria_25=var_fina, juiz=julgar_x(res.x))
 
@@ -198,14 +219,14 @@ def exp_v20(pasta, x0):
 
 def exp_robustez(solucoes, n_amostras, semente=20261123):
     """Fração de amostras perturbadas (SINTÉTICO) em que cada restrição sai VIOLADA, por solução."""
-    from posicionador import mecanismo as mec, varredura as vr
+    from posicionador import busca as bu, mecanismo as mec, varredura as vr
     cfg, hs, cena = _juiz()
     rng = np.random.default_rng(semente)
     p = rng.uniform(-1, 1, size=(n_amostras, 8))
     esc = np.array([DELTA["pivo_mm"]] * 3 + [DELTA["graus"]] * 2 + [DELTA["braco_mm"], DELTA["graus"], DELTA["braco_mm"]])
     out = {}
     for nome, x in solucoes.items():
-        cont, falhas, sem_viol = Counter(), 0, 0
+        cont, falhas, sem_viol, vmax = Counter(), 0, 0, []
         for d in p * esc:
             xp = np.asarray(x, dtype=float) + d
             con = mec.construir(hs, mec.Variaveis.da_semente_do_script(xp), cfg, r2_m=float(xp[7]) / 1e3)
@@ -216,7 +237,8 @@ def exp_robustez(solucoes, n_amostras, semente=20261123):
             viol = [r.nome for r in av.restricoes if r.estado == "VIOLADA"]
             sem_viol += not viol
             cont.update(viol)
-        out[nome] = dict(n=n_amostras, falhas_de_construcao=falhas, sem_nenhuma_violada=sem_viol,
+            vmax.append(float(bu.violacao(av)))
+        out[nome] = dict(n=n_amostras, falhas_de_construcao=falhas, sem_nenhuma_violada=sem_viol, violacao_max=vmax,
                          violada={k: v / n_amostras for k, v in cont.items()})
     return out
 
@@ -258,6 +280,7 @@ def rodar(args):
         inicios.append((f"início {i} (v20 + perturbação SINTÉTICA)", x0 + d))
     jobs = [("murilo", pasta, f"{r} · mesmo orçamento", x, args.maxfev, 100000) for r, x in inicios]
     jobs.append(("murilo", pasta, "v20 · configuração original do script (maxiter 2000)", x0, None, 2000))
+    jobs += [("murilo", pasta, f"{r} · sem as restrições do tubo", x, args.maxfev, 100000, True) for r, x in inicios]
     jobs += [("nosso", s, args.amostras, args.refinos, CAIXA_PADRAO) for s in range(args.inicios)]
     print(f"{len(jobs)} jobs em {args.jobs} processos; isto leva alguns minutos", file=sys.stderr)
     t0 = time.perf_counter()
@@ -268,7 +291,7 @@ def rodar(args):
     v20 = exp_v20(pasta, x0)
     murilo = [r for r in resultados if r["ferramenta"] == "murilo"]
     nossos = [r for r in resultados if r["ferramenta"] == "posicionador" and r["juiz"]]
-    melhor_m = min(murilo, key=lambda r: r["juiz"]["violacao"])
+    melhor_m = min(murilo, key=lambda r: r["juiz"]["violacao"])   # qualquer variante, inclusive o controle
     melhor_n = min(nossos, key=lambda r: r["juiz"]["violacao"])
     rob = exp_robustez({"v20 (Murilo)": x0, "melhor do método do Murilo": melhor_m["x"],
                         "melhor do posicionador": melhor_n["x"]}, args.robustez)
