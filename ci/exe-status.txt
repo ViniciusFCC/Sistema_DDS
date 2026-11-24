@@ -1,29 +1,29 @@
 resultado: success
-commit: a58dcde0d39d4bd7610a82ebcad2df51eb525658
-execução: https://github.com/ViniciusFCC/Sistema_DDS/actions/runs/45474757957
-data: 2026-11-24T19:55:34Z
+commit: a2793e12fb44e42fe2a48e40e61bfd03e639db71
+execução: https://github.com/ViniciusFCC/Sistema_DDS/actions/runs/45503921767
+data: 2026-11-24T22:49:49Z
 
 --- construção (fim) ---
-74475 INFO: Building PKG (CArchive) posicionador_T11.pkg completed successfully.
-74496 INFO: Bootloader C:\hostedtoolcache\windows\Python\3.13.17\x64\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
-74496 INFO: checking EXE
-74496 INFO: Building EXE because EXE-00.toc is non existent
-74496 INFO: Building EXE from EXE-00.toc
-74496 INFO: Copying bootloader EXE to D:\a\Sistema_DDS\Sistema_DDS\dist\posicionador_T11.exe
-74498 INFO: Copying icon to EXE
-74500 INFO: Copying 0 resources to EXE
-74500 INFO: Embedding manifest in EXE
-74501 INFO: Appending PKG archive to EXE
-74578 INFO: Fixing EXE headers
-75973 INFO: Building EXE from EXE-00.toc completed successfully.
-75994 INFO: Build complete! The results are available in: D:\a\Sistema_DDS\Sistema_DDS\dist
+86154 INFO: Building PKG (CArchive) posicionador_T11.pkg completed successfully.
+86184 INFO: Bootloader C:\hostedtoolcache\windows\Python\3.13.17\x64\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+86184 INFO: checking EXE
+86184 INFO: Building EXE because EXE-00.toc is non existent
+86184 INFO: Building EXE from EXE-00.toc
+86184 INFO: Copying bootloader EXE to D:\a\Sistema_DDS\Sistema_DDS\dist\posicionador_T11.exe
+86186 INFO: Copying icon to EXE
+86188 INFO: Copying 0 resources to EXE
+86188 INFO: Embedding manifest in EXE
+86190 INFO: Appending PKG archive to EXE
+86280 INFO: Fixing EXE headers
+86998 INFO: Building EXE from EXE-00.toc completed successfully.
+87029 INFO: Build complete! The results are available in: D:\a\Sistema_DDS\Sistema_DDS\dist
 PyInstaller com 2 pastas de bibliotecas do OpenCascade/vtk
 execut�vel: dist\posicionador_T11.exe (170 MB)
 
 --- teste: v20 (fim) ---
 [posicionador] sem --step: cena só com o aro (varredura.cena_sem_cad); a folga ao chassi e às peças fixas não foi conferida
 [posicionador] avaliando a v20 (varredura convergida)
-[posicionador] saídas em teste\v20 (0.9 s)
+[posicionador] saídas em teste\v20 (1.4 s)
 
 --- teste: STEP (fim) ---
 [posicionador] lendo o STEP data/cad/T11_chassi_2026-11-17.step
@@ -32,13 +32,13 @@ execut�vel: dist\posicionador_T11.exe (170 MB)
 [posicionador] amostras: 1/8; menor violação máxima normalizada até aqui = 797.3
 [posicionador] amostras: 8/8; menor violação máxima normalizada até aqui = 1.607
 [posicionador] refinos: 1/1; menor violação máxima normalizada até aqui = 0.003557
-[posicionador] saídas em teste\step (34.7 s)
+[posicionador] saídas em teste\step (55.7 s)
 
 --- release ---
-https://github.com/ViniciusFCC/Sistema_DDS/releases/tag/untagged-6001772e3e3d0d94c1aa
+https://github.com/ViniciusFCC/Sistema_DDS/releases/tag/untagged-108f2dfe6677f5c8d754
 
 total 166228
-drwxr-xr-x 1 runneradmin 197121         0 Nov 24 19:54 .
-drwxr-xr-x 1 runneradmin 197121         0 Nov 24 19:55 ..
--rwxr-xr-x 1 runneradmin 197121 170211053 Nov 24 19:54 posicionador_T11.exe
-a9102547a0e09c896d3c38e7c4ac9c58bd26163ab51f43e44bdbd2c008604e75 *dist/posicionador_T11.exe
+drwxr-xr-x 1 runneradmin 197121         0 Nov 24 22:48 .
+drwxr-xr-x 1 runneradmin 197121         0 Nov 24 22:49 ..
+-rwxr-xr-x 1 runneradmin 197121 170210351 Nov 24 22:48 posicionador_T11.exe
+12901045eb527a2fa4fb62d62840f1fd504548db4ac319809099b52a90ab2ccc *dist/posicionador_T11.exe
