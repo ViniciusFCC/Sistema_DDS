@@ -43,7 +43,9 @@ jobs:
         run: python -m pip install --upgrade pip && python -m pip install numpy==2.5.4 scipy==1.18.1 cadquery-ocp==8.0.1.1.0 pyinstaller markdown
 
       - name: Construir o executável
-        run: python tools/construir_exe.py --saida dist 2>&1 | tee ci_construir.log
+        run: |
+          set -o pipefail
+          python tools/construir_exe.py --saida dist 2>&1 | tee ci_construir.log
 
       - name: Testar o executável (Windows de verdade)
         run: |
@@ -88,13 +90,13 @@ jobs:
             echo "commit: ${GITHUB_SHA}"
             echo "execução: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo "data: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo; echo "--- construção (fim) ---"; tail -n 8 ci_construir.log 2>/dev/null || echo "(não chegou a construir)"
+            echo; echo "--- construção (fim) ---"; tail -n 15 ci_construir.log 2>/dev/null || echo "(não chegou a construir)"
             echo; echo "--- teste: v20 (fim) ---"; tail -n 12 ci_teste_v20.log 2>/dev/null || echo "(não rodou)"
             echo; echo "--- teste: STEP (fim) ---"; tail -n 8 ci_teste_step.log 2>/dev/null || echo "(não rodou)"
             echo; echo "--- release ---"; cat ci_release.log 2>/dev/null || echo "(não criado)"
-            echo; ls -la dist "posicionador_T11_${SHA:-none}.zip" 2>/dev/null
-            [ -f dist/posicionador_T11.exe ] && sha256sum dist/posicionador_T11.exe
-          } > ci/exe-status.txt 2>&1
+            echo; ls -la dist 2>/dev/null || true
+            if [ -f dist/posicionador_T11.exe ]; then sha256sum dist/posicionador_T11.exe; fi
+          } > ci/exe-status.txt 2>&1 || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ci/exe-status.txt

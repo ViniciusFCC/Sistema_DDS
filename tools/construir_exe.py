@@ -41,11 +41,9 @@ def comando(saida):
     # As pastas `*.libs` mantêm o nome e ficam ao lado do pacote OCP dentro do executável: o `OCP/__init__.py` do Windows chama
     # `os.add_dll_directory(<pacote>/../cadquery_ocp.libs)` e `.../vtk.libs` (o do vtk sem checar se existe), e no Linux o RPATH
     # do OpenCascade é `$ORIGIN/../cadquery_ocp.libs`. Achatar as bibliotecas na raiz quebra a importação.
+    # Pastas inteiras (2 argumentos em vez de centenas): no Windows a linha de comando tem limite de tamanho.
     for pasta in _bibliotecas_ocp():
-        for arq in sorted(pasta.iterdir()):
-            if arq.is_file():
-                binaria = arq.suffix.lower() in (".dll", ".pyd", ".so") or ".so." in arq.name
-                cmd[-1:-1] = ["--add-binary" if binaria else "--add-data", f"{arq}{SEP}{pasta.name}"]
+        cmd[-1:-1] = ["--add-data", f"{pasta}{SEP}{pasta.name}"]
     return cmd
 
 
@@ -54,7 +52,7 @@ def main():
     ap.add_argument("--saida", default=str(RAIZ / "dist"))
     a = ap.parse_args()
     cmd = comando(Path(a.saida))
-    print(f"PyInstaller com {sum(c in ('--add-binary', '--add-data') for c in cmd) - 2} arquivos de bibliotecas do OpenCascade/vtk")
+    print(f"PyInstaller com {len(_bibliotecas_ocp())} pastas de bibliotecas do OpenCascade/vtk")
     r = subprocess.run(cmd, cwd=RAIZ)
     if r.returncode:
         raise SystemExit(r.returncode)
