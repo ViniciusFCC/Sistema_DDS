@@ -64,7 +64,7 @@ def restricao_dict(r):
 
 
 def avaliacao_dict(av):
-    return {"veredito": av.veredito, "motivo": av.motivo, "n": av.n, "resolucoes": list(av.resolucoes),
+    return {"veredito": av.veredito, "motivo": av.motivo, "n": av.n, "resolucoes": list(av.resolucoes), "indeterminadas": list(av.indeterminadas),
             "dist_no_m": dict(av.dist_no_m), "restricoes": [restricao_dict(r) for r in av.restricoes],
             "curvas": {k: v for k, v in av.curvas.items()}}
 

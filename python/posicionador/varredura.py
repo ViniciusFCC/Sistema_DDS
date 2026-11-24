@@ -137,6 +137,7 @@ class Avaliacao:
     dist_no_m: dict        # {"pivo": m | None, "olhal": m | None}
     n: int
     resolucoes: list = field(default_factory=list)   # n avaliados por avaliar_convergido
+    indeterminadas: list = field(default_factory=list)  # restrições OK cuja folga é menor que o erro da medida (convergência por valor)
 
     def restricao(self, nome):
         return next((r for r in self.restricoes if r.nome == nome), None)
@@ -633,9 +634,23 @@ def _esterçamento(canto, sols, cena, cfg):
                       f"raio do tirante a confirmar (eixo, raio 0); {onde(m_tir[1])}", completa=False)]
 
 
+def _erro_de_valor(a, b):
+    """Restrições OK de `b` com folga ≥ 0 menor que |folga(b) − folga(a)| (diferença entre n e 2n, estimativa conservadora do
+    erro da medida): a folga não distingue "cumpre" de "não cumpre". Sem parâmetro da equipe: o erro vem da própria convergência."""
+    fa = {r.nome: r.folga for r in a.restricoes}
+    out = []
+    for r in b.restricoes:
+        f0 = fa.get(r.nome)
+        if r.estado == "OK" and r.folga is not None and f0 is not None and 0.0 <= r.folga < abs(float(r.folga) - float(f0)):
+            out.append(r.nome)
+    return sorted(out)
+
+
 def avaliar_convergido(construcao, cena, cfg, n0=25):
     """Avalia com n e 2n; se algum estado (ou o veredito) mudar, dobra até 8·n0. Sem convergência: INVIAVEL com motivo
-    "resolução não convergiu". Devolve a avaliação da maior resolução usada."""
+    "resolução não convergiu". Convergência por VALOR: com os estados iguais, ainda dobra (até 8·n0) enquanto alguma folga
+    positiva for menor que a diferença entre n e 2n; o que sobrar vai em `indeterminadas` e no motivo (o veredito não muda:
+    nada vira VIAVEL por isso, mas a folga não está certificada). Devolve a avaliação da maior resolução usada."""
     n = int(n0)
     a = avaliar(construcao, cena, cfg, n)
     hist = [n]
@@ -644,8 +659,15 @@ def avaliar_convergido(construcao, cena, cfg, n0=25):
         hist.append(2 * n)
         ea, eb = a.estados(), b.estados()
         if ea == eb and a.veredito == b.veredito:
-            b.resolucoes = hist
-            return b
+            ind = _erro_de_valor(a, b)
+            if not ind or 2 * n >= 8 * n0:
+                b.resolucoes = hist
+                b.indeterminadas = ind
+                if ind:
+                    b.motivo = ((b.motivo + "; ") if b.motivo else "") + ("folga menor que o erro da medida em: " + ", ".join(ind))
+                return b
+            a, n = b, 2 * n
+            continue
         if 2 * n >= 8 * n0:
             difs = sorted(k for k in set(ea) | set(eb) if ea.get(k) != eb.get(k))
             b.resolucoes = hist

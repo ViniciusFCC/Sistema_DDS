@@ -151,8 +151,36 @@ def chave_ordem(av):
 
 def ordenar_viaveis(cands, n_max=None):
     """Candidatos em ordem: VIAVEL antes de CONDICIONAL, depois `chave_ordem`; com `n_max`, só os n_max primeiros."""
+    if OTIMIZAR_MARGEM:       # com a margem como objetivo: certificadas antes das indeterminadas, depois a maior margem
+        out = sorted(cands, key=lambda c: (c.avaliacao.veredito != "VIAVEL", bool(c.avaliacao.indeterminadas),
+                                           -margem_normalizada(c.avaliacao), *chave_ordem(c.avaliacao)))
+        return out if n_max is None else out[:max(0, int(n_max))]
     out = sorted(cands, key=lambda c: (c.avaliacao.veredito != "VIAVEL", *chave_ordem(c.avaliacao)))
     return out if n_max is None else out[:max(0, int(n_max))]
+
+
+SEM_MARGEM = ("MR(0)", "comprimento do amortecedor (máximo)")   # folga fixada pela construção (r2 e C resolvidos): não é margem de busca
+
+
+def margem_normalizada(av):
+    """Menor folga normalizada (folga/|limite|, a mesma escala da violação) entre as restrições OK com valor, sem as fixadas pela
+    construção; +inf se não houver nenhuma. É a "margem" que a busca maximiza: sem exigência nova, só objetivo."""
+    m = float("inf")
+    for r in av.restricoes:
+        if r.estado != "OK" or r.folga is None or r.nome in SEM_MARGEM:
+            continue
+        lim = r.limite
+        if isinstance(lim, (tuple, list)):
+            lim = lim[0] if abs(float(r.valor) - float(lim[0])) <= abs(float(r.valor) - float(lim[1])) else lim[1]
+        try:
+            esc = abs(float(lim))
+        except (TypeError, ValueError):
+            esc = 0.0
+        m = min(m, float(r.folga) / (esc if esc > 0.0 else ESCALA_LIMITE_NULO))
+    return m
+
+
+OTIMIZAR_MARGEM = False     # buscar(..., otimizar_margem=True) liga; o padrão da biblioteca é o comportamento anterior
 
 
 def _objetivo(av):
@@ -161,6 +189,10 @@ def _objetivo(av):
         return F_FALHA
     if v > 0.0:
         return v
+    if OTIMIZAR_MARGEM:
+        m = margem_normalizada(av)
+        var, _, _ = chave_ordem(av)
+        return -(min(m, 1.0) if np.isfinite(m) else 0.0) + 1e-3 * var / (1.0 + var)
     var, dn, fo = chave_ordem(av)
     return -1.0 + var / (1.0 + var) + 1e-3 * dn / (1.0 + dn) + 1e-6 * fo / (1.0 + fo)
 
@@ -230,6 +262,18 @@ def variaveis_de(x, fx):
     elv = float(np.arcsin(np.clip(ud[2], -1.0, 1.0)))
     return mec.Variaveis(pivo_m=x[0:3].copy(), az_rad=az, el_rad=elv, r1_m=float(x[5]), phi_b_rad=float(x[6]),
                          delta_rad=float(x[7]) if len(x) > 7 else 0.0)
+
+
+def _sortear(rng, livres, w, n, fx, mask=None):
+    """n amostras: pivôs sorteados entre os pontos livres (com pesos w; só os de `mask`, se dado) e as demais variáveis por
+    hipercubo latino. Sem máscara, a ordem de uso do gerador é a da busca anterior (mesma semente, mesmo resultado)."""
+    sel = np.arange(len(livres)) if mask is None else np.flatnonzero(mask)
+    if len(sel) == 0:
+        sel = np.arange(len(livres))
+    ww = w[sel]
+    idx = sel[rng.choice(len(sel), size=int(n), p=ww / ww.sum())]
+    u = _lhs(rng, int(n), len(fx.lo) - 3)
+    return np.column_stack([livres[idx], fx.lo[3:] + u * (fx.hi[3:] - fx.lo[3:])])
 
 
 def _lhs(rng, n, d):
@@ -321,8 +365,10 @@ def _caixa_explicita(caixa_m):
 # ------------------------------------------------------------------ busca
 def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0, *, passo_m=0.01, n_rapido=N_RAPIDO,
            max_aval_refino=60, n_finalistas=20, escala_no_m=ESCALA_NO_M, n_conflitos=10, progresso=None,
-           delta_max_rad=0.0):
+           delta_max_rad=0.0, otimizar_margem=False, caixa_dinamica=False):
     """Busca candidatos viáveis (ver o docstring do módulo). Levanta ValueError se `caixa_m` tem None."""
+    global OTIMIZAR_MARGEM
+    OTIMIZAR_MARGEM = bool(otimizar_margem)
     t0 = time.perf_counter()
     caixa = _caixa_explicita(caixa_m)
     fx = faixas(cfg, caixa, delta_max_rad)
@@ -340,16 +386,37 @@ def buscar(hs_v10, cena, cfg, caixa_m, n_amostras=2000, n_refinos=20, semente=0,
     d = m.dist_no_livres(r_pivo)
     w = np.ones(len(livres)) if not np.any(np.isfinite(d)) else 1.0 / (1.0 + np.where(np.isfinite(d), d, np.inf)
                                                                          / float(escala_no_m))
-    idx = rng.choice(len(livres), size=int(n_amostras), p=w / w.sum())
-    u = _lhs(rng, int(n_amostras), len(fx.lo) - 3)
-    X = np.column_stack([livres[idx], fx.lo[3:] + u * (fx.hi[3:] - fx.lo[3:])])
-
-    amostras, melhor_v = [], float("inf")
-    for i, x in enumerate(X, start=1):
-        amostras.append(_avaliar_x(hs_v10, x, fx, cena, cfg, n_rapido, "amostra"))
-        melhor_v = min(melhor_v, amostras[-1].violacao)
-        if progresso is not None:
-            progresso("amostras", i, len(X), melhor_v)
+    n_amostras = int(n_amostras)
+    if caixa_dinamica and n_amostras >= 20:
+        # caixa dinâmica (entropia cruzada, conselho 2): rodada larga, depois caixas em volta da elite (10 %), 20 % das
+        # amostras de cada rodada ficam na caixa inteira para não perder outra região
+        n0 = int(round(0.5 * n_amostras)); n1 = int(round(0.3 * n_amostras))
+        rodadas = [n0, n1, n_amostras - n0 - n1]
+    else:
+        rodadas = [n_amostras]
+    amostras, X, melhor_v, est["caixas_dinamicas"] = [], np.zeros((0, len(fx.lo))), float("inf"), []
+    for k, nk in enumerate(rodadas):
+        mask = None
+        if k > 0:
+            fin = [i for i, c in enumerate(amostras) if np.isfinite(c.violacao)]
+            fin.sort(key=lambda i: amostras[i].violacao)
+            elite = X[fin[:max(5, len(fin) // 10)], :3] if fin else None
+            if elite is not None and len(elite):
+                lo, hi = elite.min(axis=0), elite.max(axis=0)
+                m = np.maximum(0.25 * (hi - lo), 0.02)
+                lo, hi = lo - m, hi + m
+                est["caixas_dinamicas"].append({"rodada": k, "lo_m": [float(t) for t in lo], "hi_m": [float(t) for t in hi]})
+                mask = np.all((livres >= lo) & (livres <= hi), axis=1)
+        n_cx = nk if mask is None else int(round(0.8 * nk))
+        Xk = _sortear(rng, livres, w, n_cx, fx, mask)
+        if n_cx < nk:
+            Xk = np.vstack([Xk, _sortear(rng, livres, w, nk - n_cx, fx, None)])
+        X = np.vstack([X, Xk])
+        for x in Xk:
+            amostras.append(_avaliar_x(hs_v10, x, fx, cena, cfg, n_rapido, "amostra"))
+            melhor_v = min(melhor_v, amostras[-1].violacao)
+            if progresso is not None:
+                progresso("amostras", len(amostras), n_amostras, melhor_v)
     est["falhas"] = _falhas(amostras)
 
     # refino das melhores amostras com violação finita

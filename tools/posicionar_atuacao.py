@@ -268,6 +268,8 @@ def argumentos(argv):
     ap.add_argument("--aval-refino", type=int, default=60, help="avaliações máximas por refino (Nelder-Mead); busca mais funda: 400 ou mais")
     ap.add_argument("--delta-max", type=float, default=25.0, help="giro máximo do push rod no rocker a partir da tangência, em graus "
                     "(8ª variável da busca; faixa de busca, não meta; 0 = tangente, como no script de atuação)")
+    ap.add_argument("--sem-margem", action="store_true", help="desliga a maximização da margem (volta a minimizar só a variação de MR)")
+    ap.add_argument("--caixa-fixa", action="store_true", help="desliga a caixa dinâmica (amostra sempre na caixa inteira)")
     ap.add_argument("--caixa", help="caixa de busca do pivô xmin,ymin,zmin,xmax,ymax,zmax (m); com xmin negativo, use "
                     "--caixa=xmin,... (o argparse lê \"-0.15,...\" como opção)")
     return ap.parse_args(argv)
@@ -345,7 +347,7 @@ def principal(argv=None):
             f" a {caixa[1].round(4)} m")
         try:
             res = bu.buscar(hs_v10, cena, cfg, caixa, n_amostras=args.amostras, n_refinos=args.refinos,
-                            semente=args.semente, progresso=progresso_fn(), max_aval_refino=args.aval_refino, delta_max_rad=float(np.radians(args.delta_max)))
+                            semente=args.semente, progresso=progresso_fn(), max_aval_refino=args.aval_refino, delta_max_rad=float(np.radians(args.delta_max)), otimizar_margem=not args.sem_margem, caixa_dinamica=not args.caixa_fixa)
         except ValueError as e:
             if str(e).startswith("caixa_m"):
                 raise ErroEntrada(f"caixa de busca do pivô inválida: {e}") from e

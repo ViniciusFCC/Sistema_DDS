@@ -65,6 +65,7 @@ TESTES = [
     ("posicionador: mecanismo e configuração", "tests/test_posicionador_mecanismo.py", 6, "EDR-076 (TC-POS-050 a 055)"),
     ("posicionador: varredura", "tests/test_posicionador_varredura.py", 10, "EDR-076 (TC-POS-060 a 069)"),
     ("posicionador: busca", "tests/test_posicionador_busca.py", 7, "EDR-076 (TC-POS-070 a 076)"),
+    ("posicionador: melhorias do conselho 2", "tests/test_posicionador_melhorias.py", 5, "EDR-076 (TC-POS-090 a 094)"),
     ("posicionador: ferramenta", "tests/test_posicionador_ferramenta.py", 4,
      "EDR-076 (TC-POS-080 a 083; o 081 precisa do extra opcional cad, sem ele NÃO EXECUTÁVEL)"),
 ]
@@ -154,6 +155,7 @@ DEPENDENCIAS: dict[str, tuple[str, ...]] = {
     "tests/test_posicionador_mecanismo.py": _POS,
     "tests/test_posicionador_varredura.py": _POS,
     "tests/test_posicionador_busca.py": _POS,
+    "tests/test_posicionador_melhorias.py": _POS,
     "tests/test_posicionador_ferramenta.py": _POS + (_STEP, "tools/posicionar_atuacao.py"),
 }
 
