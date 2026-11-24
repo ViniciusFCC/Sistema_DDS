@@ -1,0 +1,38 @@
+[posicionador] lendo o STEP /home/user/Sistema_DDS/data/cad/T11_chassi_2026-11-17.step
+[posicionador] obstáculos fixos e nós do chassi
+cena STEP em 2 s; fixos 146
+E2/B semente 3     CONDICIONAL 3s violadas=[]
+      folga aos fixos: push rod: folga 0.08325449408130864
+      folga aos fixos: rocker: folga 0.07925449408130865
+      folga aos fixos: amortecedor: folga 0.05382469540323188
+      X do olhal no chassi: folga 0.24916829375729319
+E2/B semente 5     CONDICIONAL 3s violadas=[]
+      folga aos fixos: push rod: folga 0.09517147650050037
+      folga aos fixos: rocker: folga 0.09117147650050036
+      folga aos fixos: amortecedor: folga 0.11281859697275548
+      X do olhal no chassi: folga 0.21644775301351707
+E2/C semente 2     CONDICIONAL 3s violadas=[]
+      folga aos fixos: push rod: folga 0.18830476149629044
+      folga aos fixos: rocker: folga 0.1258411131486207
+      folga aos fixos: amortecedor: folga 0.09465162829147641
+      X do olhal no chassi: folga 0.11837944312419191
+E2/C semente 3     CONDICIONAL 3s violadas=[]
+      folga aos fixos: push rod: folga 0.08467194056010449
+      folga aos fixos: rocker: folga 0.0806719405601045
+      folga aos fixos: amortecedor: folga 0.052133964673239004
+      X do olhal no chassi: folga 0.24790454773672962
+E2/C semente 5     CONDICIONAL 3s violadas=[]
+      folga aos fixos: push rod: folga 0.10504150554116148
+      folga aos fixos: rocker: folga 0.10104150554116148
+      folga aos fixos: amortecedor: folga 0.11376558786543933
+      X do olhal no chassi: folga 0.20475015037775
+E3/base semente 3  CONDICIONAL 3s violadas=[]
+      folga aos fixos: push rod: folga 0.08446059145396415
+      folga aos fixos: rocker: folga 0.08046059145396414
+      folga aos fixos: amortecedor: folga 0.055494627678827645
+      X do olhal no chassi: folga 0.24847583432161427
+E3/base semente 5  CONDICIONAL 2s violadas=[]
+      folga aos fixos: push rod: folga 0.09481346261725507
+      folga aos fixos: rocker: folga 0.09081346261725508
+      folga aos fixos: amortecedor: folga 0.11160719821854881
+      X do olhal no chassi: folga 0.2163529743460413

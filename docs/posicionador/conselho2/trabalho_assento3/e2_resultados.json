@@ -1,0 +1,780 @@
+[
+ {
+  "modo": "A",
+  "rotulo": "semente 0",
+  "f_rapido": 0.003207087457658599,
+  "nfev": 300,
+  "tempo_s": 248.71279294800024,
+  "veredito": "INVIAVEL",
+  "violacao": 0.0032070874579968813,
+  "violadas": [
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.14852214296875846,
+    -0.0004778560312415353
+   ],
+   [
+    "braço r2 (amortecedor)",
+    0.08018309458142112,
+    -0.00018309458142111434
+   ]
+  ],
+  "mr0": 1.400000000002486,
+  "var_mr": 0.039337898133411375,
+  "lmin_mm": 148.52214296875846,
+  "r2_mm": 80.18309458142112,
+  "x": [
+   -0.04183055305828409,
+   0.3102128884890566,
+   0.43072888464537606,
+   0.5792144658228648,
+   2.5476334559834157,
+   0.07414564511426236,
+   1.4555813110746043
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "A",
+  "rotulo": "semente 1",
+  "f_rapido": 0.00445672002094778,
+  "nfev": 300,
+  "tempo_s": 217.24726014500084,
+  "veredito": "INVIAVEL",
+  "violacao": 0.01850062867675504,
+  "violadas": [
+   [
+    "variação de MR",
+    0.0407400251470702,
+    -0.0007400251470702016
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.14833594771687864,
+    -0.000664051283121358
+   ],
+   [
+    "braço r2 (amortecedor)",
+    0.08034102925505934,
+    -0.00034102925505934134
+   ]
+  ],
+  "mr0": 1.400000000002486,
+  "var_mr": 0.0407400251470702,
+  "lmin_mm": 148.33594771687865,
+  "r2_mm": 80.34102925505934,
+  "x": [
+   -0.06310010143241565,
+   0.23915192978191638,
+   0.4621876559059235,
+   0.4165045338441804,
+   -0.07983510081860433,
+   0.06774370126821755,
+   2.133656396269216
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "A",
+  "rotulo": "semente 2",
+  "f_rapido": 0.0006679071034569058,
+  "nfev": 300,
+  "tempo_s": 241.0947320790001,
+  "veredito": "INVIAVEL",
+  "violacao": 0.0006679071037260791,
+  "violadas": [
+   [
+    "variação de MR",
+    0.040005935145221105,
+    -5.935145221104554e-06
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.1489004808415448,
+    -9.951815845518577e-05
+   ],
+   [
+    "braço r2 (amortecedor)",
+    0.08005044687312297,
+    -5.044687312297236e-05
+   ]
+  ],
+  "mr0": 1.3999999999997659,
+  "var_mr": 0.040005935145221105,
+  "lmin_mm": 148.9004808415448,
+  "r2_mm": 80.05044687312298,
+  "x": [
+   0.07802433380150658,
+   0.32097241610311017,
+   0.33552940605892245,
+   0.47400257556540737,
+   0.2196852103539828,
+   0.05568694294542799,
+   1.756283705626232
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "A",
+  "rotulo": "semente 3",
+  "f_rapido": 0.002501706898620377,
+  "nfev": 300,
+  "tempo_s": 227.3713607769996,
+  "veredito": "INVIAVEL",
+  "violacao": 0.003438319467037078,
+  "violadas": [
+   [
+    "variação de MR",
+    0.040137532778681484,
+    -0.00013753277868148311
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.1486272446720554,
+    -0.0003727543279445905
+   ],
+   [
+    "braço r2 (amortecedor)",
+    0.08020004389803134,
+    -0.0002000438980313407
+   ]
+  ],
+  "mr0": 1.400000000002486,
+  "var_mr": 0.040137532778681484,
+  "lmin_mm": 148.6272446720554,
+  "r2_mm": 80.20004389803134,
+  "x": [
+   -0.03748536534277591,
+   0.3256342114235211,
+   0.41330157354872454,
+   0.04071923930295637,
+   2.480714503761183,
+   0.07289923021289096,
+   1.751227164579916
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "A",
+  "rotulo": "semente 4",
+  "f_rapido": 0.001643926377108593,
+  "nfev": 300,
+  "tempo_s": 237.50628881500052,
+  "veredito": "INVIAVEL",
+  "violacao": 0.0016439263777477163,
+  "violadas": [
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.14875505396971558,
+    -0.00024494503028440974
+   ],
+   [
+    "braço r2 (amortecedor)",
+    0.08000744255712805,
+    -7.4425571280484215e-06
+   ]
+  ],
+  "mr0": 1.400000000005206,
+  "var_mr": 0.03755301426226487,
+  "lmin_mm": 148.7550539697156,
+  "r2_mm": 80.00744255712804,
+  "x": [
+   -0.005762341830891606,
+   0.31173873611257474,
+   0.3451200265498795,
+   0.35385891622326815,
+   1.2806844480849744,
+   0.055767886222708396,
+   1.6763628335418508
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "A",
+  "rotulo": "semente 5",
+  "f_rapido": 0.0022642781037340667,
+  "nfev": 300,
+  "tempo_s": 224.82048460900023,
+  "veredito": "INVIAVEL",
+  "violacao": 0.0022642781039259345,
+  "violadas": [
+   [
+    "variação de MR",
+    0.0400763652249867,
+    -7.636522498669779e-05
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.14866262156251503,
+    -0.0003373774374849642
+   ],
+   [
+    "braço r2 (amortecedor)",
+    0.08018028343155001,
+    -0.00018028343155000737
+   ]
+  ],
+  "mr0": 1.3999999999970458,
+  "var_mr": 0.0400763652249867,
+  "lmin_mm": 148.66262156251503,
+  "r2_mm": 80.18028343155001,
+  "x": [
+   -0.01274357871382958,
+   0.3257,
+   0.38153879135407265,
+   0.7339201369484394,
+   -0.892702434839359,
+   0.07041001157787177,
+   2.2117018441692666
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "B",
+  "rotulo": "semente 0",
+  "f_rapido": 0.0004227017296858716,
+  "nfev": 300,
+  "tempo_s": 165.11704212399945,
+  "veredito": "INVIAVEL",
+  "violacao": 0.0004227017296858716,
+  "violadas": [
+   [
+    "MR(0)",
+    1.410596009438857,
+    -0.0005960094388570789
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.1489370998580138,
+    -6.289914198620519e-05
+   ]
+  ],
+  "mr0": 1.410596009438857,
+  "var_mr": 0.03822133497401681,
+  "lmin_mm": 148.9370998580138,
+  "r2_mm": 79.99191459650805,
+  "x": [
+   -0.04487274397320039,
+   0.29616502627125424,
+   0.4412518080816681,
+   0.5429919045625635,
+   2.4257446330652783,
+   0.07366025309460669,
+   1.4652636072205611,
+   0.07999191459650805
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "B",
+  "rotulo": "semente 1",
+  "f_rapido": 0.001014227020306318,
+  "nfev": 300,
+  "tempo_s": 167.89473414300028,
+  "veredito": "INVIAVEL",
+  "violacao": 0.007797381025932172,
+  "violadas": [
+   [
+    "MR(0)",
+    1.4113416394499094,
+    -0.0013416394499095128
+   ],
+   [
+    "variação de MR",
+    0.04031189524103729,
+    -0.0003118952410372869
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.14884887917397416,
+    -0.00015111982602583566
+   ]
+  ],
+  "mr0": 1.4113416394499094,
+  "var_mr": 0.04031189524103729,
+  "lmin_mm": 148.84887917397415,
+  "r2_mm": 79.99999999999997,
+  "x": [
+   -0.08455232769829218,
+   0.23397137290819098,
+   0.47245923831506875,
+   0.3660535308668147,
+   0.17476907227764438,
+   0.06765797183836644,
+   2.101428155801151,
+   0.08
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "B",
+  "rotulo": "semente 2",
+  "f_rapido": 0.00024344769714172885,
+  "nfev": 300,
+  "tempo_s": 137.9418660170004,
+  "veredito": "INVIAVEL",
+  "violacao": 0.005380024910729177,
+  "violadas": [
+   [
+    "MR(0)",
+    1.4103255376488393,
+    -0.00032553764883936666
+   ],
+   [
+    "variação de MR",
+    0.04021520099642917,
+    -0.00021520099642916707
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.14896372529312582,
+    -3.627370687417311e-05
+   ]
+  ],
+  "mr0": 1.4103255376488393,
+  "var_mr": 0.04021520099642917,
+  "lmin_mm": 148.96372529312583,
+  "r2_mm": 76.02505226370992,
+  "x": [
+   0.0839351545008592,
+   0.3040520131039224,
+   0.36283359212859767,
+   0.5371159016551657,
+   0.33882287345337825,
+   0.05623862619826933,
+   1.7183300457215869,
+   0.07602505226370995
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "B",
+  "rotulo": "semente 3",
+  "f_rapido": -0.9648616478310164,
+  "nfev": 300,
+  "tempo_s": 125.97386598400044,
+  "veredito": "CONDICIONAL",
+  "violacao": 0.0,
+  "violadas": [],
+  "mr0": 1.4099900795484186,
+  "var_mr": 0.036539555727036044,
+  "lmin_mm": 149.00223683065485,
+  "r2_mm": 80.0,
+  "x": [
+   -0.03403832388446883,
+   0.32111488996355647,
+   0.4056876884345498,
+   0.03881079027501519,
+   2.8218728880998754,
+   0.0721374625306529,
+   1.7442632244797462,
+   0.08
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "B",
+  "rotulo": "semente 4",
+  "f_rapido": 0.0005631442725320551,
+  "nfev": 300,
+  "tempo_s": 126.13641737200032,
+  "veredito": "INVIAVEL",
+  "violacao": 0.01696557791031148,
+  "violadas": [
+   [
+    "MR(0)",
+    1.410791752368353,
+    -0.0007917523683531689
+   ],
+   [
+    "variação de MR",
+    0.04067862311641246,
+    -0.0006786231164124593
+   ],
+   [
+    "comprimento do amortecedor (mínimo)",
+    0.1489160905033927,
+    -8.390849660730396e-05
+   ]
+  ],
+  "mr0": 1.410791752368353,
+  "var_mr": 0.04067862311641246,
+  "lmin_mm": 148.9160905033927,
+  "r2_mm": 78.86360245100045,
+  "x": [
+   -0.003258640008159442,
+   0.25319881093086594,
+   0.38155187212128805,
+   0.7233673361750526,
+   1.2475381564338535,
+   0.055028248390106574,
+   1.644035780213457,
+   0.07886360245100046
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "B",
+  "rotulo": "semente 5",
+  "f_rapido": -0.9634085528375775,
+  "nfev": 300,
+  "tempo_s": 123.62788013499994,
+  "veredito": "CONDICIONAL",
+  "violacao": 0.0,
+  "violadas": [],
+  "mr0": 1.409960831099413,
+  "var_mr": 0.03801326475646971,
+  "lmin_mm": 149.00988211376261,
+  "r2_mm": 80.0,
+  "x": [
+   -0.021917358507838804,
+   0.31507915344543835,
+   0.3938776440100322,
+   0.7054501561688846,
+   -1.0162216889254427,
+   0.07194945892721405,
+   2.2037613030440655,
+   0.08
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "C",
+  "rotulo": "semente 0",
+  "f_rapido": 0.001762013682695675,
+  "nfev": 100,
+  "tempo_s": 332.9566909899995,
+  "veredito": "INVIAVEL",
+  "violacao": 0.002943435412151342,
+  "violadas": [
+   [
+    "MR(0)",
+    1.4124844392926008,
+    -0.0024844392926009016
+   ],
+   [
+    "variação de MR",
+    0.040117737416486055,
+    -0.00011773741648605368
+   ]
+  ],
+  "mr0": 1.4124844392926008,
+  "var_mr": 0.040117737416486055,
+  "lmin_mm": 149.05000005077005,
+  "r2_mm": 79.96913972005895,
+  "x": [
+   -0.04417167533566435,
+   0.2873181697438534,
+   0.4417730929982945,
+   0.531695433268663,
+   2.6005542731536355,
+   0.073724876026289,
+   1.4672857988456718
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "C",
+  "rotulo": "semente 1",
+  "f_rapido": 0.005228911326194646,
+  "nfev": 100,
+  "tempo_s": 249.75341362699965,
+  "veredito": "INVIAVEL",
+  "violacao": 0.005228911326194646,
+  "violadas": [
+   [
+    "MR(0)",
+    1.4173727649699344,
+    -0.007372764969934451
+   ],
+   [
+    "braço r2 (amortecedor)",
+    0.08009599568722507,
+    -9.599568722507001e-05
+   ]
+  ],
+  "mr0": 1.4173727649699344,
+  "var_mr": 0.03880246137818277,
+  "lmin_mm": 149.04999993006479,
+  "r2_mm": 80.09599568722507,
+  "x": [
+   -0.07153971436037594,
+   0.22187433196524603,
+   0.4645774184593724,
+   0.40917254319747454,
+   0.1865730541132647,
+   0.06626899342525554,
+   2.0871783601184952
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "C",
+  "rotulo": "semente 2",
+  "f_rapido": -0.9628405070565745,
+  "nfev": 100,
+  "tempo_s": 316.0725411789999,
+  "veredito": "CONDICIONAL",
+  "violacao": 0.0,
+  "violadas": [],
+  "mr0": 1.4092903705406634,
+  "var_mr": 0.0386417041089524,
+  "lmin_mm": 149.0499999980187,
+  "r2_mm": 79.88810980588131,
+  "x": [
+   0.08185637235485574,
+   0.2900483462583369,
+   0.3579462166606513,
+   0.48406035027118455,
+   0.3469448352036548,
+   0.056615336758589554,
+   1.7355957725728803
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "C",
+  "rotulo": "semente 3",
+  "f_rapido": -0.9623819288318924,
+  "nfev": 100,
+  "tempo_s": 256.55365534700013,
+  "veredito": "CONDICIONAL",
+  "violacao": 0.0,
+  "violadas": [],
+  "mr0": 1.40972493791677,
+  "var_mr": 0.03914402579967713,
+  "lmin_mm": 149.04999992975192,
+  "r2_mm": 79.90513999094,
+  "x": [
+   -0.03322284133022287,
+   0.3257,
+   0.41008723965434957,
+   0.0350776444213515,
+   2.48939261808741,
+   0.07283043434386022,
+   1.7489933723859912
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "C",
+  "rotulo": "semente 4",
+  "f_rapido": 0.001036638694739699,
+  "nfev": 100,
+  "tempo_s": 275.4642211629998,
+  "veredito": "INVIAVEL",
+  "violacao": 0.006298883099743226,
+  "violadas": [
+   [
+    "MR(0)",
+    1.4114616605595829,
+    -0.0014616605595829755
+   ],
+   [
+    "variação de MR",
+    0.04025195532398973,
+    -0.00025195532398972903
+   ]
+  ],
+  "mr0": 1.4114616605595829,
+  "var_mr": 0.04025195532398973,
+  "lmin_mm": 149.04999999705944,
+  "r2_mm": 79.89981789475308,
+  "x": [
+   -0.002937426367838599,
+   0.25903602213991794,
+   0.37436389381248103,
+   0.72053523429384,
+   1.2891170923468465,
+   0.055,
+   1.6365260634142853
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ },
+ {
+  "modo": "C",
+  "rotulo": "semente 5",
+  "f_rapido": -0.9618256948636501,
+  "nfev": 100,
+  "tempo_s": 205.48569608100024,
+  "veredito": "CONDICIONAL",
+  "violacao": 0.0,
+  "violadas": [],
+  "mr0": 1.4099076276348974,
+  "var_mr": 0.03967465743628673,
+  "lmin_mm": 149.04999996766242,
+  "r2_mm": 79.96995034196787,
+  "x": [
+   -0.011579061437706307,
+   0.31669342146167945,
+   0.3903213249445435,
+   0.7685249795494653,
+   -0.9028655625300015,
+   0.0712115074416059,
+   2.2150935799990297
+  ],
+  "nao_verif": [
+   "folga aos fixos: push rod",
+   "folga aos fixos: rocker",
+   "folga aos fixos: amortecedor",
+   "gabarito T.1.2",
+   "AIP (F.8.6.1)",
+   "esterçamento: folga ao aro",
+   "esterçamento: folga ao tirante",
+   "folga à manga/freio/pinça dentro do aro"
+  ]
+ }
+]

@@ -1,0 +1,4 @@
+base            sem violação em 1/40; violadas: {'MR(0)': 14, 'variação de MR': 20, 'comprimento do amortecedor (mínimo)': 20, 'braço r2 (amortecedor)': 17}
+tol_mr0_0.02    sem violação em 9/40; violadas: {'MR(0)': 12, 'variação de MR': 19, 'comprimento do amortecedor (mínimo)': 6, 'braço r2 (amortecedor)': 9}
+braco_max_85mm  sem violação em 0/40; violadas: {'MR(0)': 31, 'variação de MR': 19, 'comprimento do amortecedor (mínimo)': 6}
+bump_61.4mm     sem violação em 6/40; violadas: {'MR(0)': 20, 'variação de MR': 19}
