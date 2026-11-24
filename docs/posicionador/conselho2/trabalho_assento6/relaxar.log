@@ -1,0 +1,4 @@
+{'nome': 'base', 'sem': 0, 'n_viaveis': 0, 't': 101, 'veredito': 'INVIAVEL', 'viol': 0.08871981120786819, 'violadas': [('variação de MR', -0.00289), ('comprimento do amortecedor (mínimo)', -0.00052), ('braço r2 (amortecedor)', -0.0071)], 'varMR': 0.04288763034078369}
+{'nome': 'bump-1mm', 'sem': 0, 'n_viaveis': 0, 't': 101, 'veredito': 'INVIAVEL', 'viol': 0.0768048749753435, 'violadas': [('variação de MR', -0.00082), ('braço r2 (amortecedor)', -0.00614)], 'varMR': 0.04082185593274734}
+{'nome': 'MRvar5%', 'sem': 0, 'n_viaveis': 0, 't': 104, 'veredito': 'INVIAVEL', 'viol': 0.004676065175077738, 'violadas': [('comprimento do amortecedor (mínimo)', -0.0007)], 'varMR': 0.04893540060025292}
+{'nome': 'MRalvo1.44', 'sem': 0, 'n_viaveis': 0, 't': 104, 'veredito': 'INVIAVEL', 'viol': 0.07634220228650099, 'violadas': [('variação de MR', -0.00305), ('braço r2 (amortecedor)', -0.00285)], 'varMR': 0.04305368809146004}

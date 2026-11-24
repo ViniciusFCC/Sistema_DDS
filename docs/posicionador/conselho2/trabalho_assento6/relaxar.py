@@ -15,7 +15,7 @@ def job(a):
     cfg = pc.carregar(str(p))
     hs = hp.load_hardpoints(str(R/"data/posicionador/hardpoints_T11_v10.csv"), str(R/"data/posicionador/hardpoints_T11_v10.meta.json"))
     cena = vr.cena_sem_cad(cfg)
-    t=time.time(); res = bu.buscar(hs, cena, cfg, CAIXA, n_amostras=300, n_refinos=8, semente=sem)
+    t=time.time(); res = bu.buscar(hs, cena, cfg, CAIXA, n_amostras=150, n_refinos=4, semente=sem)
     m = res.candidatos[0] if res.candidatos else (res.fase1.melhor if res.fase1 else None)
     out = dict(nome=nome, sem=sem, n_viaveis=len(res.candidatos), t=round(time.time()-t))
     if m is not None:
@@ -23,9 +23,10 @@ def job(a):
         out["veredito"]=av.veredito; out["viol"]=bu.violacao(av)
         out["violadas"]=[(r.nome, round(r.folga,5) if r.folga is not None else None) for r in av.restricoes if r.estado=="VIOLADA"]
         r = av.restricao("variação de MR"); out["varMR"]=r.valor if r else None
+    json.dump(out, open(f"parcial_{nome.replace(chr(37),chr(112))}_{sem}.json","w"))
     return out
 if __name__=="__main__":
-    jobs=[(n,s) for n in VARS for s in (0,1)]
-    with Pool(4) as p: rs=p.map(job, jobs)
+    jobs=[(n,0) for n in ("base","bump-1mm","MRvar5%","MRalvo1.44")]
+    with Pool(2) as p: rs=p.map(job, jobs)
     json.dump(rs, open("relaxar.json","w"), indent=1)
     for r in rs: print(r)
