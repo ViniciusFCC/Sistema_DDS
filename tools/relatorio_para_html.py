@@ -20,7 +20,8 @@ pre{background:#f0efec;padding:10px;overflow-x:auto}li{margin:.25rem 0}
 
 
 def converter(pasta: Path, saida: Path):
-    md = (pasta / "relatorio.md").read_text(encoding="utf-8")
+    arq = next(a for a in (pasta / "relatorio_v2.md", pasta / "relatorio.md") if a.exists())
+    md = arq.read_text(encoding="utf-8")
     html = markdown.markdown(md, extensions=["tables", "fenced_code"])
 
     def embutir(m):

@@ -16,6 +16,7 @@ on:
       - 'data/posicionador/**'
       - 'docs/posicionador/METODOLOGIA.md'
       - 'docs/posicionador/benchmark/**'
+      - 'docs/posicionador/benchmark2/**'
   workflow_dispatch:
 
 permissions:
@@ -60,7 +61,7 @@ jobs:
           SHA=$(git rev-parse --short HEAD)
           mkdir out
           cp dist/posicionador_T11.exe out/
-          python tools/relatorio_para_html.py docs/posicionador/benchmark out/relatorio_benchmark.html
+          python tools/relatorio_para_html.py docs/posicionador/benchmark2 out/relatorio_benchmark.html
           cp docs/posicionador/METODOLOGIA.md out/
           python - <<PY
           import zipfile
