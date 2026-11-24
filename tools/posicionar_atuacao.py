@@ -1,6 +1,6 @@
 """
 Ferramenta do posicionador da atuação dianteira (EDR-076, spec §6): busca candidatos para push rod, rocker e amortecedor
-(ou avalia a v20 do Murilo) e grava as saídas numa pasta.
+(ou avalia a v20) e grava as saídas numa pasta.
 
 Uso (na raiz do repositório):
     uv run python -X utf8 tools/posicionar_atuacao.py --step ARQ.step --saida PASTA [--amostras N] [--semente S]
@@ -39,7 +39,7 @@ from pathlib import Path
 
 import numpy as np
 
-RAIZ = Path(__file__).resolve().parent.parent
+RAIZ = Path(os.environ["DDS_RAIZ"]) if os.environ.get("DDS_RAIZ") else Path(__file__).resolve().parent.parent   # DDS_RAIZ: executável empacotado
 sys.path.insert(0, str(RAIZ / "python"))
 
 import hardpoints as hp  # noqa: E402
@@ -257,7 +257,7 @@ def argumentos(argv):
     ap.add_argument("--step", help="STEP do CAD (mm); sem ele, a cena tem só o aro")
     ap.add_argument("--hardpoints", default=str(DADOS / "hardpoints_T11_v10.csv"),
                     help="hardpoints de base (v10, sem atuação); o meta é o .meta.json ao lado")
-    ap.add_argument("--hardpoints-v20", default=str(DADOS / "hardpoints_T11_v20_murilo.csv"),
+    ap.add_argument("--hardpoints-v20", default=str(DADOS / "hardpoints_T11_v20_script.csv"),
                     help="conjunto avaliado por --avaliar-v20")
     ap.add_argument("--config", default=str(DADOS / "config_T11.json"))
     ap.add_argument("--saida", required=True, help="pasta das saídas (criada se não existir)")

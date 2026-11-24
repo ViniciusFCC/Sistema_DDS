@@ -1,0 +1,105 @@
+# Compila o executável único do posicionador para Windows (EDR-076), testa o executável num Windows de verdade e prepara o
+# release em RASCUNHO com um zip de três arquivos: o .exe, o relatório do benchmark (HTML) e a metodologia (.md).
+# O rascunho só aparece para quem tem acesso de escrita ao repositório; fica público quando alguém clicar em "Publish release".
+# O resultado da compilação e dos testes também é gravado em ci/exe-status.txt, na mesma branch.
+name: Executável do posicionador (Windows)
+
+on:
+  push:
+    branches: [ccr-4cb60a57-janeru]
+    paths:
+      - '.github/workflows/exe-windows.yml'
+      - 'tools/posicionador_exe.py'
+      - 'tools/construir_exe.py'
+      - 'tools/relatorio_para_html.py'
+      - 'python/posicionador/**'
+      - 'data/posicionador/**'
+      - 'docs/posicionador/METODOLOGIA.md'
+      - 'docs/posicionador/benchmark/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: exe-windows
+  cancel-in-progress: true
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Dependências
+        run: python -m pip install --upgrade pip && python -m pip install numpy==2.5.4 scipy==1.18.1 cadquery-ocp==8.0.1.1.0 pyinstaller markdown
+
+      - name: Construir o executável
+        run: python tools/construir_exe.py --saida dist 2>&1 | tee ci_construir.log
+
+      - name: Testar o executável (Windows de verdade)
+        run: |
+          set -o pipefail
+          ./dist/posicionador_T11.exe --avaliar-v20 --saida teste/v20 2>&1 | tee ci_teste_v20.log
+          grep -q INVIAVEL teste/v20/relatorio.md
+          ./dist/posicionador_T11.exe --step data/cad/T11_chassi_2026-11-17.step --saida teste/step --amostras 8 --refinos 1 2>&1 | tee ci_teste_step.log
+          test -f teste/step/relatorio.md
+
+      - name: Montar o zip (executável, relatório e metodologia)
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          mkdir out
+          cp dist/posicionador_T11.exe out/
+          python tools/relatorio_para_html.py docs/posicionador/benchmark out/relatorio_benchmark.html
+          cp docs/posicionador/METODOLOGIA.md out/
+          python - <<PY
+          import zipfile
+          with zipfile.ZipFile("posicionador_T11_$SHA.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+              for n in ("posicionador_T11.exe", "relatorio_benchmark.html", "METODOLOGIA.md"):
+                  z.write("out/" + n, n)
+          PY
+          echo "SHA=$SHA" >> "$GITHUB_ENV"
+          ls -la "posicionador_T11_$SHA.zip" out
+
+      - name: Release em rascunho
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "exe-posicionador-$SHA" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "exe-posicionador-$SHA" "posicionador_T11_$SHA.zip" --draft --target "$GITHUB_SHA" \
+            --title "Executável do posicionador (Windows) $SHA" \
+            --notes "Zip com três arquivos: posicionador_T11.exe, relatorio_benchmark.html e METODOLOGIA.md. Compilado e testado em Windows pelo GitHub Actions (commit $SHA). Validation = NOT_VALIDATED." \
+            | tee ci_release.log
+
+      - name: Registrar o resultado no repositório
+        if: always()
+        run: |
+          mkdir -p ci
+          {
+            echo "resultado: ${{ job.status }}"
+            echo "commit: ${GITHUB_SHA}"
+            echo "execução: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "data: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo; echo "--- construção (fim) ---"; tail -n 8 ci_construir.log 2>/dev/null || echo "(não chegou a construir)"
+            echo; echo "--- teste: v20 (fim) ---"; tail -n 12 ci_teste_v20.log 2>/dev/null || echo "(não rodou)"
+            echo; echo "--- teste: STEP (fim) ---"; tail -n 8 ci_teste_step.log 2>/dev/null || echo "(não rodou)"
+            echo; echo "--- release ---"; cat ci_release.log 2>/dev/null || echo "(não criado)"
+            echo; ls -la dist "posicionador_T11_${SHA:-none}.zip" 2>/dev/null
+            [ -f dist/posicionador_T11.exe ] && sha256sum dist/posicionador_T11.exe
+          } > ci/exe-status.txt 2>&1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci/exe-status.txt
+          git commit -m "ci: resultado da compilação do executável do posicionador (Windows)" || exit 0
+          for i in 1 2 3 4; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break
+            sleep $((i * 5))
+          done
