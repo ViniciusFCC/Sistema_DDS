@@ -1,22 +1,22 @@
 resultado: success
-commit: f6336e0cf8aa4204d8dd21b39f2ff256aa2c0124
-execução: https://github.com/ViniciusFCC/Sistema_DDS/actions/runs/45473797433
-data: 2026-11-24T19:50:33Z
+commit: a58dcde0d39d4bd7610a82ebcad2df51eb525658
+execução: https://github.com/ViniciusFCC/Sistema_DDS/actions/runs/45474757957
+data: 2026-11-24T19:55:34Z
 
 --- construção (fim) ---
-78190 INFO: Building PKG (CArchive) posicionador_T11.pkg completed successfully.
-78211 INFO: Bootloader C:\hostedtoolcache\windows\Python\3.13.17\x64\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
-78211 INFO: checking EXE
-78211 INFO: Building EXE because EXE-00.toc is non existent
-78211 INFO: Building EXE from EXE-00.toc
-78211 INFO: Copying bootloader EXE to D:\a\Sistema_DDS\Sistema_DDS\dist\posicionador_T11.exe
-78213 INFO: Copying icon to EXE
-78214 INFO: Copying 0 resources to EXE
-78214 INFO: Embedding manifest in EXE
-78216 INFO: Appending PKG archive to EXE
-78292 INFO: Fixing EXE headers
-79717 INFO: Building EXE from EXE-00.toc completed successfully.
-79738 INFO: Build complete! The results are available in: D:\a\Sistema_DDS\Sistema_DDS\dist
+74475 INFO: Building PKG (CArchive) posicionador_T11.pkg completed successfully.
+74496 INFO: Bootloader C:\hostedtoolcache\windows\Python\3.13.17\x64\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+74496 INFO: checking EXE
+74496 INFO: Building EXE because EXE-00.toc is non existent
+74496 INFO: Building EXE from EXE-00.toc
+74496 INFO: Copying bootloader EXE to D:\a\Sistema_DDS\Sistema_DDS\dist\posicionador_T11.exe
+74498 INFO: Copying icon to EXE
+74500 INFO: Copying 0 resources to EXE
+74500 INFO: Embedding manifest in EXE
+74501 INFO: Appending PKG archive to EXE
+74578 INFO: Fixing EXE headers
+75973 INFO: Building EXE from EXE-00.toc completed successfully.
+75994 INFO: Build complete! The results are available in: D:\a\Sistema_DDS\Sistema_DDS\dist
 PyInstaller com 2 pastas de bibliotecas do OpenCascade/vtk
 execut�vel: dist\posicionador_T11.exe (170 MB)
 
@@ -32,13 +32,13 @@ execut�vel: dist\posicionador_T11.exe (170 MB)
 [posicionador] amostras: 1/8; menor violação máxima normalizada até aqui = 797.3
 [posicionador] amostras: 8/8; menor violação máxima normalizada até aqui = 1.607
 [posicionador] refinos: 1/1; menor violação máxima normalizada até aqui = 0.003557
-[posicionador] saídas em teste\step (36.1 s)
+[posicionador] saídas em teste\step (34.7 s)
 
 --- release ---
-https://github.com/ViniciusFCC/Sistema_DDS/releases/tag/untagged-df9256dea2161906817c
+https://github.com/ViniciusFCC/Sistema_DDS/releases/tag/untagged-6001772e3e3d0d94c1aa
 
 total 166228
-drwxr-xr-x 1 runneradmin 197121         0 Nov 24 19:49 .
-drwxr-xr-x 1 runneradmin 197121         0 Nov 24 19:50 ..
--rwxr-xr-x 1 runneradmin 197121 170210311 Nov 24 19:49 posicionador_T11.exe
-04a85c6891887f849c714d46e00742d691c127d288012d15ca70ffef140cf518 *dist/posicionador_T11.exe
+drwxr-xr-x 1 runneradmin 197121         0 Nov 24 19:54 .
+drwxr-xr-x 1 runneradmin 197121         0 Nov 24 19:55 ..
+-rwxr-xr-x 1 runneradmin 197121 170211053 Nov 24 19:54 posicionador_T11.exe
+a9102547a0e09c896d3c38e7c4ac9c58bd26163ab51f43e44bdbd2c008604e75 *dist/posicionador_T11.exe
