@@ -60,38 +60,38 @@
   "variacao_vs_n": [
    {
     "n": 11,
-    "murilo": 0.04003509413240991,
+    "script": 0.04003509413240991,
     "posicionador": 0.061647262607884556
    },
    {
     "n": 25,
-    "murilo": 0.05189431457067051,
+    "script": 0.05189431457067051,
     "posicionador": 0.061954861090188995
    },
    {
     "n": 51,
-    "murilo": 0.05699891300900761,
+    "script": 0.05699891300900761,
     "posicionador": 0.06202357459391994
    },
    {
     "n": 101,
-    "murilo": 0.05947903764404705,
+    "script": 0.05947903764404705,
     "posicionador": 0.06202357459391994
    },
    {
     "n": 201,
-    "murilo": 0.060758548670666546,
+    "script": 0.060758548670666546,
     "posicionador": 0.062025195289546975
    },
    {
     "n": 401,
-    "murilo": 0.06140810355633297,
+    "script": 0.06140810355633297,
     "posicionador": 0.06202576537333182
    }
   ],
   "conferencia_estimador": {
-   "murilo_11": 0.04003509413240991,
-   "murilo_25": 0.05189431457067051
+   "script_11": 0.04003509413240991,
+   "script_25": 0.05189431457067051
   },
   "curvas_posicionador": {
    "dz_m": [
@@ -901,7 +901,7 @@
     1.4693010589252053
    ]
   },
-  "murilo_11": {
+  "script_11": {
    "dz_m": [
     -0.023,
     -0.014459999999999999,
@@ -929,7 +929,7 @@
     1.44015744397371
    ]
   },
-  "custo_murilo": 0.07338497880987897,
+  "custo_script": 0.07338497880987897,
   "juiz": {
    "veredito": "INVIAVEL",
    "motivo": "restrições violadas: variação de MR, braço r2 (amortecedor), folga às pernas das bandejas: push rod",
@@ -1198,7 +1198,7 @@
  },
  "buscas": [
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "v20 (sem perturbação) · mesmo orçamento",
    "sem_tubo": false,
    "x": [
@@ -1493,7 +1493,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 1 (v20 + perturbação SINTÉTICA) · mesmo orçamento",
    "sem_tubo": false,
    "x": [
@@ -1788,7 +1788,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 2 (v20 + perturbação SINTÉTICA) · mesmo orçamento",
    "sem_tubo": false,
    "x": [
@@ -2083,7 +2083,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 3 (v20 + perturbação SINTÉTICA) · mesmo orçamento",
    "sem_tubo": false,
    "x": [
@@ -2378,7 +2378,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 4 (v20 + perturbação SINTÉTICA) · mesmo orçamento",
    "sem_tubo": false,
    "x": [
@@ -2673,7 +2673,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 5 (v20 + perturbação SINTÉTICA) · mesmo orçamento",
    "sem_tubo": false,
    "x": [
@@ -2968,7 +2968,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "v20 · configuração original do script (maxiter 2000)",
    "sem_tubo": false,
    "x": [
@@ -3263,7 +3263,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "v20 (sem perturbação) · sem as restrições do tubo",
    "sem_tubo": true,
    "x": [
@@ -3558,7 +3558,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 1 (v20 + perturbação SINTÉTICA) · sem as restrições do tubo",
    "sem_tubo": true,
    "x": [
@@ -3853,7 +3853,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 2 (v20 + perturbação SINTÉTICA) · sem as restrições do tubo",
    "sem_tubo": true,
    "x": [
@@ -4148,7 +4148,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 3 (v20 + perturbação SINTÉTICA) · sem as restrições do tubo",
    "sem_tubo": true,
    "x": [
@@ -4443,7 +4443,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 4 (v20 + perturbação SINTÉTICA) · sem as restrições do tubo",
    "sem_tubo": true,
    "x": [
@@ -4738,7 +4738,7 @@
    }
   },
   {
-   "ferramenta": "murilo",
+   "ferramenta": "script",
    "rotulo": "início 5 (v20 + perturbação SINTÉTICA) · sem as restrições do tubo",
    "sem_tubo": true,
    "x": [
@@ -6792,7 +6792,7 @@
   }
  ],
  "robustez": {
-  "v20 (Murilo)": {
+  "v20 (script de atuação)": {
    "n": 60,
    "falhas_de_construcao": 0,
    "sem_nenhuma_violada": 0,
@@ -6866,7 +6866,7 @@
     "braço r2 (amortecedor)": 0.48333333333333334
    }
   },
-  "melhor do método do Murilo": {
+  "melhor do método do script de atuação": {
    "n": 60,
    "falhas_de_construcao": 0,
    "sem_nenhuma_violada": 0,
@@ -7014,8 +7014,8 @@
   }
  },
  "tempo_avaliacao_s": {
-  "murilo avaliar (11 pontos)": 0.10872027599998546,
-  "murilo avaliar (25 pontos)": 0.19738548399982392,
+  "script avaliar (11 pontos)": 0.10872027599998546,
+  "script avaliar (25 pontos)": 0.19738548399982392,
   "posicionador avaliar (n = 11)": 0.12618725199990877,
   "posicionador avaliar (n = 25)": 0.2820258369997646,
   "posicionador avaliar (n = 51)": 0.5512811439998586,

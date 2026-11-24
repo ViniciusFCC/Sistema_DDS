@@ -106,8 +106,8 @@ _X = "excel/FSAE_EV_Suspension_Fase1_"
 # O .tir (data/Hoosier_R25B_13x7_TTC_provisional.tir) não é rastreado: declará-lo impediria todo pulo; fica fora da conferência.
 _HP = ("data/hardpoints_synthetic_V2.0.csv", "data/hardpoints_synthetic_V2.0.meta.json")
 _POS = tuple(f"data/posicionador/{a}" for a in ("config_T11.json", "curvas_kinlib_v20.csv", "hardpoints_T11_v10.csv",
-                                                 "hardpoints_T11_v10.meta.json", "hardpoints_T11_v20_murilo.csv",
-                                                 "hardpoints_T11_v20_murilo.meta.json", "origem_v20_murilo.json"))
+                                                 "hardpoints_T11_v10.meta.json", "hardpoints_T11_v20_script.csv",
+                                                 "hardpoints_T11_v20_script.meta.json", "origem_v20_script.json"))
 _STEP = "data/cad/T11_chassi_2026-11-17.step"
 # Entradas DECLARADAS de cada item para o --pular-recentes: o que o script abre por caminho (módulos que a mutação troca, testes que
 # ela dispara, planilhas .xlsx, dados) e que o ast não vê. Entram, com o script e os imports locais, no diff contra o commit.

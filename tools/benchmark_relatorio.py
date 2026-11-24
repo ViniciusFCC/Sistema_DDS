@@ -1,6 +1,6 @@
 """
 Gráficos e relatório do benchmark (lê `resultados.json` de `tools/benchmark_posicionador.py rodar`; precisa de matplotlib).
-Paleta: skill dataviz (validada: contraste, separação para daltonismo): laranja = ferramenta do Murilo, azul = posicionador,
+Paleta: skill dataviz (validada: contraste, separação para daltonismo): laranja = script de atuação, azul = posicionador,
 cinza = referência (a v20). Texto em tinta neutra, nunca na cor da série. Os números do relatório saem do JSON.
 """
 import json
@@ -62,22 +62,22 @@ def f1_mr(d, fig_dir):
     f = _fig(11, 4.3)
     ax1, ax2 = f.subplots(1, 2)
     nos = d["v20"]["curvas_posicionador"]
-    m11 = d["v20"]["murilo_11"]
+    m11 = d["v20"]["script_11"]
     ax1.plot(np.array(nos["dz_m"]) * 1e3, nos["mr"], color=AZUL, lw=2, label="posicionador: MR local (401 pontos)")
     ax1.plot(np.array(m11["dz_m"]) * 1e3, m11["mr"], color=LARANJA, lw=1.6, marker="o", ms=5,
-             label="script do Murilo: diferenças finitas (11 pontos)")
+             label="script de atuação: diferenças finitas (11 pontos)")
     _estilo(ax1, "MR [wheel/spring] ao longo do curso da v20", "curso da roda [mm]", "MR [wheel/spring]")
     ax1.legend(fontsize=8, frameon=False, loc="upper left", labelcolor=TINTA2)
     vn = d["v20"]["variacao_vs_n"]
     n = [r["n"] for r in vn]
-    ax2.plot(n, [100 * r["murilo"] for r in vn], color=LARANJA, lw=1.8, marker="o", ms=5)
+    ax2.plot(n, [100 * r["script"] for r in vn], color=LARANJA, lw=1.8, marker="o", ms=5)
     ax2.plot(n, [100 * r["posicionador"] for r in vn], color=AZUL, lw=1.8, marker="o", ms=5)
     ax2.axhline(4.0, color=TINTA2, lw=1, ls="--")
     ax2.set_xscale("log")
     ax2.set_xticks(n)
     ax2.set_xticklabels([str(v) for v in n])
     ax2.text(n[0], 4.0 + 0.12, "limite da equipe: 4 %", fontsize=8, color=TINTA2)
-    ax2.text(n[-1], 100 * vn[-1]["murilo"] - 0.35, "Murilo: depende de n", fontsize=8.5, color=TINTA2, ha="right")
+    ax2.text(n[-1], 100 * vn[-1]["script"] - 0.35, "Script de atuação: depende de n", fontsize=8.5, color=TINTA2, ha="right")
     ax2.text(n[-1], 100 * vn[-1]["posicionador"] + 0.15, "posicionador: n = 11 já vê a violação", fontsize=8.5,
              color=TINTA2, ha="right")
     ax2.set_ylim(3.5, 6.8)
@@ -118,10 +118,10 @@ def f2_margens(d, fig_dir):
 
 def _grupos(d):
     b = d["buscas"]
-    return {"Murilo · mesmo orçamento": [r for r in b if r["ferramenta"] == "murilo" and "mesmo orçamento" in r["rotulo"]
+    return {"Script de atuação · mesmo orçamento": [r for r in b if r["ferramenta"] == "script" and "mesmo orçamento" in r["rotulo"]
                                          and not r.get("sem_tubo")],
-            "Murilo · configuração original": [r for r in b if r["ferramenta"] == "murilo" and "original" in r["rotulo"]],
-            "Murilo · controle sem as restrições do tubo": [r for r in b if r.get("sem_tubo")],
+            "Script de atuação · configuração original": [r for r in b if r["ferramenta"] == "script" and "original" in r["rotulo"]],
+            "Script de atuação · controle sem as restrições do tubo": [r for r in b if r.get("sem_tubo")],
             "Posicionador": [r for r in b if r["ferramenta"] == "posicionador" and r["juiz"]]}
 
 
@@ -159,7 +159,7 @@ def f3_violacao(d, fig_dir):
 
 
 def f4_declarado(d, fig_dir):
-    rs = [r for r in d["buscas"] if r["ferramenta"] == "murilo" and not r.get("sem_tubo")]
+    rs = [r for r in d["buscas"] if r["ferramenta"] == "script" and not r.get("sem_tubo")]
     f = _fig(7.2, 4.2)
     ax = f.subplots()
     x = [r["custo_final"] for r in rs]
@@ -173,7 +173,7 @@ def f4_declarado(d, fig_dir):
     ax.set_xscale("log")
     ax.set_xlim(xmin, max(100, max(x) * 3))
     ax.set_ylim(-0.05 * ymax, ymax)
-    _estilo(ax, "Custo declarado pelo script do Murilo × violação medida pelo juiz", "custo final do script (escala log)",
+    _estilo(ax, "Custo declarado pelo script de atuação × violação medida pelo juiz", "custo final do script (escala log)",
             "violação máxima medida pelo juiz [%]")
     f.tight_layout()
     _salvar(f, fig_dir / "f4_custo_declarado_vs_juiz.png")
@@ -190,16 +190,16 @@ def _freq(rs):
 
 def f5_restricoes(d, fig_dir):
     g = _grupos(d)
-    fm, nm = _freq(g["Murilo · mesmo orçamento"] + g["Murilo · configuração original"])
-    fc, nc = _freq(g["Murilo · controle sem as restrições do tubo"])
+    fm, nm = _freq(g["Script de atuação · mesmo orçamento"] + g["Script de atuação · configuração original"])
+    fc, nc = _freq(g["Script de atuação · controle sem as restrições do tubo"])
     fn, nn = _freq(g["Posicionador"])
     nomes = sorted(set(fm) | set(fc) | set(fn), key=lambda k: -(fm.get(k, 0) + fc.get(k, 0) + fn.get(k, 0)))
     f = _fig(9.5, 0.75 * max(len(nomes), 2) + 1.8)
     ax = f.subplots()
     y = np.arange(len(nomes))
-    ax.barh(y - 0.26, [100 * fm.get(k, 0) for k in nomes], height=0.24, color=LARANJA, label=f"Murilo, custo completo (n = {nm})")
+    ax.barh(y - 0.26, [100 * fm.get(k, 0) for k in nomes], height=0.24, color=LARANJA, label=f"Script de atuação, custo completo (n = {nm})")
     ax.barh(y, [100 * fc.get(k, 0) for k in nomes], height=0.24, color=LARANJA, hatch="////", edgecolor=FUNDO, linewidth=0,
-            label=f"Murilo, controle sem as restrições do tubo (n = {nc})")
+            label=f"Script de atuação, controle sem as restrições do tubo (n = {nc})")
     ax.barh(y + 0.26, [100 * fn.get(k, 0) for k in nomes], height=0.24, color=AZUL, label=f"posicionador (n = {nn})")
     for yi, k in zip(y, nomes):
         for dy, v in ((-0.26, fm.get(k, 0)), (0.0, fc.get(k, 0)), (0.26, fn.get(k, 0))):
@@ -217,7 +217,7 @@ def f5_restricoes(d, fig_dir):
 
 def f6_robustez(d, fig_dir):
     rob = d["robustez"]
-    series = [("v20 (Murilo)", CINZA), ("melhor do método do Murilo", LARANJA), ("melhor do posicionador", AZUL)]
+    series = [("v20 (script de atuação)", CINZA), ("melhor do método do script de atuação", LARANJA), ("melhor do posicionador", AZUL)]
     f = _fig(9.5, 3.6)
     ax = f.subplots()
     rng = np.random.default_rng(2)
@@ -288,12 +288,12 @@ def _lim(x):
 
 def _linha_busca(r):
     j = r["juiz"]
-    nf = r.get("nfev") if r["ferramenta"] == "murilo" else r.get("nfev_rapidas")
+    nf = r.get("nfev") if r["ferramenta"] == "script" else r.get("nfev_rapidas")
     if j is None:
         return f"| {r['ferramenta']} | {r['rotulo']} | {nf} | {r['tempo_s']:.0f} | — | sem resultado | — | — | — |"
-    prop = _v(r["custo_final"], ".4f") if r["ferramenta"] == "murilo" else "—"
+    prop = _v(r["custo_final"], ".4f") if r["ferramenta"] == "script" else "—"
     mat = [q["nome"] for q in j["restricoes"] if _violada_material(q)]
-    return (f"| {'Murilo' if r['ferramenta'] == 'murilo' else 'posicionador'} | {r['rotulo']} | {nf} | {r['tempo_s']:.0f} | {prop} "
+    return (f"| {'script de atuação' if r['ferramenta'] == 'script' else 'posicionador'} | {r['rotulo']} | {nf} | {r['tempo_s']:.0f} | {prop} "
             f"| {j['veredito']} | {_pct(j['violacao'])} | {_pct(j['var_mr'], 2)} | {len(mat)} |")
 
 
@@ -311,8 +311,8 @@ def gerar(pasta: Path):
     for f in (f1_mr, f2_margens, f3_violacao, f4_declarado, f5_restricoes, f6_robustez):
         f(d, figs)
     g = _grupos(d)
-    murilo = g["Murilo · mesmo orçamento"] + g["Murilo · configuração original"]   # custo completo do script
-    ctrl = g["Murilo · controle sem as restrições do tubo"]
+    script = g["Script de atuação · mesmo orçamento"] + g["Script de atuação · configuração original"]   # custo completo do script
+    ctrl = g["Script de atuação · controle sem as restrições do tubo"]
     nosso = g["Posicionador"]
 
     def viol(rs):
@@ -321,52 +321,55 @@ def gerar(pasta: Path):
     def prat(rs):
         return sum(v <= LIMIAR_PRATICO for v in viol(rs))
 
-    declaradas = [r for r in murilo if r["custo_final"] <= d["config"]["custo_cumprido"]]
+    declaradas = [r for r in script if r["custo_final"] <= d["config"]["custo_cumprido"]]
     falsas = [r for r in declaradas if r["juiz"]["veredito"] == "INVIAVEL"]
     vn = d["v20"]["variacao_vs_n"]
     t = d["tempo_avaliacao_s"]
     c = d["config"]
     L = []
-    L.append("# Benchmark: ferramenta do Murilo × posicionador da atuação (EDR-076)\n")
+    L.append("# Benchmark: script de atuação × posicionador da atuação (EDR-076)\n")
     L.append(f"Gerado em {d['gerado_em']} · {d['maquina']} · Python {d['python']} · código do posicionador no commit `{_git('log', '-1', '--format=%h', '--', 'python/posicionador')}` "
-             f"· script do Murilo: `t11_atuacao.py` sha256 `{d['origem']['t11_atuacao.py'][:16]}…` (fora do repositório). "
+             f"· script de atuação: `t11_atuacao.py` sha256 `{d['origem']['t11_atuacao.py'][:16]}…` (fora do repositório). "
              "Validation = NOT_VALIDATED: o juiz e as duas ferramentas usam cinemática ainda não comparada com o OptimumKinematics "
              "(REFERENCE, EDR-004); o que segue mede **consistência e cobertura**, não correção física. "
              "(Unidades da tabela da v20 em SI: m, rad.)\n")
-    L.append("## Resumo\n")
-    L.append(f"- **Mesma v20, dois olhares.** O script do Murilo mede a variação de MR da v20 em {_pct(vn[0]['murilo'], 2)} "
-             f"(11 pontos, a resolução em que otimiza) e {_pct(vn[1]['murilo'], 2)} (25 pontos); com {vn[-1]['n']} pontos o mesmo "
-             f"estimador chega a {_pct(vn[-1]['murilo'], 2)}. O posicionador mede {_pct(vn[0]['posicionador'], 2)} já com 11 "
-             f"pontos. O limite da equipe é 4 %. Custo que o script dá à v20: {_v(d['v20']['custo_murilo'], '.3f')}.")
+    simples = pasta / "resumo_simples.md"
+    if simples.exists():
+        L.append(simples.read_text(encoding="utf-8"))
+    L.append("## Resumo técnico\n")
+    L.append(f"- **Mesma v20, dois olhares.** O script de atuação mede a variação de MR da v20 em {_pct(vn[0]['script'], 2)} "
+             f"(11 pontos, a resolução em que otimiza) e {_pct(vn[1]['script'], 2)} (25 pontos); com {vn[-1]['n']} pontos o mesmo "
+             f"estimador chega a {_pct(vn[-1]['script'], 2)}. O posicionador mede {_pct(vn[0]['posicionador'], 2)} já com 11 "
+             f"pontos. O limite da equipe é 4 %. Custo que o script dá à v20: {_v(d['v20']['custo_script'], '.3f')}.")
     L.append(f"- **Busca, mesmo juiz.** Com {c['inicios']} partidas por ferramenta e orçamento igual de avaliações do mecanismo "
              f"(~{c['maxfev']}), a violação mediana da solução final é "
-             f"{_pct(statistics.median(viol(g['Murilo · mesmo orçamento'])))} no método do Murilo, "
+             f"{_pct(statistics.median(viol(g['Script de atuação · mesmo orçamento'])))} no método do script de atuação, "
              f"{_pct(statistics.median(viol(ctrl)))} no mesmo método sem as restrições que o posicionador não tem (controle) e "
              f"{_pct(statistics.median(viol(nosso)))} no posicionador. "
              f"Soluções praticamente cumpridas pelo juiz (violação ≤ {_pct(LIMIAR_PRATICO, 0)} do limite): "
-             f"{prat(g['Murilo · mesmo orçamento'])} de {len(g['Murilo · mesmo orçamento'])} (Murilo), {prat(ctrl)} de {len(ctrl)} "
+             f"{prat(g['Script de atuação · mesmo orçamento'])} de {len(g['Script de atuação · mesmo orçamento'])} (script de atuação), {prat(ctrl)} de {len(ctrl)} "
              f"(controle) e {prat(nosso)} de {len(nosso)} (posicionador). "
              f"Soluções que o juiz aprova (VIAVEL ou CONDICIONAL): "
-             f"{sum(r['juiz']['veredito'] != 'INVIAVEL' for r in murilo + ctrl)} das {len(murilo) + len(ctrl)} do Murilo e "
+             f"{sum(r['juiz']['veredito'] != 'INVIAVEL' for r in script + ctrl)} das {len(script) + len(ctrl)} do script de atuação e "
              f"{sum(r['juiz']['veredito'] != 'INVIAVEL' for r in nosso)} das {len(nosso)} do posicionador.")
-    L.append(f"- **Cumprido segundo quem?** {len(declaradas)} das {len(murilo)} buscas do script terminaram com custo ≤ "
+    L.append(f"- **Cumprido segundo quem?** {len(declaradas)} das {len(script)} buscas do script terminaram com custo ≤ "
              f"{_v(c['custo_cumprido'])} (que ele lê como 'tudo cumprido'); o juiz reprova {len(falsas)} delas. O posicionador só "
              "devolve candidato depois da avaliação convergida, e quando não há candidato devolve o diagnóstico.")
-    L.append(f"- **Custo.** Uma avaliação: {_v(t['murilo avaliar (11 pontos)'], '.3f')} s (Murilo, 11 pontos) contra "
+    L.append(f"- **Custo.** Uma avaliação: {_v(t['script avaliar (11 pontos)'], '.3f')} s (Script de atuação, 11 pontos) contra "
              f"{_v(t['posicionador avaliar (n = 11)'], '.3f')} s (posicionador, n = 11), com mais verificações por avaliação (tabela abaixo).\n")
     L.append("## Método\n")
     L.append("- **Juiz único.** Toda solução, de qualquer ferramenta, é reavaliada por `varredura.avaliar_convergido` na cena sem CAD "
              "(só o aro), com `mecanismo.construir` e o r2 da própria solução (o juiz não o recalcula) e o olhal posto pela regra "
              "do posicionador (|B(−23 mm) − C| = 210 mm). Violação = máx. de max(0, −folga)/|limite| (limite nulo: 1 mm).")
-    L.append(f"- **Orçamento igual.** Método do Murilo: Nelder-Mead do próprio script (mesmos `xatol`, `fatol`, `adaptive`) com "
+    L.append(f"- **Orçamento igual.** Método do script de atuação: Nelder-Mead do próprio script (mesmos `xatol`, `fatol`, `adaptive`) com "
              f"`maxfev` = {c['maxfev']}; posicionador: {c['amostras']} amostras, {c['refinos']} refinos de até 60 avaliações "
-             f"(≤ {c['amostras'] + 60 * c['refinos']} avaliações rápidas, n = 11). Mais uma busca do Murilo com a configuração "
+             f"(≤ {c['amostras'] + 60 * c['refinos']} avaliações rápidas, n = 11). Mais uma busca do script de atuação com a configuração "
              "original dele (`maxiter` 2000), sem limite de avaliações.")
-    L.append("- **Controle.** O script do Murilo também otimiza restrições que o posicionador removeu de propósito (a reta do tubo "
+    L.append("- **Controle.** O script de atuação também otimiza restrições que o posicionador removeu de propósito (a reta do tubo "
              "ao Front Hoop, a folga do tubo ao gabarito, o triângulo da bandeja superior e o gabarito projetado em Z fixo), e o juiz "
-             "não as mede. Para não favorecer o posicionador, cada partida do Murilo roda também com esses termos satisfeitos por "
+             "não as mede. Para não favorecer o posicionador, cada partida do script de atuação roda também com esses termos satisfeitos por "
              "construção (`sem_tubo`), sem alterar o script dele. O custo próprio dessas buscas exclui os termos do tubo.")
-    L.append(f"- **Partidas.** A primeira do Murilo é a v20; as demais são a v20 mais uma perturbação **SINTÉTICA** (σ = "
+    L.append(f"- **Partidas.** A primeira do script de atuação é a v20; as demais são a v20 mais uma perturbação **SINTÉTICA** (σ = "
              f"{c['sigma_inicio']['pivo_mm']:.0f} mm no pivô, {c['sigma_inicio']['graus']:.0f}° nos ângulos, "
              f"{c['sigma_inicio']['braco_mm']:.0f} mm nos braços). O posicionador usa as sementes 0 a {c['inicios'] - 1} na caixa "
              f"derivada do envelope do chassi (HIPOTESE, R8): X ±150 mm, Y 0 a 326 mm, Z 60 a 1257 mm.")
@@ -399,7 +402,7 @@ def gerar(pasta: Path):
              "de cada uma está na tabela dela). O gráfico mostra a distribuição da pior violação sob perturbação: uma solução que já "
              "viola na posição nominal só é robusta no sentido de projeto se a distribuição ficar em 0.\n")
     L.append(f"Perturbação uniforme de ±{c['delta']['pivo_mm']:.0f} mm no pivô, ±{_v(c['delta']['graus'])}° nos ângulos e "
-             f"±{c['delta']['braco_mm']} mm nos braços, {d['robustez']['v20 (Murilo)']['n']} amostras por solução, avaliação n = 11. "
+             f"±{c['delta']['braco_mm']} mm nos braços, {d['robustez']['v20 (script de atuação)']['n']} amostras por solução, avaliação n = 11. "
              "Os valores **não são a tolerância de fabricação da equipe** (a medir).\n")
     L.append("![robustez](figuras/f6_robustez.png)\n")
     L.append("## 4. Custo de uma avaliação\n")
@@ -410,8 +413,8 @@ def gerar(pasta: Path):
     L.append("\nAs avaliações não fazem o mesmo trabalho: a do posicionador confere mais restrições (tirante, 4 pernas por distância "
              "exata, convergência) e a do script confere o tubo ao Front Hoop e o triângulo da bandeja superior.\n")
     L.append("## 5. O que cada ferramenta verifica\n")
-    L.append("Conferido contra o código das duas em 2026-11-23 (script do Murilo: `custo()` e `avaliar()`).\n")
-    L.append("| verificação | script do Murilo | posicionador |")
+    L.append("Conferido contra o código das duas em 2026-11-23 (script de atuação: `custo()` e `avaliar()`).\n")
+    L.append("| verificação | script de atuação | posicionador |")
     L.append("|---|---|---|")
     for a, b, cc in COBERTURA:
         L.append(f"| {a} | {b} | {cc} |")

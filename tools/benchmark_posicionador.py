@@ -1,12 +1,12 @@
 """
-Benchmark da ferramenta do Murilo (t11_atuacao.py, FORA do repositório) × posicionador da atuação (EDR-076).
+Benchmark da script de atuação (t11_atuacao.py, FORA do repositório) × posicionador da atuação (EDR-076).
 
 Princípio: um juiz único para as duas. A solução de cada ferramenta é reavaliada por `varredura.avaliar_convergido` (a
-cena sem CAD: só o aro; as restrições compartilhadas) — o mesmo critério para quem busca com o método do Murilo e para quem
-busca com o posicionador. O script do Murilo nunca entra no repositório: `--script-murilo PASTA` aponta para a pasta dele.
+cena sem CAD: só o aro; as restrições compartilhadas) — o mesmo critério para quem busca com o método do script de atuação e para quem
+busca com o posicionador. O script de atuação nunca entra no repositório: `--script-atuacao PASTA` aponta para a pasta dele.
 
 Uso (na raiz do repositório):
-    uv run python -X utf8 tools/benchmark_posicionador.py rodar --script-murilo PASTA --saida PASTA_DE_SAIDA
+    uv run python -X utf8 tools/benchmark_posicionador.py rodar --script-atuacao PASTA --saida PASTA_DE_SAIDA
         [--inicios 6] [--jobs 4] [--amostras 300] [--refinos 20] [--maxfev 1500] [--robustez 60]
     <python com matplotlib> tools/benchmark_posicionador.py relatorio --saida PASTA_DE_SAIDA
 
@@ -14,11 +14,11 @@ Uso (na raiz do repositório):
 saem do JSON, nunca digitados à mão.
 
 Valores SINTÉTICOS de teste (não são dado do carro nem tolerância da equipe):
-- perturbação dos pontos de partida do método do Murilo: σ = 10 mm no pivô, 2° em azimute, elevação e φB, 3 mm em r1 e r2;
+- perturbação dos pontos de partida do método do script de atuação: σ = 10 mm no pivô, 2° em azimute, elevação e φB, 3 mm em r1 e r2;
 - perturbação da robustez: ±1 mm no pivô, ±0,5° em azimute, elevação e φB, ±0,5 mm em r1 e r2 (uniforme);
-- critério "a ferramenta do Murilo declara cumprido": custo final ≤ 0,1 (a v20 que ele aceitou tem custo 0,073).
+- critério "a script de atuação declara cumprido": custo final ≤ 0,1 (a v20 que ele aceitou tem custo 0,073).
 
-Controle (`sem_tubo`): o método do Murilo com as restrições que o posicionador não tem (tubo ao Front Hoop, folga do tubo ao
+Controle (`sem_tubo`): o método do script de atuação com as restrições que o posicionador não tem (tubo ao Front Hoop, folga do tubo ao
 gabarito, triângulo da bandeja superior, gabarito projetado) satisfeitas por construção, para que os dois otimizem
 aproximadamente as mesmas restrições. Sem esse controle, a comparação favorece o posicionador.
 """
@@ -77,7 +77,7 @@ def _resumo(av):
 
 
 def julgar_x(x_script, juiz=None):
-    """Reavalia uma solução no formato do script do Murilo (8 números: mm e °) pelo juiz convergido."""
+    """Reavalia uma solução no formato do script de atuação (8 números: mm e °) pelo juiz convergido."""
     from posicionador import busca as bu, mecanismo as mec, varredura as vr
     cfg, hs, cena = juiz or _juiz()
     v = mec.Variaveis.da_semente_do_script(x_script)
@@ -94,19 +94,19 @@ def x_script_de(var, r2_m):
             np.degrees(var.phi_b_rad), r2_m * 1e3]
 
 
-# ------------------------------------------------------------------ script do Murilo (lido de fora)
+# ------------------------------------------------------------------ script de atuação (lido de fora)
 _T = {}
 
 
-def _murilo(pasta):
+def _script(pasta):
     if pasta not in _T:
         sys.path.insert(0, pasta)
-        import t11_atuacao as T          # noqa: E402  (módulo do Murilo, fora do repositório)
+        import t11_atuacao as T          # noqa: E402  (módulo do script de atuação, fora do repositório)
         _T[pasta] = (T, T.corner())
     return _T[pasta]
 
 
-def curva_mr_murilo(T, c, x, n):
+def curva_mr_script(T, c, x, n):
     """Estimador do script (np.gradient sobre n pontos do curso), reaplicado com n pontos."""
     g = T.montar(x, c.P["LO"])
     dzs = np.linspace(-T.DROOP, T.BUMP, n)
@@ -119,14 +119,14 @@ def curva_mr_murilo(T, c, x, n):
 
 
 # ------------------------------------------------------------------ jobs (em processos separados)
-def _job_murilo(a):
-    """Nelder-Mead do script do Murilo. `sem_tubo` (controle): o mesmo custo, com satisfeitas as restrições que o posicionador
+def _job_script(a):
+    """Nelder-Mead do script de atuação. `sem_tubo` (controle): o mesmo custo, com satisfeitas as restrições que o posicionador
     NÃO tem (reta ao Front Hoop, folga do tubo ao gabarito, triângulo da bandeja superior e gabarito projetado). O controle
     não copia nem altera o script: só põe, na saída do `avaliar()` dele, valores que cumprem esses termos."""
     from scipy.optimize import minimize
     pasta, rotulo, x0, maxfev, maxiter, *resto = a
     sem_tubo = bool(resto and resto[0])
-    T, c = _murilo(pasta)
+    T, c = _script(pasta)
     original = T.avaliar
 
     def avaliar_sem_tubo(x, cc, final=False):
@@ -149,7 +149,7 @@ def _job_murilo(a):
         T.avaliar = original
     g = T.avaliar(res.x, c, final=True)
     var_fina = None if g is None else float(g["MRmax"] / g["MRmin"] - 1.0)
-    return dict(ferramenta="murilo", rotulo=rotulo, sem_tubo=sem_tubo, x=[float(v) for v in res.x], x0=[float(v) for v in x0],
+    return dict(ferramenta="script", rotulo=rotulo, sem_tubo=sem_tubo, x=[float(v) for v in res.x], x0=[float(v) for v in x0],
                 custo_inicial=f0, custo_final=float(res.fun), nfev=int(res.nfev), tempo_s=dt,
                 var_mr_propria_25=var_fina, juiz=julgar_x(res.x))
 
@@ -187,21 +187,21 @@ def _job_nosso(a):
 
 
 def _despachar(a):
-    return _job_murilo(a[1:]) if a[0] == "murilo" else _job_nosso(a[1:])
+    return _job_script(a[1:]) if a[0] == "script" else _job_nosso(a[1:])
 
 
 # ------------------------------------------------------------------ experimentos
 def exp_v20(pasta, x0):
     """Mesma solução (v20) nas duas ferramentas: o que cada uma vê."""
-    T, c = _murilo(pasta)
+    T, c = _script(pasta)
     curv = []
     for n in N_MR:
-        _, _, vm = curva_mr_murilo(T, c, x0, n)
-        curv.append(dict(n=n, murilo=vm))
+        _, _, vm = curva_mr_script(T, c, x0, n)
+        curv.append(dict(n=n, script=vm))
     g11 = T.avaliar(x0, c, final=False)
     g25 = T.avaliar(x0, c, final=True)
-    conferencia = dict(murilo_11=float(g11["MRmax"] / g11["MRmin"] - 1), murilo_25=float(g25["MRmax"] / g25["MRmin"] - 1))
-    assert abs(conferencia["murilo_11"] - curv[0]["murilo"]) < 1e-9 and abs(conferencia["murilo_25"] - curv[1]["murilo"]) < 1e-9, \
+    conferencia = dict(script_11=float(g11["MRmax"] / g11["MRmin"] - 1), script_25=float(g25["MRmax"] / g25["MRmin"] - 1))
+    assert abs(conferencia["script_11"] - curv[0]["script"]) < 1e-9 and abs(conferencia["script_25"] - curv[1]["script"]) < 1e-9, \
         "o estimador reaplicado não bate com o avaliar() do script"
     from posicionador import mecanismo as mec, varredura as vr
     cfg, hs, cena = _juiz()
@@ -211,10 +211,10 @@ def exp_v20(pasta, x0):
         d["posicionador"] = _num(av.restricao("variação de MR").valor)
     av = vr.avaliar(con, cena, cfg, 401)
     curvas_nossas = dict(dz_m=[float(v) for v in av.curvas["dz_m"]], mr=[float(v) for v in av.curvas["MR [wheel/spring]"]])
-    dz11, mr11, _ = curva_mr_murilo(T, c, x0, 11)
+    dz11, mr11, _ = curva_mr_script(T, c, x0, 11)
     return dict(variacao_vs_n=curv, conferencia_estimador=conferencia, curvas_posicionador=curvas_nossas,
-                murilo_11=dict(dz_m=[float(v) for v in dz11], mr=[float(v) for v in mr11]),
-                custo_murilo=float(T.custo(x0, c)), juiz=julgar_x(x0))
+                script_11=dict(dz_m=[float(v) for v in dz11], mr=[float(v) for v in mr11]),
+                custo_script=float(T.custo(x0, c)), juiz=julgar_x(x0))
 
 
 def exp_robustez(solucoes, n_amostras, semente=20261123):
@@ -244,7 +244,7 @@ def exp_robustez(solucoes, n_amostras, semente=20261123):
 
 
 def exp_tempo(pasta, x0):
-    T, c = _murilo(pasta)
+    T, c = _script(pasta)
     from posicionador import mecanismo as mec, varredura as vr
     cfg, hs, cena = _juiz()
     con = mec.construir(hs, mec.Variaveis.da_semente_do_script(x0), cfg, r2_m=float(x0[7]) / 1e3)
@@ -257,8 +257,8 @@ def exp_tempo(pasta, x0):
             ts.append(time.perf_counter() - t)
         return float(np.median(ts))
 
-    return {"murilo avaliar (11 pontos)": med(lambda: T.avaliar(x0, c, False)),
-            "murilo avaliar (25 pontos)": med(lambda: T.avaliar(x0, c, True)),
+    return {"script avaliar (11 pontos)": med(lambda: T.avaliar(x0, c, False)),
+            "script avaliar (25 pontos)": med(lambda: T.avaliar(x0, c, True)),
             "posicionador avaliar (n = 11)": med(lambda: vr.avaliar(con, cena, cfg, 11)),
             "posicionador avaliar (n = 25)": med(lambda: vr.avaliar(con, cena, cfg, 25)),
             "posicionador avaliar (n = 51)": med(lambda: vr.avaliar(con, cena, cfg, 51), 3),
@@ -266,10 +266,10 @@ def exp_tempo(pasta, x0):
 
 
 def rodar(args):
-    pasta = str(Path(args.script_murilo).resolve())
+    pasta = str(Path(args.script_script).resolve())
     saida = Path(args.saida)
     saida.mkdir(parents=True, exist_ok=True)
-    origem = json.loads((DADOS / "origem_v20_murilo.json").read_text(encoding="utf-8"))
+    origem = json.loads((DADOS / "origem_v20_script.json").read_text(encoding="utf-8"))
     x0 = np.asarray(origem["x_semente"], dtype=float)
     rng = np.random.default_rng(20261123)
     inicios = [("v20 (sem perturbação)", x0)]
@@ -278,9 +278,9 @@ def rodar(args):
                             [rng.normal(0, SIGMA_INICIO["braco_mm"])], [rng.normal(0, SIGMA_INICIO["graus"])],
                             [rng.normal(0, SIGMA_INICIO["braco_mm"])]])
         inicios.append((f"início {i} (v20 + perturbação SINTÉTICA)", x0 + d))
-    jobs = [("murilo", pasta, f"{r} · mesmo orçamento", x, args.maxfev, 100000) for r, x in inicios]
-    jobs.append(("murilo", pasta, "v20 · configuração original do script (maxiter 2000)", x0, None, 2000))
-    jobs += [("murilo", pasta, f"{r} · sem as restrições do tubo", x, args.maxfev, 100000, True) for r, x in inicios]
+    jobs = [("script", pasta, f"{r} · mesmo orçamento", x, args.maxfev, 100000) for r, x in inicios]
+    jobs.append(("script", pasta, "v20 · configuração original do script (maxiter 2000)", x0, None, 2000))
+    jobs += [("script", pasta, f"{r} · sem as restrições do tubo", x, args.maxfev, 100000, True) for r, x in inicios]
     jobs += [("nosso", s, args.amostras, args.refinos, CAIXA_PADRAO) for s in range(args.inicios)]
     print(f"{len(jobs)} jobs em {args.jobs} processos; isto leva alguns minutos", file=sys.stderr)
     t0 = time.perf_counter()
@@ -289,11 +289,11 @@ def rodar(args):
     print(f"busca: {time.perf_counter() - t0:.0f} s", file=sys.stderr)
 
     v20 = exp_v20(pasta, x0)
-    murilo = [r for r in resultados if r["ferramenta"] == "murilo"]
+    script = [r for r in resultados if r["ferramenta"] == "script"]
     nossos = [r for r in resultados if r["ferramenta"] == "posicionador" and r["juiz"]]
-    melhor_m = min(murilo, key=lambda r: r["juiz"]["violacao"])   # qualquer variante, inclusive o controle
+    melhor_m = min(script, key=lambda r: r["juiz"]["violacao"])   # qualquer variante, inclusive o controle
     melhor_n = min(nossos, key=lambda r: r["juiz"]["violacao"])
-    rob = exp_robustez({"v20 (Murilo)": x0, "melhor do método do Murilo": melhor_m["x"],
+    rob = exp_robustez({"v20 (script de atuação)": x0, "melhor do método do script de atuação": melhor_m["x"],
                         "melhor do posicionador": melhor_n["x"]}, args.robustez)
     tempo = exp_tempo(pasta, x0)
     dados = dict(gerado_em=time.strftime("%Y-%m-%d %H:%M:%S"), maquina=f"{platform.platform()} · {os.cpu_count()} núcleos",
@@ -311,7 +311,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("rodar")
-    r.add_argument("--script-murilo", required=True)
+    r.add_argument("--script-atuacao", required=True)
     r.add_argument("--saida", required=True)
     r.add_argument("--inicios", type=int, default=6)
     r.add_argument("--jobs", type=int, default=4)
