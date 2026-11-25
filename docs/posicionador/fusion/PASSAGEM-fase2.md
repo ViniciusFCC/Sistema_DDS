@@ -26,3 +26,10 @@ Para quem abre sessão nova. Fonte de verdade dos números: `RELATORIO-investiga
 - Executar o script: `Shift+S`, buscar `T11_sondagem`, clicar em ▶; o aviso final se fecha com OK. Clicar na barra de abas do Fusion pode trocar a aba ativa: conferir o título antes de rodar.
 - Python do repositório: `export UV_SYSTEM_CERTS=1` e `uv run python -X utf8 ...` (o `python` solto é o atalho da Store e trava). `uv run` no Windows não entende caminhos `/c/...`: use `C:/...`.
 - Editar `tools/rodar_testes.py` só com a ferramenta de edição (um patch em Python reescreveu as quebras de linha e inflou o diff).
+
+## Atualização (2026-11-24, fim da sessão do núcleo puro)
+Feito (commits até `300482a`, sem push): núcleo em Python puro em `python/posicionador/puro/` (12 verificações contra o pacote numpy/scipy, TC-POS-130 a 141), hardpoints do CAD em `data/posicionador/hardpoints_T11_v20_1_cad.*` (alternativa ao v10; data do CAD não confirmada), IDs TC-POS-100 a 141 e EDR-077 (IMPLEMENTED) autorizados e registrados.
+Ordem proposta (a mais econômica), nesta ordem:
+1. Separar `tabela_ignorados` (saída de `tools/verificar_identificacao.py` sobre `fusion_sondagem3_copia_nomes_corrigidos_2026-11-24.json`) em dianteiro e traseiro e mostrar ao usuário: regra proposta "dianteiro fora do cálculo = obstáculo, traseiro = ignorado" (pendente de confirmação). Só leitura de JSON existente, sem Fusion.
+2. Adaptador do Fusion (add-in) fino: lê o CAD pela API, aplica a regra de obstáculos, mede distância corpo a corpo (filtrar antes por caixa envolvente: 320 corpos ≈ 0,6 s por candidato) e chama o núcleo puro. Reaproveita o `cena_de` de `puro/varredura.py` (primitivos puros), o `reconhecimento.py` e o portão de identificação. Medição pela API substitui as SDFs de STEP; decidir se a cena do Fusion usa primitivos aproximados ou a API.
+3. Rodar o núcleo no Python 3.14 do Fusion; confirmar a data do CAD (histórico de versões); suíte inteira; atualizar "Situação atual" do CLAUDE.md.
