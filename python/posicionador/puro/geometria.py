@@ -84,7 +84,12 @@ class Barril:
 
 def folga_segmento(prim, a, b, raio, passo=0.002):
     """Folga (m) entre o segmento [a, b] engrossado por `raio` e o primitivo: mínimo da SDF em pontos espaçados de no máximo
-    `passo`, menos `raio`, menos `passo/2` (conservador pela 1-Lipschitz). Aceita a == b."""
+    `passo`, menos `raio`, menos `passo/2` (conservador pela 1-Lipschitz). Aceita a == b.
+    Um primitivo que sabe medir o segmento por conta própria (o adaptador do Fusion, que mede pela API) define o método
+    `folga_segmento(a, b, raio, passo)` e o resultado dele vale no lugar da amostragem da SDF."""
+    propria = getattr(prim, "folga_segmento", None)
+    if propria is not None:
+        return propria(a, b, raio, passo)
     n = max(int(math.ceil(la.norm(la.sub(b, a)) / passo)), 1)
     ab = la.sub(b, a)
     m = min(prim.sdf(la.add(a, la.mul(ab, i / n))) for i in range(n + 1))

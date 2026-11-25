@@ -1,0 +1,11 @@
+{
+    "autodeskProduct": "Fusion",
+    "type": "script",
+    "author": "Equipe Tupa (posicionador)",
+    "description": {
+        "": "Posicionador da atuacao dianteira dentro do Fusion (fase 2, EDR-077): le o CAD, confere a identificacao, mede a folga pela API e roda o nucleo em Python puro. SOMENTE LEITURA: nada e salvo nem alterado."
+    },
+    "version": "0.1",
+    "supportedOS": "windows",
+    "editEnabled": true
+}
