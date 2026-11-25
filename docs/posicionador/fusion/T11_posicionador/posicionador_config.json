@@ -1,0 +1,4 @@
+{
+  "modo": "posicionar",
+  "params": {"n_amostras": 2000, "n_refinos": 20, "semente": 0}
+}

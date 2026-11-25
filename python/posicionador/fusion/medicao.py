@@ -212,3 +212,30 @@ def medir(app, prep, orac, cfg, x20, v10_vivo, corpos_chassi, geo_corpos, n_seg=
     _isolado(res, "E6_custo_de_um_candidato", lambda: _e6(prep, cfg, x20, v10_vivo))
     res["oraculo"] = {"n_chamadas": orac.n_chamadas, "n_erros": orac.n_erros, "tempo_s": orac.tempo_s, "ultimo_erro": orac.ultimo_erro}
     return res
+
+
+def raios_da_atuacao(orac, geo, prep):
+    """E7: raios das faces cilíndricas dos corpos DIANTEIROS dos componentes IGNORAR (a atuação v20 do CAD), em mm, para
+    comparar com os raios de envelope da configuração (`r_mola_m`, `r_prod_m`, `r_junta_m`, `r_pivo_m`). Só leitura.
+    Por corpo: nome, componente, dimensões da caixa alinhada ao CAD (mm) e os raios distintos com a contagem de faces."""
+    linhas = []
+    for nome, t in geo["topos"].items():
+        if "IGNORAR" not in nome.upper() or "TRAS" in nome.upper():
+            continue
+        for occ in t["ocorrencias"]:
+            for c in occ["corpos"]:
+                lo, hi = prep.quadro.caixa_carro_m(c["min_mm"], c["max_mm"])
+                if hi[0] * 1000.0 < -500.0:
+                    continue
+                b = orac.corpos[c["id"]]
+                raios = {}
+                for f in b.faces:
+                    cil = adsk.core.Cylinder.cast(f.geometry)
+                    if cil:
+                        k = round(cil.radius * 10.0, 2)
+                        raios[k] = raios.get(k, 0) + 1
+                linhas.append({"componente": nome, "ocorrencia": occ["nome"], "corpo": c["nome"],
+                               "caixa_mm": [round((c["max_mm"][k] - c["min_mm"][k]), 1) for k in range(3)],
+                               "x_carro_mm": [round(lo[0] * 1000), round(hi[0] * 1000)], "y_carro_mm": [round(lo[1] * 1000), round(hi[1] * 1000)],
+                               "raios_mm": {str(k): v for k, v in sorted(raios.items())}, "raio_max_mm": max(raios) if raios else None})
+    return {"n_corpos": len(linhas), "corpos": linhas}

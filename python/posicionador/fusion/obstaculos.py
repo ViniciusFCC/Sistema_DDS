@@ -71,14 +71,26 @@ def _decidir_ignorado(linha):
         return Decisao(destino="ignorado", motivo="traseiro: ignorado na versão só da dianteira", **base)
     if caixa is not None and caixa[0][0] < X_DIVISA_MM <= caixa[1][0]:
         return Decisao(destino="misto", motivo=(f"dianteiro e traseiro no mesmo componente (X de {caixa[0][0]:.0f} a "
-                                                f"{caixa[1][0]:.0f} mm; divisa {X_DIVISA_MM:.0f} mm): decisão do usuário pendente, "
-                                                "não promovido"), **base)
+                                                f"{caixa[1][0]:.0f} mm; divisa {X_DIVISA_MM:.0f} mm): decidido por corpo "
+                                                "(`decidir_corpo`), sem mudar o CAD"), **base)
     achou = [p for p in OBJETO_DA_BUSCA if p in norm]
     if achou:
         return Decisao(destino="ignorado", motivo=f"objeto da busca ou do regulamento ({', '.join(achou)}): não é obstáculo", **base)
     if caixa is not None and caixa[1][0] < X_DIVISA_MM:
         return Decisao(destino="ignorado", motivo="atrás da divisa dianteiro/traseiro (sem TRAS no nome): tratado como traseiro", **base)
     return Decisao(destino="promovido", motivo="dianteiro, fora do cálculo e fora do objeto da busca: promovido a obstáculo", **base)
+
+
+def decidir_corpo(nomes, caixa_carro_mm):
+    """Destino de UM corpo de um componente misto: ("ignorado" | "promovido", motivo). `nomes` = textos do corpo e da
+    ocorrência que o contém; `caixa_carro_mm` = ([x, y, z] mín, máx) no referencial do carro. Atrás da divisa: traseiro,
+    ignorado. À frente: se algum nome casa com o objeto da busca, ignorado; senão, promovido a obstáculo."""
+    if caixa_carro_mm[1][0] < X_DIVISA_MM:
+        return "ignorado", "traseiro (atrás da divisa)"
+    achou = sorted({p for n in nomes for p in OBJETO_DA_BUSCA if p in _normalizado(n)})
+    if achou:
+        return "ignorado", f"objeto da busca ou do regulamento ({', '.join(achou)})"
+    return "promovido", "dianteiro, fora do cálculo e fora do objeto da busca"
 
 
 def classificar(res):
@@ -102,7 +114,7 @@ def texto(cl):
     prom = cl.promovidos
     L.append(f"Promovidos pela regra a obstáculo: {len(prom)}" + ("" if not prom else " — " + ", ".join(d.componente for d in prom)))
     for d in cl.mistos:
-        L.append(f"MISTO (decisão pendente, não promovido): {d.componente}: {d.motivo}")
+        L.append(f"MISTO (decidido por corpo): {d.componente}: {d.motivo}")
     for d in cl.decisoes:
         if d.destino == "ignorado":
             L.append(f"ignorado: {d.componente} ({d.n_corpos} corpos): {d.motivo}")

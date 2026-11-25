@@ -218,6 +218,20 @@ check("G hook de folga_segmento no núcleo",
       and abs(pg.folga_segmento(esf, (0.3, 0, 0), (0.5, 0, 0), 0.0, 0.01) - (0.2 - 0.005)) < 1e-12,
       "primitivo com o método usa o dele; esfera segue a amostragem da SDF")
 
+# ---- H
+nome_misto = next(n for n in geo["topos"] if "AMORTECEDORES" in n)
+base_prep = pl.preparar(geo, OraculoFalso(caixas), cfg, caminho_hp)
+g2 = copy.deepcopy(geo)
+alvo = next(o for o in g2["topos"][nome_misto]["ocorrencias"] if o["corpos"] and o["corpos"][0]["max_mm"][0] > 0)
+alvo["nome"] = "suporte novo"
+alvo["corpos"][0]["nome"] = "suporte novo corpo"
+p2 = pl.preparar(g2, OraculoFalso(caixas), cfg, caminho_hp)
+r0, r2 = base_prep.mistos_por_corpo[nome_misto], p2.mistos_por_corpo[nome_misto]
+check("H misto decidido por corpo: dianteiro sem nome da busca é promovido (todos os corpos da ocorrência), o resto não",
+      r0["promovidos"] == [] and len(r2["promovidos"]) == len(alvo["corpos"]) and len(p2.fixos) == len(base_prep.fixos) + len(alvo["corpos"])
+      and any("traseiro" in k for k in r0["ignorados"]) and any("objeto da busca" in k for k in r0["ignorados"]),
+      f"antes {r0}; depois {r2['promovidos']}; fixos {len(base_prep.fixos)} → {len(p2.fixos)}")
+
 n_fail = sum(1 for r in results if r[1] == "FAIL")
 print(f"\n{len(results) - n_fail} PASS, {n_fail} FAIL, de {len(results)} testes")
 raise SystemExit(1 if n_fail else 0)

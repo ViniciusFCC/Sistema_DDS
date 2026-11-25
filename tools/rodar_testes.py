@@ -80,8 +80,10 @@ TESTES = [
      "EDR-077 (TC-POS-137 a 141); cena real do STEP (~70 s); precisa do extra cad, sem ele NÃO EXECUTÁVEL"),
     ("posicionador: núcleo puro, Python do Fusion", "tests/test_posicionador_puro_interpretadores.py", 1,
      "EDR-077 (sem ID de TC); núcleo no 3.14 do Fusion = no 3.13; sem o Fusion instalado NÃO EXECUTÁVEL"),
-    ("posicionador: adaptador do Fusion (fora do Fusion)", "tests/test_posicionador_fusion_adaptador.py", 8,
+    ("posicionador: adaptador do Fusion (fora do Fusion)", "tests/test_posicionador_fusion_adaptador.py", 9,
      "EDR-077 (sem ID de TC); regra de obstáculos, cena por API com oráculo falso e pipeline sobre a sondagem real"),
+    ("posicionador: pacote do Fusion", "tests/test_posicionador_fusion_pacote.py", 2,
+     "EDR-077 (sem ID de TC); pacote autônomo roda num interpretador limpo, sem numpy/scipy"),
 ]
 MODULOS = ["tire_model", "tire_model_static", "suspension_model", "kinematics_model", "hardpoints", "atualizar_planilha", "equilibrio",
            "equilibrio_linear", "caso_planilha", "nomes_v4_0", "gerar_v4_0", "dados_planilha", "aba_equilibrio", "gerar_v4_1",

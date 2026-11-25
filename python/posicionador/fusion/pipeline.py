@@ -44,6 +44,7 @@ class Preparo:
     hp_diferencas_mm: list
     contagem: fc.Contagem
     envelope_m: tuple
+    mistos_por_corpo: dict
     avisos: list = field(default_factory=list)
 
 
@@ -93,6 +94,19 @@ def preparar(geo, oraculo, cfg, caminho_hardpoints, mapa=None, corte_m=fc.CORTE_
                     continue
                 lo, hi = quadro.caixa_carro_m(c["min_mm"], c["max_mm"])
                 fixos.append(fc.FixoFusion(c["id"], f"{occ['caminho']} / {c['nome']}", lo, hi, quadro, oraculo, contagem, corte_m))
+    por_corpo = {}
+    for d in cl.mistos:
+        r = por_corpo[d.componente] = {"promovidos": [], "ignorados": {}}
+        for occ in geo["topos"][d.componente]["ocorrencias"]:
+            for c in occ["corpos"]:
+                lo, hi = quadro.caixa_carro_m(c["min_mm"], c["max_mm"])
+                destino, motivo = ob.decidir_corpo([c["nome"], occ["nome"]], ([lo[0] * 1000.0], [hi[0] * 1000.0]))
+                if destino == "promovido" and c["isSolid"]:
+                    fixos.append(fc.FixoFusion(c["id"], f"{occ['caminho']} / {c['nome']}", lo, hi, quadro, oraculo, contagem, corte_m))
+                    r["promovidos"].append(f"{occ['caminho']} / {c['nome']}")
+                    avisos.append(f"corpo promovido a obstáculo (componente misto {d.componente}): {occ['caminho']} / {c['nome']}")
+                else:
+                    r["ignorados"][motivo] = r["ignorados"].get(motivo, 0) + 1
     if not fixos:
         raise ValueError("a cena não tem nenhum corpo sólido de obstáculo (CHASSI/FIXO): a busca não seria confiável")
     env = (tuple(min(f.lo[k] for f in fixos) for k in range(3)), tuple(max(f.hi[k] for f in fixos) for k in range(3)))
@@ -106,7 +120,7 @@ def preparar(geo, oraculo, cfg, caminho_hardpoints, mapa=None, corte_m=fc.CORTE_
            f"folga aos fixos medida pela API do Fusion, saturada em {corte_m * 1e3:.0f} mm, com cilindro fino de "
            f"{fc.R_FINO_M * 1e3:.1f} mm sobre o eixo (conservadora em até esse valor)"]
     cena = pvr.cena_de(fixos, [], cfg, pecas_moveis=moveis, nao_modelado=nao)
-    return Preparo(res, cl, quadro, fixos, cena, v10, difs, contagem, env, avisos)
+    return Preparo(res, cl, quadro, fixos, cena, v10, difs, contagem, env, por_corpo, avisos)
 
 
 def caixa_de_busca(cfg, envelope_m, caixa_m=None):
@@ -155,7 +169,7 @@ def resultado_dict(prep, res, caixa, origem_caixa, parametros, tempo_s, oraculo_
             "parametros": parametros, "tempo_s": tempo_s, "estatisticas": res.estatisticas,
             "caixa_busca_pivo_m": {"min_m": list(caixa[0]), "max_m": list(caixa[1]), "origem": origem_caixa},
             "obstaculos": {"promovidos": [d.componente for d in prep.classificacao.promovidos],
-                           "mistos": [d.componente for d in prep.classificacao.mistos],
+                           "mistos": [d.componente for d in prep.classificacao.mistos], "mistos_por_corpo": prep.mistos_por_corpo,
                            "decisoes": [vars(d) for d in prep.classificacao.decisoes], "n_corpos_na_cena": len(prep.fixos)},
             "hp_diferencas_mm": [{"id": k, "mm": v} for k, v in prep.hp_diferencas_mm], "avisos": prep.avisos,
             "nao_modelado": prep.cena.nao_modelado, "oraculo": oraculo_stats,
@@ -171,7 +185,7 @@ def relatorio_md(d):
          f"Tempo: {d['tempo_s']:.1f} s; amostras {d['estatisticas'].get('n_amostras')}, viáveis {d['estatisticas'].get('n_viaveis')}.", "",
          "## Obstáculos", f"- Corpos sólidos na cena: {d['obstaculos']['n_corpos_na_cena']}.",
          f"- Promovidos pela regra (dianteiro fora do cálculo): {d['obstaculos']['promovidos'] or 'nenhum'}.",
-         f"- Mistos (decisão pendente, não promovidos): {d['obstaculos']['mistos'] or 'nenhum'}."]
+         f"- Mistos (decididos por corpo): {d['obstaculos']['mistos_por_corpo'] or 'nenhum'}."]
     for x in d["obstaculos"]["decisoes"]:
         if x["destino"] in ("ignorado", "misto", "promovido"):
             L.append(f"  - {x['destino']}: {x['componente']} ({x['n_corpos']} corpos): {x['motivo']}")

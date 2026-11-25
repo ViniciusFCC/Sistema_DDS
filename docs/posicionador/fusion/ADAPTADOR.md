@@ -48,3 +48,15 @@ Nenhum candidato viável: 99,7 % das amostras violam a variação de MR; a menor
 
 ## Data do CAD (confirmada, 2026-11-24)
 Histórico de versões lido pela API do Fusion (projeto "Mecânica"): o original `Suspensao/Pontos/T11_atuacao_v20_1_murilo_teste` tem **uma única versão, criada em 2026-11-19 (19:37 UTC) por Murilo Kawakame**; a cópia `…_nomes_corrigidos` é de 2026-11-24. O CAD é, portanto, posterior ao STEP e ao v10 (2026-11-17), o que explica os 7,6 a 20,6 mm de diferença nos quatro hardpoints FL.
+
+## Componente misto de amortecedores: tratado por corpo (2026-11-24)
+`IGNORAR_AMORTECEDORES_DNM_ARQUIVO` (4 amortecedores, 5 corpos cada, dianteiros e traseiros) deixou de ser "decisão pendente": o adaptador decide **por corpo** (`obstaculos.decidir_corpo`): atrás de X = −500 mm é traseiro (ignorado); à frente, se o nome do corpo ou da ocorrência casa com o objeto da busca (amortecedor, push rod, rocker, atuação, gabarito), é ignorado; senão é promovido a obstáculo e listado. No T11 atual: 10 corpos traseiros e 10 dianteiros ignorados, nenhum promovido. Não exige mudar o CAD. O amortecedor v20 do CAD é o que a busca substitui, então não pode ser obstáculo.
+
+## Raios reais da atuação no CAD × configuração (modo `raios`, só leitura)
+| Item da configuração (origem MARGEM_EQUIPE) | Valor | O que o CAD mostra |
+|---|---|---|
+| `r_prod_m` (push rod) | 8 mm | tubo de carbono `16x13`: raio 8,0 mm |
+| `r_pivo_m` (pivô do rocker) | 20 mm | `CUBO_PIVO_7075_6202`: raio 20,0 mm |
+| `r_junta_m` (junta) | 12 mm | terminais e insertos de 6,4 a 8 mm; as placas do rocker têm 17,5 mm |
+| `r_mola_m` (mola/amortecedor) | 25 mm | face cilíndrica da mola 25,0 mm e do corpo do amortecedor 25,0 mm, **mas a caixa da mola mede 58 mm de largura (≈ 29 mm de raio externo)**: o envelope de 25 mm fica uns 4 mm abaixo do externo da mola. Nada foi alterado: a decisão do valor é da equipe |
+Lado dos amortecedores: o corpo "dianteira **Esq**" está em Y negativo (lado direito) e o "**Dir**" em Y positivo, junto do `ROCKER_FE` (Y de 206 a 330 mm): **nomes Esq/Dir dos amortecedores estão trocados no CAD** (confirmado pela posição do rocker). Sem efeito no resultado, mas é erro de nome a corrigir no arquivo DNM.
