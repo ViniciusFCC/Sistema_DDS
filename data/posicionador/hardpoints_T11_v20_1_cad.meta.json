@@ -5,7 +5,7 @@
   "units": "m",
   "ground_plane_z_m": 0.0,
   "kop": "altura estática de projeto (v10)",
-  "source": "9 esferas HP_FL_* do T11_atuacao_v20_1_murilo_teste lidas pela sondagem do Fusion (docs/posicionador/fusion/fusion_sondagem2_2026-11-24.json), em metros relativos a REF_ORIGEM (eixos paralelos aos do CAD, sem rotação); SPINDLE_PT e CONTACT_PATCH não existem no CAD e seguem como no v10 (HIPÓTESE do kinlib: camber e toe estáticos nulos, solo em Z = 0). Que o CAD seja mais recente que o v10 (2026-11-17) é a premissa do usuário (2026-11-24), ainda não confirmada pelo histórico de versões do Fusion",
+  "source": "9 esferas HP_FL_* do T11_atuacao_v20_1_murilo_teste lidas pela sondagem do Fusion (docs/posicionador/fusion/fusion_sondagem2_2026-11-24.json), em metros relativos a REF_ORIGEM (eixos paralelos aos do CAD, sem rotação); SPINDLE_PT e CONTACT_PATCH não existem no CAD e seguem como no v10 (HIPÓTESE do kinlib: camber e toe estáticos nulos, solo em Z = 0). Que o CAD seja mais recente que o v10 (2026-11-17) é a premissa do usuário (2026-11-24), confirmada pelo histórico de versões do Fusion: o arquivo original (Suspensao/Pontos) tem uma única versão, criada em 2026-11-19 por Murilo Kawakame",
   "freeze_level": "F0",
   "timestamp": "2026-11-24T00:00:00-03:00"
 }

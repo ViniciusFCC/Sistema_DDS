@@ -45,3 +45,6 @@ Nenhum candidato viável: 99,7 % das amostras violam a variação de MR; a menor
 ## Repetir
 1. Abrir a cópia do T11 no Fusion; escrever `C:\Projetos\posicionador_fusion_config.json` (modelo na docstring do script); Shift+S, buscar `T11_posicionador`, ▶. Saída em `saida`: `status.json`, `progresso.log`, `resultado.json`, `relatorio.md`.
 2. Fora do Fusion: `uv run python -X utf8 tests/test_posicionador_fusion_adaptador.py` e `tests/test_posicionador_puro_interpretadores.py`.
+
+## Data do CAD (confirmada, 2026-11-24)
+Histórico de versões lido pela API do Fusion (projeto "Mecânica"): o original `Suspensao/Pontos/T11_atuacao_v20_1_murilo_teste` tem **uma única versão, criada em 2026-11-19 (19:37 UTC) por Murilo Kawakame**; a cópia `…_nomes_corrigidos` é de 2026-11-24. O CAD é, portanto, posterior ao STEP e ao v10 (2026-11-17), o que explica os 7,6 a 20,6 mm de diferença nos quatro hardpoints FL.
