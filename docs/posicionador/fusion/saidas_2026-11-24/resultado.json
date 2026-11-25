@@ -1,0 +1,866 @@
+{
+  "rotulo": "VERIFIED ≠ validado; cinemática NOT_VALIDATED contra o OptimumKinematics; adaptador do Fusion, fase 2 (EDR-077)",
+  "parametros": {
+    "corte_m": 0.05,
+    "n_amostras": 2000,
+    "n_refinos": 20,
+    "semente": 0,
+    "passo_m": 0.01,
+    "max_aval_refino": 60,
+    "n_finalistas": 20,
+    "caixa_texto": "HIPOTESE: caixa derivada do envelope das caixas dos corpos obstáculo (decisão R8). X do item `caixa_busca_pivo_m` (META); Y, Z do envelope Y [-0.3262; 0.3262] m, Z [0.0650; 1.2704] m, lado esquerdo",
+    "a_confirmar": {
+      "curso_cremalheira_m": "não informado para o T11: curso da cremalheira a confirmar com a equipe (desliga a verificação de esterçamento)",
+      "margem_curso_amortecedor_m": "não informado para o T11: margem do curso do amortecedor (fim de curso) a confirmar com a equipe",
+      "x_face_traseira_aip_m": "não informado para o T11: X da face traseira do atenuador de impacto (AIP) a confirmar com a equipe",
+      "x_fim_t12_m": "não informado para o T11: X de fim do trecho em que o gabarito T.1.2 vale, a confirmar com a equipe",
+      "x_ini_t12_m": "não informado para o T11: X de início do trecho em que o gabarito T.1.2 vale, a confirmar com a equipe",
+      "z_max_t12_m": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 — a confirmar",
+      "z_min_t12_m": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 — a confirmar"
+    }
+  },
+  "tempo_s": 370.82599449999543,
+  "estatisticas": {
+    "n_pontos_grade": 128588,
+    "n_pontos_livres": 127314,
+    "n_amostras": 2000,
+    "falhas": {
+      "construção": 744,
+      "cinemática sem solução": 16,
+      "avaliação sem resultado": 0
+    },
+    "n_refinos": 20,
+    "n_viaveis_rapidos": 0,
+    "n_finalistas": 0,
+    "n_viaveis": 0,
+    "tempo_s": 370.798137699996
+  },
+  "caixa_busca_pivo_m": {
+    "min_m": [
+      -0.15,
+      0.0,
+      0.06500383438325386
+    ],
+    "max_m": [
+      0.15,
+      0.32617648519213277,
+      1.2704027741003905
+    ],
+    "origem": "HIPOTESE"
+  },
+  "obstaculos": {
+    "promovidos": [],
+    "mistos": [
+      "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1"
+    ],
+    "decisoes": [
+      {
+        "componente": "CHASSI_T11_V20:1",
+        "categoria": "CHASSI",
+        "destino": "obstaculo",
+        "motivo": "categoria CHASSI: obstáculo fixo",
+        "caixa_carro_mm": [
+          [
+            -1342.0,
+            -326.2,
+            65.0
+          ],
+          [
+            507.4,
+            326.2,
+            1270.4
+          ]
+        ],
+        "n_corpos": 27
+      },
+      {
+        "componente": "IGNORAR_PONTOS_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "vazio (sem corpo)",
+        "caixa_carro_mm": null,
+        "n_corpos": 0
+      },
+      {
+        "componente": "IGNORAR_PLANOS:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "vazio (sem corpo)",
+        "caixa_carro_mm": null,
+        "n_corpos": 0
+      },
+      {
+        "componente": "IGNORAR_GABARITO_T1_2:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "objeto da busca ou do regulamento (GABARITO): não é obstáculo",
+        "caixa_carro_mm": [
+          [
+            331.4,
+            -175.0,
+            133.0
+          ],
+          [
+            338.4,
+            175.0,
+            483.0
+          ]
+        ],
+        "n_corpos": 1
+      },
+      {
+        "componente": "IGNORAR_ATUACAO_DIANTEIRA:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "objeto da busca ou do regulamento (ATUACAO): não é obstáculo",
+        "caixa_carro_mm": [
+          [
+            -44.2,
+            -296.4,
+            142.1
+          ],
+          [
+            13.8,
+            296.4,
+            346.5
+          ]
+        ],
+        "n_corpos": 10
+      },
+      {
+        "componente": "IGNORAR_TRASEIRA:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1830.3,
+            -754.1,
+            -10.3
+          ],
+          [
+            -1309.7,
+            754.1,
+            510.3
+          ]
+        ],
+        "n_corpos": 14
+      },
+      {
+        "componente": "IGNORAR_AMORTECEDORES_DNM_ARQUIVO:1",
+        "categoria": "IGNORAR",
+        "destino": "misto",
+        "motivo": "dianteiro e traseiro no mesmo componente (X de -1599 a 260 mm; divisa -500 mm): decisão do usuário pendente, não promovido",
+        "caixa_carro_mm": [
+          [
+            -1599.0,
+            -319.2,
+            471.2
+          ],
+          [
+            260.5,
+            319.2,
+            646.4
+          ]
+        ],
+        "n_corpos": 20
+      },
+      {
+        "componente": "IGNORAR_TRAS_TOE_LINK_TE_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1522.5,
+            335.6,
+            171.0
+          ],
+          [
+            -1470.5,
+            623.7,
+            194.6
+          ]
+        ],
+        "n_corpos": 11
+      },
+      {
+        "componente": "IGNORAR_TRAS_TOE_LINK_TD_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1522.5,
+            -623.7,
+            171.0
+          ],
+          [
+            -1470.5,
+            -335.6,
+            194.6
+          ]
+        ],
+        "n_corpos": 11
+      },
+      {
+        "componente": "IGNORAR_PUSHROD_FE_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "objeto da busca ou do regulamento (PUSHROD): não é obstáculo",
+        "caixa_carro_mm": [
+          [
+            -22.4,
+            310.3,
+            172.1
+          ],
+          [
+            3.9,
+            598.9,
+            400.1
+          ]
+        ],
+        "n_corpos": 13
+      },
+      {
+        "componente": "IGNORAR_ROCKER_FE_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "objeto da busca ou do regulamento (ROCKER): não é obstáculo",
+        "caixa_carro_mm": [
+          [
+            -31.2,
+            206.1,
+            326.2
+          ],
+          [
+            0.8,
+            329.8,
+            400.6
+          ]
+        ],
+        "n_corpos": 3
+      },
+      {
+        "componente": "IGNORAR_PUSHROD_FD_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "objeto da busca ou do regulamento (PUSHROD): não é obstáculo",
+        "caixa_carro_mm": [
+          [
+            -22.4,
+            -598.9,
+            172.1
+          ],
+          [
+            3.9,
+            -310.3,
+            400.1
+          ]
+        ],
+        "n_corpos": 13
+      },
+      {
+        "componente": "IGNORAR_ROCKER_FD_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "objeto da busca ou do regulamento (ROCKER): não é obstáculo",
+        "caixa_carro_mm": [
+          [
+            -31.2,
+            -329.8,
+            326.2
+          ],
+          [
+            0.8,
+            -206.1,
+            400.6
+          ]
+        ],
+        "n_corpos": 3
+      },
+      {
+        "componente": "IGNORAR_TRAS_BANDEJA_INFERIOR_TE_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1737.2,
+            282.5,
+            111.2
+          ],
+          [
+            -1445.6,
+            628.5,
+            156.8
+          ]
+        ],
+        "n_corpos": 13
+      },
+      {
+        "componente": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TE_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1713.2,
+            392.7,
+            298.2
+          ],
+          [
+            -1425.7,
+            615.2,
+            389.1
+          ]
+        ],
+        "n_corpos": 15
+      },
+      {
+        "componente": "IGNORAR_TRAS_PUSHROD_TE_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1609.4,
+            413.4,
+            369.8
+          ],
+          [
+            -1591.1,
+            554.5,
+            474.1
+          ]
+        ],
+        "n_corpos": 13
+      },
+      {
+        "componente": "IGNORAR_TRAS_ROCKER_TE_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1616.9,
+            285.1,
+            364.2
+          ],
+          [
+            -1586.9,
+            432.9,
+            493.1
+          ]
+        ],
+        "n_corpos": 3
+      },
+      {
+        "componente": "IGNORAR_TRAS_BANDEJA_INFERIOR_TD_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1737.2,
+            -628.5,
+            111.2
+          ],
+          [
+            -1445.6,
+            -282.5,
+            156.8
+          ]
+        ],
+        "n_corpos": 13
+      },
+      {
+        "componente": "IGNORAR_TRAS_BANDEJA_SUPERIOR_TD_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1713.2,
+            -615.2,
+            298.2
+          ],
+          [
+            -1425.7,
+            -392.7,
+            389.1
+          ]
+        ],
+        "n_corpos": 15
+      },
+      {
+        "componente": "IGNORAR_TRAS_PUSHROD_TD_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1609.4,
+            -554.5,
+            369.8
+          ],
+          [
+            -1591.1,
+            -413.4,
+            474.1
+          ]
+        ],
+        "n_corpos": 13
+      },
+      {
+        "componente": "IGNORAR_TRAS_ROCKER_TD_V20_1:1",
+        "categoria": "IGNORAR",
+        "destino": "ignorado",
+        "motivo": "traseiro: ignorado na versão só da dianteira",
+        "caixa_carro_mm": [
+          [
+            -1616.9,
+            -432.9,
+            364.2
+          ],
+          [
+            -1586.9,
+            -285.1,
+            493.1
+          ]
+        ],
+        "n_corpos": 6
+      }
+    ],
+    "n_corpos_na_cena": 27
+  },
+  "hp_diferencas_mm": [
+    {
+      "id": "FL_LCA_IN_F",
+      "mm": 1.0103182026100663e-13
+    },
+    {
+      "id": "FL_LCA_IN_R",
+      "mm": 3.925231146709438e-14
+    },
+    {
+      "id": "FL_LCA_OUT",
+      "mm": 2.2985086056692694e-14
+    },
+    {
+      "id": "FL_TIE_IN",
+      "mm": 0.0
+    },
+    {
+      "id": "FL_TIE_OUT",
+      "mm": 2.7755575615628914e-14
+    },
+    {
+      "id": "FL_UCA_IN_F",
+      "mm": 0.0
+    },
+    {
+      "id": "FL_UCA_IN_R",
+      "mm": 3.925231146709438e-14
+    },
+    {
+      "id": "FL_UCA_OUT",
+      "mm": 6.059128614320848e-14
+    },
+    {
+      "id": "FL_WHEEL_CENTER",
+      "mm": 0.0
+    }
+  ],
+  "avisos": [],
+  "nao_modelado": [
+    "manga, freio e pinça dentro do aro (sem RODA_ modelado): o barril do aro trata o miolo como livre e o push rod nasce dentro dele; restrição NAO_VERIFICAVEL em todo candidato",
+    "pneu (V.3.2.4): só o aro entra, como barril da configuração",
+    "V.3.2.4 além do aro: roda e pneu contra suspensão e chassi em todo o curso × esterço até os batentes",
+    "coluna de direção: só a posição em X do início do gabarito T.1.2 (x_ini_t12_m), sem o corpo da coluna",
+    "pedais e F.8.6.3 (folga ≥ 25 mm do conjunto de pedais)",
+    "volume reservado do atenuador de impacto (F.8.4.2): só a face traseira da AIP (F.8.6.1)",
+    "sinalizações T.1.3.3 (exige escudo), V.3.1.3 (visibilidade) e F.5.3.1 (furo em tubo regulado → SES)",
+    "faixa de ajuste de camber, toe e altura (spec §12 J2): só a geometria estática da v10",
+    "peças móveis do CAD (BANDEJA_FD, BANDEJA_FE, DIR, RODA_FD, RODA_FE) não entram na varredura; o aro vem da configuração",
+    "nós do chassi não identificados no Fusion: sorteio dos pivôs sem preferência por nós e critérios de proximidade ao nó zerados",
+    "folga aos fixos medida pela API do Fusion, saturada em 50 mm, com cilindro fino de 0.2 mm sobre o eixo (conservadora em até esse valor)"
+  ],
+  "oraculo": {
+    "n_chamadas": 119988,
+    "n_erros": 0,
+    "tempo_s": 68.1790940994033,
+    "ultimo_erro": null
+  },
+  "contagem": {
+    "segmentos_pedidos": 3635010,
+    "segmentos_medidos": 97413,
+    "pontos_pedidos": 535378,
+    "pontos_medidos": 22575,
+    "tempo_oraculo_s": 0.0
+  },
+  "a_confirmar": {
+    "curso_cremalheira_m": "não informado para o T11: curso da cremalheira a confirmar com a equipe (desliga a verificação de esterçamento)",
+    "margem_curso_amortecedor_m": "não informado para o T11: margem do curso do amortecedor (fim de curso) a confirmar com a equipe",
+    "x_face_traseira_aip_m": "não informado para o T11: X da face traseira do atenuador de impacto (AIP) a confirmar com a equipe",
+    "x_fim_t12_m": "não informado para o T11: X de fim do trecho em que o gabarito T.1.2 vale, a confirmar com a equipe",
+    "x_ini_t12_m": "não informado para o T11: X de início do trecho em que o gabarito T.1.2 vale, a confirmar com a equipe",
+    "z_max_t12_m": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 — a confirmar",
+    "z_min_t12_m": "faixa vertical em que o gabarito T.1.2 pode ser movido (T.1.2.2c, FSAE Rules 2027 V1.0); depende do assoalho/banco do T11 — a confirmar"
+  },
+  "candidatos": [],
+  "fase1": {
+    "motivo": "nenhum candidato viável em 2000 amostras e 20 refinos; menor violação máxima normalizada (avaliação rápida, n = 11) = 0.002974; convergida: INVIAVEL (restrições violadas: comprimento do amortecedor (mínimo), braço r2 (amortecedor))",
+    "violacoes": {
+      "variação de MR": 0.9967741935483871,
+      "folga às pernas das bandejas: push rod": 0.7032258064516129,
+      "braço r2 (amortecedor)": 0.6411290322580645,
+      "giro do rocker": 0.6008064516129032,
+      "comprimento do amortecedor (mínimo)": 0.5,
+      "ângulo do amortecedor ao eixo X": 0.39838709677419354,
+      "folga ao aro: push rod": 0.09919354838709678,
+      "folga aos fixos: push rod": 0.08790322580645162,
+      "comprimento do amortecedor (máximo)": 0.0846774193548387,
+      "folga aos fixos: amortecedor": 0.05887096774193548,
+      "folga aos fixos: rocker": 0.05,
+      "folga push rod × amortecedor": 0.03467741935483871,
+      "X do olhal no chassi": 0.02258064516129032,
+      "folga ao tirante: push rod": 0.013709677419354839,
+      "folga às pernas das bandejas: rocker": 0.0032258064516129032,
+      "folga ao tirante: rocker": 0.0008064516129032258,
+      "folga às pernas das bandejas: amortecedor": 0.0008064516129032258
+    },
+    "falhas": {
+      "construção": 744,
+      "cinemática sem solução": 16,
+      "avaliação sem resultado": 0
+    },
+    "melhor": {
+      "origem": "refino",
+      "violacao": 0.0029743341146625875,
+      "veredito": "INVIAVEL",
+      "motivo": "restrições violadas: comprimento do amortecedor (mínimo), braço r2 (amortecedor)",
+      "pivo_m": [
+        -0.022914534982612,
+        0.3175624019936919,
+        0.3605569556448939
+      ],
+      "r2_m": 0.08008830018538599,
+      "restricoes": [
+        {
+          "nome": "MR(0)",
+          "estado": "OK",
+          "valor": 1.400000000002486,
+          "limite": [
+            1.39,
+            1.41
+          ],
+          "folga": 0.009999999997513989,
+          "origem": "META",
+          "motivo": "tolerância ± 0.01 do plano da fase 1 (Task 6)"
+        },
+        {
+          "nome": "variação de MR",
+          "estado": "OK",
+          "valor": 0.036089087083858606,
+          "limite": 0.04,
+          "folga": 0.003910912916141394,
+          "origem": "META",
+          "motivo": "MR de 1.3728 a 1.4223 em 50 pontos de dz ∈ [-23.0; 62.4] mm"
+        },
+        {
+          "nome": "comprimento do amortecedor (máximo)",
+          "estado": "OK",
+          "valor": 0.21000000000000102,
+          "limite": 0.21,
+          "folga": 9.999989730437023e-10,
+          "origem": "META",
+          "motivo": "máximo em dz = -23.00 mm"
+        },
+        {
+          "nome": "comprimento do amortecedor (mínimo)",
+          "estado": "VIOLADA",
+          "valor": 0.14855682321691527,
+          "limite": 0.149,
+          "folga": -0.0004431757830847255,
+          "origem": "A_CONFIRMAR",
+          "motivo": "mínimo em dz = 62.40 mm; margem de curso a confirmar (0 usado)"
+        },
+        {
+          "nome": "braço r1 (push rod)",
+          "estado": "OK",
+          "valor": 0.06288910255617113,
+          "limite": [
+            0.055,
+            0.08
+          ],
+          "folga": 0.007889103556171125,
+          "origem": "META",
+          "motivo": null
+        },
+        {
+          "nome": "braço r2 (amortecedor)",
+          "estado": "VIOLADA",
+          "valor": 0.08008830018538596,
+          "limite": [
+            0.055,
+            0.08
+          ],
+          "folga": -8.829918538595607e-05,
+          "origem": "META",
+          "motivo": null
+        },
+        {
+          "nome": "giro do rocker",
+          "estado": "OK",
+          "valor": 0.8140572368915628,
+          "limite": 1.0471975511965976,
+          "folga": 0.2331403143050348,
+          "origem": "META",
+          "motivo": null
+        },
+        {
+          "nome": "ângulo do amortecedor ao eixo X",
+          "estado": "OK",
+          "valor": 0.4542200917618845,
+          "limite": 0.5235987755982988,
+          "folga": 0.06937868383641432,
+          "origem": "META",
+          "motivo": "pior estado em dz = 62.40 mm (direção do olhal do rocker ao olhal do chassi)"
+        },
+        {
+          "nome": "folga aos fixos: push rod",
+          "estado": "OK",
+          "valor": 0.05,
+          "limite": 0.0,
+          "folga": 0.05,
+          "origem": "META",
+          "motivo": "mínimo em dz = -23.00 mm, a 27 primitivos fixos"
+        },
+        {
+          "nome": "folga aos fixos: rocker",
+          "estado": "OK",
+          "valor": 0.05,
+          "limite": 0.0,
+          "folga": 0.05,
+          "origem": "META",
+          "motivo": "mínimo em dz = -23.00 mm, a 27 primitivos fixos"
+        },
+        {
+          "nome": "folga aos fixos: amortecedor",
+          "estado": "OK",
+          "valor": 0.05,
+          "limite": 0.0,
+          "folga": 0.05,
+          "origem": "META",
+          "motivo": "mínimo em dz = -23.00 mm, a 27 primitivos fixos"
+        },
+        {
+          "nome": "folga ao aro: push rod",
+          "estado": "OK",
+          "valor": 0.07539181864795066,
+          "limite": 0.01,
+          "folga": 0.06539181864795067,
+          "origem": "HIPOTESE",
+          "motivo": "mínimo em dz = 62.40 mm (aro movido com a manga; segmento real O→A)"
+        },
+        {
+          "nome": "folga ao aro: rocker",
+          "estado": "OK",
+          "valor": 0.2041910286176424,
+          "limite": 0.01,
+          "folga": 0.1941910286176424,
+          "origem": "HIPOTESE",
+          "motivo": "mínimo em dz = -23.00 mm (aro movido com a manga)"
+        },
+        {
+          "nome": "folga ao aro: amortecedor",
+          "estado": "OK",
+          "valor": 0.2522662340287892,
+          "limite": 0.01,
+          "folga": 0.24226623402878922,
+          "origem": "HIPOTESE",
+          "motivo": "mínimo em dz = 62.40 mm (aro movido com a manga)"
+        },
+        {
+          "nome": "folga às pernas das bandejas: push rod",
+          "estado": "OK",
+          "valor": 0.012533461493268457,
+          "limite": 0.005,
+          "folga": 0.0075334614932684564,
+          "origem": "MARGEM_EQUIPE",
+          "motivo": "mínimo em dz = -12.54 mm; sem os primeiros 12 mm do push rod a partir de O (fixação na bandeja)"
+        },
+        {
+          "nome": "folga às pernas das bandejas: rocker",
+          "estado": "OK",
+          "valor": 0.0906415306085164,
+          "limite": 0.005,
+          "folga": 0.0856415306085164,
+          "origem": "MARGEM_EQUIPE",
+          "motivo": "mínimo em dz = -23.00 mm"
+        },
+        {
+          "nome": "folga às pernas das bandejas: amortecedor",
+          "estado": "OK",
+          "valor": 0.13462800399271987,
+          "limite": 0.005,
+          "folga": 0.12962800399271987,
+          "origem": "MARGEM_EQUIPE",
+          "motivo": "mínimo em dz = 62.40 mm"
+        },
+        {
+          "nome": "folga ao tirante: push rod",
+          "estado": "OK",
+          "valor": 0.03040105376131537,
+          "limite": 0.0,
+          "folga": 0.03040105376131537,
+          "origem": "A_CONFIRMAR",
+          "motivo": "raio do tirante a confirmar (eixo, raio 0); mínimo em dz = 4.89 mm"
+        },
+        {
+          "nome": "folga ao tirante: rocker",
+          "estado": "OK",
+          "valor": 0.1295622180387655,
+          "limite": 0.0,
+          "folga": 0.1295622180387655,
+          "origem": "A_CONFIRMAR",
+          "motivo": "raio do tirante a confirmar (eixo, raio 0); mínimo em dz = 62.40 mm"
+        },
+        {
+          "nome": "folga ao tirante: amortecedor",
+          "estado": "OK",
+          "valor": 0.18630112166756735,
+          "limite": 0.0,
+          "folga": 0.18630112166756735,
+          "origem": "A_CONFIRMAR",
+          "motivo": "raio do tirante a confirmar (eixo, raio 0); mínimo em dz = 62.40 mm"
+        },
+        {
+          "nome": "folga push rod × amortecedor",
+          "estado": "OK",
+          "valor": 0.06267618737481603,
+          "limite": 0.005,
+          "folga": 0.057676187374816036,
+          "origem": "MARGEM_EQUIPE",
+          "motivo": "mínimo em dz = -0.34 mm"
+        },
+        {
+          "nome": "gabarito T.1.2",
+          "estado": "NAO_VERIFICAVEL",
+          "valor": null,
+          "limite": 0.01,
+          "folga": null,
+          "origem": "A_CONFIRMAR",
+          "motivo": "posição da coluna/pedal a confirmar (x_ini_t12_m, x_fim_t12_m) (informativo: lateralmente, o corpo mais próximo fica a -6.4 mm da borda do gabarito, com raio e folga)"
+        },
+        {
+          "nome": "AIP (F.8.6.1)",
+          "estado": "NAO_VERIFICAVEL",
+          "valor": null,
+          "limite": 0.0,
+          "folga": null,
+          "origem": "A_CONFIRMAR",
+          "motivo": "X da face traseira da AIP a confirmar"
+        },
+        {
+          "nome": "esterçamento: folga ao aro",
+          "estado": "NAO_VERIFICAVEL",
+          "valor": null,
+          "limite": null,
+          "folga": null,
+          "origem": "A_CONFIRMAR",
+          "motivo": "curso da cremalheira a confirmar"
+        },
+        {
+          "nome": "esterçamento: folga ao tirante",
+          "estado": "NAO_VERIFICAVEL",
+          "valor": null,
+          "limite": null,
+          "folga": null,
+          "origem": "A_CONFIRMAR",
+          "motivo": "curso da cremalheira a confirmar"
+        },
+        {
+          "nome": "folga à manga/freio/pinça dentro do aro",
+          "estado": "NAO_VERIFICAVEL",
+          "valor": null,
+          "limite": 0.0,
+          "folga": null,
+          "origem": "META",
+          "motivo": "sem RODA_ modelado: o barril do aro trata o miolo como livre e o push rod nasce dentro dele (fase 1)"
+        },
+        {
+          "nome": "folga às peças móveis do STEP (não modeladas na fase 1)",
+          "estado": "NAO_VERIFICAVEL",
+          "valor": null,
+          "limite": 0.0,
+          "folga": null,
+          "origem": "META",
+          "motivo": "peças BANDEJA_FD, BANDEJA_FE, DIR, RODA_FD, RODA_FE do STEP não entram na varredura da fase 1"
+        },
+        {
+          "nome": "X do olhal no chassi",
+          "estado": "OK",
+          "valor": 0.13061889968667323,
+          "limite": 0.4,
+          "folga": 0.2693811003133268,
+          "origem": "META",
+          "motivo": "X do olhal do amortecedor no chassi (estático)"
+        }
+      ]
+    },
+    "conflitos": [
+      [
+        "folga às pernas das bandejas: push rod",
+        "variação de MR",
+        0.7008064516129032
+      ],
+      [
+        "braço r2 (amortecedor)",
+        "variação de MR",
+        0.6379032258064516
+      ],
+      [
+        "giro do rocker",
+        "variação de MR",
+        0.6008064516129032
+      ],
+      [
+        "folga às pernas das bandejas: push rod",
+        "giro do rocker",
+        0.5338709677419354
+      ],
+      [
+        "comprimento do amortecedor (mínimo)",
+        "variação de MR",
+        0.4975806451612903
+      ],
+      [
+        "braço r2 (amortecedor)",
+        "folga às pernas das bandejas: push rod",
+        0.41693548387096774
+      ],
+      [
+        "variação de MR",
+        "ângulo do amortecedor ao eixo X",
+        0.39838709677419354
+      ],
+      [
+        "comprimento do amortecedor (mínimo)",
+        "folga às pernas das bandejas: push rod",
+        0.3467741935483871
+      ],
+      [
+        "braço r2 (amortecedor)",
+        "giro do rocker",
+        0.3282258064516129
+      ],
+      [
+        "braço r2 (amortecedor)",
+        "ângulo do amortecedor ao eixo X",
+        0.3258064516129032
+      ]
+    ]
+  }
+}

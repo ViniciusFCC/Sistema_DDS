@@ -1,0 +1,14 @@
+{
+  "script": "T11_posicionador",
+  "somente_leitura": true,
+  "python": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
+  "inicio": "2026-11-24 21:23:45",
+  "documento": "T11_atuacao_v20_1_murilo_teste_nomes_corrigidos",
+  "modo": "posicionar",
+  "n_viaveis": 0,
+  "tempo_s": 370.82599449999543,
+  "estado": "concluido",
+  "fim": "2026-11-24 21:29:57",
+  "chamadas_api": 119988,
+  "erros_api": 0
+}

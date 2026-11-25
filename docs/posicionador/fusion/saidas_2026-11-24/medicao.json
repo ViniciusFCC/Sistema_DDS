@@ -1,0 +1,462 @@
+{
+  "E1_semantica_da_api": {
+    "corpo": "Corpo87",
+    "raio_cm": 1.0799999999999996,
+    "tipo_face": "CylinderSurfaceType",
+    "volume_cm3": 103.94619695650329,
+    "segmento_fino_eixo": {
+      "valor_cm": 1.0600000000000005,
+      "esperado_cm": "0 se maciço; ≈ raio interno se oco"
+    },
+    "ponto_eixo": {
+      "valor_cm": 1.079999999999998
+    },
+    "segmento_fino_dentro_da_parede_R-0.02": {
+      "valor_cm": 7.105427357601002e-15,
+      "esperado_cm": "0 (toca)"
+    },
+    "ponto_dentro_da_parede_R-0.02": {
+      "valor_cm": 0.019999999999998134
+    },
+    "segmento_fino_fora_R+0.5": {
+      "valor_cm": 0.29000000000000403,
+      "esperado_cm": 0.48
+    },
+    "ponto_fora_R+0.5": {
+      "valor_cm": 0.31000000000000216
+    },
+    "segmento_fino_fora_R+2": {
+      "valor_cm": 1.790000000000002,
+      "esperado_cm": 1.98
+    },
+    "ponto_fora_R+2": {
+      "valor_cm": 1.8100000000000003
+    },
+    "tempo_do_experimento_s": 0.009865600004559383
+  },
+  "E2_censo_do_chassi": {
+    "n_corpos": 27,
+    "faces_por_tipo_total": {
+      "TorusSurfaceType": 20,
+      "PlaneSurfaceType": 196,
+      "CylinderSurfaceType": 56
+    },
+    "razao_volume_min": 0.003295354670116193,
+    "razao_volume_mediana": 0.05049056805524759,
+    "razao_volume_max": 0.21742220841772292,
+    "corpos": [
+      {
+        "id": 1,
+        "nome": "braceFBHdir",
+        "faces": 15,
+        "tipos": {
+          "TorusSurfaceType": 2,
+          "PlaneSurfaceType": 13
+        },
+        "volume_cm3": 81.41651542924251,
+        "volume_da_caixa_cm3": 12902.958841053016,
+        "razao_volume": 0.0063099104966685355
+      },
+      {
+        "id": 2,
+        "nome": "braceFBHesq",
+        "faces": 15,
+        "tipos": {
+          "PlaneSurfaceType": 13,
+          "TorusSurfaceType": 2
+        },
+        "volume_cm3": 81.42265677808166,
+        "volume_da_caixa_cm3": 12902.958841052992,
+        "razao_volume": 0.006310386461051198
+      },
+      {
+        "id": 3,
+        "nome": "Corpo85",
+        "faces": 10,
+        "tipos": {
+          "PlaneSurfaceType": 10
+        },
+        "volume_cm3": 90.41273812251504,
+        "volume_da_caixa_cm3": 27436.421014836353,
+        "razao_volume": 0.003295354670116193
+      },
+      {
+        "id": 4,
+        "nome": "Corpo86",
+        "faces": 10,
+        "tipos": {
+          "PlaneSurfaceType": 10
+        },
+        "volume_cm3": 90.4127381225153,
+        "volume_da_caixa_cm3": 27436.4210148364,
+        "razao_volume": 0.003295354670116197
+      },
+      {
+        "id": 5,
+        "nome": "Corpo87",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 103.94619695650329,
+        "volume_da_caixa_cm3": 1870.2393905443462,
+        "razao_volume": 0.055579086550117535
+      },
+      {
+        "id": 6,
+        "nome": "Corpo88",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 106.29050174528055,
+        "volume_da_caixa_cm3": 7927.22490467953,
+        "razao_volume": 0.01340828638311196
+      },
+      {
+        "id": 7,
+        "nome": "Corpo89",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 104.97076912373956,
+        "volume_da_caixa_cm3": 7226.995766828261,
+        "razao_volume": 0.014524813976722235
+      },
+      {
+        "id": 8,
+        "nome": "Corpo90",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 106.29050174528072,
+        "volume_da_caixa_cm3": 7927.224904679549,
+        "razao_volume": 0.01340828638311195
+      },
+      {
+        "id": 9,
+        "nome": "Corpo91",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 105.86564320055692,
+        "volume_da_caixa_cm3": 5072.128928461487,
+        "razao_volume": 0.020872033162743126
+      },
+      {
+        "id": 10,
+        "nome": "Corpo92",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 104.97076912373956,
+        "volume_da_caixa_cm3": 7226.995766828261,
+        "razao_volume": 0.014524813976722235
+      },
+      {
+        "id": 11,
+        "nome": "Corpo93",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 103.94619695650334,
+        "volume_da_caixa_cm3": 1870.2393905443419,
+        "razao_volume": 0.055579086550117694
+      },
+      {
+        "id": 12,
+        "nome": "Corpo94",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 105.86564320055669,
+        "volume_da_caixa_cm3": 5072.128928461476,
+        "razao_volume": 0.020872033162743126
+      },
+      {
+        "id": 13,
+        "nome": "Corpo95",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 56.10884479311122,
+        "volume_da_caixa_cm3": 258.06399999999985,
+        "razao_volume": 0.21742220841772292
+      },
+      {
+        "id": 14,
+        "nome": "Corpo96",
+        "faces": 4,
+        "tipos": {
+          "CylinderSurfaceType": 2,
+          "PlaneSurfaceType": 2
+        },
+        "volume_cm3": 56.10884479311122,
+        "volume_da_caixa_cm3": 258.06399999999985,
+        "razao_volume": 0.21742220841772292
+      },
+      {
+        "id": 15,
+        "nome": "Corpo97",
+        "faces": 10,
+        "tipos": {
+          "PlaneSurfaceType": 10
+        },
+        "volume_cm3": 45.696000000000026,
+        "volume_da_caixa_cm3": 249.99999999999966,
+        "razao_volume": 0.18278400000000036
+      },
+      {
+        "id": 16,
+        "nome": "Corpo98",
+        "faces": 10,
+        "tipos": {
+          "PlaneSurfaceType": 10
+        },
+        "volume_cm3": 45.696000000000026,
+        "volume_da_caixa_cm3": 249.99999999999997,
+        "razao_volume": 0.1827840000000001
+      },
+      {
+        "id": 17,
+        "nome": "Corpo99",
+        "faces": 18,
+        "tipos": {
+          "PlaneSurfaceType": 18
+        },
+        "volume_cm3": 77.94713239542254,
+        "volume_da_caixa_cm3": 659.4517117503962,
+        "razao_volume": 0.11819990911620484
+      },
+      {
+        "id": 18,
+        "nome": "Corpo101",
+        "faces": 18,
+        "tipos": {
+          "PlaneSurfaceType": 18
+        },
+        "volume_cm3": 87.54329239542193,
+        "volume_da_caixa_cm3": 1343.3275609730294,
+        "razao_volume": 0.06516898405033139
+      },
+      {
+        "id": 19,
+        "nome": "Corpo102",
+        "faces": 18,
+        "tipos": {
+          "PlaneSurfaceType": 18
+        },
+        "volume_cm3": 87.54329239542216,
+        "volume_da_caixa_cm3": 1343.3275609730294,
+        "razao_volume": 0.06516898405033156
+      },
+      {
+        "id": 20,
+        "nome": "CHASSI_FBH_01",
+        "faces": 20,
+        "tipos": {
+          "PlaneSurfaceType": 20
+        },
+        "volume_cm3": 141.65760000000404,
+        "volume_da_caixa_cm3": 2805.6250000000005,
+        "razao_volume": 0.05049056805524759
+      },
+      {
+        "id": 21,
+        "nome": "CHASSI_FBH_02",
+        "faces": 12,
+        "tipos": {
+          "PlaneSurfaceType": 12
+        },
+        "volume_cm3": 44.0036188491693,
+        "volume_da_caixa_cm3": 2030.6249999999998,
+        "razao_volume": 0.021669987737356382
+      },
+      {
+        "id": 22,
+        "nome": "CHASSI_FBH_03",
+        "faces": 6,
+        "tipos": {
+          "PlaneSurfaceType": 6
+        },
+        "volume_cm3": 0.756122231470612,
+        "volume_da_caixa_cm3": 9.55213936022076,
+        "razao_volume": 0.07915737019284204
+      },
+      {
+        "id": 23,
+        "nome": "CHASSI_FBH_04",
+        "faces": 6,
+        "tipos": {
+          "PlaneSurfaceType": 6
+        },
+        "volume_cm3": 0.7561222314706033,
+        "volume_da_caixa_cm3": 9.552139360220773,
+        "razao_volume": 0.07915737019284103
+      },
+      {
+        "id": 24,
+        "nome": "CHASSI_FBH_05",
+        "faces": 6,
+        "tipos": {
+          "PlaneSurfaceType": 6
+        },
+        "volume_cm3": 0.7561222314706075,
+        "volume_da_caixa_cm3": 9.552139360220751,
+        "razao_volume": 0.07915737019284164
+      },
+      {
+        "id": 25,
+        "nome": "CHASSI_FBH_06",
+        "faces": 6,
+        "tipos": {
+          "PlaneSurfaceType": 6
+        },
+        "volume_cm3": 0.7561222314706155,
+        "volume_da_caixa_cm3": 9.552139360220776,
+        "razao_volume": 0.07915737019284227
+      },
+      {
+        "id": 26,
+        "nome": "CHASSI_FH",
+        "faces": 24,
+        "tipos": {
+          "CylinderSurfaceType": 16,
+          "TorusSurfaceType": 8
+        },
+        "volume_cm3": 371.37730887307197,
+        "volume_da_caixa_cm3": 8780.933784492156,
+        "razao_volume": 0.04229360088433357
+      },
+      {
+        "id": 27,
+        "nome": "CHASSI_MH",
+        "faces": 28,
+        "tipos": {
+          "CylinderSurfaceType": 20,
+          "TorusSurfaceType": 8
+        },
+        "volume_cm3": 606.2132955714894,
+        "volume_da_caixa_cm3": 19973.17770209194,
+        "razao_volume": 0.030351369452242753
+      }
+    ],
+    "tempo_do_experimento_s": 0.06484650000493275
+  },
+  "E3_custo_por_segmento": {
+    "n_segmentos": 300,
+    "raio_m": 0.01,
+    "corpos_na_cena": 27,
+    "tempo_filtrado_s": 0.16775320000306237,
+    "ms_por_segmento_filtrado": 0.5591773333435412,
+    "contagem": {
+      "segmentos_pedidos": 8100,
+      "segmentos_medidos": 277,
+      "pontos_pedidos": 0,
+      "pontos_medidos": 0,
+      "tempo_oraculo_s": 0.0
+    },
+    "fracao_medida": 0.03419753086419753,
+    "n_exato": 60,
+    "tempo_exato_s": 0.582340100001602,
+    "ms_por_segmento_sem_filtro": 9.705668333360032,
+    "maior_diferenca_filtro_vs_exato_m": 0.0,
+    "folga_min_filtrada_m": -0.01,
+    "folga_max_filtrada_m": 0.05,
+    "n_com_colisao": 9,
+    "n_saturados": 241,
+    "tempo_do_experimento_s": 0.7501610000035726
+  },
+  "E4_caixa_alinhada_vs_api": {
+    "n": 300,
+    "caixa_menos_api_m": {
+      "min": -0.10077372947550364,
+      "mediana": 0.0,
+      "max": 0.0
+    },
+    "caixa_diz_colisao_e_api_diz_livre": 69,
+    "caixa_diz_livre_e_api_diz_colisao": 0,
+    "ambos_livres": 222,
+    "ambos_colisao": 9,
+    "tempo_caixas_s": 1.7131093999996665,
+    "tempo_do_experimento_s": 1.7131895999991684
+  },
+  "E5_custo_por_ponto": {
+    "n_pontos": 1000,
+    "tempo_s": 0.09985859999869717,
+    "ms_por_ponto": 0.09985859999869717,
+    "contagem": {
+      "segmentos_pedidos": 0,
+      "segmentos_medidos": 0,
+      "pontos_pedidos": 27000,
+      "pontos_medidos": 247,
+      "tempo_oraculo_s": 0.0
+    },
+    "n_com_folga_menor_que_corte": 59,
+    "n_dentro_ou_tocando": 0,
+    "tempo_do_experimento_s": 0.10107799999968847
+  },
+  "E6_custo_de_um_candidato": {
+    "construcao_ok": true,
+    "motivo": null,
+    "n=11": {
+      "tempo_com_fixos_s": 0.08888519999891287,
+      "tempo_sem_fixos_s": 0.0623663000005763,
+      "veredito": "INVIAVEL",
+      "motivo": "restrições violadas: variação de MR, comprimento do amortecedor (mínimo), braço r2 (amortecedor), folga às pernas das bandejas: push rod",
+      "contagem": {
+        "segmentos_pedidos": 1485,
+        "segmentos_medidos": 53,
+        "pontos_pedidos": 0,
+        "pontos_medidos": 0,
+        "tempo_oraculo_s": 0.0
+      },
+      "folgas_aos_fixos": {
+        "folga aos fixos: push rod": 0.05,
+        "folga aos fixos: rocker": 0.04696492794698194,
+        "folga aos fixos: amortecedor": 0.033831875860634436
+      }
+    },
+    "n=25": {
+      "tempo_com_fixos_s": 0.19932849999895552,
+      "tempo_sem_fixos_s": 0.13352450000093086,
+      "veredito": "INVIAVEL",
+      "motivo": "restrições violadas: variação de MR, comprimento do amortecedor (mínimo), braço r2 (amortecedor), folga às pernas das bandejas: push rod",
+      "contagem": {
+        "segmentos_pedidos": 3375,
+        "segmentos_medidos": 122,
+        "pontos_pedidos": 0,
+        "pontos_medidos": 0,
+        "tempo_oraculo_s": 0.0
+      },
+      "folgas_aos_fixos": {
+        "folga aos fixos: push rod": 0.05,
+        "folga aos fixos: rocker": 0.04696632125802344,
+        "folga aos fixos: amortecedor": 0.03383288573195609
+      }
+    },
+    "tempo_do_experimento_s": 0.4860606000002008
+  },
+  "oraculo": {
+    "n_chamadas": 2604,
+    "n_erros": 0,
+    "tempo_s": 0.8638176998429117,
+    "ultimo_erro": null
+  }
+}
