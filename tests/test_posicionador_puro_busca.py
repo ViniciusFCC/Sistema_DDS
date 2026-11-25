@@ -1,6 +1,6 @@
 """
 Núcleo puro do posicionador, estágio 3: mapa de espaço livre, Nelder-Mead e busca contra o pacote de referência (numpy/scipy),
-na cena real do STEP (precisa do extra `cad`; sem ele, NÃO EXECUTÁVEL, código 3). Sem ID de TC (aguarda autorização).
+na cena real do STEP (precisa do extra `cad`; sem ele, NÃO EXECUTÁVEL, código 3). TC-POS-137 a 141 (EDR-077).
 B1: Nelder-Mead puro = scipy (mesmo mínimo, número de avaliações informado) em funções de teste.
 B2: mapa de espaço livre: mesmos pontos livres (r_pivo) e mesma folga onde ela vale menos que o corte, numa caixa do T11.
 B3: violação, objetivo e estados do núcleo puro = busca numpy em pontos dados (mesma avaliação).
@@ -63,7 +63,7 @@ for f, x0 in ((rosen, [-1.2, 1.0]), (quad, [0.0, 0.0, 0.0])):
                  options={"maxfev": 400, "initial_simplex": np.array(simplex), "xatol": 1e-6, "fatol": 1e-9})
     pior = max(pior, float(np.max(np.abs(np.array(xp) - r.x))), abs(fp - r.fun))
     difs.append((nfp, int(r.nfev)))
-check("B1 Nelder-Mead puro = scipy", pior < 1e-9, f"pior diferença {pior:.2e}; avaliações (puro, scipy) {difs}")
+check("TC-POS-137 B1 Nelder-Mead puro = scipy", pior < 1e-9, f"pior diferença {pior:.2e}; avaliações (puro, scipy) {difs}")
 
 # cena
 cfg = pc.carregar(os.path.join(DADOS, "config_T11.json"))
@@ -107,7 +107,7 @@ pior = max((abs(a - b) for a, b in zip(fn, mp.folga_m) if a < elp.CORTE_M - 1e-1
 iguais = len(ln) == len(lp) and all(np.allclose(a, b) for a, b in zip(ln, lp))
 dn = mn.dist_no_m.reshape(-1)
 pior_d = max(abs(a - b) for a, b in zip(dn, mp.dist_no_m))
-check("B2 mapa de espaço livre puro = numpy", iguais and pior < 1e-9 and pior_d < 1e-9,
+check("TC-POS-138 B2 mapa de espaço livre puro = numpy", iguais and pior < 1e-9 and pior_d < 1e-9,
       f"{len(fn)} pontos, {len(lp)} livres (numpy {len(ln)}); pior folga {pior:.2e}; pior dist. ao nó {pior_d:.2e}; "
       f"tempo numpy {tn:.1f} s × puro {tp:.1f} s")
 
@@ -130,7 +130,7 @@ for _ in range(8):
     va, vb = bn.violacao(cn.avaliacao), bp.violacao(cp.avaliacao)
     if (math.isinf(va) != math.isinf(vb)) or (math.isfinite(va) and abs(va - vb) > 1e-6):
         ruins.append(f"violação {va} × {vb}")
-check("B3 violação, objetivo e estados = numpy", not ruins and pior_o < 1e-6, f"{n_cmp} pontos; pior objetivo {pior_o:.2e}; {ruins[:3]}")
+check("TC-POS-139 B3 violação, objetivo e estados = numpy", not ruins and pior_o < 1e-6, f"{n_cmp} pontos; pior objetivo {pior_o:.2e}; {ruins[:3]}")
 
 # B4
 progresso = []
@@ -148,7 +148,7 @@ if alvo is not None:
     ap = bp._com_olhal(pvr.avaliar(alvo.construcao, cena_p, cfg, 11), alvo.construcao, cfg)
     ok_reav = an.veredito == ap.veredito and an.estados() == ap.estados()
 melhor_v = res.fase1.melhor.violacao if res.fase1 and res.fase1.melhor else None
-check("B4 busca puro de ponta a ponta", coer and ok_reav,
+check("TC-POS-140 B4 busca puro de ponta a ponta", coer and ok_reav,
       f"{tb:.0f} s; viáveis {len(res.candidatos)}; falhas {res.estatisticas.get('falhas')}; melhor violação {melhor_v}; "
       f"reavaliação igual ao original={ok_reav}")
 
@@ -157,7 +157,7 @@ cn20 = mec.construir(hs_v10, mec.Variaveis.da_semente_do_script(x20), cfg, r2_m=
 cp20 = pmec.construir(v10, pmec.Variaveis.da_semente_do_script(x20), cfg, r2_m=x20[7] / 1000.0)
 an = bn.avaliar_convergido(cn20, cena, cfg)
 ap = bp.avaliar_convergido(cp20, cena_p, cfg)
-check("B5 v20 convergida = original", an.veredito == ap.veredito and an.estados() == ap.estados(),
+check("TC-POS-141 B5 v20 convergida = original", an.veredito == ap.veredito and an.estados() == ap.estados(),
       f"{an.veredito} × {ap.veredito}; resoluções {an.resolucoes} × {ap.resolucoes}")
 
 n_fail = sum(1 for r in results if r[1] == "FAIL")

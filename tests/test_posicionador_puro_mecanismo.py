@@ -1,6 +1,6 @@
 """
 Núcleo puro do posicionador (sem numpy/scipy) contra o pacote de referência `posicionador` (numpy/scipy), estágio 1:
-álgebra, brentq, cinemática do canto e construção do mecanismo. Sem ID de TC (aguarda autorização).
+álgebra, brentq, cinemática do canto e construção do mecanismo. TC-POS-130 a 133 (EDR-077).
 P1: brentq puro = scipy em funções com raiz conhecida.
 P2: Canto.resolver/razao_de_movimento = Corner.solve/motion_ratio nos hardpoints da v20 (curso e cremalheira variados).
 P3: construir (r2 da v20, r2 resolvido) = mecanismo.construir em 40 casos sorteados (semente fixa): ou os dois falham
@@ -46,7 +46,7 @@ try:
     brentq(lambda x: x * x + 1, -1, 1)
 except ValueError:
     raised = True
-check("P1 brentq puro = scipy", dif < 1e-11 and raised, f"maior diferença {dif:.2e}; sem mudança de sinal levanta ValueError={raised}")
+check("TC-POS-130 P1 brentq puro = scipy", dif < 1e-11 and raised, f"maior diferença {dif:.2e}; sem mudança de sinal levanta ValueError={raised}")
 
 # dados
 hs_v10 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v10.csv"), os.path.join(DADOS, "hardpoints_T11_v10.meta.json"))
@@ -69,7 +69,7 @@ for curso, cr in [(0.0, 0.0), (-0.023, 0.0), (0.0624, 0.0), (0.02, 0.01), (-0.01
         pior = max(pior, float(np.linalg.norm(ref.pt(sr, k) - np.array(puro.ponto(sp, k)))))
     pior = max(pior, abs(ref.spring_length(sr) - puro.comprimento_mola(sp)))
 mr_r, mr_p = km.motion_ratio(ref, 0.0)["mr_wheel_per_spring"], pcin.razao_de_movimento(puro, 0.0)["mr_wheel_per_spring"]
-check("P2 cinemática do canto = km.Corner", pior < 1e-9 and abs(mr_r - mr_p) < 1e-8,
+check("TC-POS-131 P2 cinemática do canto = km.Corner", pior < 1e-9 and abs(mr_r - mr_p) < 1e-8,
       f"pior erro de ponto {pior:.2e} m; MR numpy {mr_r:.9f}, puro {mr_p:.9f}")
 
 # P3
@@ -98,7 +98,7 @@ for i, (vn, vp, r2) in enumerate(pares):
     pior = max(pior, d, abs(cn.r2_m - cp.r2_m))
     if set(cp.pontos) != set(cn.hardpoints.points):
         ruim.append(f"caso {i}: conjuntos de pontos diferentes")
-check("P3 construir puro = numpy", not ruim and pior < 1e-8 and n_ok >= 5,
+check("TC-POS-132 P3 construir puro = numpy", not ruim and pior < 1e-8 and n_ok >= 5,
       f"{n_ok} construídos e {n_falha} recusados nos dois; pior diferença {pior:.2e} m; divergências: {ruim[:3]}")
 
 # P4
@@ -110,7 +110,7 @@ for nome in os.listdir(pasta):
             for lin in fh:
                 if re.match(r"\s*(import|from)\s+(numpy|scipy|adsk|matplotlib)\b", lin):
                     proibidos.append(f"{nome}: {lin.strip()}")
-check("P4 puro não importa numpy/scipy/adsk", not proibidos, f"{proibidos}")
+check("TC-POS-133 P4 puro não importa numpy/scipy/adsk", not proibidos, f"{proibidos}")
 
 n_fail = sum(1 for r in results if r[1] == "FAIL")
 print(f"\n{len(results) - n_fail} PASS, {n_fail} FAIL, de {len(results)} testes")

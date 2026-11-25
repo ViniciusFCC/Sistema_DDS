@@ -33,7 +33,7 @@
 
 ## 2. Índice
 
-Total: 73 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 5 · IMPLEMENTED: 7 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 19 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2; em 2026-11-02, EDR-067 (modelo estático de pneu, PR #25, vindo da main) entrou como APPROVED_WITH_CONDITIONS, e o EDR-067 desta branch, do raio do skidpad, foi renumerado para EDR-069; ainda em 2026-11-02, no passo do usuário entre a 7a e a 7b, EDR-069 passou de PROPOSED a APPROVED e o item 2 do EDR-065 foi decidido; em 2026-11-09, com o item 3, o EDR-065 passou de AWAITING_DECISION a APPROVED, e o EDR-066 (aprovado em 2026-11-03, implementado na V4.3) passou a IMPLEMENTED no índice; em 2026-11-09, EDR-064 passou de AWAITING_DECISION a APPROVED no índice, igual ao corpo (usuário); em 2026-11-09, EDR-070 entrou como IMPLEMENTED, incremento 8, parte 8b; em 2026-11-11, EDR-064 (de APPROVED) e EDR-070 (de IMPLEMENTED) passaram a VERIFIED com a suíte única do incremento 8; em 2026-11-11, na integração da main na branch do pneu com pressão, EDR-071 (aprovado em 2026-11-03) entrou como APPROVED; em 2026-11-11, EDR-071 passou de APPROVED a VERIFIED com a suíte do pneu com pressão; em 2026-11-12, EDR-075 entrou como IMPLEMENTED, pneu-1; em 2026-11-17, EDR-076 entrou como APPROVED; em 2026-11-23, passou a IMPLEMENTED (posicionador))
+Total: 74 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DECISION: 5 · IMPLEMENTED: 8 · PENDING_CONFIRMATION: 1 · PROPOSED: 0 · REOPENED: 1 · SUPERSEDED: 1 · VERIFIED: 19 (contagem conferida contra a tabela em 2026-10-22; EDR-060 aprovado no mesmo dia; em 2026-10-23, EDR-034 passou de AWAITING_DECISION a APPROVED e EDR-061 a EDR-063 entraram como APPROVED; em 2026-10-28, EDR-064 a EDR-066 entraram como IMPLEMENTED, PROPOSED e AWAITING_DECISION; na revisão final do incremento 6, em 2026-10-28, EDR-064 e EDR-065 passaram a AWAITING_DECISION: as decisões do controlador e a tolerância aguardam o usuário no PR; em 2026-10-29, EDR-068 entrou como IMPLEMENTED, incremento 7, Task 1, e EDR-069 como PROPOSED, Task 2; em 2026-11-02, EDR-067 (modelo estático de pneu, PR #25, vindo da main) entrou como APPROVED_WITH_CONDITIONS, e o EDR-067 desta branch, do raio do skidpad, foi renumerado para EDR-069; ainda em 2026-11-02, no passo do usuário entre a 7a e a 7b, EDR-069 passou de PROPOSED a APPROVED e o item 2 do EDR-065 foi decidido; em 2026-11-09, com o item 3, o EDR-065 passou de AWAITING_DECISION a APPROVED, e o EDR-066 (aprovado em 2026-11-03, implementado na V4.3) passou a IMPLEMENTED no índice; em 2026-11-09, EDR-064 passou de AWAITING_DECISION a APPROVED no índice, igual ao corpo (usuário); em 2026-11-09, EDR-070 entrou como IMPLEMENTED, incremento 8, parte 8b; em 2026-11-11, EDR-064 (de APPROVED) e EDR-070 (de IMPLEMENTED) passaram a VERIFIED com a suíte única do incremento 8; em 2026-11-11, na integração da main na branch do pneu com pressão, EDR-071 (aprovado em 2026-11-03) entrou como APPROVED; em 2026-11-11, EDR-071 passou de APPROVED a VERIFIED com a suíte do pneu com pressão; em 2026-11-12, EDR-075 entrou como IMPLEMENTED, pneu-1; em 2026-11-17, EDR-076 entrou como APPROVED; em 2026-11-23, passou a IMPLEMENTED (posicionador); em 2026-11-24, EDR-077 entrou como IMPLEMENTED, posicionador fase 2)
 
 | ID | Título | Status |
 |---|---|---|
@@ -110,6 +110,7 @@ Total: 73 registros. APPROVED: 29 · APPROVED_WITH_CONDITIONS: 10 · AWAITING_DE
 | EDR-071 | Pneu com variação de pressão: interpolação rotulada de saídas, comparação e escolha | VERIFIED |
 | EDR-075 | pneu-1: estudo de sensibilidade do pneu e arrasto induzido | IMPLEMENTED |
 | EDR-076 | Posicionador de pontos da atuação dianteira (push rod, rocker, amortecedor) | IMPLEMENTED |
+| EDR-077 | Posicionador fase 2: núcleo em Python puro (Fusion), identificação de componentes e hardpoints do CAD | IMPLEMENTED |
 
 ## 3. Decisões que dependem do usuário (agora)
 
@@ -1807,6 +1808,31 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 - **Source_Conversation_or_Document:** Conversa de 2026-11-17 (avaliação do script, conselho, comparação com equipes, diretrizes U1 a U6, "Comece", "Autorizado", "Teste só na inferior por enquanto"); `docs/posicionador/`.
 
 
+### EDR-077 — Posicionador fase 2: núcleo em Python puro (Fusion), identificação de componentes e hardpoints do CAD
+
+- **Date:** 2026-11-24
+- **Status:** IMPLEMENTED (Validation = NOT_VALIDATED; VERIFIED ≠ validado fisicamente). Autorização do usuário em 2026-11-24 para o núcleo em Python puro, para considerar o CAD no lugar do CSV se ele for mais recente e para a numeração TC-POS-100 a 142 e EDR-077.
+- **Context:** O EDR-076 previa a fase 2 no Fusion. A sondagem do Fusion (`docs/posicionador/fusion/RELATORIO-investigacao.md`) mediu o Python embutido 3.14.7 sem numpy, scipy nem pip, `measureMinimumDistance` em ~1 ms e os 31 componentes do T11 com nome exato. O usuário exigiu que nenhuma identificação de componente seja admitida com erro.
+- **Question:** Como rodar o posicionador dentro do Fusion sem bibliotecas externas, com identificação de componentes verificada e dados de hardpoints do CAD?
+- **Alternatives:** (a) vendorizar numpy/scipy no add-in; (b) núcleo em Python puro, com o pacote numpy/scipy como referência de comportamento; (c) reescrever a lógica sobre a API do Fusion.
+- **Decision:** (b).
+  1. **Núcleo puro:** `python/posicionador/puro/` (só biblioteca padrão): álgebra, `brentq` e Nelder-Mead próprios, cinemática do canto, mecanismo, geometria, regulamento (gabarito T.1.2 e AIP), varredura, mapa de espaço livre e busca. O pacote numpy/scipy continua sendo a referência; os testes comparam os dois na cena real do STEP. Diferenças deliberadas: jacobiano mal condicionado pela norma 1; `random.Random` no lugar do PCG64 (a mesma semente não reproduz as amostras); mapa livre com folga saturada em 0,30 m; sem caixa dinâmica nem margem como objetivo.
+  2. **Identificação:** `python/posicionador/reconhecimento.py` (nível de confiança do nome) e `identificacao.py` com `tools/verificar_identificacao.py` (portão geométrico: lado por Y, contagens, esferas, itens `IGNORAR`); só `exata`, `normalizada` e `mapa` são usáveis.
+  3. **Hardpoints do CAD:** `data/posicionador/hardpoints_T11_v20_1_cad.csv` (+ `.meta.json`) como conjunto alternativo ao v10 (que não foi alterado); os 9 pontos `HP_FL` do CAD v20_1 e, do v10, `SPINDLE_PT` e `CONTACT_PATCH` (HIPÓTESE). A premissa de que o CAD é mais recente que o v10 (2026-11-17) é do usuário e não foi confirmada pelo histórico do Fusion.
+- **Proposta pendente (PENDING_CONFIRMATION; usuário, 2026-11-24, "em tese"):** na versão só da dianteira, o que está na dianteira e fora do cálculo entra como obstáculo por segurança, e o traseiro segue ignorado; ainda não implementada (muda a leitura do CAD no adaptador do Fusion, não o núcleo). Antes, o usuário confere `tabela_ignorados` separada em dianteiro e traseiro.
+- **Rationale:** Sem numpy/scipy no Fusion, o núcleo puro evita depender de instalação na máquina de cada membro da equipe; manter o pacote numpy/scipy como referência preserva a verificação já feita (EDR-076).
+- **Evidence:** `tests/test_posicionador_puro_mecanismo.py` (4), `..._varredura.py` (3), `..._busca.py` (5): cinemática a 1e-16 m, construção a 1,6e-9 m, estados e vereditos iguais em 6 candidatos, Nelder-Mead igual ao do scipy, núcleo executado num Python isolado sem numpy nem scipy; `tests/test_posicionador_reconhecimento.py` (5) e `tests/test_posicionador_identificacao.py` (13); relatório da sondagem.
+- **Assumptions:** Os hardpoints do CAD seguem PROVISIONAL; o núcleo não foi executado no Python 3.14 do Fusion; o desempenho puro é ~3 vezes o do numpy.
+- **Consequences:** Novos módulos e testes; a suíte inteira não foi rodada nesta data. O adaptador do Fusion (add-in) é o próximo passo e fica fora deste EDR.
+- **Affected_Artifacts:** `python/posicionador/puro/`; `python/posicionador/reconhecimento.py`; `python/posicionador/identificacao.py`; `tools/verificar_identificacao.py`; `tools/rodar_testes.py`; `data/posicionador/hardpoints_T11_v20_1_cad.csv` e `.meta.json`; `docs/posicionador/fusion/`.
+- **Affected_Tests:** TC-POS-100 a 104, 110 a 122, 130 a 141 (o TC-POS-142 fica reservado).
+- **Dependencies:** EDR-076, EDR-004.
+- **Approval_Conditions:** Executar o núcleo no Python do Fusion e confirmar a data do CAD pelo histórico de versões antes de usar `hardpoints_T11_v20_1_cad` como base.
+- **Reopening_Criteria:** Divergência entre o núcleo puro e o pacote de referência; o Fusion mudar o Python embutido; o CAD se mostrar mais antigo que o v10.
+- **Related_Decisions:** EDR-076, EDR-004.
+- **Source_Conversation_or_Document:** Conversa de 2026-11-24; `docs/posicionador/fusion/PASSAGEM-fase2.md`.
+
+
 ## 6. Tabela de rastreabilidade
 
 | Decisão | Parâmetros / requisitos | Artefatos afetados | Testes |
@@ -1884,6 +1910,7 @@ Impactos: Standard (novas fichas), Data Contract §6 (campos com unidade e prove
 | EDR-071 | — | python/tire_pressure.py; python/comparacao_pressao.py; python/tire_model_static.py; tools/relatorio_pressao.py; tools/rodar_testes.py. | TC-TIRE-011 a TC-TIRE-023 (tests/test_tire_pressure.py) |
 | EDR-075 | — | python/caso_pneu1.py; python/sensibilidade_pneu.py; tools/relatorio_pneu1.py; tools/capturar_caso_pneu1.py; data/casos/caso_pneu1_demonstrativo.json; docs/pneu/sensibilidade-e-arrasto.md; CLAUDE.md. | TC-SEN-001 a 008, 010 a 022 e 012b (tests/test_sensibilidade_pneu.py); TC-SEN-009 (tests/test_caso_pneu1_equivalencia.py) |
 | EDR-076 | — | python/posicionador/; tools/posicionar_atuacao.py; tools/rodar_testes.py; data/posicionador/; data/cad/; pyproject.toml; docs/posicionador/; CLAUDE.md. | TC-POS-001, 002, 010..014, 020..025, 030..034, 050..055, 060..069, 070..076, 080..083 |
+| EDR-077 | — | python/posicionador/puro/; python/posicionador/reconhecimento.py; python/posicionador/identificacao.py; tools/verificar_identificacao.py; tools/rodar_testes.py; data/posicionador/hardpoints_T11_v20_1_cad.*; docs/posicionador/fusion/. | TC-POS-100..104, 110..122, 130..141 |
 
 ## 7. Mapa EDR ↔ DR (planilha) ↔ DEC (arquitetura)
 

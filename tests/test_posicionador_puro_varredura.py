@@ -1,6 +1,6 @@
 """
 Núcleo puro do posicionador, estágio 2: geometria, regulamento e varredura contra o pacote de referência (numpy), na cena
-real do STEP do T11 (precisa do extra `cad`: sem ele sai NÃO EXECUTÁVEL, código 3). Sem ID de TC (aguarda autorização).
+real do STEP do T11 (precisa do extra `cad`: sem ele sai NÃO EXECUTÁVEL, código 3). TC-POS-134 a 136 (EDR-077).
 V1: primitivos do STEP convertidos para o núcleo puro dão a mesma sdf (pontos sorteados) e a mesma folga_segmento.
 V2: `avaliar` puro = `avaliar` numpy em candidatos construídos pelo mesmo mecanismo: mesmos nomes de restrição, mesmos
     estados e mesmo veredito; folgas a 1e-6 m e curvas de MR a 1e-7.
@@ -79,7 +79,7 @@ for ob, ob_p in zip(cena.fixos, fixos_p):
         pior = max(pior, abs(float(ob.sdf(np.array([p]))[0]) - ob_p.sdf(p)))
     a, b = (rng.uniform(-0.3, 0.3), 0.3, 0.5), (rng.uniform(0.0, 0.5), 0.4, 0.7)
     pior = max(pior, abs(gn.folga_segmento(ob, np.array(a), np.array(b), 0.01) - pg.folga_segmento(ob_p, a, b, 0.01)))
-check("V1 primitivos puros = numpy (sdf e folga_segmento)", pior < 1e-9, f"{len(fixos_p)} primitivos; pior diferença {pior:.2e} m")
+check("TC-POS-134 V1 primitivos puros = numpy (sdf e folga_segmento)", pior < 1e-9, f"{len(fixos_p)} primitivos; pior diferença {pior:.2e} m")
 
 # candidatos
 hs_v10 = hp.load_hardpoints(os.path.join(DADOS, "hardpoints_T11_v10.csv"), os.path.join(DADOS, "hardpoints_T11_v10.meta.json"))
@@ -119,12 +119,12 @@ for i, (vn, vp, r2) in enumerate(cands):
             pior_f = max(pior_f, abs(ra.folga - rb.folga))
     if an.curvas:
         pior_mr = max(pior_mr, float(np.max(np.abs(np.array(an.curvas["MR [wheel/spring]"]) - np.array(ap.curvas["MR [wheel/spring]"])))))
-check("V2 avaliar puro = numpy na cena do STEP", not ruins and pior_f < 1e-6 and pior_mr < 1e-7,
+check("TC-POS-135 V2 avaliar puro = numpy na cena do STEP", not ruins and pior_f < 1e-6 and pior_mr < 1e-7,
       f"{n_ok}/{len(cands)} candidatos iguais (vereditos {vereditos}); pior folga {pior_f:.2e} m; pior MR {pior_mr:.2e}; "
       f"tempo numpy {tn:.1f} s × puro {tp:.1f} s; divergências {ruins[:3]}")
 
 # V3
-check("V3 NAO_MODELADO_FASE1 igual ao original", tuple(pvr.NAO_MODELADO_FASE1) == tuple(vr.NAO_MODELADO_FASE1))
+check("TC-POS-136 V3 NAO_MODELADO_FASE1 igual ao original", tuple(pvr.NAO_MODELADO_FASE1) == tuple(vr.NAO_MODELADO_FASE1))
 
 n_fail = sum(1 for r in results if r[1] == "FAIL")
 print(f"\n{len(results) - n_fail} PASS, {n_fail} FAIL, de {len(results)} testes")
