@@ -5,7 +5,7 @@ Referência: Milliken, Race Car Vehicle Dynamics, §7.1 (p. 283-286), e a especi
 V4.0 (docs/). Este módulo reúne o caso (veículo, pneu, aero, toe e camber por roda) e calcula
 as cargas verticais e o camber de cada roda para uma aceleração lateral dada.
 
-Convenções (CLAUDE.md): SI, eixos ISO 8855 (a_y > 0 = curva à esquerda, rodas FR/RR externas),
+Convenções (regras do projeto): SI, eixos ISO 8855 (a_y > 0 = curva à esquerda, rodas FR/RR externas),
 camber + = topo da roda para fora, toe + = toe-out (EDR-002). Toe, camber estático e ganho de
 camber têm padrão 0: "sem dado" (EDR-036), nunca valor inventado.
 

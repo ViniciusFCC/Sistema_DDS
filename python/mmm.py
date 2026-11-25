@@ -13,7 +13,7 @@ Hipoteses.rotacao_beta=False desliga a rotação no caminho acoplado (a_y = A, a
 controle planilha_acoplada(rotacao=False), que mede só o viés do método (EDR-064, decisão 2.6 revista).
 O limite (T, saturação por eixo, veredito, Q e P), o gradiente K e o stability index valem nos dois caminhos.
 
-Convenções (CLAUDE.md): SI, eixos ISO 8855 (X frente, Y esquerda, Z cima), curva à esquerda (a direita sai de
+Convenções (regras do projeto): SI, eixos ISO 8855 (X frente, Y esquerda, Z cima), curva à esquerda (a direita sai de
 equilibrio.espelhar), α < 0 dá Fy > 0 à esquerda. O módulo não conhece a origem dos dados e não sabe se a
 geometria é sintética: quem o chama carrega esse rótulo.
 

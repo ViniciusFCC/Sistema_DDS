@@ -1126,7 +1126,7 @@ if not SUB or "TC003" in SUB:   # DDS_CASOS (mutação da planilha): só os caso
                       "do veredito iguais às da cópia gerada")
     else:
         notas3.append("salvar pelo Excel NÃO EXECUTADO (motor LibreOffice; a equipe salva pelo Excel e o LibreOffice nunca "
-                      "salva a planilha, CLAUDE.md): esta parte só conta na rodada do Excel")
+                      "salva a planilha, regras do projeto): esta parte só conta na rodada do Excel")
     # (2) 10_TIRE com entradas fora da faixa (TESTE, só na cópia): Fz acima; Fz abaixo e γ abaixo; α acima numa roda L;
     # Fz = 0 (descolamento, continua N/A); κ fora da faixa (RL abaixo de KPUMIN, VERIF acima de KPUMAX): limitado, EDR-056
     ds_tire = tm.load_dataset(TIR, source_axis_system="ISO_TYDEX")

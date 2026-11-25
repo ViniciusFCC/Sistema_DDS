@@ -691,7 +691,7 @@ def main() -> int:
           "equipe.")
     else:
         w("1. O experimento não reproduziu o Python em todos os casos (ver a seção 5); antes de levar a análise "
-          "para a planilha, a divergência precisa ser investigada na ordem do CLAUDE.md. As regras do EDR-056 em "
+          "para a planilha, a divergência precisa ser investigada na ordem das regras do projeto. As regras do EDR-056 em "
           "fórmulas também não foram medidas (incremento 4).")
     w(f"2. A varredura de {len(varr)} combinações em fórmulas não foi medida nem estimada: cada combinação exigiria "
       "ao menos a análise da grade pedida e a da grade refinada. A spec (7.6, item 4) prevê a alternativa de o "

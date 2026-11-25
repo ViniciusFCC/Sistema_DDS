@@ -11,7 +11,7 @@ a TRANSCRIÇÃO das fórmulas que a equipe usava, não a física. Desde a V3.0 (
 segue a literatura e põe o pneu em série; a forma "com pneu" é mostrada só como informação.
 
 Uso: uv run python -X utf8 tests/regressao/t09_referencia_historica.py
-Não entra no tools/rodar_testes.py nem nas contagens do CLAUDE.md. Saída: código 1 se algum
+Não entra no tools/rodar_testes.py nem nas contagens das regras do projeto. Saída: código 1 se algum
 valor histórico deixar de ser reproduzido (sinal de que a transcrição mudou).
 """
 import math

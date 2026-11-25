@@ -381,7 +381,7 @@ def main() -> int:
         "execucoes": execucoes}, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n")
     ok = viva_intacta and all(d["aprovado"] for d in saida)
     print(f"JSON: {SAIDA}")
-    print("RESULTADO:", "critérios atendidos" if ok else "DIVERGÊNCIA (investigar na ordem do CLAUDE.md)")
+    print("RESULTADO:", "critérios atendidos" if ok else "DIVERGÊNCIA (investigar na ordem das regras do projeto)")
     return 0 if ok else 1
 
 
