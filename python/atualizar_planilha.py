@@ -10,7 +10,7 @@ Padrão: origem excel/FSAE_EV_Suspension_Fase1_V2_4.xlsx, saída build/FSAE_EV_S
 recalculada nem salva pelo Excel ou pelo LibreOffice.
 
 Toda célula tocada está em ALTERACOES, com a fonte e o EDR. O registro (--registro) lista, para cada
-uma, aba, célula, conteúdo anterior (lido da origem) e novo: é a rastreabilidade que o CLAUDE.md exige
+uma, aba, célula, conteúdo anterior (lido da origem) e novo: é a rastreabilidade que as regras do projeto exigem
 para mudança de fórmula. Referências: docs/revisao-metodologica.md.
 """
 import argparse

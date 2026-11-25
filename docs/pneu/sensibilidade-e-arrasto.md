@@ -176,7 +176,7 @@ O pneu por pressão (Cα, μ_y de pico e se há borda, nos 13 pontos de 8,0 a 14
 
 D = Σ −F_y,i·sen α_i, somado roda a roda, em N (equivale a J/m, energia por distância percorrida). D/(m·g) é o mesmo valor como fração do peso. D/D_1ª ordem é a razão com a forma linearizada Σ F_y exigida·|α|, que o código já usa.
 
-Fonte: Milliken & Milliken, RCVD, §2.9, p. 64 a 67 (D = F_x·cos α − F_y·sen α nas p. 64 e 65; bicicleta na Fig. 2.36, p. 67). Somar roda a roda, em vez de usar as duas rodas da bicicleta do Milliken, é escolha do Claude, não do livro. A resistência ao rolamento está a confirmar: sem Crr com fonte, o D sai como tamanho de efeito e não como decisão.
+Fonte: Milliken & Milliken, RCVD, §2.9, p. 64 a 67 (D = F_x·cos α − F_y·sen α nas p. 64 e 65; bicicleta na Fig. 2.36, p. 67). Somar roda a roda, em vez de usar as duas rodas da bicicleta do Milliken, é escolha do projeto, não do livro. A resistência ao rolamento está a confirmar: sem Crr com fonte, o D sai como tamanho de efeito e não como decisão.
 
 A grade vai de 0 a 2,00 g, porque o carro não satura antes disso. O ponto de 2,00 g é o último a_y resolvido.
 

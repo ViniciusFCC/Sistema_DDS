@@ -295,7 +295,7 @@ def main() -> int:
         "## Limites",
         "",
         "- Os tempos são desta máquina e desta sessão (outros programas abertos mudam o resultado); só a ordem de grandeza vale.",
-        "- Mede o Excel via COM; o LibreOffice não entra (CLAUDE.md: não recalcular a planilha por ele).",
+        "- Mede o Excel via COM; o LibreOffice não entra (regras do projeto: não recalcular a planilha por ele).",
         "",
     ]
     saida = Path(a.saida)

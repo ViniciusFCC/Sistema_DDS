@@ -125,7 +125,7 @@ def montar_relatorio(r: sp.Resultado, rapido: bool, caso_arq: Path) -> str:
           "",
           "Fonte: Milliken & Milliken, RCVD, §2.9, p. 64 a 67 (D = F_x·cos α − F_y·sen α na p. 64 e 65; bicicleta na "
           "Fig. 2.36, p. 67). Generalizar a bicicleta do Milliken (2 rodas) para a soma roda a roda é escolha do "
-          "Claude, não do livro. ", ""]
+          "projeto, não do livro. ", ""]
     crr = next((v for v in r.valores if v.chave == "crr_referencia"), None)
     com_crr = any(l.d_sobre_rolamento is not None for l in r.arrasto)
     if com_crr and crr is not None:

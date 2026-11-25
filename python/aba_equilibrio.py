@@ -47,7 +47,7 @@ Decisões (plano, "Decisões do plano"; registrar no EDR-060):
   abas de grade, os resultados do resumo têm res_17_/res_18_<slug> (as células por linha da grade e a bisseção do
   Ackermann são cálculo auxiliar, sem nome). Regras de nome do EDR-058 (`nomes_v4_0`).
 
-SI nas células de cálculo; ° e g só nas entradas de toe e nas células de exibição. Convenções do CLAUDE.md (ISO 8855;
+SI nas células de cálculo; ° e g só nas entradas de toe e nas células de exibição. Convenções do projeto (ISO 8855;
 camber + = topo para fora; toe + = toe-out, EDR-002). Nenhuma função salva a planilha viva nem a de referência:
 `copia_v41` trabalha numa pasta temporária a partir do arquivo da tag v4.0.
 """
